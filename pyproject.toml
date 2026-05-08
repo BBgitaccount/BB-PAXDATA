@@ -1,0 +1,19 @@
+[project]
+name = "bb-paxdata"
+version = "0.1.0"
+description = "Data Science Based Diplomatic Analysis"
+authors = [
+    {name = "Barış Bozkurt", email = "barisbozkurthello@gmail.com"}
+]
+license = "GPL-3.0"
+readme = "README.md"
+requires-python = ">=3.10,<3.15"
+dependencies = []
+
+[tool.poetry]
+# src/ altındaki klasörün modül olarak tanınması için kritik
+packages = [{include = "bb-paxdata", from = "src"}]
+
+[build-system]
+requires = ["poetry-core>=2.0.0,<3.0.0"]
+build-backend = "poetry.core.masonry.api"
