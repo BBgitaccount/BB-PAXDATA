@@ -43,4 +43,4 @@ jobs:
 
       - name: Run Tests
         run: |
-          poetry run pytest tests/ --cov=src/bb-paxdata --cov-report=xml
+          poetry run pytest tests/ --cov=src/bb_paxdata --cov-report=xml
