@@ -11,8 +11,8 @@ requires-python = ">=3.10,<3.15"
 dependencies = []
 
 [tool.poetry]
-# src/ altındaki klasörün modül olarak tanınması için kritik
-packages = [{include = "bb-paxdata", from = "src"}]
+# KRİTİK: Python paket ismi alt tire (_) içermelidir, tire (-) içeremez.
+packages = [{include = "bb_paxdata", from = "src"}]
 
 [tool.poetry.group.dev.dependencies]
 ruff = "^0.4.0"
@@ -20,11 +20,14 @@ black = "^24.3.0"
 mypy = "^1.9.0"
 pytest = "^8.0.0"
 pytest-cov = "^5.0.0"
-pre-commit = "^4.6.0"
+pre-commit = "^4.0.0"
 
 [tool.ruff]
 line-length = 88
 target-version = "py312"
+
+[tool.ruff.lint]
+# Görüntüdeki 'top-level settings are deprecated' uyarısını bu katman çözer.
 select = [
     "E",   # pycodestyle errors
     "W",   # pycodestyle warnings
