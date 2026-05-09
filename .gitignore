@@ -38,6 +38,7 @@ venv.bak/
 
 # Veritabanı ve Çıktılar
 *.sqlite3
+*.db
 output/*
 !output/.gitkeep
 data/*
