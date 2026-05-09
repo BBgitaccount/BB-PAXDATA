@@ -1,0 +1,8 @@
+from enum import Enum
+
+
+class PressureTier(str, Enum):
+    HIGH_PRESSURE = "HIGH_PRESSURE"
+    MEDIUM_PRESSURE = "MEDIUM_PRESSURE"
+    LOW_PRESSURE = "LOW_PRESSURE"
+    DECLARATIVE = "DECLARATIVE"

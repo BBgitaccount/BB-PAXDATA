@@ -1,0 +1,9 @@
+from enum import Enum
+
+
+class DynamicEvent(str, Enum):
+    ESCALATION_SPIKE = "ESCALATION_SPIKE"
+    DE_ESCALATION = "DE_ESCALATION"
+    TOPIC_SHIFT = "TOPIC_SHIFT"
+    EMOTION_REVERSAL = "EMOTION_REVERSAL"
+    STABLE = "STABLE"

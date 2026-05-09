@@ -1,0 +1,9 @@
+from enum import Enum
+
+
+class InfluenceTier(str, Enum):
+    TIER1_SOVEREIGN = "TIER1_SOVEREIGN"
+    TIER2_MINISTER = "TIER2_MINISTER"
+    TIER3_OFFICIAL = "TIER3_OFFICIAL"
+    TIER4_EXPERT = "TIER4_EXPERT"
+    TIER5_MEDIA = "TIER5_MEDIA"

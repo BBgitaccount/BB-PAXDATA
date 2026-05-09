@@ -1,0 +1,8 @@
+from enum import Enum
+
+
+class TemporalPattern(str, Enum):
+    SHARP_ESCALATION = "SHARP_ESCALATION"
+    EMOTIONAL_SPIKE = "EMOTIONAL_SPIKE"
+    TOPIC_PIVOT = "TOPIC_PIVOT"
+    GRADUAL_DRIFT = "GRADUAL_DRIFT"

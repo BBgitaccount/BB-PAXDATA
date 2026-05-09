@@ -1,0 +1,8 @@
+from enum import Enum
+
+
+class TensionLevel(str, Enum):
+    EXTREME_TENSION = "EXTREME_TENSION"
+    HIGH_TENSION = "HIGH_TENSION"
+    MODERATE_TENSION = "MODERATE_TENSION"
+    LOW_TENSION = "LOW_TENSION"
