@@ -8,3 +8,4 @@ class HedgingType(str, Enum):
     APPROXIMATOR = "approximator"
     SHIELD = "shield"
     ATTRIBUTION = "attribution"
+    NONE = "none"

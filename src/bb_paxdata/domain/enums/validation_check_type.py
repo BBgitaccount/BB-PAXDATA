@@ -14,3 +14,6 @@ class ValidationCheckType(str, Enum):
     MANIPULATION = "manipulation"
     POLITENESS = "politeness"
     EVIDENCE = "evidence"
+    QUALITY = "quality"
+    COMPLETENESS = "completeness"
+    LOGICAL = "logical"

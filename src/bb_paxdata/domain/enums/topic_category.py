@@ -17,3 +17,4 @@ class TopicCategory(str, Enum):
     INSANI_YARDIM_HAKLAR = "İnsani_Yardım_Haklar"
     COK_KUTUPLULUK_DUZEN = "Çok_Kutupluluk_Düzen"
     RISK_KIRILIM = "Risk_Kırılım"
+    NONE = "none"
