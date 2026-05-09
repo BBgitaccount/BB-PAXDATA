@@ -9,7 +9,14 @@ import math
 from collections import defaultdict
 from typing import Any, ClassVar
 
-from ...application.protocols import BaseService, TopicAnalysis, TopicServiceProtocol
+import numpy as np
+import scipy.sparse as sp
+
+from ...application.protocols import (
+    BaseService,
+    TopicAnalysis,
+    TopicServiceProtocol,
+)
 from ...domain.enums import TopicCategory
 
 
@@ -447,7 +454,7 @@ class TopicService(BaseService, TopicServiceProtocol):
             return TopicCategory.NONE
 
         # Find topic with highest score
-        dominant_topic_name = max(topic_scores, key=lambda k: float(topic_scores[k]))
+        dominant_topic_name = max(topic_scores, key=lambda k: topic_scores[k])
 
         # Map topic names to TopicCategory enum
         topic_mapping = {
@@ -512,14 +519,31 @@ class TopicService(BaseService, TopicServiceProtocol):
             )
 
             # Fit and transform
-            tfidf_matrix = vectorizer.fit_transform(texts)
+            raw_matrix = vectorizer.fit_transform(texts)
+            # Use scipy.sparse to explicitly convert if the object
+            # itself lacks the method
+            if hasattr(raw_matrix, "tocsr"):
+                tfidf_matrix = raw_matrix.tocsr()
+            else:
+                tfidf_matrix = sp.csr_matrix(raw_matrix)
+
             feature_names = vectorizer.get_feature_names_out()
 
             # Extract top keywords for each text
             results = []
             for i in range(len(texts)):
-                # Get TF-IDF scores for this document
-                scores = tfidf_matrix[i].toarray()[0]
+                # CSR format allows direct row indexing safely
+                try:
+                    # Accessing CSR row is efficient and supports indexing
+                    row_data = tfidf_matrix[i].toarray().flatten()
+                except Exception:
+                    # Emergency fallback using getrow
+                    try:
+                        row_data = tfidf_matrix.getrow(i).toarray().flatten()
+                    except Exception:
+                        row_data = np.zeros(len(feature_names))
+
+                scores = row_data
 
                 # Get top keywords (score > 0)
                 top_keywords = [
