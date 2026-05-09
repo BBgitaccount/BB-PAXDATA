@@ -8,7 +8,10 @@ authors = [
 license = "GPL-3.0"
 readme = "README.md"
 requires-python = ">=3.10,<3.15"
-dependencies = []
+dependencies = [
+    "pydantic>=2.0,<3",
+    "sqlalchemy>=2.0,<3",
+]
 
 [tool.poetry]
 # KRİTİK: Python paket ismi alt tire (_) içermelidir, tire (-) içeremez.
