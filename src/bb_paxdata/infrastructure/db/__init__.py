@@ -1,6 +1,14 @@
 """Database infrastructure: ORM base, session, and table models."""
 
 from bb_paxdata.infrastructure.db.base import Base
+from bb_paxdata.infrastructure.db.repositories import (
+    AbstractRepository,
+    AbstractUnitOfWork,
+    AnalysisRepository,
+    SegmentRepository,
+    SentenceRepository,
+    SqlAlchemyUnitOfWork,
+)
 from bb_paxdata.infrastructure.db.session import (
     DATABASE_URL,
     SessionLocal,
@@ -10,9 +18,15 @@ from bb_paxdata.infrastructure.db.session import (
 )
 
 __all__ = [
+    "AbstractRepository",
+    "AbstractUnitOfWork",
+    "AnalysisRepository",
     "Base",
     "DATABASE_URL",
+    "SegmentRepository",
+    "SentenceRepository",
     "SessionLocal",
+    "SqlAlchemyUnitOfWork",
     "engine",
     "get_db",
     "init_db",

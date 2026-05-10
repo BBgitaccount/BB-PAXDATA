@@ -399,6 +399,7 @@ class Segment(Base):
 
         return SegmentDomainModel(
             id=self.seg_id,
+            panel_id=self.panel_id,
             sentences=[],
             start_time=float(self.ts_start_sec) if self.ts_start_sec else None,
             end_time=float(self.ts_end_sec) if self.ts_end_sec else None,
@@ -415,10 +416,15 @@ class Segment(Base):
         )
 
     @classmethod
-    def from_domain(cls, model: SegmentDomain, *, panel_id: str) -> Segment:
+    def from_domain(
+        cls, model: SegmentDomain, *, panel_id: str | None = None
+    ) -> Segment:
+        resolved_panel = panel_id or model.panel_id
+        if not resolved_panel:
+            raise ValueError("panel_id is required (argument or Segment.panel_id)")
         return cls(
             seg_id=model.id,
-            panel_id=panel_id,
+            panel_id=resolved_panel,
             speaker_id=model.primary_speaker_id,
             speaker_name="",
             ts_start_sec=int(model.start_time or 0),
@@ -1180,7 +1186,7 @@ class AISentenceAnalysis(Base):
     def from_domain(cls, model: Analysis, *, sent_id: str) -> AISentenceAnalysis:
         return cls(
             sent_id=sent_id,
-            segment_id=model.segment_id,
+            seg_id=model.segment_id,
             risk_level=model.risk_level.value,
             sentiment_score=model.sentiment_score,
             manipulation_score=model.manipulation_score,

@@ -12,10 +12,25 @@ from ..enums import (
 from .sentence import Sentence
 
 
+class TemporalSegmentAnalysis(BaseModel):
+    """Intro / develop / conclusion sentiment arc for a stored segment row."""
+
+    segment_id: str = Field(..., description="Segment identifier")
+    intro_sentiment: float = Field(..., description="Intro-phase sentiment")
+    develop_sentiment: float = Field(..., description="Development-phase sentiment")
+    concl_sentiment: float = Field(..., description="Conclusion-phase sentiment")
+    risk_trend: str | None = Field(None, description="Risk trend label")
+    risk_trajectory: str | None = Field(None, description="Risk trajectory label")
+
+
 class Segment(BaseModel):
     """Represents a segment of conversation containing multiple sentences."""
 
     id: str = Field(..., description="Unique identifier for the segment")
+    panel_id: str | None = Field(
+        None,
+        description="Owning panel when persisting or loading from storage",
+    )
     sentences: list[Sentence] = Field(
         default_factory=list, description="List of sentences in this segment"
     )
