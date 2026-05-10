@@ -265,12 +265,16 @@ class SpeakerProfile(Base):
     concerned_pct: Mapped[float] = mapped_column(Float, default=0)
     confrontational_pct: Mapped[float] = mapped_column(Float, default=0)
     risk_event_count: Mapped[int] = mapped_column(Integer, default=0)
-    top_countries_mentioned: Mapped[dict | list | None] = mapped_column(
+    top_countries_mentioned: Mapped[dict[str, Any] | list[Any] | None] = mapped_column(
         JSON, nullable=True
     )
     top_topics: Mapped[str | None] = mapped_column(Text, nullable=True)
-    ally_countries: Mapped[dict | list | None] = mapped_column(JSON, nullable=True)
-    adversary_countries: Mapped[dict | list | None] = mapped_column(JSON, nullable=True)
+    ally_countries: Mapped[dict[str, Any] | list[Any] | None] = mapped_column(
+        JSON, nullable=True
+    )
+    adversary_countries: Mapped[dict[str, Any] | list[Any] | None] = mapped_column(
+        JSON, nullable=True
+    )
     avg_sentence_length: Mapped[float] = mapped_column(Float, default=0)
     lexical_diversity: Mapped[float] = mapped_column(Float, default=0)
     diplo_vocab_score: Mapped[float] = mapped_column(Float, default=0)
@@ -357,21 +361,33 @@ class Segment(Base):
     emotion_category: Mapped[str | None] = mapped_column(Text, nullable=True)
     key_phrases: Mapped[str | None] = mapped_column(Text, nullable=True)
     tfidf_keywords: Mapped[str | None] = mapped_column(Text, nullable=True)
-    topic_scores: Mapped[dict | list | None] = mapped_column(JSON, nullable=True)
+    topic_scores: Mapped[dict[str, Any] | list[Any] | None] = mapped_column(
+        JSON, nullable=True
+    )
     dominant_topic: Mapped[str | None] = mapped_column(Text, nullable=True)
-    entities_gpe: Mapped[dict | list | None] = mapped_column(JSON, nullable=True)
-    entities_org: Mapped[dict | list | None] = mapped_column(JSON, nullable=True)
-    entities_person: Mapped[dict | list | None] = mapped_column(JSON, nullable=True)
-    risk_signals: Mapped[dict | list | None] = mapped_column(JSON, nullable=True)
+    entities_gpe: Mapped[dict[str, Any] | list[Any] | None] = mapped_column(
+        JSON, nullable=True
+    )
+    entities_org: Mapped[dict[str, Any] | list[Any] | None] = mapped_column(
+        JSON, nullable=True
+    )
+    entities_person: Mapped[dict[str, Any] | list[Any] | None] = mapped_column(
+        JSON, nullable=True
+    )
+    risk_signals: Mapped[dict[str, Any] | list[Any] | None] = mapped_column(
+        JSON, nullable=True
+    )
     risk_score: Mapped[int] = mapped_column(Integer, default=0)
     demand_count: Mapped[int] = mapped_column(Integer, default=0)
-    rhetoric_patterns: Mapped[dict | list | None] = mapped_column(JSON, nullable=True)
+    rhetoric_patterns: Mapped[dict[str, Any] | list[Any] | None] = mapped_column(
+        JSON, nullable=True
+    )
     risk_trend: Mapped[str | None] = mapped_column(Text, nullable=True)
     risk_trajectory: Mapped[str | None] = mapped_column(Text, nullable=True)
     intro_sentiment: Mapped[float] = mapped_column(Float, default=0)
     develop_sentiment: Mapped[float] = mapped_column(Float, default=0)
     concl_sentiment: Mapped[float] = mapped_column(Float, default=0)
-    demand_concentration: Mapped[dict | list | None] = mapped_column(
+    demand_concentration: Mapped[dict[str, Any] | list[Any] | None] = mapped_column(
         JSON, nullable=True
     )
     sbi_score: Mapped[float] = mapped_column(Float, default=0)
@@ -470,11 +486,19 @@ class Sentence(Base):
     diplo_compound: Mapped[float] = mapped_column(Float, default=0)
     emotion_category: Mapped[str | None] = mapped_column(Text, nullable=True)
     dominant_topic: Mapped[str | None] = mapped_column(Text, nullable=True)
-    topic_scores: Mapped[dict | list | None] = mapped_column(JSON, nullable=True)
-    risk_signals: Mapped[dict | list | None] = mapped_column(JSON, nullable=True)
+    topic_scores: Mapped[dict[str, Any] | list[Any] | None] = mapped_column(
+        JSON, nullable=True
+    )
+    risk_signals: Mapped[dict[str, Any] | list[Any] | None] = mapped_column(
+        JSON, nullable=True
+    )
     risk_score: Mapped[int] = mapped_column(Integer, default=0)
-    entities_gpe: Mapped[dict | list | None] = mapped_column(JSON, nullable=True)
-    entities_person: Mapped[dict | list | None] = mapped_column(JSON, nullable=True)
+    entities_gpe: Mapped[dict[str, Any] | list[Any] | None] = mapped_column(
+        JSON, nullable=True
+    )
+    entities_person: Mapped[dict[str, Any] | list[Any] | None] = mapped_column(
+        JSON, nullable=True
+    )
     demand_type: Mapped[str | None] = mapped_column(Text, nullable=True)
     demand_weight: Mapped[float] = mapped_column(Float, default=0)
     demand_category: Mapped[str | None] = mapped_column(Text, nullable=True)
@@ -487,7 +511,9 @@ class Sentence(Base):
     face_threat_count: Mapped[int] = mapped_column(Integer, default=0)
     face_save_count: Mapped[int] = mapped_column(Integer, default=0)
     dominant_frame: Mapped[str | None] = mapped_column(Text, nullable=True)
-    evidence_types: Mapped[dict | list | None] = mapped_column(JSON, nullable=True)
+    evidence_types: Mapped[dict[str, Any] | list[Any] | None] = mapped_column(
+        JSON, nullable=True
+    )
     appraisal_attitude: Mapped[str | None] = mapped_column(Text, nullable=True)
     audience_type: Mapped[str | None] = mapped_column(Text, nullable=True)
 
@@ -722,7 +748,9 @@ class CountryStat(Base):
     avg_sentiment: Mapped[float | None] = mapped_column(Float, nullable=True)
     dominant_emotion: Mapped[str | None] = mapped_column(Text, nullable=True)
     dominant_topic: Mapped[str | None] = mapped_column(Text, nullable=True)
-    topic_scores: Mapped[dict | list | None] = mapped_column(JSON, nullable=True)
+    topic_scores: Mapped[dict[str, Any] | list[Any] | None] = mapped_column(
+        JSON, nullable=True
+    )
 
     def to_domain(self) -> Metadata:
         from bb_paxdata.domain.models.metadata import Metadata
