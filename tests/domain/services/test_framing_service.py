@@ -3,15 +3,14 @@
 from unittest.mock import Mock
 
 import pytest
-
-from src.bb_paxdata.domain.enums import (
+from bb_paxdata.domain.enums import (
     AppraisalAttitude,
     AudienceType,
     EvidenceType,
     FrameType,
 )
-from src.bb_paxdata.domain.models.sentence import Sentence
-from src.bb_paxdata.domain.services.framing_service import FramingService
+from bb_paxdata.domain.models.sentence import Sentence
+from bb_paxdata.domain.services.framing_service import FramingService
 
 
 class TestFramingService:

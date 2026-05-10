@@ -1,9 +1,8 @@
 """Unit tests for HedgingService."""
 
 import pytest
-
-from src.bb_paxdata.domain.enums import HedgingType
-from src.bb_paxdata.domain.services.hedging_service import HedgingService
+from bb_paxdata.domain.enums import HedgingType
+from bb_paxdata.domain.services.hedging_service import HedgingService
 
 
 class TestHedgingService:

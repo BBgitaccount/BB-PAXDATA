@@ -3,9 +3,8 @@
 from unittest.mock import Mock
 
 import pytest
-
-from src.bb_paxdata.domain.enums import AnomalySeverity, AnomalyType
-from src.bb_paxdata.domain.services.cross_anomaly_service import CrossAnomalyService
+from bb_paxdata.domain.enums import AnomalySeverity, AnomalyType
+from bb_paxdata.domain.services.cross_anomaly_service import CrossAnomalyService
 
 
 class TestCrossAnomalyService:

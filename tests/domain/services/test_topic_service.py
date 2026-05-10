@@ -3,9 +3,8 @@
 from unittest.mock import patch
 
 import pytest
-
-from src.bb_paxdata.domain.enums import TopicCategory
-from src.bb_paxdata.domain.services.topic_service import TopicService
+from bb_paxdata.domain.enums import TopicCategory
+from bb_paxdata.domain.services.topic_service import TopicService
 
 
 class TestTopicService:

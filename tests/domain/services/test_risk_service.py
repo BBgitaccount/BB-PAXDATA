@@ -3,11 +3,10 @@
 from unittest.mock import Mock
 
 import pytest
-
-from src.bb_paxdata.domain.enums import RiskLevel
-from src.bb_paxdata.domain.models.segment import Segment
-from src.bb_paxdata.domain.models.sentence import Sentence
-from src.bb_paxdata.domain.services.risk_service import RiskService
+from bb_paxdata.domain.enums import RiskLevel
+from bb_paxdata.domain.models.segment import Segment
+from bb_paxdata.domain.models.sentence import Sentence
+from bb_paxdata.domain.services.risk_service import RiskService
 
 
 class TestRiskService:
