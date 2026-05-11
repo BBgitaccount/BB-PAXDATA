@@ -7,22 +7,22 @@ from bb_paxdata.domain.models.analysis import Analysis
 from bb_paxdata.domain.models.sentence import Sentence
 from bb_paxdata.domain.models.validation_result import ValidationResult
 from bb_paxdata.infrastructure.db import models as m
-from bb_paxdata.infrastructure.db.repositories.analysis_repo import AnalysisRepository
-from bb_paxdata.infrastructure.db.repositories.sentence_repo import SentenceRepository
+from bb_paxdata.infrastructure.db.repositories.analysis import AnalysisRepository
+from bb_paxdata.infrastructure.db.repositories.sentence import SentenceRepository
 
 from tests.infrastructure.db.repositories.conftest import seed_panel_speaker_segment
 
 
-def _seed_sentence(session) -> None:
-    seed_panel_speaker_segment(session)
-    SentenceRepository(session).add(
+async def _seed_sentence(session) -> None:
+    await seed_panel_speaker_segment(session)
+    await SentenceRepository(session).add(
         Sentence(id="s1", text="x", speaker_id="sp1", segment_id="seg1")
     )
-    session.commit()
+    await session.commit()
 
 
-def test_analysis_save_and_get_sentence_analysis(db_session) -> None:
-    _seed_sentence(db_session)
+async def test_analysis_save_and_get_sentence_analysis(db_session) -> None:
+    await _seed_sentence(db_session)
     repo = AnalysisRepository(db_session)
     analysis = Analysis(
         id="a1",
@@ -32,17 +32,17 @@ def test_analysis_save_and_get_sentence_analysis(db_session) -> None:
         sentiment_score=-0.2,
         confidence_score=0.9,
     )
-    repo.save_sentence_analysis(analysis)
-    db_session.commit()
+    await repo.save_sentence_analysis(analysis)
+    await db_session.commit()
 
-    loaded = repo.get_sentence_analysis("s1")
+    loaded = await repo.get_sentence_analysis("s1")
     assert loaded is not None
     assert loaded.sentence_id == "s1"
     assert loaded.risk_level == RiskLevel.HIGH
 
 
-def test_analysis_get_failures(db_session) -> None:
-    _seed_sentence(db_session)
+async def test_analysis_get_failures(db_session) -> None:
+    await _seed_sentence(db_session)
     db_session.add(
         m.AISentenceAnalysis(
             sent_id="s1",
@@ -55,25 +55,26 @@ def test_analysis_get_failures(db_session) -> None:
             logic_pass_count=0,
             logic_fail_count=1,
             from_cache=False,
+            prompt_version="v1",
         )
     )
-    db_session.commit()
+    await db_session.commit()
     repo = AnalysisRepository(db_session)
-    fails = repo.get_failures(panel_id="p1")
+    fails = await repo.get_failures(panel_id="p1")
     assert len(fails) >= 1
 
 
-def test_analysis_cache_roundtrip(db_session) -> None:
+async def test_analysis_cache_roundtrip(db_session) -> None:
     repo = AnalysisRepository(db_session)
-    repo.set_cache("h1", '{"x":1}', "m1", "b1")
-    db_session.commit()
-    meta = repo.get_cache("h1")
+    await repo.set_cache("h1", '{"x":1}', "m1", "b1")
+    await db_session.commit()
+    meta = await repo.get_cache("h1")
     assert meta is not None
     assert meta.entity_id == "h1"
 
 
-def test_validation_log_roundtrip(db_session) -> None:
-    _seed_sentence(db_session)
+async def test_validation_log_roundtrip(db_session) -> None:
+    await _seed_sentence(db_session)
     repo = AnalysisRepository(db_session)
     vr = ValidationResult(
         id="v1",
@@ -84,7 +85,7 @@ def test_validation_log_roundtrip(db_session) -> None:
         passed_checks=1,
         failed_checks=0,
     )
-    repo.save_validation_log(vr)
-    db_session.commit()
-    logs = repo.get_validation_log("s1")
+    await repo.save_validation_log(vr)
+    await db_session.commit()
+    logs = await repo.get_validation_log("s1")
     assert len(logs) == 1

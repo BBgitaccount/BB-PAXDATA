@@ -16,23 +16,23 @@ from bb_paxdata.domain.services.framing_service import FramingService
 class TestFramingService:
     """Test cases for FramingService."""
 
-    def setup_method(self):
+    async def setup_method(self):
         """Set up test fixtures."""
         self.service = FramingService()
 
-    def test_framing_service_initialization(self):
+    async def test_framing_service_initialization(self):
         """Test that FramingService initializes correctly."""
         assert self.service is not None
         assert self.service.confidence == 1.0
         assert self.service._ner_service is None
 
-    def test_framing_service_with_ner(self):
+    async def test_framing_service_with_ner(self):
         """Test FramingService initialization with NER service."""
         mock_ner = Mock()
         service = FramingService(ner_service=mock_ner)
         assert service._ner_service is mock_ner
 
-    def test_frame_lexicon_coverage(self):
+    async def test_frame_lexicon_coverage(self):
         """Test that frame lexicon has all required topics."""
         lexicon = self.service.FRAME_LEXICON
 
@@ -48,7 +48,7 @@ class TestFramingService:
             assert topic in lexicon
             assert len(lexicon[topic]) > 0
 
-    def test_infer_topic_gaza(self):
+    async def test_infer_topic_gaza(self):
         """Test topic inference for Gaza conflict."""
         text = "gaza palestine ceasefire humanitarian aid"
 
@@ -56,7 +56,7 @@ class TestFramingService:
 
         assert topic == "Gazze_Filistin_İsrail"
 
-    def test_infer_topic_ukraine(self):
+    async def test_infer_topic_ukraine(self):
         """Test topic inference for Ukraine conflict."""
         text = "ukraine russia invasion sovereignty kyiv"
 
@@ -64,7 +64,7 @@ class TestFramingService:
 
         assert topic == "Ukrayna_Rusya"
 
-    def test_infer_topic_un_reform(self):
+    async def test_infer_topic_un_reform(self):
         """Test topic inference for UN reform."""
         text = "united nations security council reform veto"
 
@@ -72,7 +72,7 @@ class TestFramingService:
 
         assert topic == "BM_Reformu"
 
-    def test_infer_topic_no_match(self):
+    async def test_infer_topic_no_match(self):
         """Test topic inference with no matching topic."""
         text = "This is a simple sentence."
 
@@ -80,7 +80,7 @@ class TestFramingService:
 
         assert topic is None
 
-    def test_detect_frame_type_conflict(self):
+    async def test_detect_frame_type_conflict(self):
         """Test conflict frame detection."""
         text = "war conflict military aggression"
         topic = "Güvenlik_Çatışma"
@@ -89,7 +89,7 @@ class TestFramingService:
 
         assert frame == FrameType.CONFLICT
 
-    def test_detect_frame_type_humanitarian(self):
+    async def test_detect_frame_type_humanitarian(self):
         """Test humanitarian frame detection."""
         text = "humanitarian aid refugees civilians suffering"
         topic = "Gazze_Filistin_İsrail"
@@ -98,7 +98,7 @@ class TestFramingService:
 
         assert frame == FrameType.HUMANITARIAN
 
-    def test_detect_frame_type_neutral(self):
+    async def test_detect_frame_type_neutral(self):
         """Test neutral frame detection."""
         text = "This is a simple sentence."
 
@@ -106,7 +106,7 @@ class TestFramingService:
 
         assert frame == FrameType.NEUTRAL
 
-    def test_classify_evidence_statistical(self):
+    async def test_classify_evidence_statistical(self):
         """Test statistical evidence classification."""
         text = "The data shows statistics indicate 50 percent rate"
 
@@ -114,7 +114,7 @@ class TestFramingService:
 
         assert EvidenceType.STATISTICAL in evidence
 
-    def test_classify_evidence_expert(self):
+    async def test_classify_evidence_expert(self):
         """Test expert evidence classification."""
         text = "According to experts specialists and academic research"
 
@@ -122,7 +122,7 @@ class TestFramingService:
 
         assert EvidenceType.EXPERT in evidence
 
-    def test_classify_evidence_historical(self):
+    async def test_classify_evidence_historical(self):
         """Test historical evidence classification."""
         text = "Historically in the past traditionally as history shows"
 
@@ -130,7 +130,7 @@ class TestFramingService:
 
         assert EvidenceType.HISTORICAL in evidence
 
-    def test_classify_evidence_no_evidence(self):
+    async def test_classify_evidence_no_evidence(self):
         """Test evidence classification with no evidence types."""
         text = "This is a simple statement."
 
@@ -138,7 +138,7 @@ class TestFramingService:
 
         assert evidence == [EvidenceType.NONE]
 
-    def test_appraisal_score_positive(self):
+    async def test_appraisal_score_positive(self):
         """Test positive appraisal attitude."""
         text = "This is good positive beneficial helpful"
 
@@ -146,7 +146,7 @@ class TestFramingService:
 
         assert appraisal == AppraisalAttitude.POSITIVE
 
-    def test_appraisal_score_negative(self):
+    async def test_appraisal_score_negative(self):
         """Test negative appraisal attitude."""
         text = "This is bad negative harmful dangerous"
 
@@ -154,7 +154,7 @@ class TestFramingService:
 
         assert appraisal == AppraisalAttitude.NEGATIVE
 
-    def test_appraisal_score_neutral(self):
+    async def test_appraisal_score_neutral(self):
         """Test neutral appraisal attitude."""
         text = "This is neutral objective balanced impartial"
 
@@ -162,7 +162,7 @@ class TestFramingService:
 
         assert appraisal == AppraisalAttitude.NEUTRAL
 
-    def test_appraisal_score_mixed(self):
+    async def test_appraisal_score_mixed(self):
         """Test mixed appraisal attitude."""
         text = "This has good and bad aspects"
 
@@ -170,7 +170,7 @@ class TestFramingService:
 
         assert appraisal == AppraisalAttitude.NEUTRAL
 
-    def test_detect_audience_international(self):
+    async def test_detect_audience_international(self):
         """Test international audience detection."""
         text = "united nations international global foreign countries"
 
@@ -178,7 +178,7 @@ class TestFramingService:
 
         assert audience == AudienceType.INTERNATIONAL
 
-    def test_detect_audience_domestic(self):
+    async def test_detect_audience_domestic(self):
         """Test domestic audience detection."""
         text = "domestic national local internal citizens"
 
@@ -186,7 +186,7 @@ class TestFramingService:
 
         assert audience == AudienceType.DOMESTIC
 
-    def test_detect_audience_expert(self):
+    async def test_detect_audience_expert(self):
         """Test expert audience detection."""
         text = "expert technical professional specialized academic"
 
@@ -194,7 +194,7 @@ class TestFramingService:
 
         assert audience == AudienceType.EXPERT
 
-    def test_detect_audience_general(self):
+    async def test_detect_audience_general(self):
         """Test general audience detection."""
         text = "people public society community everyone"
 
@@ -202,7 +202,7 @@ class TestFramingService:
 
         assert audience == AudienceType.GENERAL
 
-    def test_detect_audience_with_ner(self):
+    async def test_detect_audience_with_ner(self):
         """Test audience detection with NER entities."""
         mock_ner = Mock()
         mock_ner.extract_entities.return_value = {"GPE": ["syria", "turkey"]}
@@ -215,7 +215,7 @@ class TestFramingService:
         assert audience == AudienceType.INTERNATIONAL
         mock_ner.extract_entities.assert_called_once_with(text)
 
-    def test_calculate_confidence_basic(self):
+    async def test_calculate_confidence_basic(self):
         """Test confidence calculation."""
         confidence = self.service._calculate_confidence(
             "test text", FrameType.CONFLICT, [EvidenceType.STATISTICAL]
@@ -223,7 +223,7 @@ class TestFramingService:
 
         assert 0.0 <= confidence <= 1.0
 
-    def test_calculate_confidence_neutral_frame(self):
+    async def test_calculate_confidence_neutral_frame(self):
         """Test confidence calculation with neutral frame."""
         confidence = self.service._calculate_confidence(
             "test text", FrameType.NEUTRAL, [EvidenceType.STATISTICAL]
@@ -232,7 +232,7 @@ class TestFramingService:
         # Should be lower for neutral frame
         assert confidence < 0.7
 
-    def test_calculate_confidence_no_evidence(self):
+    async def test_calculate_confidence_no_evidence(self):
         """Test confidence calculation with no evidence."""
         confidence = self.service._calculate_confidence(
             "short", FrameType.CONFLICT, [EvidenceType.NONE]
@@ -241,7 +241,7 @@ class TestFramingService:
         # Should be lower for no evidence
         assert confidence < 0.8
 
-    def test_detect_frame_complete_analysis(self):
+    async def test_detect_frame_complete_analysis(self):
         """Test complete frame detection analysis."""
         text = "war conflict causes humanitarian crisis according to statistics"
         sentence = Sentence(id="1", text=text)
@@ -260,7 +260,7 @@ class TestFramingService:
         assert EvidenceType.STATISTICAL in result.evidence_types
         assert 0.0 <= result.confidence <= 1.0
 
-    def test_detect_frame_without_topic(self):
+    async def test_detect_frame_without_topic(self):
         """Test frame detection without explicit topic."""
         text = "united nations security council reform"
         sentence = Sentence(id="1", text=text)
@@ -270,7 +270,7 @@ class TestFramingService:
         assert result.frame_type == FrameType.REFORM
         assert result.confidence > 0.0
 
-    def test_detect_frame_mixed_signals(self):
+    async def test_detect_frame_mixed_signals(self):
         """Test frame detection with mixed signals."""
         text = "war conflict but also peace cooperation"
         sentence = Sentence(id="1", text=text)
@@ -283,7 +283,7 @@ class TestFramingService:
             FrameType.NEUTRAL,
         ]
 
-    def test_edge_case_complex_diplomatic_text(self):
+    async def test_edge_case_complex_diplomatic_text(self):
         """Test with complex diplomatic text."""
         text = (
             "The united nations security council reform is essential for "
@@ -301,7 +301,7 @@ class TestFramingService:
         ]
         assert result.confidence > 0.0
 
-    def test_edge_case_no_framing_signals(self):
+    async def test_edge_case_no_framing_signals(self):
         """Test with no framing signals."""
         text = "This is a simple statement."
         sentence = Sentence(id="1", text=text)
@@ -311,7 +311,7 @@ class TestFramingService:
         assert result.frame_type == FrameType.NEUTRAL
         assert result.confidence < 0.7
 
-    def test_edge_case_very_long_text(self):
+    async def test_edge_case_very_long_text(self):
         """Test with very long text."""
         text = "conflict war " * 50
         sentence = Sentence(id="1", text=text)
@@ -321,7 +321,7 @@ class TestFramingService:
         assert result.frame_type == FrameType.CONFLICT
         assert result.confidence > 0.0
 
-    def test_case_insensitive_detection(self):
+    async def test_case_insensitive_detection(self):
         """Test that frame detection is case insensitive."""
         text_lower = "war conflict"
         text_upper = "WAR CONFLICT"
@@ -334,7 +334,7 @@ class TestFramingService:
 
         assert result_lower.frame_type == result_upper.frame_type
 
-    def test_multiple_evidence_types(self):
+    async def test_multiple_evidence_types(self):
         """Test detection of multiple evidence types."""
         text = "According to experts, historical data and statistics show"
         sentence = Sentence(id="1", text=text)

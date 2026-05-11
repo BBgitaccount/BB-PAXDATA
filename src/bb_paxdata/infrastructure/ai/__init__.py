@@ -1,14 +1,22 @@
-"""AI infrastructure layer for BB-PAXDATA.
-
-This package contains the AI-related infrastructure components including
-AI analysts, fail check systems, and other AI services that interface
-with external AI providers (Ollama, Anthropic, Gemini, Groq).
-"""
-
-from .analyst import AIAnalyst
-from .fail_check import AIFailCheck
+from .anthropic import AnthropicClient
+from .base import AIClient, CompletionOptions, CompletionResult
+from .batch import BatchItem, BatchProcessor, BatchResult, BatchStats
+from .factory import AIClientFactory
+from .gemini import GeminiClient
+from .groq import GroqClient
+from .ollama import OllamaClient
 
 __all__ = [
-    "AIAnalyst",
-    "AIFailCheck",
+    "AIClient",
+    "CompletionOptions",
+    "CompletionResult",
+    "OllamaClient",
+    "AnthropicClient",
+    "GeminiClient",
+    "GroqClient",
+    "AIClientFactory",
+    "BatchProcessor",
+    "BatchItem",
+    "BatchResult",
+    "BatchStats",
 ]

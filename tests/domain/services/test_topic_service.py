@@ -10,18 +10,18 @@ from bb_paxdata.domain.services.topic_service import TopicService
 class TestTopicService:
     """Test cases for TopicService."""
 
-    def setup_method(self):
+    async def setup_method(self):
         """Set up test fixtures."""
         self.service = TopicService()
 
-    def test_topic_service_initialization(self):
+    async def test_topic_service_initialization(self):
         """Test that TopicService initializes correctly."""
         assert self.service is not None
         assert self.service.confidence == 1.0
         assert hasattr(self.service, "KW_WEIGHTS")
         assert hasattr(self.service, "TOPICS")
 
-    def test_topics_coverage(self):
+    async def test_topics_coverage(self):
         """Test that topics dictionary has all required topics."""
         topics = self.service.TOPICS
 
@@ -47,7 +47,7 @@ class TestTopicService:
             assert topic in topics
             assert len(topics[topic]) > 0
 
-    def test_keyword_weights_calculation(self):
+    async def test_keyword_weights_calculation(self):
         """Test that keyword weights are calculated correctly."""
         weights = self.service.KW_WEIGHTS
 
@@ -60,7 +60,7 @@ class TestTopicService:
             assert keyword in weights
             assert weights[keyword] > 0.0
 
-    def test_weighted_topic_score_basic(self):
+    async def test_weighted_topic_score_basic(self):
         """Test basic weighted topic scoring."""
         text = "united nations security council reform"
 
@@ -70,7 +70,7 @@ class TestTopicService:
         assert "BM_Reformu" in scores
         assert scores["BM_Reformu"] > 0.0
 
-    def test_weighted_topic_score_multiple_topics(self):
+    async def test_weighted_topic_score_multiple_topics(self):
         """Test topic scoring with multiple topic matches."""
         text = "united nations security council reform and economic cooperation"
 
@@ -79,7 +79,7 @@ class TestTopicService:
         assert scores["BM_Reformu"] > 0.0
         assert scores["Ekonomi_Ticaret_Enerji"] > 0.0
 
-    def test_weighted_topic_score_with_tfidf(self):
+    async def test_weighted_topic_score_with_tfidf(self):
         """Test topic scoring with TF-IDF enhancement."""
         text = "united nations security council reform"
         tfidf_keywords = ["united nations", "security council", "reform"]
@@ -91,7 +91,7 @@ class TestTopicService:
         scores_without_tfidf = self.service.weighted_topic_score(text)
         assert scores["BM_Reformu"] >= scores_without_tfidf["BM_Reformu"]
 
-    def test_weighted_topic_score_no_matches(self):
+    async def test_weighted_topic_score_no_matches(self):
         """Test topic scoring with no keyword matches."""
         text = "This is a simple sentence with no topic keywords."
 
@@ -100,7 +100,7 @@ class TestTopicService:
         for score in scores.values():
             assert score == 0.0
 
-    def test_topic_specificity_single_topic(self):
+    async def test_topic_specificity_single_topic(self):
         """Test topic specificity with single dominant topic."""
         scores = {"BM_Reformu": 10.0, "Güvenlik_Çatışma": 0.0}
 
@@ -108,7 +108,7 @@ class TestTopicService:
 
         assert specificity == 1.0  # Perfect specificity
 
-    def test_topic_specificity_multiple_topics(self):
+    async def test_topic_specificity_multiple_topics(self):
         """Test topic specificity with multiple topics."""
         scores = {"BM_Reformu": 5.0, "Güvenlik_Çatışma": 5.0}
 
@@ -117,7 +117,7 @@ class TestTopicService:
         assert specificity < 1.0  # Less than perfect specificity
         assert specificity > 0.0  # Still some specificity
 
-    def test_topic_specificity_no_topics(self):
+    async def test_topic_specificity_no_topics(self):
         """Test topic specificity with no topic scores."""
         scores = {}
 
@@ -125,7 +125,7 @@ class TestTopicService:
 
         assert specificity == 0.0
 
-    def test_topic_specificity_equal_distribution(self):
+    async def test_topic_specificity_equal_distribution(self):
         """Test topic specificity with equal distribution."""
         scores = {
             "BM_Reformu": 1.0,
@@ -138,7 +138,7 @@ class TestTopicService:
         # Should be low specificity due to equal distribution
         assert specificity < 0.5
 
-    def test_get_dominant_topic_basic(self):
+    async def test_get_dominant_topic_basic(self):
         """Test dominant topic identification."""
         scores = {"BM_Reformu": 5.0, "Güvenlik_Çatışma": 2.0}
 
@@ -146,7 +146,7 @@ class TestTopicService:
 
         assert dominant == TopicCategory.UN_REFORM
 
-    def test_get_dominant_topic_no_scores(self):
+    async def test_get_dominant_topic_no_scores(self):
         """Test dominant topic with no scores."""
         scores = {}
 
@@ -154,7 +154,7 @@ class TestTopicService:
 
         assert dominant == TopicCategory.NONE
 
-    def test_get_dominant_topic_all_zeros(self):
+    async def test_get_dominant_topic_all_zeros(self):
         """Test dominant topic with all zero scores."""
         scores = {"BM_Reformu": 0.0, "Güvenlik_Çatışma": 0.0}
 
@@ -162,14 +162,14 @@ class TestTopicService:
 
         assert dominant == TopicCategory.NONE
 
-    def test_get_dominant_topic_mapping(self):
+    async def test_get_dominant_topic_mapping(self):
         """Test that all topics map to categories correctly."""
         for topic_name in self.service.TOPICS.keys():
             scores = {topic_name: 1.0}
             dominant = self.service.get_dominant_topic(scores)
             assert dominant != TopicCategory.NONE
 
-    def test_tfidf_batch_without_sklearn(self):
+    async def test_tfidf_batch_without_sklearn(self):
         """Test TF-IDF batch processing without scikit-learn."""
         texts = ["text one", "text two", "text three"]
 
@@ -182,7 +182,7 @@ class TestTopicService:
         assert all(keywords == [] for keywords in result)
 
     @patch("src.bb_paxdata.domain.services.topic_service.TopicService.HAS_TFIDF", True)
-    def test_tfidf_batch_with_sklearn_import_error(self):
+    async def test_tfidf_batch_with_sklearn_import_error(self):
         """Test TF-IDF batch processing with ImportError."""
         texts = ["text one", "text two"]
 
@@ -195,7 +195,7 @@ class TestTopicService:
         assert len(result) == len(texts)
         assert all(keywords == [] for keywords in result)
 
-    def test_analyze_topics_basic(self):
+    async def test_analyze_topics_basic(self):
         """Test basic topic analysis."""
         text = "united nations security council reform"
 
@@ -211,7 +211,7 @@ class TestTopicService:
         assert result.specificity > 0.0
         assert 0.0 <= result.confidence <= 1.0
 
-    def test_analyze_topics_with_tfidf(self):
+    async def test_analyze_topics_with_tfidf(self):
         """Test topic analysis with TF-IDF keywords."""
         text = "united nations security council reform"
         tfidf_keywords = ["united nations", "security council"]
@@ -221,7 +221,7 @@ class TestTopicService:
         assert result.dominant_topic == TopicCategory.UN_REFORM
         assert result.specificity > 0.0
 
-    def test_analyze_topics_no_keywords(self):
+    async def test_analyze_topics_no_keywords(self):
         """Test topic analysis with no matching keywords."""
         text = "This is a simple sentence."
 
@@ -231,7 +231,7 @@ class TestTopicService:
         assert result.specificity == 0.0
         assert result.confidence == 0.0
 
-    def test_analyze_topics_complex_text(self):
+    async def test_analyze_topics_complex_text(self):
         """Test topic analysis with complex text."""
         text = (
             "The united nations security council reform is important for "
@@ -244,7 +244,7 @@ class TestTopicService:
         assert result.specificity > 0.0
         assert result.confidence > 0.0
 
-    def test_confidence_calculation(self):
+    async def test_confidence_calculation(self):
         """Test confidence calculation."""
         # High specificity text
         high_specificity_text = "united nations security council reform veto charter"
@@ -257,7 +257,7 @@ class TestTopicService:
         # High specificity should have higher confidence
         assert high_result.confidence >= low_result.confidence
 
-    def test_edge_case_very_long_text(self):
+    async def test_edge_case_very_long_text(self):
         """Test topic analysis with very long text."""
         text = "united nations security council " * 50
 
@@ -266,7 +266,7 @@ class TestTopicService:
         assert result.dominant_topic == TopicCategory.UN_REFORM
         assert result.specificity > 0.0
 
-    def test_edge_case_special_characters(self):
+    async def test_edge_case_special_characters(self):
         """Test topic analysis with special characters."""
         text = "The united nations security council reform is important!"
 
@@ -274,7 +274,7 @@ class TestTopicService:
 
         assert result.dominant_topic == TopicCategory.UN_REFORM
 
-    def test_edge_case_mixed_case(self):
+    async def test_edge_case_mixed_case(self):
         """Test topic analysis with mixed case."""
         text_lower = "united nations security council reform"
         text_upper = "UNITED NATIONS SECURITY COUNCIL REFORM"
@@ -290,7 +290,7 @@ class TestTopicService:
             == result_mixed.dominant_topic
         )
 
-    def test_infer_topic(self):
+    async def test_infer_topic(self):
         """Test topic inference from text."""
         text = "united nations security council reform"
 
@@ -298,7 +298,7 @@ class TestTopicService:
 
         assert inferred_topic == "BM_Reformu"
 
-    def test_infer_topic_no_match(self):
+    async def test_infer_topic_no_match(self):
         """Test topic inference with no matching topic."""
         text = "This is a simple sentence."
 
@@ -306,7 +306,7 @@ class TestTopicService:
 
         assert inferred_topic is None
 
-    def test_phrase_bonus_in_weights(self):
+    async def test_phrase_bonus_in_weights(self):
         """Test that multi-word phrases get weight bonus."""
         # Find a multi-word phrase and single word
         multi_word_phrase = None

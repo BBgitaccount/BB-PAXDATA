@@ -2,9 +2,9 @@
 
 from bb_paxdata.infrastructure.db.base import Base
 from bb_paxdata.infrastructure.db.repositories import (
-    AbstractRepository,
     AbstractUnitOfWork,
     AnalysisRepository,
+    BaseRepository,
     SegmentRepository,
     SentenceRepository,
     SqlAlchemyUnitOfWork,
@@ -18,10 +18,10 @@ from bb_paxdata.infrastructure.db.session import (
 )
 
 __all__ = [
-    "AbstractRepository",
     "AbstractUnitOfWork",
     "AnalysisRepository",
     "Base",
+    "BaseRepository",
     "DATABASE_URL",
     "SegmentRepository",
     "SentenceRepository",

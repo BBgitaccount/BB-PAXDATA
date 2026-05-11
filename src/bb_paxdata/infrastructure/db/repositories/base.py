@@ -1,27 +1,65 @@
-"""Abstract repository interface."""
+from __future__ import annotations
 
-from abc import ABC, abstractmethod
-from typing import Generic, TypeVar
+from collections.abc import Sequence
+from typing import Any, Generic, TypeVar
 
-T = TypeVar("T")
+from sqlalchemy import select
+from sqlalchemy.ext.asyncio import AsyncSession
+
+from bb_paxdata.infrastructure.db.base import Base
+
+ModelT = TypeVar("ModelT", bound=Base)
 
 
-class AbstractRepository(ABC, Generic[T]):
-    """Generic persistence port; implementations map ORM rows to domain models."""
+class BaseRepository(Generic[ModelT]):
+    """Generic async base repository for ORM models."""
 
-    @abstractmethod
-    def get(self, entity_id: str) -> T | None:
-        """Return a single domain entity by primary identifier."""
+    model_class: type[ModelT]
 
-    @abstractmethod
-    def add(self, entity: T) -> None:
-        """Stage a new domain entity for insert on flush/commit."""
+    def __init__(self, session: AsyncSession) -> None:
+        self._session = session
 
-    def add_many(self, entities: list[T]) -> None:
-        """Stage multiple new entities (default: repeated ``add``)."""
+    async def get_by_id(self, record_id: Any) -> ModelT | None:
+        """Get a single record by primary key."""
+        from sqlalchemy import inspect
+
+        pk_column = inspect(self.model_class).primary_key[0]
+        stmt = select(self.model_class).where(pk_column == record_id)
+        result = await self._session.execute(stmt)
+        return result.scalar_one_or_none()
+
+    async def get_all(self, limit: int | None = None) -> Sequence[ModelT]:
+        """Get all records, optionally limited."""
+        stmt = select(self.model_class)
+        if limit:
+            stmt = stmt.limit(limit)
+        result = await self._session.execute(stmt)
+        return result.scalars().all()
+
+    async def add(self, entity: ModelT) -> ModelT:
+        """Add a new entity and return it."""
+        self._session.add(entity)
+        await self._session.flush()
+        return entity
+
+    async def add_many(self, entities: list[Any]) -> None:
+        """Add multiple entities in bulk."""
         for entity in entities:
-            self.add(entity)
+            await self.add(entity)
+        await self._session.flush()
 
-    @abstractmethod
-    def remove(self, entity: T) -> None:
-        """Delete the given domain entity (resolved via ORM in concrete repos)."""
+    async def delete_by_id(self, record_id: Any) -> None:
+        """Delete a record by primary key."""
+        entity = await self.get_by_id(record_id)
+        if entity:
+            await self._session.delete(entity)
+            await self._session.flush()
+
+    async def exists(self, record_id: Any) -> bool:
+        """Check if a record exists by primary key."""
+        from sqlalchemy import inspect
+
+        pk_column = inspect(self.model_class).primary_key[0]
+        stmt = select(self.model_class).where(pk_column == record_id)
+        result = await self._session.execute(stmt)
+        return result.scalar_one_or_none() is not None

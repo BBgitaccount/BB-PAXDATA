@@ -1,47 +1,57 @@
 """In-memory SQLite engine shared across repository tests."""
 
-from collections.abc import Callable, Generator
+from collections.abc import AsyncGenerator, Callable
 
 import pytest
 from bb_paxdata.infrastructure.db import models as m
 from bb_paxdata.infrastructure.db.base import Base
-from sqlalchemy import create_engine
-from sqlalchemy.orm import Session, sessionmaker
+from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_async_engine
 from sqlalchemy.pool import StaticPool
 
 
 @pytest.fixture
-def session_factory() -> Generator[Callable[[], Session], None, None]:
-    engine = create_engine(
-        "sqlite://",
+async def session_factory() -> AsyncGenerator[Callable[[], AsyncSession], None]:
+    engine = create_async_engine(
+        "sqlite+aiosqlite://",
         connect_args={"check_same_thread": False},
         poolclass=StaticPool,
     )
-    Base.metadata.create_all(engine)
-    factory = sessionmaker(bind=engine, autocommit=False, autoflush=False)
+    async with engine.begin() as conn:
+        await conn.run_sync(Base.metadata.create_all)
+
+    factory = async_sessionmaker(
+        bind=engine, autocommit=False, autoflush=False, class_=AsyncSession
+    )
     yield factory
-    Base.metadata.drop_all(engine)
-    engine.dispose()
+
+    async with engine.begin() as conn:
+        await conn.run_sync(Base.metadata.drop_all)
+    await engine.dispose()
 
 
 @pytest.fixture
-def db_session() -> Generator[Session, None, None]:
-    engine = create_engine(
-        "sqlite://",
+async def db_session() -> AsyncGenerator[AsyncSession, None]:
+    engine = create_async_engine(
+        "sqlite+aiosqlite://",
         connect_args={"check_same_thread": False},
         poolclass=StaticPool,
     )
-    Base.metadata.create_all(engine)
-    SessionTesting = sessionmaker(bind=engine, autocommit=False, autoflush=False)
-    session = SessionTesting()
-    yield session
-    session.rollback()
-    session.close()
-    Base.metadata.drop_all(engine)
-    engine.dispose()
+    async with engine.begin() as conn:
+        await conn.run_sync(Base.metadata.create_all)
+
+    SessionTesting = async_sessionmaker(
+        bind=engine, autocommit=False, autoflush=False, class_=AsyncSession
+    )
+    async with SessionTesting() as session:
+        yield session
+        await session.rollback()
+
+    async with engine.begin() as conn:
+        await conn.run_sync(Base.metadata.drop_all)
+    await engine.dispose()
 
 
-def seed_panel_speaker_segment(session: Session) -> None:
+async def seed_panel_speaker_segment(session: AsyncSession) -> None:
     session.add(
         m.Panel(
             panel_id="p1",
@@ -55,7 +65,7 @@ def seed_panel_speaker_segment(session: Session) -> None:
             full_name="Speaker One",
         )
     )
-    session.flush()
+    await session.flush()
     from bb_paxdata.domain.models.segment import Segment as SegmentDomain
 
     seg = SegmentDomain(
@@ -66,4 +76,4 @@ def seed_panel_speaker_segment(session: Session) -> None:
         sentence_count=1,
     )
     session.add(m.Segment.from_domain(seg))
-    session.commit()
+    await session.commit()

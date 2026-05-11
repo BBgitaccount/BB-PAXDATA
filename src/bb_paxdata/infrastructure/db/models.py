@@ -409,6 +409,10 @@ class Segment(Base):
         back_populates="segment", uselist=False
     )
 
+    @property
+    def id(self) -> str:
+        return self.seg_id
+
     def to_domain(self) -> SegmentDomain:
         from bb_paxdata.domain.enums import TopicCategory
         from bb_paxdata.domain.models.segment import Segment as SegmentDomainModel
@@ -516,14 +520,28 @@ class Sentence(Base):
     )
     appraisal_attitude: Mapped[str | None] = mapped_column(Text, nullable=True)
     audience_type: Mapped[str | None] = mapped_column(Text, nullable=True)
+    ai_analyzed: Mapped[int] = mapped_column(
+        Integer, default=0
+    )  # 0 = not analyzed, 1 = analyzed
+    logic_result: Mapped[str | None] = mapped_column(
+        Text, nullable=True
+    )  # 'PASS' | 'FAIL' | None
 
     segment: Mapped[Segment] = relationship(back_populates="sentences")
-    ai_analysis: Mapped[AISentenceAnalysis | None] = relationship(
-        back_populates="sentence", uselist=False
-    )
     ai_demand_analyses: Mapped[list[AIDemandAnalysis]] = relationship(
         back_populates="sentence"
     )
+    ai_analysis: Mapped[AISentenceAnalysis | None] = relationship(
+        back_populates="sentence", uselist=False
+    )
+
+    @property
+    def id(self) -> str:
+        return self.sent_id
+
+    @property
+    def segment_id(self) -> str:
+        return self.seg_id
 
     def to_domain(self) -> SentenceDomain:
         from bb_paxdata.domain.enums import (
@@ -1131,8 +1149,11 @@ class AISentenceAnalysis(Base):
 
     ai_id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
     sent_id: Mapped[str] = mapped_column(
-        ForeignKey("sentences.sent_id"), unique=True, nullable=False
+        ForeignKey("sentences.sent_id"), nullable=False
     )
+    prompt_version: Mapped[str] = mapped_column(
+        Text, nullable=False
+    )  # Part of composite PK
     seg_id: Mapped[str | None] = mapped_column(Text, nullable=True)
     panel_id: Mapped[str | None] = mapped_column(Text, nullable=True)
     speaker_name: Mapped[str | None] = mapped_column(Text, nullable=True)
@@ -1181,6 +1202,34 @@ class AISentenceAnalysis(Base):
     logic_fail_reasons: Mapped[str | None] = mapped_column(Text, nullable=True)
     logic_pass_count: Mapped[int] = mapped_column(Integer, default=0)
     logic_fail_count: Mapped[int] = mapped_column(Integer, default=0)
+    backend: Mapped[str | None] = mapped_column(
+        Text, nullable=True
+    )  # "local" | "api" | "gemini" | "groq"
+    model_name: Mapped[str | None] = mapped_column(Text, nullable=True)
+    ai_sentiment: Mapped[str | None] = mapped_column(Text, nullable=True)
+    ai_emotion: Mapped[str | None] = mapped_column(Text, nullable=True)
+    ai_risk_score: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    ai_risk_level: Mapped[str | None] = mapped_column(Text, nullable=True)
+    ai_demand_type: Mapped[str | None] = mapped_column(Text, nullable=True)
+    ai_topic: Mapped[str | None] = mapped_column(Text, nullable=True)
+    ai_hedging_score: Mapped[float | None] = mapped_column(Float, nullable=True)
+    ai_frame_type: Mapped[str | None] = mapped_column(Text, nullable=True)
+    ai_manipulation_score: Mapped[float | None] = mapped_column(Float, nullable=True)
+    ai_politeness_score: Mapped[float | None] = mapped_column(Float, nullable=True)
+    ai_evidence_type: Mapped[str | None] = mapped_column(Text, nullable=True)
+    logic_result: Mapped[str | None] = mapped_column(
+        Text, nullable=True
+    )  # 'PASS' | 'FAIL' | None
+    validation_flags: Mapped[dict[str, Any] | None] = mapped_column(JSON, nullable=True)
+    raw_response: Mapped[str | None] = mapped_column(Text, nullable=True)
+    tokens_used: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    latency_ms: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    anomaly_types: Mapped[dict[str, Any] | None] = mapped_column(JSON, nullable=True)
+    anomaly_severity: Mapped[str | None] = mapped_column(Text, nullable=True)
+    created_at: Mapped[datetime | None] = mapped_column(
+        DateTime, server_default=func.now(), nullable=True
+    )
+    # Legacy fields for backward compatibility
     backend_used: Mapped[str | None] = mapped_column(Text, nullable=True)
     model_used: Mapped[str | None] = mapped_column(Text, nullable=True)
     from_cache: Mapped[bool] = mapped_column(Boolean, default=False)
@@ -1214,6 +1263,7 @@ class AISentenceAnalysis(Base):
     def from_domain(cls, model: Analysis, *, sent_id: str) -> AISentenceAnalysis:
         return cls(
             sent_id=sent_id,
+            prompt_version="v1",
             seg_id=model.segment_id,
             risk_level=model.risk_level.value,
             sentiment_score=model.sentiment_score,
@@ -1304,6 +1354,15 @@ class AISegmentInsight(Base):
     logic_health_pct: Mapped[float | None] = mapped_column(Float, nullable=True)
     backend_used: Mapped[str | None] = mapped_column(Text, nullable=True)
     model_used: Mapped[str | None] = mapped_column(Text, nullable=True)
+    ai_insight: Mapped[str | None] = mapped_column(
+        Text, nullable=True
+    )  # Main insight content
+    ai_insight_version: Mapped[str | None] = mapped_column(
+        Text, nullable=True
+    )  # Version of insight generation
+    insight_generated_at: Mapped[datetime | None] = mapped_column(
+        DateTime, nullable=True
+    )
     processed_at: Mapped[datetime | None] = mapped_column(
         DateTime, server_default=func.now(), nullable=True
     )

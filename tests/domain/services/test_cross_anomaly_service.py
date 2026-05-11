@@ -10,16 +10,16 @@ from bb_paxdata.domain.services.cross_anomaly_service import CrossAnomalyService
 class TestCrossAnomalyService:
     """Test cases for CrossAnomalyService."""
 
-    def setup_method(self):
+    async def setup_method(self):
         """Set up test fixtures."""
         self.service = CrossAnomalyService()
 
-    def test_cross_anomaly_service_initialization(self):
+    async def test_cross_anomaly_service_initialization(self):
         """Test that CrossAnomalyService initializes correctly."""
         assert self.service is not None
         assert self.service.confidence == 1.0
 
-    def test_anomaly_thresholds(self):
+    async def test_anomaly_thresholds(self):
         """Test that anomaly thresholds are properly set."""
         assert self.service.ANOMALY_RISK_HIGH == 7
         assert self.service.ANOMALY_HEDGE_HIGH == 0.6
@@ -29,7 +29,7 @@ class TestCrossAnomalyService:
         assert self.service.ANOMALY_SENT_POS == 0.3
         assert self.service.ANOMALY_POWER_HIGH == 8
 
-    def test_extract_ai_values(self):
+    async def test_extract_ai_values(self):
         """Test AI values extraction."""
         analysis = Mock()
         analysis.ai_sentiment_score = -0.3
@@ -50,7 +50,7 @@ class TestCrossAnomalyService:
         assert ai_values["ai_politeness"] == 0.6
         assert ai_values["ai_diplomatic_tone"] == "confrontational"
 
-    def test_extract_formula_values(self):
+    async def test_extract_formula_values(self):
         """Test formula values extraction."""
         analysis = Mock()
         analysis.sentiment_score = -0.2
@@ -69,7 +69,7 @@ class TestCrossAnomalyService:
         assert formula_values["power_level"] == 9
         assert formula_values["sbi_score"] == 8.5
 
-    def test_detect_risk_hedging_conflict_high(self):
+    async def test_detect_risk_hedging_conflict_high(self):
         """Test risk-hedging conflict detection with high values."""
         ai_values = {"ai_risk": 8.0}
         formula_values = {"formula_hedging": 0.7}
@@ -83,7 +83,7 @@ class TestCrossAnomalyService:
         assert anomalies[0].severity == AnomalySeverity.HIGH
         assert "deception" in anomalies[0].description.lower()
 
-    def test_detect_risk_hedging_conflict_no_anomaly(self):
+    async def test_detect_risk_hedging_conflict_no_anomaly(self):
         """Test risk-hedging conflict with no anomaly."""
         ai_values = {"ai_risk": 3.0}
         formula_values = {"formula_hedging": 0.3}
@@ -94,7 +94,7 @@ class TestCrossAnomalyService:
 
         assert len(anomalies) == 0
 
-    def test_detect_negative_confrontational_amplification(self):
+    async def test_detect_negative_confrontational_amplification(self):
         """Test negative confrontational amplification detection."""
         ai_values = {"ai_sentiment": -0.8, "ai_diplomatic_tone": "confrontational"}
         formula_values = {"power_level": 9}
@@ -108,7 +108,7 @@ class TestCrossAnomalyService:
         assert anomalies[0].severity == AnomalySeverity.CRITICAL
         assert "high-power" in anomalies[0].description.lower()
 
-    def test_detect_velvet_glove_confrontation(self):
+    async def test_detect_velvet_glove_confrontation(self):
         """Test velvet glove confrontation detection."""
         ai_values = {"ai_politeness": 0.8, "ai_risk": 6.5}
         formula_values = {"formula_hedging": 0.1}
@@ -122,7 +122,7 @@ class TestCrossAnomalyService:
         assert anomalies[0].severity == AnomalySeverity.MEDIUM
         assert "velvet glove" in anomalies[0].description.lower()
 
-    def test_detect_high_risk_conciliatory_mask(self):
+    async def test_detect_high_risk_conciliatory_mask(self):
         """Test high risk conciliatory mask detection."""
         ai_values = {"ai_risk": 8.0, "ai_diplomatic_tone": "conciliatory"}
 
@@ -132,7 +132,7 @@ class TestCrossAnomalyService:
         assert anomalies[0].type == AnomalyType.HIGH_RISK_CONCILIATORY_MASK
         assert anomalies[0].severity == AnomalySeverity.HIGH
 
-    def test_detect_direct_manipulation_low_hedge(self):
+    async def test_detect_direct_manipulation_low_hedge(self):
         """Test direct manipulation with low hedging detection."""
         ai_values = {"ai_manipulation": 0.8}
         formula_values = {"formula_hedging": 0.1}
@@ -145,7 +145,7 @@ class TestCrossAnomalyService:
         assert anomalies[0].type == AnomalyType.DIRECT_MANIPULATION_LOW_HEDGE
         assert anomalies[0].severity == AnomalySeverity.CRITICAL
 
-    def test_detect_dominant_actor_pressure(self):
+    async def test_detect_dominant_actor_pressure(self):
         """Test dominant actor pressure detection."""
         ai_values = {"ai_risk": 6.5}
         formula_values = {"power_level": 9, "sbi_score": 8.0}
@@ -158,7 +158,7 @@ class TestCrossAnomalyService:
         assert anomalies[0].type == AnomalyType.DOMINANT_ACTOR_PRESSURE
         assert anomalies[0].severity == AnomalySeverity.HIGH
 
-    def test_detect_vague_demand_plausible_deniability(self):
+    async def test_detect_vague_demand_plausible_deniability(self):
         """Test vague demand plausible deniability detection."""
         ai_values = {"ai_risk": 5.0}
         formula_values = {"formula_hedging": 0.7}
@@ -171,7 +171,7 @@ class TestCrossAnomalyService:
         assert anomalies[0].type == AnomalyType.VAGUE_DEMAND_PLAUSIBLE_DENIABILITY
         assert anomalies[0].severity == AnomalySeverity.MEDIUM
 
-    def test_detect_conflict_frame_positive_wrap(self):
+    async def test_detect_conflict_frame_positive_wrap(self):
         """Test conflict frame positive wrap detection."""
         ai_values = {"ai_frame": "conflict", "ai_sentiment": 0.5, "ai_risk": 6.5}
 
@@ -181,7 +181,7 @@ class TestCrossAnomalyService:
         assert anomalies[0].type == AnomalyType.CONFLICT_FRAME_POSITIVE_WRAP
         assert anomalies[0].severity == AnomalySeverity.MEDIUM
 
-    def test_detect_inconsistency_plus_manipulation(self):
+    async def test_detect_inconsistency_plus_manipulation(self):
         """Test inconsistency plus manipulation detection."""
         ai_values = {"ai_manipulation": 0.6}
         formula_values = {"formula_sentiment": 0.8}
@@ -194,7 +194,7 @@ class TestCrossAnomalyService:
         assert anomalies[0].type == AnomalyType.INCONSISTENCY_PLUS_MANIPULATION
         assert anomalies[0].severity == AnomalySeverity.HIGH
 
-    def test_detect_negative_appraisal_persuasive_tone(self):
+    async def test_detect_negative_appraisal_persuasive_tone(self):
         """Test negative appraisal persuasive tone detection."""
         ai_values = {
             "ai_appraisal": "negative",
@@ -210,7 +210,7 @@ class TestCrossAnomalyService:
         assert anomalies[0].type == AnomalyType.NEGATIVE_APPRAISAL_PERSUASIVE_TONE
         assert anomalies[0].severity == AnomalySeverity.MEDIUM
 
-    def test_detect_anomalies_comprehensive(self):
+    async def test_detect_anomalies_comprehensive(self):
         """Test comprehensive anomaly detection."""
         # Create analysis with multiple anomalies
         analysis = Mock()
@@ -246,7 +246,7 @@ class TestCrossAnomalyService:
             assert hasattr(anomaly, "formula_values")
             assert hasattr(anomaly, "confidence")
 
-    def test_detect_anomalies_no_anomalies(self):
+    async def test_detect_anomalies_no_anomalies(self):
         """Test anomaly detection with no anomalies."""
         # Create analysis with no anomalies
         analysis = Mock()
@@ -272,7 +272,7 @@ class TestCrossAnomalyService:
         # Should detect no anomalies
         assert len(anomalies) == 0
 
-    def test_edge_case_critical_anomaly_combination(self):
+    async def test_edge_case_critical_anomaly_combination(self):
         """Test critical anomaly combination."""
         ai_values = {
             "ai_sentiment": -0.9,
@@ -310,7 +310,7 @@ class TestCrossAnomalyService:
         ]
         assert len(critical_anomalies) >= 2
 
-    def test_anomaly_result_structure(self):
+    async def test_anomaly_result_structure(self):
         """Test that anomaly results have correct structure."""
         ai_values = {"ai_risk": 8.0}
         formula_values = {"formula_hedging": 0.7}
