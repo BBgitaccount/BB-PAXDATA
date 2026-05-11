@@ -10,9 +10,9 @@ from __future__ import annotations
 import json
 from typing import TYPE_CHECKING, Any
 
-from .base import CacheBackend
-
 import structlog
+
+from .base import CacheBackend
 
 if TYPE_CHECKING:
     from redis.asyncio import Redis
@@ -25,6 +25,7 @@ logger = structlog.get_logger(__name__)
 try:
     import redis.asyncio as _redis_module
     from redis.asyncio import Redis as _Redis
+
     REDIS_AVAILABLE = True
 except ImportError:
     _redis_module = None

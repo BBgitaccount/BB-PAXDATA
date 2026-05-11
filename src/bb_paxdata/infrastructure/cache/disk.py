@@ -12,9 +12,9 @@ import time
 from pathlib import Path
 from typing import Any
 
-from .base import CacheBackend
-
 import structlog
+
+from .base import CacheBackend
 
 logger = structlog.get_logger(__name__)
 
