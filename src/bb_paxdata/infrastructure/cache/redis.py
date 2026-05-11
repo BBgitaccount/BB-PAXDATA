@@ -1,10 +1,3 @@
-"""
-RedisCacheBackend — Redis tabanlı cache implementasyonu.
-
-Dağıtık / çok worker senaryoları için.
-Redis kurulu değilse graceful degrade yapar.
-"""
-
 from __future__ import annotations
 
 import json
@@ -15,33 +8,24 @@ import structlog
 from .base import CacheBackend
 
 if TYPE_CHECKING:
-    from redis.asyncio import Redis
-    from redis.exceptions import ConnectionError as RedisConnectionError
-    from redis.exceptions import RedisError
+    # Bu blok sadece mypy için çalışır, runtime'da import edilmez
+    pass
 
 logger = structlog.get_logger(__name__)
 
-# Runtime'da redis kurulu mu kontrol et
+REDIS_AVAILABLE = False
 try:
-    import redis.asyncio as _redis_module
-    from redis.asyncio import Redis as _Redis
+    import redis.asyncio as _redis_check  # noqa: F401
 
     REDIS_AVAILABLE = True
 except ImportError:
-    _redis_module = None
-    _Redis = None
-    REDIS_AVAILABLE = False
+    pass
 
 
 class RedisCacheBackend(CacheBackend):
     """
-    Redis tabanlı cache.
-    Dağıtık / çok worker senaryosu için.
-
-    __init__ parametreleri:
-      url: str              (default: "redis://localhost:6379/0")
-      key_prefix: str       (default: "bbpax:")
-      default_ttl: int      (default: 3600)
+    Redis tabanlı cache backend.
+    Kullanmak için: poetry add "redis[asyncio]"
     """
 
     def __init__(
@@ -52,62 +36,34 @@ class RedisCacheBackend(CacheBackend):
     ) -> None:
         if not REDIS_AVAILABLE:
             raise ImportError(
-                "redis[asyncio] is required for RedisCacheBackend. "
-                "Install with: pip install 'redis[asyncio]'"
+                "redis paketi kurulu değil. " "Kurmak için: poetry add 'redis[asyncio]'"
             )
+        self._url = url
+        self._key_prefix = key_prefix
+        self._default_ttl = default_ttl
+        self._client: Any = None  # Redis[bytes] yerine Any
 
-        self.url = url
-        self.key_prefix = key_prefix
-        self.default_ttl = default_ttl
-        self._client: Redis[bytes] | None = None
-        self._connection_failed = False
-
-        self._logger = logger
-
-    async def _get_client(self) -> Redis[bytes] | None:
-        """Redis client'ını al (lazy connection)."""
-        if self._connection_failed:
-            return None
-
+    async def _get_client(self) -> Any:
+        """Redis client'ı lazy olarak başlat."""
         if self._client is None:
-            self._client = _Redis.from_url(
-                self.url, encoding="utf-8", decode_responses=False
+            import redis.asyncio as aioredis  # runtime import — fonksiyon içinde
+
+            self._client = aioredis.Redis.from_url(
+                self._url,
+                encoding="utf-8",
+                decode_responses=True,
             )
-
-        try:
-            # Bağlantı testi
-            await self._client.ping()
-            self._connection_failed = False
-        except Exception as exc:
-            self._logger.warning("redis.connection.failed", error=str(exc))
-            self._connection_failed = True
-            self._client = None
-            raise
-
         return self._client
 
-    def _make_redis_key(self, key: str) -> str:
-        """Redis key formatı."""
-        return f"{self.key_prefix}{key}"
-
     async def get(self, key: str) -> Any | None:
-        """Key'den değeri oku."""
-        client = await self._get_client()
-        if client is None:
-            return None
-
         try:
-            redis_key = self._make_redis_key(key)
-            value = await client.get(redis_key)
-
+            client = await self._get_client()
+            value = await client.get(self._key_prefix + key)
             if value is None:
                 return None
-
-            # JSON deserialize
             return json.loads(value)
-
-        except (RedisConnectionError, RedisError, json.JSONDecodeError) as exc:
-            self._logger.warning("redis.get.failed", key=key, error=str(exc))
+        except Exception as exc:
+            logger.warning("redis.get.failed", key=key, error=str(exc))
             return None
 
     async def set(
@@ -116,122 +72,61 @@ class RedisCacheBackend(CacheBackend):
         value: Any,
         ttl: int | None = None,
     ) -> None:
-        """Değeri Redis'e yaz."""
-        client = await self._get_client()
-        if client is None:
-            return
-
         try:
-            redis_key = self._make_redis_key(key)
-            serialized_value = json.dumps(
-                value, ensure_ascii=False, separators=(",", ":")
-            )
-
-            # TTL kullan
-            expire_time = ttl if ttl is not None else self.default_ttl
-
-            await client.setex(redis_key, expire_time, serialized_value)
-
-        except (RedisConnectionError, RedisError, TypeError) as exc:
-            self._logger.warning("redis.set.failed", key=key, error=str(exc))
+            client = await self._get_client()
+            serialized = json.dumps(value)
+            expire = ttl if ttl is not None else self._default_ttl
+            await client.set(self._key_prefix + key, serialized, ex=expire)
+        except Exception as exc:
+            logger.warning("redis.set.failed", key=key, error=str(exc))
 
     async def delete(self, key: str) -> None:
-        """Key'i sil."""
-        client = await self._get_client()
-        if client is None:
-            return
-
         try:
-            redis_key = self._make_redis_key(key)
-            await client.delete(redis_key)
-        except (RedisConnectionError, RedisError) as exc:
-            self._logger.warning("redis.delete.failed", key=key, error=str(exc))
+            client = await self._get_client()
+            await client.delete(self._key_prefix + key)
+        except Exception as exc:
+            logger.warning("redis.delete.failed", key=key, error=str(exc))
 
     async def exists(self, key: str) -> bool:
-        """Key var mı kontrol et."""
-        client = await self._get_client()
-        if client is None:
-            return False
-
         try:
-            redis_key = self._make_redis_key(key)
-            return bool(await client.exists(redis_key))
-        except (RedisConnectionError, RedisError) as exc:
-            self._logger.warning("redis.exists.failed", key=key, error=str(exc))
+            client = await self._get_client()
+            result = await client.exists(self._key_prefix + key)
+            return bool(result)
+        except Exception:
             return False
 
     async def clear(self, prefix: str | None = None) -> int:
-        """Cache'i temizle. Prefix verilirse sadece o prefix ile başlayanları sil."""
-        client = await self._get_client()
-        if client is None:
+        """SCAN kullan, KEYS kullanma — production'da KEYS bloke eder."""
+        try:
+            client = await self._get_client()
+            pattern = self._key_prefix + (prefix or "") + "*"
+            deleted = 0
+            async for key in client.scan_iter(match=pattern):
+                await client.delete(key)
+                deleted += 1
+            return deleted
+        except Exception as exc:
+            logger.warning("redis.clear.failed", error=str(exc))
             return 0
 
-        deleted_count = 0
-
-        try:
-            if prefix:
-                # Prefix ile eşleşen key'leri bul ve sil
-                search_pattern = f"{self.key_prefix}{prefix}*"
-                async for key in client.scan_iter(match=search_pattern):
-                    await client.delete(key)
-                    deleted_count += 1
-            else:
-                # Tüm bbpax: prefix'li key'leri sil
-                search_pattern = f"{self.key_prefix}*"
-                async for key in client.scan_iter(match=search_pattern):
-                    await client.delete(key)
-                    deleted_count += 1
-
-        except (RedisConnectionError, RedisError) as exc:
-            self._logger.warning("redis.clear.failed", error=str(exc))
-
-        return deleted_count
-
     async def stats(self) -> dict[str, Any]:
-        """Redis istatistikleri."""
-        client = await self._get_client()
-        if client is None:
-            return {
-                "connected": False,
-                "error": "Redis connection failed",
-            }
-
         try:
-            # Redis info
+            client = await self._get_client()
             info = await client.info()
-
-            # Key sayısı (sadece bizim prefix'li olanlar)
-            key_count = 0
-            async for _ in client.scan_iter(match=f"{self.key_prefix}*"):
-                key_count += 1
-
+            size = await client.dbsize()
             return {
-                "connected": True,
-                "key_count": key_count,
-                "redis_version": info.get("redis_version"),
-                "used_memory": info.get("used_memory_human"),
-                "connected_clients": info.get("connected_clients"),
-                "keyspace_hits": info.get("keyspace_hits", 0),
-                "keyspace_misses": info.get("keyspace_misses", 0),
-                "url": self.url,
-                "key_prefix": self.key_prefix,
+                "backend": "redis",
+                "total_keys": size,
+                "used_memory_human": info.get("used_memory_human", "unknown"),
+                "connected_clients": info.get("connected_clients", 0),
             }
+        except Exception as exc:
+            return {"backend": "redis", "error": str(exc)}
 
-        except (RedisConnectionError, RedisError) as exc:
-            self._logger.warning("redis.stats.failed", error=str(exc))
-            return {
-                "connected": False,
-                "error": str(exc),
-            }
-
-    async def health(self) -> bool:
-        """Redis sağlık kontrolü."""
-        client = await self._get_client()
-        if client is None:
-            return False
-
+    async def health_check(self) -> bool:
         try:
+            client = await self._get_client()
             await client.ping()
             return True
-        except (RedisConnectionError, RedisError):
+        except Exception:
             return False
