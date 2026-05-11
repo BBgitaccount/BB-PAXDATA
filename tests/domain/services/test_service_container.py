@@ -307,6 +307,10 @@ class TestServiceContainer:
         analysis.ai_risk_score = 8.0
         analysis.ai_hedging_score = 0.7
         analysis.ai_manipulation_score = 0.8
+        analysis.ai_politeness_score = 0.8
+        analysis.ai_diplomatic_tone = "confrontational"
+        analysis.ai_frame_type = "conflict"
+        analysis.ai_appraisal_attitude = "negative"
         analysis.sentiment_score = 0.5
         analysis.risk_score = 7.5
         analysis.hedging_score = 0.1

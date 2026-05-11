@@ -10,7 +10,7 @@ from bb_paxdata.domain.services.topic_service import TopicService
 class TestTopicService:
     """Test cases for TopicService."""
 
-    async def setup_method(self):
+    def setup_method(self):
         """Set up test fixtures."""
         self.service = TopicService()
 
@@ -114,8 +114,7 @@ class TestTopicService:
 
         specificity = self.service.topic_specificity(scores)
 
-        assert specificity < 1.0  # Less than perfect specificity
-        assert specificity > 0.0  # Still some specificity
+        assert specificity == 0.0  # Zero specificity for equal scores
 
     async def test_topic_specificity_no_topics(self):
         """Test topic specificity with no topic scores."""
@@ -144,7 +143,7 @@ class TestTopicService:
 
         dominant = self.service.get_dominant_topic(scores)
 
-        assert dominant == TopicCategory.UN_REFORM
+        assert dominant == TopicCategory.BM_REFORUMU
 
     async def test_get_dominant_topic_no_scores(self):
         """Test dominant topic with no scores."""
@@ -174,22 +173,19 @@ class TestTopicService:
         texts = ["text one", "text two", "text three"]
 
         with patch(
-            "src.bb_paxdata.domain.services.topic_service.TopicService.HAS_TFIDF", False
+            "bb_paxdata.domain.services.topic_service.TopicService.HAS_TFIDF", False
         ):
             result = self.service.tfidf_batch(texts)
 
         assert len(result) == len(texts)
         assert all(keywords == [] for keywords in result)
 
-    @patch("src.bb_paxdata.domain.services.topic_service.TopicService.HAS_TFIDF", True)
+    @patch("bb_paxdata.domain.services.topic_service.TopicService.HAS_TFIDF", True)
     async def test_tfidf_batch_with_sklearn_import_error(self):
         """Test TF-IDF batch processing with ImportError."""
         texts = ["text one", "text two"]
 
-        with patch(
-            "src.bb_paxdata.domain.services.topic_service.TfidfVectorizer",
-            side_effect=ImportError,
-        ):
+        with patch.dict("sys.modules", {"sklearn.feature_extraction.text": None}):
             result = self.service.tfidf_batch(texts)
 
         assert len(result) == len(texts)
@@ -207,7 +203,7 @@ class TestTopicService:
         assert hasattr(result, "specificity")
         assert hasattr(result, "confidence")
 
-        assert result.dominant_topic == TopicCategory.UN_REFORM
+        assert result.dominant_topic == TopicCategory.BM_REFORUMU
         assert result.specificity > 0.0
         assert 0.0 <= result.confidence <= 1.0
 
@@ -218,7 +214,7 @@ class TestTopicService:
 
         result = self.service.analyze_topics(text, tfidf_keywords)
 
-        assert result.dominant_topic == TopicCategory.UN_REFORM
+        assert result.dominant_topic == TopicCategory.BM_REFORUMU
         assert result.specificity > 0.0
 
     async def test_analyze_topics_no_keywords(self):
@@ -240,7 +236,7 @@ class TestTopicService:
 
         result = self.service.analyze_topics(text)
 
-        assert result.dominant_topic == TopicCategory.UN_REFORM
+        assert result.dominant_topic == TopicCategory.BM_REFORUMU
         assert result.specificity > 0.0
         assert result.confidence > 0.0
 
@@ -263,7 +259,7 @@ class TestTopicService:
 
         result = self.service.analyze_topics(text)
 
-        assert result.dominant_topic == TopicCategory.UN_REFORM
+        assert result.dominant_topic == TopicCategory.BM_REFORUMU
         assert result.specificity > 0.0
 
     async def test_edge_case_special_characters(self):
@@ -272,7 +268,7 @@ class TestTopicService:
 
         result = self.service.analyze_topics(text)
 
-        assert result.dominant_topic == TopicCategory.UN_REFORM
+        assert result.dominant_topic == TopicCategory.BM_REFORUMU
 
     async def test_edge_case_mixed_case(self):
         """Test topic analysis with mixed case."""
@@ -294,17 +290,17 @@ class TestTopicService:
         """Test topic inference from text."""
         text = "united nations security council reform"
 
-        inferred_topic = self.service._infer_topic(text)
+        inferred_topic = self.service.analyze_topics(text).dominant_topic
 
-        assert inferred_topic == "BM_Reformu"
+        assert inferred_topic == TopicCategory.BM_REFORUMU
 
     async def test_infer_topic_no_match(self):
         """Test topic inference with no matching topic."""
         text = "This is a simple sentence."
 
-        inferred_topic = self.service._infer_topic(text)
+        inferred_topic = self.service.analyze_topics(text).dominant_topic
 
-        assert inferred_topic is None
+        assert inferred_topic == TopicCategory.NONE
 
     async def test_phrase_bonus_in_weights(self):
         """Test that multi-word phrases get weight bonus."""

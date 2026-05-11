@@ -2,6 +2,7 @@ from enum import Enum
 
 
 class AudienceType(str, Enum):
+    INTERNATIONAL = "international"
     GLOBAL_AUDIENCE = "global_audience"
     REGIONAL_AUDIENCE = "regional_audience"
     DOMESTIC_AUDIENCE = "domestic_audience"

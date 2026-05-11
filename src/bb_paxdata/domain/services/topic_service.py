@@ -12,6 +12,14 @@ from typing import Any, ClassVar
 import numpy as np
 import scipy.sparse as sp
 
+try:
+    from sklearn.feature_extraction.text import TfidfVectorizer
+
+    HAS_TFIDF = True
+except ImportError:
+    TfidfVectorizer = None
+    HAS_TFIDF = False
+
 from ...application.protocols import (
     BaseService,
     TopicAnalysis,

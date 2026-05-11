@@ -11,7 +11,7 @@ from bb_paxdata.domain.services.sentiment_service import SentimentService
 class TestSentimentService:
     """Test cases for SentimentService."""
 
-    async def setup_method(self):
+    def setup_method(self):
         """Set up test fixtures."""
         self.service = SentimentService()
 
@@ -81,12 +81,12 @@ class TestSentimentService:
     async def test_classify_emotion_extreme_negative(self):
         """Test emotion classification for extreme negative."""
         emotion = self.service._classify_emotion(-0.8)
-        assert emotion == SentimentCategory.HOSTILE
+        assert emotion == SentimentCategory.CONFRONTATIONAL
 
     async def test_classify_emotion_negative(self):
         """Test emotion classification for negative."""
         emotion = self.service._classify_emotion(-0.4)
-        assert emotion == SentimentCategory.NEGATIVE
+        assert emotion == SentimentCategory.CONCERNED
 
     async def test_classify_emotion_concerned(self):
         """Test emotion classification for concerned."""
@@ -96,17 +96,17 @@ class TestSentimentService:
     async def test_classify_emotion_neutral(self):
         """Test emotion classification for neutral."""
         emotion = self.service._classify_emotion(0.0)
-        assert emotion == SentimentCategory.NEUTRAL
+        assert emotion == SentimentCategory.NEUTRAL_CAUTIOUS
 
     async def test_classify_emotion_positive(self):
         """Test emotion classification for positive."""
         emotion = self.service._classify_emotion(0.2)
-        assert emotion == SentimentCategory.POSITIVE
+        assert emotion == SentimentCategory.CONSTRUCTIVE
 
     async def test_classify_emotion_optimistic(self):
         """Test emotion classification for optimistic."""
         emotion = self.service._classify_emotion(0.5)
-        assert emotion == SentimentCategory.OPTIMISTIC
+        assert emotion == SentimentCategory.COOPERATIVE
 
     async def test_classify_emotion_cooperative(self):
         """Test emotion classification for cooperative."""
@@ -148,8 +148,8 @@ class TestSentimentService:
 
         assert result.negation_aware_score > 0.0  # Should be positive due to negation
         assert result.emotion_category in [
-            SentimentCategory.POSITIVE,
-            SentimentCategory.OPTIMISTIC,
+            SentimentCategory.CONSTRUCTIVE,
+            SentimentCategory.COOPERATIVE,
         ]
 
     async def test_analyze_sentence_empty_text(self):
@@ -160,7 +160,7 @@ class TestSentimentService:
 
         assert result.score == 0.0
         assert result.negation_aware_score == 0.0
-        assert result.emotion_category == SentimentCategory.NEUTRAL
+        assert result.emotion_category == SentimentCategory.NEUTRAL_CAUTIOUS
 
     async def test_analyze_sentence_complex_diplomatic_text(self):
         """Test analysis with complex diplomatic text."""

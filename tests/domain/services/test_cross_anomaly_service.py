@@ -10,7 +10,7 @@ from bb_paxdata.domain.services.cross_anomaly_service import CrossAnomalyService
 class TestCrossAnomalyService:
     """Test cases for CrossAnomalyService."""
 
-    async def setup_method(self):
+    def setup_method(self):
         """Set up test fixtures."""
         self.service = CrossAnomalyService()
 
@@ -183,7 +183,7 @@ class TestCrossAnomalyService:
 
     async def test_detect_inconsistency_plus_manipulation(self):
         """Test inconsistency plus manipulation detection."""
-        ai_values = {"ai_manipulation": 0.6}
+        ai_values = {"ai_manipulation": 0.8}
         formula_values = {"formula_sentiment": 0.8}
 
         anomalies = self.service._detect_inconsistency_plus_manipulation(

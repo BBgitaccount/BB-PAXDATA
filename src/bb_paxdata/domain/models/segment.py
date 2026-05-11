@@ -1,4 +1,5 @@
 from datetime import datetime
+from typing import Any
 
 from pydantic import BaseModel, Field
 
@@ -63,6 +64,7 @@ class Segment(BaseModel):
     )
 
     # Speaker information
+    speaker: Any | None = Field(None, description="Speaker object")
     primary_speaker_id: str | None = Field(
         None, description="ID of the primary speaker"
     )
