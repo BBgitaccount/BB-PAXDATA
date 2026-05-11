@@ -8,25 +8,28 @@ Redis kurulu değilse graceful degrade yapar.
 from __future__ import annotations
 
 import json
-from typing import Any
-
-try:
-    import redis.asyncio as redis  # type: ignore
-    from redis.exceptions import ConnectionError, RedisError  # type: ignore
-
-    REDIS_AVAILABLE = True
-except ImportError:
-    redis = None
-    ConnectionError = Exception
-    RedisError = Exception
-    REDIS_AVAILABLE = False
-
-try:
-    import structlog
-except ImportError:
-    structlog = None
+from typing import TYPE_CHECKING, Any
 
 from .base import CacheBackend
+
+import structlog
+
+if TYPE_CHECKING:
+    from redis.asyncio import Redis
+    from redis.exceptions import ConnectionError as RedisConnectionError
+    from redis.exceptions import RedisError
+
+logger = structlog.get_logger(__name__)
+
+# Runtime'da redis kurulu mu kontrol et
+try:
+    import redis.asyncio as _redis_module
+    from redis.asyncio import Redis as _Redis
+    REDIS_AVAILABLE = True
+except ImportError:
+    _redis_module = None
+    _Redis = None
+    REDIS_AVAILABLE = False
 
 
 class RedisCacheBackend(CacheBackend):
@@ -55,32 +58,30 @@ class RedisCacheBackend(CacheBackend):
         self.url = url
         self.key_prefix = key_prefix
         self.default_ttl = default_ttl
-        self._client: redis.Redis | None = None
+        self._client: Redis[bytes] | None = None
         self._connection_failed = False
 
-        if structlog:
-            self._logger = structlog.get_logger(__name__)
-        else:
-            import logging
+        self._logger = logger
 
-            self._logger = logging.getLogger(__name__)
-
-    async def _get_client(self) -> redis.Redis | None:
+    async def _get_client(self) -> Redis[bytes] | None:
         """Redis client'ını al (lazy connection)."""
         if self._connection_failed:
             return None
 
         if self._client is None:
-            try:
-                self._client = redis.from_url(self.url)
-                # Bağlantı testi
-                await self._client.ping()
-                self._connection_failed = False
-            except (ConnectionError, RedisError) as exc:
-                self._logger.warning("redis.connection.failed", error=str(exc))
-                self._connection_failed = True
-                self._client = None
-                return None
+            self._client = _Redis.from_url(
+                self.url, encoding="utf-8", decode_responses=False
+            )
+
+        try:
+            # Bağlantı testi
+            await self._client.ping()
+            self._connection_failed = False
+        except Exception as exc:
+            self._logger.warning("redis.connection.failed", error=str(exc))
+            self._connection_failed = True
+            self._client = None
+            raise
 
         return self._client
 
@@ -104,7 +105,7 @@ class RedisCacheBackend(CacheBackend):
             # JSON deserialize
             return json.loads(value)
 
-        except (ConnectionError, RedisError, json.JSONDecodeError) as exc:
+        except (RedisConnectionError, RedisError, json.JSONDecodeError) as exc:
             self._logger.warning("redis.get.failed", key=key, error=str(exc))
             return None
 
@@ -130,7 +131,7 @@ class RedisCacheBackend(CacheBackend):
 
             await client.setex(redis_key, expire_time, serialized_value)
 
-        except (ConnectionError, RedisError, TypeError) as exc:
+        except (RedisConnectionError, RedisError, TypeError) as exc:
             self._logger.warning("redis.set.failed", key=key, error=str(exc))
 
     async def delete(self, key: str) -> None:
@@ -142,7 +143,7 @@ class RedisCacheBackend(CacheBackend):
         try:
             redis_key = self._make_redis_key(key)
             await client.delete(redis_key)
-        except (ConnectionError, RedisError) as exc:
+        except (RedisConnectionError, RedisError) as exc:
             self._logger.warning("redis.delete.failed", key=key, error=str(exc))
 
     async def exists(self, key: str) -> bool:
@@ -154,7 +155,7 @@ class RedisCacheBackend(CacheBackend):
         try:
             redis_key = self._make_redis_key(key)
             return bool(await client.exists(redis_key))
-        except (ConnectionError, RedisError) as exc:
+        except (RedisConnectionError, RedisError) as exc:
             self._logger.warning("redis.exists.failed", key=key, error=str(exc))
             return False
 
@@ -180,7 +181,7 @@ class RedisCacheBackend(CacheBackend):
                     await client.delete(key)
                     deleted_count += 1
 
-        except (ConnectionError, RedisError) as exc:
+        except (RedisConnectionError, RedisError) as exc:
             self._logger.warning("redis.clear.failed", error=str(exc))
 
         return deleted_count
@@ -215,7 +216,7 @@ class RedisCacheBackend(CacheBackend):
                 "key_prefix": self.key_prefix,
             }
 
-        except (ConnectionError, RedisError) as exc:
+        except (RedisConnectionError, RedisError) as exc:
             self._logger.warning("redis.stats.failed", error=str(exc))
             return {
                 "connected": False,
@@ -231,5 +232,5 @@ class RedisCacheBackend(CacheBackend):
         try:
             await client.ping()
             return True
-        except (ConnectionError, RedisError):
+        except (RedisConnectionError, RedisError):
             return False

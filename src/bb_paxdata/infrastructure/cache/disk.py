@@ -6,22 +6,26 @@ Her key'i ayrı JSON dosyasına yazar. Büyük cache'lerde bellek sorunu olmaz.
 
 from __future__ import annotations
 
+import asyncio
 import json
 import time
 from pathlib import Path
 from typing import Any
 
+from .base import CacheBackend
+
+import structlog
+
+logger = structlog.get_logger(__name__)
+
 try:
-    import aiofiles  # type: ignore
+    import aiofiles
+    import aiofiles.os
+
+    AIOFILES_AVAILABLE = True
 except ImportError:
     aiofiles = None
-
-try:
-    import structlog
-except ImportError:
-    structlog = None
-
-from .base import CacheBackend
+    AIOFILES_AVAILABLE = False
 
 
 class DiskCacheBackend(CacheBackend):
@@ -43,12 +47,7 @@ class DiskCacheBackend(CacheBackend):
         self.cache_dir = Path(cache_dir)
         self.max_size_mb = max_size_mb
 
-        if structlog:
-            self._logger = structlog.get_logger(__name__)
-        else:
-            import logging
-
-            self._logger = logging.getLogger(__name__)
+        self._logger = logger
 
         # Cache dizinini oluştur
         self.cache_dir.mkdir(parents=True, exist_ok=True)
@@ -218,7 +217,7 @@ class DiskCacheBackend(CacheBackend):
 
     async def _read_file(self, file_path: Path) -> str | None:
         """Dosyayı oku (async)."""
-        if aiofiles:
+        if AIOFILES_AVAILABLE and aiofiles is not None:
             try:
                 async with aiofiles.open(file_path, "r", encoding="utf-8") as f:
                     content = await f.read()
@@ -226,9 +225,7 @@ class DiskCacheBackend(CacheBackend):
             except OSError:
                 return None
         else:
-            # Fallback to sync I/O wrapped in asyncio
-            import asyncio
-
+            # Fallback: asyncio.to_thread ile senkron open
             def _read() -> str | None:
                 try:
                     with open(file_path, encoding="utf-8") as f:
@@ -240,13 +237,11 @@ class DiskCacheBackend(CacheBackend):
 
     async def _write_file(self, file_path: Path, content: str) -> None:
         """Dosyaya yaz (async)."""
-        if aiofiles:
+        if AIOFILES_AVAILABLE and aiofiles is not None:
             async with aiofiles.open(file_path, "w", encoding="utf-8") as f:
                 await f.write(content)
         else:
-            # Fallback to sync I/O wrapped in asyncio
-            import asyncio
-
+            # Fallback: asyncio.to_thread ile senkron open
             def _write() -> None:
                 with open(file_path, "w", encoding="utf-8") as f:
                     f.write(content)
@@ -256,12 +251,7 @@ class DiskCacheBackend(CacheBackend):
     async def _delete_file(self, file_path: Path) -> None:
         """Dosyayı sil (async)."""
         try:
-            if aiofiles:
-                # aiofiles doesn't have delete, use pathlib
-                file_path.unlink(missing_ok=True)
-            else:
-                import asyncio
-
-                await asyncio.to_thread(file_path.unlink, missing_ok=True)
+            # aiofiles doesn't have delete, use pathlib with asyncio.to_thread
+            await asyncio.to_thread(file_path.unlink, missing_ok=True)
         except OSError:
             pass

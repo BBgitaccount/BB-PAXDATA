@@ -13,10 +13,9 @@ from dataclasses import dataclass
 from enum import Enum
 from typing import Any, cast
 
-try:
-    import structlog
-except ImportError:
-    structlog = None
+import structlog
+
+logger = structlog.get_logger(__name__)
 
 
 class RecoveryLevel(str, Enum):
@@ -52,13 +51,7 @@ class RecoveryEngine:
     """
 
     def __init__(self, logger: Any | None = None) -> None:
-        if structlog:
-            self._logger = logger or structlog.get_logger(__name__)
-        else:
-            # Fallback logger eğer structlog kurulu değilse
-            import logging
-
-            self._logger = logger or logging.getLogger(__name__)
+        self._logger = logger or structlog.get_logger(__name__)
 
     def recover(
         self,

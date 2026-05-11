@@ -11,18 +11,10 @@ import sys
 from pathlib import Path
 from typing import Any
 
-try:
-    import structlog
-    from structlog.dev import ConsoleRenderer
-    from structlog.processors import JSONRenderer
-
-    STRUCTLOG_AVAILABLE = True
-except ImportError:
-    structlog = None
-    JSONRenderer = None
-    ConsoleRenderer = None
-    STRUCTLOG_AVAILABLE = False
-
+import structlog
+from structlog.dev import ConsoleRenderer
+from structlog.processors import JSONRenderer
+from structlog.types import Processor
 
 # Global flag to prevent multiple configurations
 _configured = False
@@ -43,7 +35,7 @@ def setup_logging(
     if _configured:
         return
 
-    if not STRUCTLOG_AVAILABLE:
+    if not structlog.is_configured():
         # Fallback to standard logging
         logging.basicConfig(
             level=getattr(logging, level.upper(), logging.INFO),
@@ -57,7 +49,7 @@ def setup_logging(
     log_level = getattr(logging, level.upper(), logging.INFO)
 
     # Ortak processor'lar
-    shared_processors = [
+    shared_processors: list[Processor] = [
         structlog.contextvars.merge_contextvars,  # contextvars entegrasyonu
         structlog.stdlib.add_log_level,
         structlog.stdlib.add_logger_name,
@@ -67,14 +59,16 @@ def setup_logging(
     ]
 
     # Renderer seçimi
+    renderer: ConsoleRenderer | JSONRenderer
     if pretty:
         renderer = ConsoleRenderer(colors=True)
     else:
         renderer = JSONRenderer()
 
     # Structlog yapılandırması
+    final_processors: list[Processor] = [*shared_processors, renderer]
     structlog.configure(
-        processors=shared_processors + [renderer],
+        processors=final_processors,
         wrapper_class=structlog.make_filtering_bound_logger(log_level),
         context_class=dict,
         logger_factory=structlog.PrintLoggerFactory(),
@@ -116,10 +110,6 @@ def get_logger(name: str, **initial_context: Any) -> Any:
     Kullanım:
         logger = get_logger(__name__, component="batch")
     """
-    if not STRUCTLOG_AVAILABLE:
-        # Fallback to standard logging
-        return logging.getLogger(name)
-
     logger = structlog.get_logger(name)
     if initial_context:
         logger = logger.bind(**initial_context)
