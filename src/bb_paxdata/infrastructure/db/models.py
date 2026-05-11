@@ -23,14 +23,14 @@ from sqlalchemy.orm import Mapped, mapped_column, relationship
 from sqlalchemy.sql.sqltypes import Enum as SQLEnum
 
 from bb_paxdata.infrastructure.db.base import Base
+from bb_paxdata.domain.enums.demand_category import DemandCategory
+from bb_paxdata.domain.enums.relationship_type import RelationshipType
+from bb_paxdata.domain.enums.risk_level import RiskLevel
 
 if TYPE_CHECKING:
     from bb_paxdata.domain.enums import (
-        DemandCategory,
         EvidenceType,
         LogLevel,
-        RelationshipType,
-        RiskLevel,
     )
     from bb_paxdata.domain.models.analysis import Analysis
     from bb_paxdata.domain.models.demand import Demand
