@@ -20,10 +20,18 @@ from sqlalchemy import (
     func,
 )
 from sqlalchemy.orm import Mapped, mapped_column, relationship
+from sqlalchemy.sql.sqltypes import Enum as SQLEnum
 
 from bb_paxdata.infrastructure.db.base import Base
 
 if TYPE_CHECKING:
+    from bb_paxdata.domain.enums import (
+        DemandCategory,
+        EvidenceType,
+        LogLevel,
+        RelationshipType,
+        RiskLevel,
+    )
     from bb_paxdata.domain.models.analysis import Analysis
     from bb_paxdata.domain.models.demand import Demand
     from bb_paxdata.domain.models.metadata import Metadata
@@ -121,6 +129,22 @@ class Panel(Base):
             id=self.panel_id,
             title=self.title or self.file_name,
             source_file=self.file_name,
+            segments=[],
+            speakers=[],
+            start_time=None,
+            end_time=None,
+            total_duration=None,
+            recording_date=None,
+            total_sentences=None,
+            total_words=None,
+            total_speakers=None,
+            backend_type=None,
+            processing_version=None,
+            overall_confidence=None,
+            transcription_quality=None,
+            language=None,
+            domain=None,
+            classification=None,
             metadata={
                 "panel_number": self.panel_number,
                 "inferred_theme": self.inferred_theme,
@@ -137,6 +161,7 @@ class Panel(Base):
                     self.imported_at.isoformat() if self.imported_at else None
                 ),
             },
+            log_level=None,
         )
 
     @classmethod
@@ -212,6 +237,16 @@ class Speaker(Base):
             total_sentences=self.n_sentences,
             total_words=self.total_words,
             description=description,
+            manipulation_tier=None,
+            pressure_tier=None,
+            audience_type=None,
+            relationship_type=None,
+            avg_sentence_length=None,
+            speaking_percentage=None,
+            first_speech_time=None,
+            last_speech_time=None,
+            total_speaking_time=None,
+            confidence_score=None,
         )
 
     @classmethod
@@ -296,6 +331,19 @@ class SpeakerProfile(Base):
             entity_id=self.speaker_id,
             entity_type="speaker_profile",
             title=self.full_name,
+            description=f"Speaker profile for {self.full_name}",
+            category=None,
+            subcategory=None,
+            source=None,
+            source_url=None,
+            source_date=None,
+            quality_score=None,
+            validation_status=None,
+            last_validated=None,
+            processed_by=None,
+            processing_version=None,
+            access_level=None,
+            expires_at=None,
             custom_fields={
                 "country": self.country,
                 "top_countries_mentioned": self.top_countries_mentioned,
@@ -420,10 +468,16 @@ class Segment(Base):
         return SegmentDomainModel(
             id=self.seg_id,
             panel_id=self.panel_id,
-            sentences=[],
             start_time=float(self.ts_start_sec) if self.ts_start_sec else None,
             end_time=float(self.ts_end_sec) if self.ts_end_sec else None,
             duration=float(self.duration_sec) if self.duration_sec else None,
+            contextual_importance=None,
+            temporal_pattern=None,
+            dynamic_event=None,
+            sentiment_arc=None,
+            avg_sentiment_score=None,
+            speaker_count=None,
+            confidence_score=0.85,
             topic_category=(
                 _try_enum(TopicCategory, self.dominant_topic)
                 if self.dominant_topic
@@ -483,6 +537,10 @@ class Sentence(Base):
     power_level: Mapped[int] = mapped_column(Integer, default=0)
     sent_order: Mapped[int | None] = mapped_column(Integer, nullable=True)
     global_sent_order: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    # Temporal fields for domain model compatibility
+    start_time: Mapped[float | None] = mapped_column(Float, nullable=True)
+    end_time: Mapped[float | None] = mapped_column(Float, nullable=True)
+    duration: Mapped[float | None] = mapped_column(Float, nullable=True)
     text: Mapped[str] = mapped_column(Text, nullable=False)
     word_count: Mapped[int] = mapped_column(Integer, default=0)
     char_count: Mapped[int] = mapped_column(Integer, default=0)
@@ -505,7 +563,9 @@ class Sentence(Base):
     )
     demand_type: Mapped[str | None] = mapped_column(Text, nullable=True)
     demand_weight: Mapped[float] = mapped_column(Float, default=0)
-    demand_category: Mapped[str | None] = mapped_column(Text, nullable=True)
+    demand_category: Mapped[DemandCategory | None] = mapped_column(
+        SQLEnum(DemandCategory), default=None, nullable=True
+    )
     rhetoric_type: Mapped[str | None] = mapped_column(Text, nullable=True)
     influence_tier: Mapped[str | None] = mapped_column(Text, nullable=True)
     negation_aware_diplo: Mapped[float] = mapped_column(Float, default=0)
@@ -579,11 +639,19 @@ class Sentence(Base):
             text=self.text,
             speaker_id=self.speaker_id,
             segment_id=self.seg_id,
+            start_time=self.start_time,
+            end_time=self.end_time,
+            duration=self.duration,
             sentiment=_try_enum(SentimentCategory, self.emotion_category),
             sentiment_score=self.vader_compound,
             negation_aware_diplo=self.negation_aware_diplo,
+            tension_level=None,
+            negation_type=None,
+            hedging_type=None,
             hedging_score=self.hedging_score,
+            politeness_act=None,
             politeness_ratio=self.politeness_ratio,
+            diplomatic_tone=None,
             appraisal_attitude=_try_enum(AppraisalAttitude, self.appraisal_attitude),
             dominant_topic=(
                 _try_enum(TopicCategory, self.dominant_topic)
@@ -606,6 +674,7 @@ class Sentence(Base):
             word_count=self.word_count,
             face_threat_count=self.face_threat_count,
             face_save_count=self.face_save_count,
+            confidence_score=None,
         )
 
     @classmethod
@@ -622,6 +691,10 @@ class Sentence(Base):
             speaker_id=model.speaker_id,
             speaker_name="",
             text=model.text,
+            # Temporal fields
+            start_time=model.start_time,
+            end_time=model.end_time,
+            duration=model.duration,
             word_count=model.word_count or 0,
             vader_compound=model.sentiment_score or 0,
             negation_aware_diplo=model.negation_aware_diplo or 0,
@@ -675,6 +748,20 @@ class Word(Base):
             id=f"word:{self.word_id}",
             entity_id=str(self.word_id),
             entity_type="word",
+            title=f"Word {self.word_id}",
+            description=f"Word: {self.word_norm}",
+            category=None,
+            subcategory=None,
+            source=None,
+            source_url=None,
+            source_date=None,
+            quality_score=None,
+            validation_status=None,
+            last_validated=None,
+            processed_by=None,
+            processing_version=None,
+            access_level=None,
+            expires_at=None,
             custom_fields={
                 "sent_id": self.sent_id,
                 "seg_id": self.seg_id,
@@ -728,6 +815,20 @@ class CountryReference(Base):
             id=f"country_ref:{self.ref_id}",
             entity_id=str(self.ref_id),
             entity_type="country_reference",
+            title=f"Country Reference {self.ref_id}",
+            description=f"{self.from_country} -> {self.to_country}",
+            category=None,
+            subcategory=None,
+            source=None,
+            source_url=None,
+            source_date=None,
+            quality_score=None,
+            validation_status=None,
+            last_validated=None,
+            processed_by=None,
+            processing_version=None,
+            access_level=None,
+            expires_at=None,
             custom_fields={
                 "panel_id": self.panel_id,
                 "seg_id": self.seg_id,
@@ -778,6 +879,19 @@ class CountryStat(Base):
             entity_id=self.panel_id,
             entity_type="country_stats",
             title=self.country,
+            description=f"Statistics for {self.country}",
+            category=None,
+            subcategory=None,
+            source=None,
+            source_url=None,
+            source_date=None,
+            quality_score=None,
+            validation_status=None,
+            last_validated=None,
+            processed_by=None,
+            processing_version=None,
+            access_level=None,
+            expires_at=None,
             custom_fields={
                 "n_segments": self.n_segments,
                 "topic_scores": self.topic_scores,
@@ -816,8 +930,38 @@ class TopicMatrix(Base):
             id=f"{self.panel_id}:{self.country}:{self.topic}",
             topic_category=cat,
             topic_name=self.topic,
-            prominence_score=self.score,
-            confidence_score=1.0,
+            topic_description=None,
+            context=None,
+            first_mention_time=None,
+            last_mention_time=None,
+            duration=None,
+            controversy_score=None,
+            complexity_score=None,
+            sentiment_score=None,
+            parent_topic_id=None,
+            segment_id=None,
+            speaker_id=None,
+            subcategory=None,
+            contextual_importance=None,
+            key_terms=[],
+            participating_speakers=[],
+            speaker_engagement={},
+            audience_reception=None,
+            evolution_pattern=None,
+            resolution_status=None,
+            outcome=None,
+            impact_score=None,
+            action_items=[],
+            is_active=True,
+            is_resolved=False,
+            is_contentious=False,
+            analysis_notes=None,
+            tags=[],
+            confidence_score=0.85,
+            evidence_types=[],
+            related_topic_ids=[],
+            conflicting_topic_ids=[],
+            prominence_score=None,
         )
 
     @classmethod
@@ -830,50 +974,6 @@ class TopicMatrix(Base):
         )
 
 
-class RiskEvent(Base):
-    __tablename__ = "risk_events"
-    __table_args__ = (Index("idx_risk_country", "from_country"),)
-
-    risk_id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
-    panel_id: Mapped[str | None] = mapped_column(
-        ForeignKey("panels.panel_id"), nullable=True
-    )
-    seg_id: Mapped[str | None] = mapped_column(
-        ForeignKey("segments.seg_id"), nullable=True
-    )
-    sent_id: Mapped[str | None] = mapped_column(Text, nullable=True)
-    from_country: Mapped[str | None] = mapped_column(Text, nullable=True)
-    speaker_name: Mapped[str | None] = mapped_column(Text, nullable=True)
-    power_level: Mapped[int] = mapped_column(Integer, default=0)
-    signal_phrase: Mapped[str | None] = mapped_column(Text, nullable=True)
-    target_country: Mapped[str | None] = mapped_column(Text, nullable=True)
-    severity: Mapped[int | None] = mapped_column(Integer, nullable=True)
-    context: Mapped[str | None] = mapped_column(Text, nullable=True)
-
-    def to_domain(self) -> Metadata:
-        from bb_paxdata.domain.models.metadata import Metadata
-
-        return Metadata(
-            id=f"risk_event:{self.risk_id}",
-            entity_id=str(self.risk_id),
-            entity_type="risk_event",
-            custom_fields={
-                "panel_id": self.panel_id,
-                "severity": self.severity,
-                "context": self.context,
-            },
-        )
-
-    @classmethod
-    def from_domain(cls, model: Metadata) -> RiskEvent:
-        cf = model.custom_fields or {}
-        return cls(
-            panel_id=cf.get("panel_id"),
-            severity=cf.get("severity"),
-            context=cf.get("context"),
-        )
-
-
 class CountryPairSentiment(Base):
     __tablename__ = "country_pair_sentiment"
     __table_args__ = (Index("idx_pair_from", "from_country"),)
@@ -883,7 +983,9 @@ class CountryPairSentiment(Base):
     total_mentions: Mapped[int] = mapped_column(Integer, default=0)
     avg_sentiment: Mapped[float | None] = mapped_column(Float, nullable=True)
     interaction_count: Mapped[int] = mapped_column(Integer, default=0)
-    relationship_type: Mapped[str | None] = mapped_column(Text, nullable=True)
+    relationship_type: Mapped[RelationshipType | None] = mapped_column(
+        SQLEnum(RelationshipType), default=None, nullable=True
+    )
     affinity_score: Mapped[float | None] = mapped_column(Float, nullable=True)
     power_weighted_score: Mapped[float] = mapped_column(Float, default=0)
     diplomatic_distance: Mapped[float] = mapped_column(Float, default=0)
@@ -899,13 +1001,43 @@ class CountryPairSentiment(Base):
             if self.relationship_type
             else RelationshipType.NEUTRAL
         )
-        conf = float(self.affinity_score or 0.5)
         return RelationshipModel(
-            id=f"{self.from_country}->{self.to_country}",
+            id=f"{self.from_country}:{self.to_country}",
             speaker_a_id=self.from_country,
             speaker_b_id=self.to_country,
-            relationship_type=rt,
-            confidence_score=min(1.0, max(0.0, conf)),
+            relationship_type=rt or RelationshipType.NEUTRAL,
+            relationship_status=None,
+            relationship_nature=None,
+            power_balance=None,
+            influence_a_to_b=None,
+            influence_b_to_a=None,
+            pressure_a_on_b=None,
+            pressure_b_on_a=None,
+            interaction_frequency=None,
+            communication_style=None,
+            conflict_level=None,
+            cooperation_level=None,
+            relationship_start=None,
+            relationship_duration=None,
+            last_interaction=None,
+            emotional_tone=None,
+            trust_level=None,
+            respect_level=None,
+            relationship_context=None,
+            relationship_evolution=None,
+            trajectory=None,
+            impact_on_conversation=None,
+            analysis_notes=None,
+            confidence_score=0.85,
+            evidence_types=[],
+            related_relationship_ids=[],
+            group_affiliations=[],
+            is_active=True,
+            is_formal=False,
+            is_hierarchical=False,
+            change_indicators=[],
+            consequences=[],
+            tags=[],
         )
 
     @classmethod
@@ -945,7 +1077,9 @@ class DemandRecord(Base):
     demand_verb: Mapped[str] = mapped_column(Text, nullable=False)
     demand_type: Mapped[str] = mapped_column(Text, nullable=False)
     demand_weight: Mapped[float] = mapped_column(Float, default=0)
-    demand_category: Mapped[str | None] = mapped_column(Text, nullable=True)
+    demand_category: Mapped[DemandCategory | None] = mapped_column(
+        SQLEnum(DemandCategory), default=None, nullable=True
+    )
     target_entity: Mapped[str | None] = mapped_column(Text, nullable=True)
     demand_topic: Mapped[str | None] = mapped_column(Text, nullable=True)
     full_sentence: Mapped[str] = mapped_column(Text, nullable=False)
@@ -966,10 +1100,28 @@ class DemandRecord(Base):
             segment_id=self.seg_id,
             sentence_id=self.sent_id,
             speaker_id=self.speaker_name,
+            target_speaker_id=None,
             demand_type=dt,
-            demand_category=dc,
+            demand_category=dc or DemandCategory.DIPLOMATIC_ENGAGEMENT,
+            pressure_level=None,
             demand_text=self.full_sentence,
+            paraphrased_demand=None,
+            context=None,
+            timestamp=None,
+            urgency=None,
+            deadline=None,
+            compliance_likelihood=None,
+            assertiveness_score=None,
+            politeness_score=None,
+            evidence_types=[],
             confidence_score=min(1.0, max(0.0, self.demand_weight or 0.5)),
+            response_text=None,
+            response_timestamp=None,
+            compliance_status=None,
+            impact_score=None,
+            risk_implication=None,
+            fulfillment_timestamp=None,
+            notes=None,
         )
 
     @classmethod
@@ -1023,6 +1175,20 @@ class PatternRecord(Base):
             id=f"pattern:{self.pattern_id}",
             entity_id=str(self.pattern_id),
             entity_type="pattern_record",
+            title=f"Pattern {self.pattern_id}",
+            description=f"Pattern: {self.pattern_type}",
+            category=None,
+            subcategory=None,
+            source=None,
+            source_url=None,
+            source_date=None,
+            quality_score=None,
+            validation_status=None,
+            last_validated=None,
+            processed_by=None,
+            processing_version=None,
+            access_level=None,
+            expires_at=None,
             custom_fields={
                 "pattern_type": self.pattern_type,
                 "full_sentence": self.full_sentence,
@@ -1072,6 +1238,20 @@ class PanelDynamics(Base):
             id=f"panel_dyn:{self.dyn_id}",
             entity_id=str(self.dyn_id),
             entity_type="panel_dynamics",
+            title=f"Panel Dynamics {self.dyn_id}",
+            description="Panel dynamics analysis",
+            category=None,
+            subcategory=None,
+            source=None,
+            source_url=None,
+            source_date=None,
+            quality_score=None,
+            validation_status=None,
+            last_validated=None,
+            processed_by=None,
+            processing_version=None,
+            access_level=None,
+            expires_at=None,
             custom_fields={
                 "panel_id": self.panel_id,
                 "kgi_score": self.kgi_score,
@@ -1117,6 +1297,20 @@ class DiscourseNetworkEdge(Base):
             id=f"discourse_edge:{self.edge_id}",
             entity_id=str(self.edge_id),
             entity_type="discourse_network_edge",
+            title=f"Discourse Edge {self.edge_id}",
+            description=f"{self.from_country} -> {self.to_country}",
+            category=None,
+            subcategory=None,
+            source=None,
+            source_url=None,
+            source_date=None,
+            quality_score=None,
+            validation_status=None,
+            last_validated=None,
+            processed_by=None,
+            processing_version=None,
+            access_level=None,
+            expires_at=None,
             custom_fields={
                 "from_country": self.from_country,
                 "to_country": self.to_country,
@@ -1166,7 +1360,9 @@ class AISentenceAnalysis(Base):
     sentiment_score: Mapped[float | None] = mapped_column(Float, nullable=True)
     sentiment_category: Mapped[str | None] = mapped_column(Text, nullable=True)
     risk_score: Mapped[int | None] = mapped_column(Integer, nullable=True)
-    risk_level: Mapped[str | None] = mapped_column(Text, nullable=True)
+    risk_level: Mapped[RiskLevel | None] = mapped_column(
+        SQLEnum(RiskLevel), default=None, nullable=True
+    )
     risk_description: Mapped[str | None] = mapped_column(Text, nullable=True)
     has_demand: Mapped[bool] = mapped_column(Boolean, default=False)
     demand_type: Mapped[str | None] = mapped_column(Text, nullable=True)
@@ -1253,10 +1449,28 @@ class AISentenceAnalysis(Base):
             id=str(self.ai_id),
             sentence_id=self.sent_id,
             segment_id=self.seg_id,
-            risk_level=rl,
+            speaker_id=None,
+            risk_level=rl or RiskLevel.MEDIUM,
+            risk_trajectory=None,
+            future_risk_tier=None,
+            emotional_intensity=None,
+            stress_level=None,
+            anomaly_confidence=None,
             sentiment_score=float(self.sentiment_score or 0),
             confidence_score=0.85,
+            validation_score=None,
+            fail_category=None,
+            evidence_types=[],
+            evidence_strength=None,
+            complexity_score=None,
+            coherence_score=None,
             manipulation_score=self.manipulation_score,
+            analysis_version="1.0",
+            analysis_timestamp=datetime.utcnow(),
+            analyzer_id=None,
+            sumcomplexity_score=None,
+            detailed_findings=None,
+            recommendations=[],
         )
 
     @classmethod
@@ -1310,6 +1524,20 @@ class AIValidationLog(Base):
             total_checks=1,
             passed_checks=1 if passed else 0,
             failed_checks=0 if passed else 1,
+            overall_score=None,
+            confidence_score=None,
+            severity_score=None,
+            evidence_types=[],
+            evidence_summary=None,
+            validation_duration=None,
+            validation_version=None,
+            validator_id=None,
+            log_level=LogLevel.INFO,
+            resolution_method=None,
+            resolution_timestamp=None,
+            previous_validation_id=None,
+            summary=None,
+            detailed_report=None,
         )
 
     @classmethod
@@ -1376,6 +1604,20 @@ class AISegmentInsight(Base):
             id=f"ai_seg_insight:{self.insight_id}",
             entity_id=self.seg_id,
             entity_type="ai_segment_insight",
+            title=f"AI Segment Insight {self.insight_id}",
+            description="AI analysis of segment",
+            category=None,
+            subcategory=None,
+            source=None,
+            source_url=None,
+            source_date=None,
+            quality_score=None,
+            validation_status=None,
+            last_validated=None,
+            processed_by=None,
+            processing_version=None,
+            access_level=None,
+            expires_at=None,
             custom_fields={"segment_summary": self.segment_summary},
         )
 
@@ -1408,6 +1650,20 @@ class AICache(Base):
             id=f"ai_cache:{self.hash}",
             entity_id=self.hash,
             entity_type="ai_cache",
+            title=f"AI Cache {self.hash}",
+            description="Cached AI response",
+            category=None,
+            subcategory=None,
+            source=None,
+            source_url=None,
+            source_date=None,
+            quality_score=None,
+            validation_status=None,
+            last_validated=None,
+            processed_by=None,
+            processing_version=None,
+            access_level=None,
+            expires_at=None,
             custom_fields={"hit_count": self.hit_count},
         )
 
@@ -1455,6 +1711,20 @@ class AIContextualFlag(Base):
             id=f"ai_flag:{self.flag_id}",
             entity_id=self.sent_id,
             entity_type="ai_contextual_flag",
+            title=f"AI Flag {self.flag_id}",
+            description=f"AI contextual flag: {self.anomaly_type}",
+            category=None,
+            subcategory=None,
+            source=None,
+            source_url=None,
+            source_date=None,
+            quality_score=None,
+            validation_status=None,
+            last_validated=None,
+            processed_by=None,
+            processing_version=None,
+            access_level=None,
+            expires_at=None,
             custom_fields={
                 "anomaly_type": self.anomaly_type,
                 "severity": self.severity,
@@ -1495,7 +1765,9 @@ class AIDemandAnalysis(Base):
     power_level: Mapped[int] = mapped_column(Integer, default=0)
     demand_verb: Mapped[str | None] = mapped_column(Text, nullable=True)
     demand_type: Mapped[str | None] = mapped_column(Text, nullable=True)
-    demand_category: Mapped[str | None] = mapped_column(Text, nullable=True)
+    demand_category: Mapped[DemandCategory | None] = mapped_column(
+        SQLEnum(DemandCategory), default=None, nullable=True
+    )
     future_risk: Mapped[str | None] = mapped_column(Text, nullable=True)
     risk_severity: Mapped[int | None] = mapped_column(Integer, nullable=True)
     demand_subtext: Mapped[str | None] = mapped_column(Text, nullable=True)
@@ -1524,6 +1796,20 @@ class AIDemandAnalysis(Base):
             id=f"ai_demand:{self.ai_demand_id}",
             entity_id=str(self.ai_demand_id),
             entity_type="ai_demand_analysis",
+            title=f"AI Demand Analysis {self.ai_demand_id}",
+            description="AI analysis of demand",
+            category=None,
+            subcategory=None,
+            source=None,
+            source_url=None,
+            source_date=None,
+            quality_score=None,
+            validation_status=None,
+            last_validated=None,
+            processed_by=None,
+            processing_version=None,
+            access_level=None,
+            expires_at=None,
             custom_fields={"strategic_value": self.strategic_value},
         )
 
@@ -1560,6 +1846,20 @@ class AIPanelSynthesis(Base):
             id=f"ai_panel_synth:{self.synthesis_id}",
             entity_id=self.panel_id,
             entity_type="ai_panel_synthesis",
+            title=f"AI Panel Synthesis {self.synthesis_id}",
+            description="AI synthesis of panel",
+            category=None,
+            subcategory=None,
+            source=None,
+            source_url=None,
+            source_date=None,
+            quality_score=None,
+            validation_status=None,
+            last_validated=None,
+            processed_by=None,
+            processing_version=None,
+            access_level=None,
+            expires_at=None,
             custom_fields={
                 "panel_summary": self.panel_summary,
                 "power_balance": self.power_balance,
@@ -1649,6 +1949,20 @@ class AIFailAnalysis(Base):
             id=f"ai_fail:{self.fail_id}",
             entity_id=self.sent_id,
             entity_type="ai_fail_analysis",
+            title=f"AI Fail Analysis {self.fail_id}",
+            description=f"AI failure analysis: {self.check_type}",
+            category=None,
+            subcategory=None,
+            source=None,
+            source_url=None,
+            source_date=None,
+            quality_score=None,
+            validation_status=None,
+            last_validated=None,
+            processed_by=None,
+            processing_version=None,
+            access_level=None,
+            expires_at=None,
             custom_fields={"check_type": self.check_type},
         )
 
@@ -1695,6 +2009,20 @@ class AIFailPattern(Base):
             id=f"ai_fail_pattern:{self.pattern_id}",
             entity_id=str(self.pattern_id),
             entity_type="ai_fail_pattern",
+            title=f"AI Fail Pattern {self.pattern_id}",
+            description=f"AI failure pattern: {self.fail_category}",
+            category=None,
+            subcategory=None,
+            source=None,
+            source_url=None,
+            source_date=None,
+            quality_score=None,
+            validation_status=None,
+            last_validated=None,
+            processed_by=None,
+            processing_version=None,
+            access_level=None,
+            expires_at=None,
             custom_fields={"fail_category": self.fail_category},
         )
 
@@ -1736,6 +2064,20 @@ class AIFailAnomalyCross(Base):
             id=f"ai_fail_cross:{self.cross_id}",
             entity_id=self.sent_id,
             entity_type="ai_fail_anomaly_cross",
+            title=f"AI Fail Cross {self.cross_id}",
+            description="AI failure anomaly cross-reference",
+            category=None,
+            subcategory=None,
+            source=None,
+            source_url=None,
+            source_date=None,
+            quality_score=None,
+            validation_status=None,
+            last_validated=None,
+            processed_by=None,
+            processing_version=None,
+            access_level=None,
+            expires_at=None,
             custom_fields={"fail_id": self.fail_id},
         )
 
@@ -1770,6 +2112,20 @@ class AIFailCache(Base):
             id=f"ai_fail_cache:{self.hash}",
             entity_id=self.hash,
             entity_type="ai_fail_cache",
+            title=f"AI Fail Cache {self.hash}",
+            description="Cached AI failure analysis",
+            category=None,
+            subcategory=None,
+            source=None,
+            source_url=None,
+            source_date=None,
+            quality_score=None,
+            validation_status=None,
+            last_validated=None,
+            processed_by=None,
+            processing_version=None,
+            access_level=None,
+            expires_at=None,
             custom_fields={"hit_count": self.hit_count},
         )
 

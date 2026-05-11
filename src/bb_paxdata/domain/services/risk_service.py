@@ -248,7 +248,38 @@ class RiskService(BaseService, RiskServiceProtocol):
         if not sentences:
             # Fallback to segment text
             text = segment.text if hasattr(segment, "text") else ""
-            sentences = [Sentence(id="temp", text=text)]
+            sentences = [
+                Sentence(
+                    id="temp",
+                    text=text,
+                    speaker_id=None,
+                    segment_id=None,
+                    start_time=None,
+                    end_time=None,
+                    duration=None,
+                    sentiment=None,
+                    sentiment_score=None,
+                    negation_aware_diplo=None,
+                    tension_level=None,
+                    negation_type=None,
+                    hedging_type=None,
+                    hedging_score=None,
+                    politeness_act=None,
+                    politeness_ratio=None,
+                    diplomatic_tone=None,
+                    appraisal_attitude=None,
+                    dominant_topic=None,
+                    topic_specificity=None,
+                    topic_scores=None,
+                    dominant_frame=None,
+                    evidence_types=None,
+                    audience_type=None,
+                    face_threat_count=None,
+                    face_save_count=None,
+                    word_count=None,
+                    confidence_score=None,
+                )
+            ]
 
         # Aggregate risk analysis across sentences
         total_risk_score = 0.0
