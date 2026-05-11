@@ -11,11 +11,13 @@ if TYPE_CHECKING:
     # Bu blok sadece mypy için çalışır, runtime'da import edilmez
     pass
 
+from bb_paxdata.infrastructure.observability.metrics import get_metrics
+
 logger = structlog.get_logger(__name__)
 
 REDIS_AVAILABLE = False
 try:
-    import redis.asyncio as _redis_check  # noqa: F401
+    import redis.asyncio as _redis_check  # type: ignore[import-untyped]  # noqa: F401
 
     REDIS_AVAILABLE = True
 except ImportError:
@@ -46,7 +48,7 @@ class RedisCacheBackend(CacheBackend):
     async def _get_client(self) -> Any:
         """Redis client'ı lazy olarak başlat."""
         if self._client is None:
-            import redis.asyncio as aioredis  # runtime import — fonksiyon içinde
+            import redis.asyncio as aioredis
 
             self._client = aioredis.Redis.from_url(
                 self._url,
@@ -60,7 +62,22 @@ class RedisCacheBackend(CacheBackend):
             client = await self._get_client()
             value = await client.get(self._key_prefix + key)
             if value is None:
+                # [FAZ3-METRIC]
+                try:
+                    get_metrics().record_cache_operation(
+                        cache_type="redis", operation="get", result="miss"
+                    )
+                except Exception:
+                    pass
                 return None
+
+            # [FAZ3-METRIC]
+            try:
+                get_metrics().record_cache_operation(
+                    cache_type="redis", operation="get", result="hit"
+                )
+            except Exception:
+                pass
             return json.loads(value)
         except Exception as exc:
             logger.warning("redis.get.failed", key=key, error=str(exc))
@@ -77,6 +94,14 @@ class RedisCacheBackend(CacheBackend):
             serialized = json.dumps(value)
             expire = ttl if ttl is not None else self._default_ttl
             await client.set(self._key_prefix + key, serialized, ex=expire)
+
+            # [FAZ3-METRIC]
+            try:
+                get_metrics().record_cache_operation(
+                    cache_type="redis", operation="set", result="hit"
+                )
+            except Exception:
+                pass
         except Exception as exc:
             logger.warning("redis.set.failed", key=key, error=str(exc))
 

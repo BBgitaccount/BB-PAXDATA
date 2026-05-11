@@ -1,18 +1,36 @@
 from __future__ import annotations
 
 from collections.abc import Sequence
-from typing import Any
+from typing import TYPE_CHECKING, Any
 
 import structlog
 from sqlalchemy import delete, func, select
 
+if TYPE_CHECKING:
+    from bb_paxdata.infrastructure.ai.prompt_registry import PromptRegistry
+
 from bb_paxdata.domain.models.analysis import Analysis as AnalysisDomain
+from bb_paxdata.domain.models.analysis import SentenceAnalysis
 from bb_paxdata.infrastructure.db.models import (
     AICache,
+    AIFailAnalysis,
+    AIFailPattern,
     AISentenceAnalysis,
     AIValidationLog,
 )
 from bb_paxdata.infrastructure.db.repositories.base import BaseRepository
+
+try:
+    from bb_paxdata.infrastructure.ai import get_prompt_registry
+except ImportError:
+    # Fallback if registry is not yet available
+    def get_prompt_registry() -> PromptRegistry:
+        class DummyRegistry:
+            def get_version_string(self, name: str) -> str | None:
+                return None
+
+        return DummyRegistry()  # type: ignore
+
 
 logger = structlog.get_logger(__name__)
 
@@ -31,6 +49,29 @@ class AnalysisRepository(BaseRepository[AISentenceAnalysis]):
         result = await self._session.execute(stmt)
         rows = result.scalars().all()
         return [r.to_domain() for r in rows]
+
+    async def insert_sentence_analysis(
+        self,
+        analysis: SentenceAnalysis,
+        prompt_name: str = "sentence_analysis",
+    ) -> None:
+        """
+        Cümle analizini DB'ye yazar.
+        prompt_version otomatik olarak PromptRegistry'den alınır.
+        """
+        if getattr(analysis, "prompt_version", None) is None:
+            try:
+                analysis = analysis.model_copy(
+                    update={
+                        "prompt_version": get_prompt_registry().get_version_string(
+                            prompt_name
+                        )
+                    }
+                )
+            except (KeyError, Exception):
+                pass  # Registry erişilemezse prompt_version NULL kalır
+
+        await self.save_sentence_analysis(analysis)
 
     async def save_sentence_analysis(self, analysis: Any) -> None:
         """Save sentence analysis (supports domain model or ORM model)."""
@@ -241,3 +282,73 @@ class AnalysisRepository(BaseRepository[AISentenceAnalysis]):
                 backend_stats["error_rate"] = 0
 
         return stats
+
+    async def save_fail_analysis(self, fail_analysis: AIFailAnalysis) -> None:
+        """Save AI failure analysis and update patterns."""
+        self._session.add(fail_analysis)
+        await self._session.flush()
+
+        # Update pattern registry
+        await self.update_fail_patterns(fail_analysis)
+
+    async def update_fail_patterns(self, fail_analysis: AIFailAnalysis) -> None:
+        """Update or create a failure pattern in the registry.
+
+        Logic:
+        - Match on (fail_category, check_type, negation_type, speaker_name)
+        - If exists: update recurrence_count, averages, and last_seen_at
+        - If not: create new pattern
+        """
+        # Search for existing pattern
+        stmt = select(AIFailPattern).where(
+            AIFailPattern.fail_category == fail_analysis.fail_category,
+            AIFailPattern.check_type == fail_analysis.check_type,
+            AIFailPattern.negation_type == fail_analysis.negation_type,
+            AIFailPattern.speaker_name == fail_analysis.speaker_name,
+        )
+        result = await self._session.execute(stmt)
+        pattern = result.scalar_one_or_none()
+
+        if pattern:
+            # Update existing pattern
+            pattern.recurrence_count += 1
+            # Update rolling averages (simplified)
+            pattern.avg_discrepancy = (
+                (pattern.avg_discrepancy * (pattern.recurrence_count - 1))
+                + (fail_analysis.discrepancy_score or 0.0)
+            ) / pattern.recurrence_count
+            pattern.avg_ai_confidence = (
+                (pattern.avg_ai_confidence * (pattern.recurrence_count - 1))
+                + (fail_analysis.confidence_score or 0.0)
+            ) / pattern.recurrence_count
+
+            # Update panel list
+            panels = set((pattern.affected_panels or "").split(","))
+            if fail_analysis.panel_id:
+                panels.add(fail_analysis.panel_id)
+            pattern.affected_panels = ",".join(filter(None, panels))
+
+            pattern.last_seen_at = func.now()
+        else:
+            # Create new pattern
+            new_pattern = AIFailPattern(
+                fail_category=fail_analysis.fail_category or "diger",
+                negation_type=fail_analysis.negation_type,
+                check_type=fail_analysis.check_type,
+                speaker_name=fail_analysis.speaker_name,
+                country=fail_analysis.country,
+                power_level_avg=float(fail_analysis.power_level or 0),
+                avg_discrepancy=fail_analysis.discrepancy_score or 0.0,
+                avg_ai_confidence=fail_analysis.confidence_score or 0.0,
+                dominant_negation_type=fail_analysis.negation_type,
+                affected_panels=fail_analysis.panel_id,
+                example_sent_id=fail_analysis.sent_id,
+                example_sentence=fail_analysis.original_sentence,
+                example_explanation=fail_analysis.fail_reason,
+                recurrence_count=1,
+                first_seen_at=func.now(),
+                last_seen_at=func.now(),
+            )
+            self._session.add(new_pattern)
+
+        await self._session.flush()

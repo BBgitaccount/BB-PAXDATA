@@ -4,8 +4,11 @@ from typing import Any
 from pydantic import BaseModel, Field
 
 from ..enums import (
+    AudienceType,
     ContextualImportance,
     DynamicEvent,
+    EvidenceType,
+    FrameType,
     SentimentArc,
     TemporalPattern,
     TopicCategory,
@@ -75,6 +78,47 @@ class Segment(BaseModel):
     # Content metrics
     word_count: int | None = Field(None, ge=0, description="Total word count")
     sentence_count: int | None = Field(None, ge=0, description="Number of sentences")
+
+    # Analytic Scores (v5.8 Parity)
+    sbi_score: float | None = Field(None, description="Discursive Pressure Index (SBI)")
+    dki_score: float | None = Field(None, description="Diplomatic Position Index (DKI)")
+    risk_score: int = Field(0, description="Aggregated risk score")
+    risk_signals: list[str] = Field(
+        default_factory=list, description="Detected risk signals"
+    )
+    risk_trajectory: str | None = Field(
+        None, description="Risk trajectory (ESCALATING, etc.)"
+    )
+    demand_concentration: dict[str, int] | None = Field(
+        None, description="Demand count by section"
+    )
+    demand_count: int = Field(0, description="Total demand count")
+
+    # Mode results (Dominant categories)
+    dominant_frame: FrameType | None = Field(
+        None, description="Most frequent frame type"
+    )
+    dominant_audience: AudienceType | None = Field(
+        None, description="Most frequent audience type"
+    )
+    dominant_evidence: EvidenceType | None = Field(
+        None, description="Most frequent evidence type"
+    )
+    dominant_topic: TopicCategory | None = Field(
+        None, description="Most frequent topic"
+    )
+    emotion_category: str | None = Field(
+        None, description="Most frequent emotion category"
+    )
+
+    # Aggregated metrics
+    vader_compound: float | None = Field(
+        None, description="Average VADER compound score"
+    )
+    avg_hedging_score: float | None = Field(None, description="Average hedging score")
+    formula_manip_score: float | None = Field(
+        None, description="Aggregated manipulation score"
+    )
 
     # Metadata
     summary: str | None = Field(None, description="Brief summary of segment content")

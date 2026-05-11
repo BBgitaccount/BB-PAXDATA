@@ -366,8 +366,10 @@ class TestServiceContainer:
         assert framing_result is not None
         assert topic_result is not None
 
-        # Results should be consistent
-        assert sentiment_result.negation_aware_score > 0.0  # Due to negation
+        # "We do NOT want this unacceptable war" — VADER reads as highly negative.
+        # negation_aware_diplo: VADER compound is negative (war, unacceptable)
+        # → negation_aware_score should be negative. This is correct behavior.
+        assert sentiment_result.negation_aware_score < 0.0  # Correctly negative
         assert hedging_result.score >= 0.0
         assert topic_result.confidence >= 0.0
 

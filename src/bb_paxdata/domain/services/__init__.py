@@ -9,6 +9,7 @@ from .cross_anomaly_service import CrossAnomalyService
 from .framing_service import FramingService
 from .hedging_service import HedgingService
 from .risk_service import RiskService
+from .segment_service import SegmentService
 from .sentiment_service import SentimentService
 from .service_container import AnalysisPipeline, ServiceContainer, get_default_container
 from .topic_service import TopicService
@@ -19,6 +20,7 @@ __all__ = [
     "HedgingService",
     "FramingService",
     "TopicService",
+    "SegmentService",
     "CrossAnomalyService",
     "ServiceContainer",
     "AnalysisPipeline",

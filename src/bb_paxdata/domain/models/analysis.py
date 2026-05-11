@@ -110,3 +110,50 @@ class Analysis(BaseModel):
     recommendations: list[str] = Field(
         default_factory=list, description="Recommended actions based on analysis"
     )
+
+    # [FAZ3] PromptRegistry entegrasyonu
+    prompt_version: str | None = Field(
+        default=None,
+        description=(
+            "Bu analizi üretmek için kullanılan prompt'un versiyonu. "
+            "Format: '{prompt_name}:{version}:{hash}' "
+            "Örnek: 'sentence_analysis:v1.0:a3f9b2c1e8d47f20'"
+        ),
+        examples=["sentence_analysis:v1.0:a3f9b2c1e8d47f20"],
+    )
+
+
+# Alias for compatibility with instructions
+SentenceAnalysis = Analysis
+
+
+class SegmentInsight(BaseModel):
+    # [FAZ3] PromptRegistry entegrasyonu
+    prompt_version: str | None = Field(
+        default=None,
+        description="PromptRegistry versiyonu — '{name}:{ver}:{hash}' formatı",
+    )
+
+
+class DemandAnalysis(BaseModel):
+    # [FAZ3] PromptRegistry entegrasyonu
+    prompt_version: str | None = Field(
+        default=None,
+        description="PromptRegistry versiyonu — '{name}:{ver}:{hash}' formatı",
+    )
+
+
+class PanelSynthesis(BaseModel):
+    # [FAZ3] PromptRegistry entegrasyonu
+    prompt_version: str | None = Field(
+        default=None,
+        description="PromptRegistry versiyonu — '{name}:{ver}:{hash}' formatı",
+    )
+
+
+class FailCheckAnalysis(BaseModel):
+    # [FAZ3] PromptRegistry entegrasyonu
+    prompt_version: str | None = Field(
+        default=None,
+        description="PromptRegistry versiyonu — '{name}:{ver}:{hash}' formatı",
+    )

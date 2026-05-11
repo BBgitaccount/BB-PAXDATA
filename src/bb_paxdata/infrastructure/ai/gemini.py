@@ -12,6 +12,7 @@ from bb_paxdata.infrastructure.ai.base import (
     CompletionOptions,
     CompletionResult,
 )
+from bb_paxdata.infrastructure.observability.metrics import get_metrics
 
 logger = structlog.get_logger(__name__)
 
@@ -82,12 +83,37 @@ class GeminiClient(AIClient):
 
             url = f"https://generativelanguage.googleapis.com/v1beta/models/{self._model}:generateContent?key={self._api_key}"
 
-            response = await self._client.post(
-                url,
-                json=payload,
-                timeout=options.timeout,
-            )
-            response.raise_for_status()
+            # [FAZ3-METRIC]
+            _t0 = time.perf_counter()
+            try:
+                response = await self._client.post(
+                    url,
+                    json=payload,
+                    timeout=options.timeout,
+                )
+                response.raise_for_status()
+                duration = time.perf_counter() - _t0
+                try:
+                    get_metrics().record_ai_request(
+                        backend="gemini",
+                        model=self._model,
+                        duration_seconds=duration,
+                        status="success",
+                    )
+                except Exception:
+                    pass
+            except Exception:
+                duration = time.perf_counter() - _t0
+                try:
+                    get_metrics().record_ai_request(
+                        backend="gemini",
+                        model=self._model,
+                        duration_seconds=duration,
+                        status="error",
+                    )
+                except Exception:
+                    pass
+                raise
 
             raw_response = response.json()
 

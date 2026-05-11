@@ -29,12 +29,12 @@ class TestSentimentService:
         assert tokens == expected
 
     async def test_tokenize_words_with_contractions(self):
-        """Test tokenization with contractions."""
+        """Test tokenization with contractions (won't -> won_t -> won't)."""
         text = "We don't want war, but we can't accept this."
         tokens = self.service.tokenize_words(text)
-        # Contractions should be handled
-        assert "don_t" in tokens or "don't" in tokens
-        assert "can_t" in tokens or "can't" in tokens
+        # Contractions should be encoded and then decoded back to original form
+        assert "don't" in tokens
+        assert "can't" in tokens
 
     async def test_diplo_sentiment_positive(self):
         """Test DIPLO sentiment analysis with positive text."""
@@ -83,10 +83,10 @@ class TestSentimentService:
         emotion = self.service._classify_emotion(-0.8)
         assert emotion == SentimentCategory.CONFRONTATIONAL
 
-    async def test_classify_emotion_negative(self):
-        """Test emotion classification for negative."""
+    async def test_classify_emotion_negative_borderline(self):
+        """Test emotion classification for confrontational borderline."""
         emotion = self.service._classify_emotion(-0.4)
-        assert emotion == SentimentCategory.CONCERNED
+        assert emotion == SentimentCategory.CONFRONTATIONAL
 
     async def test_classify_emotion_concerned(self):
         """Test emotion classification for concerned."""
@@ -98,18 +98,18 @@ class TestSentimentService:
         emotion = self.service._classify_emotion(0.0)
         assert emotion == SentimentCategory.NEUTRAL_CAUTIOUS
 
-    async def test_classify_emotion_positive(self):
-        """Test emotion classification for positive."""
+    async def test_classify_emotion_positive_constructive(self):
+        """Test emotion classification for constructive."""
         emotion = self.service._classify_emotion(0.2)
         assert emotion == SentimentCategory.CONSTRUCTIVE
 
-    async def test_classify_emotion_optimistic(self):
-        """Test emotion classification for optimistic."""
-        emotion = self.service._classify_emotion(0.5)
+    async def test_classify_emotion_cooperative_borderline(self):
+        """Test emotion classification for cooperative borderline."""
+        emotion = self.service._classify_emotion(0.35)
         assert emotion == SentimentCategory.COOPERATIVE
 
-    async def test_classify_emotion_cooperative(self):
-        """Test emotion classification for cooperative."""
+    async def test_classify_emotion_cooperative_extreme(self):
+        """Test emotion classification for cooperative extreme."""
         emotion = self.service._classify_emotion(0.8)
         assert emotion == SentimentCategory.COOPERATIVE
 

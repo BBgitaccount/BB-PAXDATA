@@ -97,6 +97,13 @@ class Sentence(BaseModel):
         None, ge=0, description="Number of face-saving acts"
     )
 
+    # Risk and Manipulation
+    risk_score: float | None = Field(None, ge=0.0, le=10.0, description="Risk score")
+    manipulation_score: float | None = Field(
+        None, ge=0.0, le=1.0, description="Manipulation score"
+    )
+    is_demand: bool = Field(False, description="Whether the sentence contains a demand")
+
     # Metadata
     word_count: int | None = Field(
         None, ge=0, description="Number of words in the sentence"

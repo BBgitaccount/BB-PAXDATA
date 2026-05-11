@@ -33,6 +33,7 @@ from .cross_anomaly_service import CrossAnomalyService
 from .framing_service import FramingService
 from .hedging_service import HedgingService
 from .risk_service import RiskService
+from .segment_service import SegmentService
 from .sentiment_service import SentimentService
 from .topic_service import TopicService
 
@@ -167,6 +168,7 @@ class ServiceContainer:
         self._framing_service: FramingServiceProtocol | None = None
         self._topic_service: TopicServiceProtocol | None = None
         self._anomaly_service: CrossAnomalyServiceProtocol | None = None
+        self._segment_service: SegmentService | None = None
 
         # Service configuration
         self._service_config: dict[str, Any] = {}
@@ -205,6 +207,13 @@ class ServiceContainer:
         if self._topic_service is None:
             self._topic_service = TopicService()
         return self._topic_service
+
+    @property
+    def segment(self) -> SegmentService:
+        """Get the segment analysis service."""
+        if self._segment_service is None:
+            self._segment_service = SegmentService(risk_service=self.risk)
+        return self._segment_service
 
     @property
     def anomaly(self) -> CrossAnomalyServiceProtocol:
@@ -259,7 +268,15 @@ class ServiceContainer:
 
     def reset_all_services(self) -> None:
         """Reset all services, forcing reinitialization."""
-        service_names = ["sentiment", "risk", "hedging", "framing", "topic", "anomaly"]
+        service_names = [
+            "sentiment",
+            "risk",
+            "hedging",
+            "framing",
+            "topic",
+            "anomaly",
+            "segment",
+        ]
 
         for service_name in service_names:
             self.reset_service(service_name)
@@ -271,7 +288,15 @@ class ServiceContainer:
             Dictionary mapping service names to initialization status
         """
         status = {}
-        service_names = ["sentiment", "risk", "hedging", "framing", "topic", "anomaly"]
+        service_names = [
+            "sentiment",
+            "risk",
+            "hedging",
+            "framing",
+            "topic",
+            "anomaly",
+            "segment",
+        ]
 
         for service_name in service_names:
             service_attr = f"_{service_name}_service"
@@ -292,6 +317,7 @@ class ServiceContainer:
             framing_service=self.framing,
             topic_service=self.topic,
             anomaly_service=self.anomaly,
+            segment_service=self.segment,
         )
 
 
@@ -306,6 +332,7 @@ class AnalysisPipeline:
         framing_service: FramingServiceProtocol,
         topic_service: TopicServiceProtocol,
         anomaly_service: CrossAnomalyServiceProtocol,
+        segment_service: SegmentService,
     ):
         """Initialize the analysis pipeline.
 
@@ -323,6 +350,7 @@ class AnalysisPipeline:
         self.framing = framing_service
         self.topic = topic_service
         self.anomaly = anomaly_service
+        self.segment = segment_service
 
     def analyze_sentence(self, sentence: "Sentence") -> dict[str, Any]:
         """Perform comprehensive analysis on a sentence.
@@ -369,6 +397,10 @@ class AnalysisPipeline:
         )
         if segment_text:
             results["topic"] = self.topic.analyze_topics(segment_text)
+
+        # 2.0 Segment Enrichment (Structure Parity)
+        if hasattr(segment, "sentences"):
+            self.segment.enrich_segment(segment, segment.sentences)
 
         return results
 
@@ -424,3 +456,8 @@ def get_topic_service() -> TopicServiceProtocol:
 def get_anomaly_service() -> CrossAnomalyServiceProtocol:
     """Get the default anomaly service."""
     return get_default_container().anomaly
+
+
+def get_segment_service() -> SegmentService:
+    """Get the default segment service."""
+    return get_default_container().segment

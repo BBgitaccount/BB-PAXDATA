@@ -134,11 +134,14 @@ class SentimentServiceProtocol(Protocol):
 class RiskServiceProtocol(Protocol):
     """Protocol for risk assessment services."""
 
-    def assess_risk(self, segment: Segment) -> RiskAssessment:
+    def assess_risk(
+        self, segment: Segment, sentences: list[Sentence] | None = None
+    ) -> RiskAssessment:
         """Assess risk level of a segment.
 
         Args:
             segment: The segment to assess
+            sentences: Optional list of sentences
 
         Returns:
             RiskAssessment containing risk scores and severity

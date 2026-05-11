@@ -5,7 +5,7 @@ from __future__ import annotations
 import json
 from datetime import datetime
 from enum import Enum
-from typing import TYPE_CHECKING, Any, TypeVar
+from typing import TYPE_CHECKING, Any, TypeVar, cast
 
 from sqlalchemy import (
     JSON,
@@ -462,7 +462,12 @@ class Segment(Base):
         return self.seg_id
 
     def to_domain(self) -> SegmentDomain:
-        from bb_paxdata.domain.enums import TopicCategory
+        from bb_paxdata.domain.enums import (
+            AudienceType,
+            EvidenceType,
+            FrameType,
+            TopicCategory,
+        )
         from bb_paxdata.domain.models.segment import Segment as SegmentDomainModel
 
         return SegmentDomainModel(
@@ -477,6 +482,7 @@ class Segment(Base):
             sentiment_arc=None,
             avg_sentiment_score=None,
             speaker_count=None,
+            speaker=None,
             confidence_score=0.85,
             topic_category=(
                 _try_enum(TopicCategory, self.dominant_topic)
@@ -487,6 +493,31 @@ class Segment(Base):
             word_count=self.word_count,
             sentence_count=self.sentence_count,
             summary=self.text[:500] if self.text else None,
+            sbi_score=self.sbi_score,
+            dki_score=self.dki_score,
+            risk_score=self.risk_score,
+            risk_signals=(
+                cast(list[str], self.risk_signals) if self.risk_signals else []
+            ),
+            risk_trajectory=self.risk_trajectory,
+            demand_concentration=(
+                cast(dict[str, int], self.demand_concentration)
+                if self.demand_concentration
+                else None
+            ),
+            demand_count=self.demand_count,
+            dominant_frame=_try_enum(FrameType, self.dominant_frame),
+            dominant_audience=_try_enum(AudienceType, self.dominant_audience),
+            dominant_evidence=_try_enum(EvidenceType, self.dominant_evidence),
+            dominant_topic=(
+                _try_enum(TopicCategory, self.dominant_topic)
+                if self.dominant_topic
+                else None
+            ),
+            emotion_category=self.emotion_category,
+            vader_compound=self.vader_compound,
+            avg_hedging_score=self.avg_hedging_score,
+            formula_manip_score=self.formula_manip_score,
         )
 
     @classmethod
@@ -675,6 +706,9 @@ class Sentence(Base):
             face_threat_count=self.face_threat_count,
             face_save_count=self.face_save_count,
             confidence_score=None,
+            risk_score=self.risk_score,
+            manipulation_score=self.negation_aware_diplo,  # Or mapped field if exists
+            is_demand=self.demand_type is not None,
         )
 
     @classmethod
@@ -1345,9 +1379,11 @@ class AISentenceAnalysis(Base):
     sent_id: Mapped[str] = mapped_column(
         ForeignKey("sentences.sent_id"), nullable=False
     )
-    prompt_version: Mapped[str] = mapped_column(
-        Text, nullable=False
-    )  # Part of composite PK
+    prompt_version: Mapped[str | None] = mapped_column(
+        String(80),
+        nullable=True,
+        comment="PromptRegistry versiyonu — '{name}:{ver}:{hash}' formatı",
+    )
     seg_id: Mapped[str | None] = mapped_column(Text, nullable=True)
     panel_id: Mapped[str | None] = mapped_column(Text, nullable=True)
     speaker_name: Mapped[str | None] = mapped_column(Text, nullable=True)
@@ -1559,6 +1595,11 @@ class AISegmentInsight(Base):
     seg_id: Mapped[str] = mapped_column(
         ForeignKey("segments.seg_id"), unique=True, nullable=False
     )
+    prompt_version: Mapped[str | None] = mapped_column(
+        String(80),
+        nullable=True,
+        comment="PromptRegistry versiyonu — '{name}:{ver}:{hash}' formatı",
+    )
     panel_id: Mapped[str | None] = mapped_column(Text, nullable=True)
     speaker_name: Mapped[str | None] = mapped_column(Text, nullable=True)
     country: Mapped[str | None] = mapped_column(Text, nullable=True)
@@ -1758,6 +1799,11 @@ class AIDemandAnalysis(Base):
     sent_id: Mapped[str | None] = mapped_column(
         ForeignKey("sentences.sent_id"), nullable=True
     )
+    prompt_version: Mapped[str | None] = mapped_column(
+        String(80),
+        nullable=True,
+        comment="PromptRegistry versiyonu — '{name}:{ver}:{hash}' formatı",
+    )
     seg_id: Mapped[str | None] = mapped_column(Text, nullable=True)
     panel_id: Mapped[str | None] = mapped_column(Text, nullable=True)
     speaker_name: Mapped[str | None] = mapped_column(Text, nullable=True)
@@ -1828,6 +1874,11 @@ class AIPanelSynthesis(Base):
     panel_id: Mapped[str] = mapped_column(
         ForeignKey("panels.panel_id"), unique=True, nullable=False
     )
+    prompt_version: Mapped[str | None] = mapped_column(
+        String(80),
+        nullable=True,
+        comment="PromptRegistry versiyonu — '{name}:{ver}:{hash}' formatı",
+    )
     panel_summary: Mapped[str | None] = mapped_column(Text, nullable=True)
     power_balance: Mapped[str | None] = mapped_column(Text, nullable=True)
     critical_moments: Mapped[str | None] = mapped_column(Text, nullable=True)
@@ -1888,6 +1939,11 @@ class AIFailAnalysis(Base):
 
     fail_id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
     sent_id: Mapped[str] = mapped_column(Text, nullable=False)
+    prompt_version: Mapped[str | None] = mapped_column(
+        String(80),
+        nullable=True,
+        comment="PromptRegistry versiyonu — '{name}:{ver}:{hash}' formatı",
+    )
     seg_id: Mapped[str | None] = mapped_column(Text, nullable=True)
     panel_id: Mapped[str | None] = mapped_column(Text, nullable=True)
     speaker_name: Mapped[str | None] = mapped_column(Text, nullable=True)

@@ -3,6 +3,11 @@
 This service detects cross-anomalies by comparing AI analysis results with
 formula-based calculations. It identifies contradictions and inconsistencies
 that may indicate manipulation, deception, or unusual diplomatic patterns.
+
+Formula alignment with AIanalyst_v5_8.py detect_cross_anomalies():
+- Anomaly 2: ai_sent <= -0.5 AND ai_tone == 'confrontational' (NO power filter)
+- Anomaly 3: ai_sent >= 0.3 AND ai_tone == 'confrontational' (velvet glove:
+  positive sentiment paradox, NOT politeness×risk combination)
 """
 
 from typing import Any, ClassVar
@@ -178,38 +183,35 @@ class CrossAnomalyService(BaseService, CrossAnomalyServiceProtocol):
     ) -> list[AnomalyResult]:
         """Detect negative confrontational amplification anomalies.
 
-        Negative sentiment with confrontational tone from high-power actors.
+        Mirrors AIanalyst_v5_8.py Anomali 2:
+        - Condition: ai_sentiment <= ANOMALY_SENT_NEG AND ai_tone == 'confrontational'
+        - Power level is NOT a filtering condition (any actor can trigger this)
+        - Severity: HIGH (all cases)
         """
         anomalies = []
 
         ai_sentiment = ai_values.get("ai_sentiment", 0.0)
         ai_tone = ai_values.get("ai_diplomatic_tone", "neutral")
-        power_level = formula_values.get("power_level", 5.0)
 
-        if (
-            ai_sentiment <= self.ANOMALY_SENT_NEG
-            and ai_tone in ["confrontational", "aggressive"]
-            and power_level >= self.ANOMALY_POWER_HIGH
-        ):
-
-            severity = (
-                AnomalySeverity.CRITICAL if power_level >= 9 else AnomalySeverity.HIGH
-            )
-
+        if ai_sentiment <= self.ANOMALY_SENT_NEG and ai_tone == "confrontational":
             anomalies.append(
                 AnomalyResult(
                     type=AnomalyType.NEGATIVE_CONFRONTATIONAL_AMPLIFICATION,
-                    severity=severity,
-                    category="Power Dynamics",
+                    severity=AnomalySeverity.HIGH,
+                    category="agresif_söylem",
                     description=(
-                        "High-power actor using negative confrontational tone "
-                        "indicates escalation risk"
+                        f"Güçlü negatif duygu ({ai_sentiment:+.3f}) ve yüzleşmeci ton "
+                        "birlikte saptandı. Bu kombinasyon açık düşmanca söylemin "
+                        "göstergesidir. Diplomatik forumlarda bu düzeyde bir "
+                        "kızgınlık-yüzleşme eşzamanlılığı, konuşmacının normları "
+                        "kasıtlı olarak zorladığını ve güç projeksiyonu "
+                        "yaptığını işaret edebilir."
                     ),
                     ai_values={
                         "ai_sentiment": ai_sentiment,
                         "ai_diplomatic_tone": ai_tone,
                     },
-                    formula_values={"power_level": power_level},
+                    formula_values={},
                     confidence=0.9,
                 )
             )
@@ -221,31 +223,38 @@ class CrossAnomalyService(BaseService, CrossAnomalyServiceProtocol):
     ) -> list[AnomalyResult]:
         """Detect velvet glove confrontation anomalies.
 
-        Polite language with confrontational intent.
+        Mirrors AIanalyst_v5_8.py Anomali 3:
+        - Condition: ai_sentiment >= ANOMALY_SENT_POS (0.3) AND
+                     ai_tone == 'confrontational'
+        - Paradox: positive-sounding words + confrontational intent
+        - Manipulation score is used to strengthen/weaken the description
+          but does NOT gate the anomaly trigger
         """
         anomalies = []
 
-        ai_politeness = ai_values.get("ai_politeness", 0.0)
-        ai_risk = ai_values.get("ai_risk", 0.0)
-        formula_hedging = formula_values.get("formula_hedging", 0.0)
+        ai_sentiment = ai_values.get("ai_sentiment", 0.0)
+        ai_tone = ai_values.get("ai_diplomatic_tone", "neutral")
+        ai_manip = ai_values.get("ai_manipulation", 0.0)
 
-        if (
-            ai_politeness >= 0.7  # High politeness
-            and ai_risk >= self.ANOMALY_RISK_MED  # Medium-high risk
-            and formula_hedging <= self.ANOMALY_HEDGE_LOW
-        ):  # Low hedging (direct)
-
+        if ai_sentiment >= self.ANOMALY_SENT_POS and ai_tone == "confrontational":
+            manip_note = "güçlendiriyor" if ai_manip >= 0.4 else "henüz desteklemiyor"
             anomalies.append(
                 AnomalyResult(
                     type=AnomalyType.VELVET_GLOVE_CONFRONTATION,
                     severity=AnomalySeverity.MEDIUM,
-                    category="Diplomatic Strategy",
+                    category="örtülü_baskı",
                     description=(
-                        "Polite language masking confrontational intent "
-                        "(velvet glove approach)"
+                        f"Pozitif duygu ({ai_sentiment:+.3f}) ile yüzleşmeci ton aynı "
+                        "anda geliyor. Bu paradoks 'velvet glove' stratejisini işaret "
+                        "edebilir: nazik, dostane sözcüklerle kaplı bir baskı mesajı. "
+                        f"Manipülasyon skoru ({ai_manip:.2f}) bu yorumu {manip_note}."
                     ),
-                    ai_values={"ai_politeness": ai_politeness, "ai_risk": ai_risk},
-                    formula_values={"formula_hedging": formula_hedging},
+                    ai_values={
+                        "ai_sentiment": ai_sentiment,
+                        "ai_diplomatic_tone": ai_tone,
+                        "ai_manipulation": ai_manip,
+                    },
+                    formula_values={},
                     confidence=0.7,
                 )
             )

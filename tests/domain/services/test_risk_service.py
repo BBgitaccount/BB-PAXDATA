@@ -99,10 +99,11 @@ class TestRiskService:
     async def test_contextual_risk_with_ner_service(self):
         """Test contextual risk using NER service."""
         mock_ner = Mock()
-        mock_ner.extract_entities.return_value = {"GPE": ["syria"]}
+        mock_ner.extract_entities.return_value = {"GPE": ["Syria"]}
 
         service = RiskService(ner_service=mock_ner)
-        text = "Syria conflict"
+        # Must include a risk signal so base_score > 0 → multiplier applies
+        text = "The situation in Syria is unacceptable"
 
         risk_score = service.contextual_risk(text)
 

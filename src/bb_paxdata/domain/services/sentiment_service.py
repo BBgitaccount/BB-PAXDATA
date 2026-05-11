@@ -3,6 +3,11 @@
 This service implements sentiment analysis using the DIPLO (Diplomatic Discourse)
 lexicon with negation-aware scoring. It provides both standard sentiment analysis
 and negation-aware sentiment analysis for diplomatic discourse analysis.
+
+Formula alignment with DatabaseBuilder_v5_8.py:
+- diplo_sentiment(): phrase-first sort + re.search word-boundary + sum*0.05 + VADER
+- negation_aware_diplo(): left-only window [i-N:i], 0.8 attenuation + VADER blend
+  Academic: Jia & Liang (2017); Socher et al. (2013)
 """
 
 import re
@@ -208,15 +213,20 @@ class SentimentService(BaseService, SentimentServiceProtocol):
         self._vader_analyzer = SentimentIntensityAnalyzer()
 
     def tokenize_words(self, text: str) -> list[str]:
-        """Tokenize text into words with basic preprocessing.
+        """Tokenize text into words with contraction handling.
+
+        Mirrors DatabaseBuilder_v5_8.py tokenize_words():
+        - Encode contractions: won't → won_t (preserves negation structure)
+        - Decode back after split: won_t → won't (keeps negation word recognizable)
+        - Regex includes Turkish characters: [a-zA-ZğüşıöçĞÜŞİÖÇ'_-]+
 
         Args:
             text: Input text to tokenize
 
         Returns:
-            List of word tokens
+            List of lowercase word tokens
         """
-        # Contraction map for better tokenization
+        # Contraction map — encode (apostrophe → underscore)
         contraction_map = {
             "won't": "won_t",
             "don't": "don_t",
@@ -236,19 +246,31 @@ class SentimentService(BaseService, SentimentServiceProtocol):
             "mustn't": "mustn_t",
             "needn't": "needn_t",
             "shan't": "shan_t",
-            "n't": "_nt",  # general fallback
         }
 
-        # Apply contraction mapping
-        for contraction, replacement in contraction_map.items():
-            text = text.replace(contraction, replacement)
+        tl = text.lower()
 
-        # Basic tokenization: lowercase, split on non-word characters
-        tokens = re.findall(r"\b\w+\b", text.lower())
+        # Step 1: encode contractions
+        for contraction, encoded in contraction_map.items():
+            tl = tl.replace(contraction, encoded)
+
+        # Step 2: tokenize — includes Turkish chars and underscore/hyphen
+        raw_tokens = re.findall(r"\b[a-zğüşıöç'_-]+\b", tl)
+
+        # Step 3: decode back (won_t → won't so negation list matches)
+        decode_map = {v: k for k, v in contraction_map.items()}
+        tokens = [decode_map.get(tok, tok) for tok in raw_tokens]
+
         return tokens
 
     def diplo_sentiment(self, text: str) -> float:
         """Calculate DIPLO sentiment score for text.
+
+        Mirrors DatabaseBuilder_v5_8.py diplo_sentiment():
+        - Phrase-first sorting (longest phrase matched first)
+        - Word-boundary regex matching (re.search \\b...\\b)
+        - Adjustment = sum(matched_scores) * 0.05, clamped [-2, 2]
+        - Final = VADER compound + adj, clamped [-1, 1]
 
         Args:
             text: Input text to analyze
@@ -256,33 +278,36 @@ class SentimentService(BaseService, SentimentServiceProtocol):
         Returns:
             Sentiment score from -1 to 1
         """
-        tokens = self.tokenize_words(text)
-        if not tokens:
-            return 0.0
+        tl = text.lower()
 
-        # Calculate sentiment using DIPLO lexicon
-        sentiment_scores = []
-        for token in tokens:
-            # Check for exact matches first
-            if token in self.DIPLO_LEXICON:
-                sentiment_scores.append(self.DIPLO_LEXICON[token])
-            else:
-                # Check for partial matches in multi-word phrases
-                for phrase, score in self.DIPLO_LEXICON.items():
-                    if token in phrase.split():
-                        sentiment_scores.append(
-                            score * 0.5
-                        )  # Reduced weight for partial matches
-                        break
+        # Sum all matched phrase scores (phrase-first: longest first)
+        adj = (
+            sum(
+                v
+                for phrase, v in sorted(
+                    self.DIPLO_LEXICON.items(), key=lambda x: -len(x[0])
+                )
+                if re.search(r"\b" + re.escape(phrase) + r"\b", tl)
+            )
+            * 0.05
+        )
 
-        if not sentiment_scores:
-            return 0.0
+        # Clamp adjustment to [-2.0, 2.0]
+        adj = max(-2.0, min(2.0, adj))
 
-        # Return average sentiment score
-        return sum(sentiment_scores) / len(sentiment_scores)
+        # Blend with VADER compound
+        vader_compound = self._vader_analyzer.polarity_scores(text)["compound"]
+        diplo = float(round(max(-1.0, min(1.0, vader_compound + adj)), 4))
+        return diplo
 
     def negation_aware_diplo(self, text: str) -> float:
         """Calculate negation-aware DIPLO sentiment score.
+
+        Mirrors DatabaseBuilder_v5_8.py negation_aware_diplo():
+        - Phrase-first matching on DIPLO_LEXICON (longest phrase first)
+        - LEFT-ONLY negation window: tokens[max(0, i-N):i] (Jia & Liang 2017)
+        - Negated score = -val * 0.8 (polarity reversal + 0.8 attenuation)
+        - Final = VADER compound + sum(scores)*0.05, clamped [-1, 1]
 
         Args:
             text: Input text to analyze
@@ -294,48 +319,39 @@ class SentimentService(BaseService, SentimentServiceProtocol):
         if not tokens:
             return 0.0
 
-        sentiment_scores = []
-        negation_positions = []
+        scores: list[float] = []
 
-        # Find negation words and their positions
-        for i, token in enumerate(tokens):
-            if token in self.NEGATION_WORDS:
-                negation_positions.append(i)
+        for i, _tok in enumerate(tokens):
+            # Match phrases starting at position i (phrase-first: longest first)
+            for phrase, val in sorted(
+                self.DIPLO_LEXICON.items(), key=lambda x: -len(x[0])
+            ):
+                phrase_words = phrase.split()
+                end = i + len(phrase_words)
+                if end <= len(tokens) and tokens[i:end] == phrase_words:
+                    # LEFT-ONLY negation window [i-N : i]
+                    window = tokens[max(0, i - self.NEGATION_WINDOW) : i]
+                    if any(neg in window for neg in self.NEGATION_WORDS):
+                        val = -val * 0.8  # reverse polarity + 0.8 attenuation
+                    scores.append(val)
+                    break  # longest match consumed; move to next token
 
-        # Calculate sentiment with negation awareness
-        for i, token in enumerate(tokens):
-            base_score = 0.0
+        # Adjustment = sum(scores) * 0.05
+        adj = sum(scores) * 0.05
 
-            # Get base sentiment score
-            if token in self.DIPLO_LEXICON:
-                base_score = self.DIPLO_LEXICON[token]
-            else:
-                # Check for partial matches
-                for phrase, score in self.DIPLO_LEXICON.items():
-                    if token in phrase.split():
-                        base_score = score * 0.5
-                        break
-
-            # Check if token is within negation window
-            is_negated = False
-            for neg_pos in negation_positions:
-                if abs(i - neg_pos) <= self.NEGATION_WINDOW:
-                    is_negated = True
-                    break
-
-            # Apply negation if detected
-            if is_negated and base_score != 0.0:
-                base_score = -base_score
-
-            sentiment_scores.append(base_score)
-
-        if not sentiment_scores:
-            return 0.0
-
-        return sum(sentiment_scores) / len(sentiment_scores)
+        # Blend with VADER compound, clamp to [-1, 1]
+        vader_score = self._vader_analyzer.polarity_scores(text)["compound"]
+        return float(round(max(-1.0, min(1.0, vader_score + adj)), 4))
 
     def _classify_emotion(self, sentiment_score: float) -> SentimentCategory:
         """Classify emotion category based on sentiment score.
+
+        Mirrors DatabaseBuilder_v5_8.py emotion category thresholds:
+          confrontational  : diplo <= -0.40
+          concerned        : -0.40 < diplo <= -0.10
+          neutral_cautious : -0.10 < diplo < 0.10
+          constructive     : 0.10 <= diplo < 0.35
+          cooperative      : diplo >= 0.35
 
         Args:
             sentiment_score: Sentiment score from -1 to 1
@@ -343,13 +359,13 @@ class SentimentService(BaseService, SentimentServiceProtocol):
         Returns:
             Emotion category
         """
-        if sentiment_score <= -0.6:
+        if sentiment_score <= -0.40:
             return SentimentCategory.CONFRONTATIONAL
-        elif sentiment_score <= -0.1:
+        elif sentiment_score <= -0.10:
             return SentimentCategory.CONCERNED
-        elif sentiment_score <= 0.1:
+        elif sentiment_score < 0.10:
             return SentimentCategory.NEUTRAL_CAUTIOUS
-        elif sentiment_score <= 0.4:
+        elif sentiment_score < 0.35:
             return SentimentCategory.CONSTRUCTIVE
         else:
             return SentimentCategory.COOPERATIVE
@@ -372,8 +388,9 @@ class SentimentService(BaseService, SentimentServiceProtocol):
         vader_scores = self._vader_analyzer.polarity_scores(text)
         vader_compound = vader_scores["compound"]
 
-        # Use negation-aware score as primary, but blend with VADER for robustness
-        final_score = (negation_aware_score * 0.7) + (vader_compound * 0.3)
+        # negation_aware_score is the legacy diplo_compound (VADER + adj).
+        # We use it directly as the final analysis score.
+        final_score = negation_aware_score
 
         # Classify emotion category
         emotion_category = self._classify_emotion(final_score)

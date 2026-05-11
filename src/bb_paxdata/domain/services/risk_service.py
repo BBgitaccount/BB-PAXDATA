@@ -3,6 +3,11 @@
 This service implements risk assessment using the Söylemsel Baskı İndeksi (SBI)
 and Diplomatik Konum İndeksi (DKI) formulas. It provides comprehensive risk
 analysis for diplomatic discourse segments.
+
+Formula alignment with DatabaseBuilder_v5_8.py:
+- risk_detect(): weighted signal scoring — CRITICAL=3pts, HIGH=2pts, BASE=1pt
+- contextual_risk(): dynamic NER multiplier (GPE/ORG=1.5×, PERSON=1.2×)
+  Academic: Baldwin (1985); Kıyılar (2020) Coercive Diplomacy
 """
 
 from typing import Any, ClassVar
@@ -21,7 +26,8 @@ from ..models.sentence import Sentence
 class RiskService(BaseService, RiskServiceProtocol):
     """Service for risk assessment with SBI and DKI calculations."""
 
-    # Risk signal keywords (from DatabaseBuilder_v5_8.py)
+    # Risk signal keywords — grouped by severity weight
+    # (mirrors DatabaseBuilder_v5_8.py RISK_SIGNALS)
     RISK_SIGNALS: ClassVar[list[str]] = [
         "unacceptable",
         "red line",
@@ -51,7 +57,28 @@ class RiskService(BaseService, RiskServiceProtocol):
         "breached",
     ]
 
-    # Risk severity mapping
+    # Weighted severity mapping (mirrors DatabaseBuilder_v5_8.py risk_detect logic)
+    # CRITICAL signals = 3 pts, HIGH signals = 2 pts, BASE signals = 1 pt
+    RISK_SIGNAL_WEIGHTS: ClassVar[dict[str, int]] = {
+        # CRITICAL — 3 pts
+        "red line": 3,
+        "ultimatum": 3,
+        "unacceptable": 3,
+        "military option": 3,
+        "unprovoked war": 3,
+        # HIGH — 2 pts
+        "escalate": 2,
+        "retaliate": 2,
+        "serious consequences": 2,
+        "decisive actions": 2,
+        "deep strikes": 2,
+        "cannot tolerate": 2,
+        "will not accept": 2,
+        "reject outright": 2,
+        # BASE — 1 pt (all others)
+    }
+
+    # Risk level severity mapping (kept for backward compatibility)
     RISK_SEVERITY: ClassVar[dict[str, RiskLevel]] = {
         "low": RiskLevel.LOW,
         "medium": RiskLevel.MEDIUM,
@@ -128,44 +155,52 @@ class RiskService(BaseService, RiskServiceProtocol):
     ) -> float:
         """Calculate contextual risk based on NER entities and text content.
 
+        Mirrors DatabaseBuilder_v5_8.py contextual_risk():
+        - Base score from weighted risk_detect()
+        - GPE or ORG entity present → multiplier 1.5×
+        - PERSON entity present → multiplier 1.2×
+        - No entity → multiplier 1.0× (no change)
+        Academic: Baldwin (1985); Kıyılar (2020)
+
         Args:
             text: Text to analyze
-            entities: Optional pre-extracted entities
+            entities: Optional pre-extracted NER entities
 
         Returns:
-            Contextual risk score (0-10)
+            Contextual risk score clamped to (0, 10)
         """
-        base_risk = 0.0
+        base_score, signals = self.risk_detect(text)
 
-        # Check for risk signals in text
-        text_lower = text.lower()
-        signal_count = sum(1 for signal in self.RISK_SIGNALS if signal in text_lower)
-        base_risk += signal_count * 2.0
+        # Resolve entities via injected NER service if not provided
+        if entities is None and self._ner_service:
+            entities = self._ner_service.extract_entities(text)
 
-        # Entity-based risk adjustment
-        if entities or self._ner_service:
-            if not entities and self._ner_service:
-                entities = self._ner_service.extract_entities(text)
+        # Dynamic NER multiplier (mirrors legacy logic)
+        if signals and entities:
+            gpe = entities.get("GPE", []) or entities.get("gpe", [])
+            org = entities.get("ORG", []) or entities.get("org", [])
+            person = entities.get("PERSON", []) or entities.get("person", [])
+            if gpe or org:
+                multiplier = 1.5
+            elif person:
+                multiplier = 1.2
+            else:
+                multiplier = 1.0
+        else:
+            multiplier = 1.0
 
-            if entities:
-                # High-risk entities
-                high_risk_entities = {
-                    "GPE": ["syria", "ukraine", "gaza", "palestine"],
-                    "ORG": ["nato", "military", "army"],
-                    "PERSON": ["putin", "netanyahu", "erdogan"],
-                }
-
-                for entity_type, entity_list in entities.items():
-                    if entity_type in high_risk_entities:
-                        for entity in entity_list:
-                            if entity.lower() in high_risk_entities[entity_type]:
-                                base_risk += 1.5
-
-        # Normalize to 0-10 range
-        return min(10.0, base_risk)
+        return min(10.0, round(base_score * multiplier))
 
     def risk_detect(self, text: str) -> tuple[float, list[str]]:
-        """Detect risk signals and calculate base risk score.
+        """Detect risk signals and calculate weighted base risk score.
+
+        Mirrors DatabaseBuilder_v5_8.py risk_detect():
+        - CRITICAL signals (red line, ultimatum, unacceptable, military option,
+          unprovoked war) = 3 pts
+        - HIGH signals (escalate, retaliate, serious consequences, decisive actions,
+          deep strikes, cannot tolerate, will not accept, reject outright) = 2 pts
+        - All other detected signals = 1 pt
+        - Total capped at 10
 
         Args:
             text: Text to analyze
@@ -174,27 +209,19 @@ class RiskService(BaseService, RiskServiceProtocol):
             Tuple of (risk_score, detected_signals)
         """
         text_lower = text.lower()
-        detected_signals = []
+        detected_signals = [
+            signal for signal in self.RISK_SIGNALS if signal in text_lower
+        ]
 
-        # Check for risk signals
-        for signal in self.RISK_SIGNALS:
-            if signal in text_lower:
-                detected_signals.append(signal)
+        # Weighted scoring (CRITICAL=3, HIGH=2, BASE=1)
+        risk_score = float(
+            min(
+                10,
+                sum(self.RISK_SIGNAL_WEIGHTS.get(sig, 1) for sig in detected_signals),
+            )
+        )
 
-        # Calculate base risk score
-        risk_score = len(detected_signals) * 1.5  # Each signal adds 1.5 points
-
-        # Additional risk factors
-        if any(
-            word in text_lower for word in ["war", "conflict", "attack", "military"]
-        ):
-            risk_score += 2.0
-        if any(word in text_lower for word in ["nuclear", "weapon", "destruction"]):
-            risk_score += 3.0
-        if any(word in text_lower for word in ["sanction", "punish", "retaliate"]):
-            risk_score += 1.0
-
-        return min(10.0, risk_score), detected_signals
+        return risk_score, detected_signals
 
     def _normalize_value(
         self, value: float, min_val: float = 0.0, max_val: float = 10.0
@@ -233,17 +260,21 @@ class RiskService(BaseService, RiskServiceProtocol):
         else:
             return RiskLevel.LOW
 
-    def assess_risk(self, segment: Segment) -> RiskAssessment:
+    def assess_risk(
+        self, segment: Segment, sentences: list[Sentence] | None = None
+    ) -> RiskAssessment:
         """Assess risk level of a segment.
 
         Args:
             segment: The segment to assess
+            sentences: Optional list of sentences (to avoid re-fetching)
 
         Returns:
             RiskAssessment containing risk scores and severity
         """
-        # Collect all sentences in segment
-        sentences = segment.sentences if hasattr(segment, "sentences") else []
+        # Collect all sentences in segment if not provided
+        if sentences is None:
+            sentences = segment.sentences if hasattr(segment, "sentences") else []
 
         if not sentences:
             # Fallback to segment text
@@ -278,6 +309,9 @@ class RiskService(BaseService, RiskServiceProtocol):
                     face_save_count=None,
                     word_count=None,
                     confidence_score=None,
+                    risk_score=None,
+                    manipulation_score=None,
+                    is_demand=False,
                 )
             ]
 
@@ -295,8 +329,9 @@ class RiskService(BaseService, RiskServiceProtocol):
 
             # Extract power level (from speaker metadata if available)
             power_level = 5.0  # Default medium power
-            if hasattr(segment, "speaker") and hasattr(segment.speaker, "power_level"):
-                power_level = float(segment.speaker.power_level)
+            speaker = getattr(segment, "speaker", None)
+            if speaker is not None and hasattr(speaker, "power_level"):
+                power_level = float(speaker.power_level)
             power_levels.append(power_level)
 
             # Estimate demand weight based on language
@@ -323,12 +358,20 @@ class RiskService(BaseService, RiskServiceProtocol):
         sbi_score = self.compute_sbi(avg_power_level, avg_demand_weight, avg_risk_score)
 
         # Calculate DKI (using normalized values)
+        # Mirrors DatabaseBuilder_v5_8.py:
+        #   norm_diplo  = clamp(diplo_score, -1, 1) mapped to [0,1]
+        #   norm_risk   = clamp(risk / 10, 0, 1)
+        #   norm_demand = min(demand_ratio, 1.0)   ← demand_weight already 0-1
+        #   norm_manip  = derived from demand intensity (proxy for manipulation)
         norm_diplo = self._normalize_value(
             5.0 - avg_risk_score
-        )  # Inverse risk as diplomatic
+        )  # Inverse risk as diplomatic proxy
         norm_risk = self._normalize_value(avg_risk_score)
-        norm_demand = self._normalize_value(avg_demand_weight * 10)  # Scale to 0-10
-        norm_manip = self._normalize_value(3.0)  # Default manipulation score
+        norm_demand = min(avg_demand_weight, 1.0)  # ← direct clamp, no ×10
+        # Manipulation proxy: high demand intensity (demand_weight > 0.5) → higher manip
+        # demand_weight range: suggest=0.5, recommend=0.7, demand/must=0.9
+        # Map to manip 0-1: (w - 0.5) * 2 → [0, 0.8]; clamp to [0, 1]
+        norm_manip = min(1.0, max(0.0, (avg_demand_weight - 0.5) * 2.0))
 
         dki_score = self.compute_dki(norm_diplo, norm_risk, norm_demand, norm_manip)
 

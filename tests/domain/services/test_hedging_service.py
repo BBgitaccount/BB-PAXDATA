@@ -174,9 +174,14 @@ class TestHedgingService:
     async def test_is_hedged_sentence_threshold(self):
         """Test hedged sentence detection with custom threshold."""
         text_high = "This might work."
-        text_low = "The cost is roughly 100 dollars, which is a very reasonable price for this kind of service, considering all the extra work and effort put into it over the last few months by the dedicated team."
+        text_low = (
+            "The cost is roughly 100 dollars, which is a very reasonable price "
+            "for this kind of service, considering all the extra work and "
+            "effort put into it over the last few months by the dedicated team."
+        )
 
         # Should be hedged with low threshold
+        assert self.service.is_hedged_sentence(text_high, threshold=0.05)
         assert self.service.is_hedged_sentence(text_low, threshold=0.05)
         # Should not be hedged with high threshold
         assert not self.service.is_hedged_sentence(text_low, threshold=0.9)

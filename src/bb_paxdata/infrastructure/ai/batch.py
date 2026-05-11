@@ -15,6 +15,7 @@ from bb_paxdata.infrastructure.ai.base import (
 )
 from bb_paxdata.infrastructure.ai.recovery import RecoveryEngine
 from bb_paxdata.infrastructure.cache import CacheBackend, DiskCacheBackend
+from bb_paxdata.infrastructure.observability.metrics import get_metrics
 
 logger = structlog.get_logger(__name__)
 
@@ -195,6 +196,21 @@ class BatchProcessor:
                     has_content=bool(completion.content),
                     error=completion.error,
                 )
+
+                # [FAZ3-METRIC]
+                try:
+                    reason = (
+                        "timeout"
+                        if "timeout" in str(completion.error).lower()
+                        else "error"
+                    )
+                    get_metrics().record_batch_fallback(
+                        backend=self._client.backend_name,
+                        reason=reason,
+                    )
+                except Exception:
+                    pass
+
                 return None
 
             # Use RecoveryEngine to parse JSON response
@@ -205,6 +221,16 @@ class BatchProcessor:
                     error=recovery_result.error,
                     level_used=recovery_result.level_used,
                 )
+
+                # [FAZ3-METRIC]
+                try:
+                    get_metrics().record_batch_fallback(
+                        backend=self._client.backend_name,
+                        reason="json_error",
+                    )
+                except Exception:
+                    pass
+
                 return None
 
             # Update completion with parsed data
@@ -233,6 +259,17 @@ class BatchProcessor:
 
         except Exception as e:
             logger.error("Batch processing failed", error=str(e))
+
+            # [FAZ3-METRIC]
+            try:
+                reason = "timeout" if "timeout" in str(e).lower() else "error"
+                get_metrics().record_batch_fallback(
+                    backend=self._client.backend_name,
+                    reason=reason,
+                )
+            except Exception:
+                pass
+
             return None
 
     async def _fallback_individual(

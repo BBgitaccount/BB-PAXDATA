@@ -7,13 +7,15 @@ from typing import Any
 
 import structlog
 
+from bb_paxdata.infrastructure.observability.metrics import get_metrics
+
 from .base import CacheBackend
 
 logger = structlog.get_logger(__name__)
 
 AIOFILES_AVAILABLE = False
 try:
-    import aiofiles as _aiofiles_check  # noqa: F401
+    import aiofiles as _aiofiles_check  # type: ignore[import-untyped]  # noqa: F401
 
     AIOFILES_AVAILABLE = True
 except ImportError:
@@ -36,7 +38,7 @@ class DiskCacheBackend(CacheBackend):
         if not path.exists():
             return None
         if AIOFILES_AVAILABLE:
-            import aiofiles  # runtime import — fonksiyon içinde
+            import aiofiles
 
             async with aiofiles.open(path, encoding="utf-8") as f:
                 content = await f.read()
@@ -47,7 +49,7 @@ class DiskCacheBackend(CacheBackend):
     async def _write_file(self, path: Path, content: str) -> None:
         """aiofiles varsa async, yoksa asyncio.to_thread ile yaz."""
         if AIOFILES_AVAILABLE:
-            import aiofiles  # runtime import — fonksiyon içinde
+            import aiofiles
 
             async with aiofiles.open(path, "w", encoding="utf-8") as f:
                 await f.write(content)
@@ -59,6 +61,13 @@ class DiskCacheBackend(CacheBackend):
         try:
             raw = await self._read_file(path)
             if raw is None:
+                # [FAZ3-METRIC]
+                try:
+                    get_metrics().record_cache_operation(
+                        cache_type="disk", operation="get", result="miss"
+                    )
+                except Exception:
+                    pass
                 return None
             record: dict[str, Any] = json.loads(raw)
             # TTL kontrolü
@@ -69,7 +78,22 @@ class DiskCacheBackend(CacheBackend):
                 created_at = record.get("created_at", 0.0)
                 if time.time() > created_at + ttl:
                     await self.delete(key)
+                    # [FAZ3-METRIC]
+                    try:
+                        get_metrics().record_cache_operation(
+                            cache_type="disk", operation="get", result="miss"
+                        )
+                    except Exception:
+                        pass
                     return None
+
+            # [FAZ3-METRIC]
+            try:
+                get_metrics().record_cache_operation(
+                    cache_type="disk", operation="get", result="hit"
+                )
+            except Exception:
+                pass
             return record.get("value")
         except Exception as exc:
             logger.warning("disk_cache.get.failed", key=key, error=str(exc))
@@ -92,6 +116,13 @@ class DiskCacheBackend(CacheBackend):
         }
         try:
             await self._write_file(path, json.dumps(record, ensure_ascii=False))
+            # [FAZ3-METRIC]
+            try:
+                get_metrics().record_cache_operation(
+                    cache_type="disk", operation="set", result="hit"
+                )
+            except Exception:
+                pass
         except Exception as exc:
             logger.warning("disk_cache.set.failed", key=key, error=str(exc))
 

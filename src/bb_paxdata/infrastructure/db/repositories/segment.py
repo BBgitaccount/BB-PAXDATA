@@ -1,14 +1,30 @@
 from __future__ import annotations
 
 from collections.abc import Sequence
-from typing import Any
+from typing import TYPE_CHECKING, Any
+
+if TYPE_CHECKING:
+    from bb_paxdata.infrastructure.ai.prompt_registry import PromptRegistry
 
 import structlog
 from sqlalchemy import func, select
 from sqlalchemy.orm import joinedload
 
+from bb_paxdata.domain.models.analysis import SegmentInsight
 from bb_paxdata.infrastructure.db.models import AISegmentInsight, Segment
 from bb_paxdata.infrastructure.db.repositories.base import BaseRepository
+
+try:
+    from bb_paxdata.infrastructure.ai import get_prompt_registry
+except ImportError:
+    # Fallback if registry is not yet available
+    def get_prompt_registry() -> PromptRegistry:
+        class DummyRegistry:
+            def get_version_string(self, name: str) -> str | None:
+                return None
+
+        return DummyRegistry()  # type: ignore
+
 
 logger = structlog.get_logger(__name__)
 
@@ -31,6 +47,34 @@ class SegmentRepository(BaseRepository[Segment]):
         else:
             orm = entity
         return await super().add(orm)
+
+    async def insert_segment_insight(
+        self,
+        seg_id: str,
+        insight: SegmentInsight,
+        prompt_name: str = "segment_insight",
+    ) -> None:
+        """
+        Segment analizini DB'ye yazar.
+        prompt_version otomatik olarak PromptRegistry'den alınır.
+        """
+        if getattr(insight, "prompt_version", None) is None:
+            try:
+                insight = insight.model_copy(
+                    update={
+                        "prompt_version": get_prompt_registry().get_version_string(
+                            prompt_name
+                        )
+                    }
+                )
+            except (KeyError, Exception):
+                pass
+
+        # Use the existing update_insight method to persist
+        # Assuming SegmentInsight has ai_insight text field, if not, adapt as needed.
+        insight_text = getattr(insight, "segment_summary", str(insight))
+        version_str = getattr(insight, "prompt_version", "v1.0") or "v1.0"
+        await self.update_insight(seg_id, insight_text, version_str)
 
     async def get_without_insights(
         self, panel_id: str | None = None
@@ -74,6 +118,7 @@ class SegmentRepository(BaseRepository[Segment]):
                     ai_insight=insight,
                     ai_insight_version=version,
                     insight_generated_at=func.now(),
+                    prompt_version=version,  # Store version in prompt_version as well
                 )
                 self._session.add(insight_record)
 

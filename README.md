@@ -222,6 +222,21 @@ class AIClientFactory:
 - **Grafana** dashboard (JSON export in `infrastructure/observability/dashboard/`)
 - **LangSmith** integration (optional, API-key gated)
 
+### Test Command
+
+```bash
+# Prometheus + Grafana başlat
+docker compose up -d prometheus grafana
+
+# Python tarafında metrics endpoint'i başlat
+from infrastructure.observability import get_metrics
+get_metrics().start_http_server(port=8000)
+
+# Kontrol
+# Prometheus: http://localhost:9090
+# Grafana:    http://localhost:3000  (admin / bbpaxdata2024)
+```
+
 ---
 
 ## 7. Quality Assurance (Phase 4)

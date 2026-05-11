@@ -12,6 +12,7 @@ from bb_paxdata.infrastructure.ai.base import (
     CompletionOptions,
     CompletionResult,
 )
+from bb_paxdata.infrastructure.observability.metrics import get_metrics
 
 logger = structlog.get_logger(__name__)
 
@@ -71,12 +72,37 @@ class OllamaClient(AIClient):
             if options.extra:
                 payload["options"].update(options.extra)
 
-            response = await self._client.post(
-                f"{self._base_url}/api/chat",
-                json=payload,
-                timeout=options.timeout,
-            )
-            response.raise_for_status()
+            # [FAZ3-METRIC]
+            _t0 = time.perf_counter()
+            try:
+                response = await self._client.post(
+                    f"{self._base_url}/api/chat",
+                    json=payload,
+                    timeout=options.timeout,
+                )
+                response.raise_for_status()
+                duration = time.perf_counter() - _t0
+                try:
+                    get_metrics().record_ai_request(
+                        backend="ollama",
+                        model=self._model,
+                        duration_seconds=duration,
+                        status="success",
+                    )
+                except Exception:
+                    pass
+            except Exception:
+                duration = time.perf_counter() - _t0
+                try:
+                    get_metrics().record_ai_request(
+                        backend="ollama",
+                        model=self._model,
+                        duration_seconds=duration,
+                        status="error",
+                    )
+                except Exception:
+                    pass
+                raise
 
             raw_response = response.json()
             content = raw_response.get("message", {}).get("content", "")

@@ -5,6 +5,7 @@ from .factory import AIClientFactory
 from .gemini import GeminiClient
 from .groq import GroqClient
 from .ollama import OllamaClient
+from .prompt_registry import PromptEntry, PromptRegistry, get_prompt_registry
 
 __all__ = [
     "AIClient",
@@ -19,4 +20,7 @@ __all__ = [
     "BatchItem",
     "BatchResult",
     "BatchStats",
+    "PromptRegistry",
+    "PromptEntry",
+    "get_prompt_registry",
 ]

@@ -15,6 +15,8 @@ from typing import Any, cast
 
 import structlog
 
+from bb_paxdata.infrastructure.observability.metrics import get_metrics
+
 logger = structlog.get_logger(__name__)
 
 
@@ -72,6 +74,14 @@ class RecoveryEngine:
                 result.data = data
                 result.level_used = RecoveryLevel.DIRECT
                 self._logger.info("recovery.success", level=RecoveryLevel.DIRECT.value)
+
+                # [FAZ3-METRIC]
+                try:
+                    get_metrics().record_json_recovery(
+                        level="markdown_strip", result="success"
+                    )
+                except Exception:
+                    pass
                 return result
         except Exception as exc:
             self._logger.debug(
@@ -81,6 +91,12 @@ class RecoveryEngine:
         self._logger.debug(
             "recovery.attempt", level=RecoveryLevel.DIRECT.value, text_length=len(text)
         )
+
+        # [FAZ3-METRIC]
+        try:
+            get_metrics().record_json_recovery(level="markdown_strip", result="fail")
+        except Exception:
+            pass
 
         # Seviye 2: Stripped parse
         try:
@@ -92,6 +108,14 @@ class RecoveryEngine:
                 self._logger.info(
                     "recovery.success", level=RecoveryLevel.STRIPPED.value
                 )
+
+                # [FAZ3-METRIC]
+                try:
+                    get_metrics().record_json_recovery(
+                        level="think_tag", result="success"
+                    )
+                except Exception:
+                    pass
                 return result
         except Exception as exc:
             self._logger.debug(
@@ -104,6 +128,12 @@ class RecoveryEngine:
             text_length=len(text),
         )
 
+        # [FAZ3-METRIC]
+        try:
+            get_metrics().record_json_recovery(level="think_tag", result="fail")
+        except Exception:
+            pass
+
         # Seviye 3: First JSON block
         try:
             data = self._level_first_block(text)
@@ -114,6 +144,14 @@ class RecoveryEngine:
                 self._logger.info(
                     "recovery.success", level=RecoveryLevel.FIRST_BLOCK.value
                 )
+
+                # [FAZ3-METRIC]
+                try:
+                    get_metrics().record_json_recovery(
+                        level="trailing_comma", result="success"
+                    )
+                except Exception:
+                    pass
                 return result
         except Exception as exc:
             self._logger.debug(
@@ -128,6 +166,12 @@ class RecoveryEngine:
             text_length=len(text),
         )
 
+        # [FAZ3-METRIC]
+        try:
+            get_metrics().record_json_recovery(level="trailing_comma", result="fail")
+        except Exception:
+            pass
+
         # Seviye 4: Partial / truncated JSON
         try:
             data = self._level_partial(text)
@@ -136,6 +180,14 @@ class RecoveryEngine:
                 result.data = data
                 result.level_used = RecoveryLevel.PARTIAL
                 self._logger.info("recovery.success", level=RecoveryLevel.PARTIAL.value)
+
+                # [FAZ3-METRIC]
+                try:
+                    get_metrics().record_json_recovery(
+                        level="single_quote", result="success"
+                    )
+                except Exception:
+                    pass
                 return result
         except Exception as exc:
             self._logger.debug(
@@ -145,6 +197,12 @@ class RecoveryEngine:
         self._logger.debug(
             "recovery.attempt", level=RecoveryLevel.PARTIAL.value, text_length=len(text)
         )
+
+        # [FAZ3-METRIC]
+        try:
+            get_metrics().record_json_recovery(level="single_quote", result="fail")
+        except Exception:
+            pass
 
         # Seviye 5: Key-value regex
         try:
@@ -156,6 +214,14 @@ class RecoveryEngine:
                 self._logger.info(
                     "recovery.success", level=RecoveryLevel.KEY_VALUE.value
                 )
+
+                # [FAZ3-METRIC]
+                try:
+                    get_metrics().record_json_recovery(
+                        level="yaml_block", result="success"
+                    )
+                except Exception:
+                    pass
                 return result
         except Exception as exc:
             self._logger.debug(
@@ -168,6 +234,12 @@ class RecoveryEngine:
             text_length=len(text),
         )
 
+        # [FAZ3-METRIC]
+        try:
+            get_metrics().record_json_recovery(level="yaml_block", result="fail")
+        except Exception:
+            pass
+
         # Seviye 6: Schema default
         try:
             data = self._level_schema_default(default_schema)
@@ -178,6 +250,14 @@ class RecoveryEngine:
                 self._logger.info(
                     "recovery.success", level=RecoveryLevel.SCHEMA_DEFAULT.value
                 )
+
+                # [FAZ3-METRIC]
+                try:
+                    get_metrics().record_json_recovery(
+                        level="regex_salvage", result="success"
+                    )
+                except Exception:
+                    pass
                 return result
         except Exception as exc:
             self._logger.debug(
@@ -185,6 +265,12 @@ class RecoveryEngine:
                 level=RecoveryLevel.SCHEMA_DEFAULT.value,
                 error=str(exc),
             )
+
+        # [FAZ3-METRIC]
+        try:
+            get_metrics().record_json_recovery(level="regex_salvage", result="fail")
+        except Exception:
+            pass
 
         # Tam başarısızlık
         result.error = "All recovery levels failed"

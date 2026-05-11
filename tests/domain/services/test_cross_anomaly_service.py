@@ -95,9 +95,14 @@ class TestCrossAnomalyService:
         assert len(anomalies) == 0
 
     async def test_detect_negative_confrontational_amplification(self):
-        """Test negative confrontational amplification detection."""
+        """Test negative confrontational amplification detection.
+
+        Mirrors AIanalyst_v5_8.py Anomali 2:
+        - power_level is NOT a gate — any actor triggers this
+        - Severity is always HIGH (not CRITICAL)
+        """
         ai_values = {"ai_sentiment": -0.8, "ai_diplomatic_tone": "confrontational"}
-        formula_values = {"power_level": 9}
+        formula_values = {"power_level": 9}  # power_level passed but not used as gate
 
         anomalies = self.service._detect_negative_confrontational_amplification(
             ai_values, formula_values
@@ -105,13 +110,21 @@ class TestCrossAnomalyService:
 
         assert len(anomalies) == 1
         assert anomalies[0].type == AnomalyType.NEGATIVE_CONFRONTATIONAL_AMPLIFICATION
-        assert anomalies[0].severity == AnomalySeverity.CRITICAL
-        assert "high-power" in anomalies[0].description.lower()
+        assert anomalies[0].severity == AnomalySeverity.HIGH  # always HIGH
 
     async def test_detect_velvet_glove_confrontation(self):
-        """Test velvet glove confrontation detection."""
-        ai_values = {"ai_politeness": 0.8, "ai_risk": 6.5}
-        formula_values = {"formula_hedging": 0.1}
+        """Test velvet glove confrontation detection.
+
+        Mirrors AIanalyst_v5_8.py Anomali 3:
+        - Condition: ai_sentiment >= 0.3 AND ai_tone == 'confrontational'
+        - Positive sentiment paradox (NOT politeness×risk)
+        """
+        ai_values = {
+            "ai_sentiment": 0.5,
+            "ai_diplomatic_tone": "confrontational",
+            "ai_manipulation": 0.3,
+        }
+        formula_values = {}  # no formula values needed for this anomaly
 
         anomalies = self.service._detect_velvet_glove_confrontation(
             ai_values, formula_values
@@ -304,11 +317,18 @@ class TestCrossAnomalyService:
             )
         )
 
-        # Should detect multiple critical anomalies
+        # Anomaly 2 (negative_confrontational) is always HIGH (no power gate).
+        # CRITICAL is triggered by direct_manipulation_low_hedge (ai_manip=0.9 >= 0.8).
         critical_anomalies = [
             a for a in anomalies if a.severity == AnomalySeverity.CRITICAL
         ]
-        assert len(critical_anomalies) >= 2
+        high_or_critical = [
+            a
+            for a in anomalies
+            if a.severity in (AnomalySeverity.HIGH, AnomalySeverity.CRITICAL)
+        ]
+        assert len(critical_anomalies) >= 1  # direct_manipulation_low_hedge
+        assert len(high_or_critical) >= 2  # + negative_confrontational (HIGH)
 
     async def test_anomaly_result_structure(self):
         """Test that anomaly results have correct structure."""
