@@ -306,14 +306,14 @@ class QualityPipeline:
 
                 except Exception as e:
                     self.logger.error(f"Error in temporal analysis: {e}")
-                    summary["errors"].append(f"Temporal analysis error: {str(e)}")
+                    summary["errors"].append(f"Temporal analysis error: {e!s}")
 
             self.logger.info(f"Quality pipeline completed for {file_path}")
             return summary
 
         except Exception as e:
             self.logger.error(f"Error in quality pipeline: {e}")
-            summary["errors"].append(f"Pipeline error: {str(e)}")
+            summary["errors"].append(f"Pipeline error: {e!s}")
             return summary
 
     def get_pipeline_statistics(self) -> dict[str, Any]:
@@ -363,7 +363,7 @@ class QualityPipeline:
                 health_report["components"]["uncertainty_scorer"] = "healthy"
             except Exception as e:
                 health_report["components"]["uncertainty_scorer"] = "unhealthy"
-                health_report["issues"].append(f"Uncertainty scorer error: {str(e)}")
+                health_report["issues"].append(f"Uncertainty scorer error: {e!s}")
 
             # Check quality evaluator
             try:
@@ -371,7 +371,7 @@ class QualityPipeline:
                 health_report["components"]["quality_evaluator"] = "healthy"
             except Exception as e:
                 health_report["components"]["quality_evaluator"] = "unhealthy"
-                health_report["issues"].append(f"Quality evaluator error: {str(e)}")
+                health_report["issues"].append(f"Quality evaluator error: {e!s}")
 
             # Check review queue
             try:
@@ -379,7 +379,7 @@ class QualityPipeline:
                 health_report["components"]["review_queue"] = "healthy"
             except Exception as e:
                 health_report["components"]["review_queue"] = "unhealthy"
-                health_report["issues"].append(f"Review queue error: {str(e)}")
+                health_report["issues"].append(f"Review queue error: {e!s}")
 
             # Check temporal analyzer
             try:
@@ -387,7 +387,7 @@ class QualityPipeline:
                 health_report["components"]["temporal_analyzer"] = "healthy"
             except Exception as e:
                 health_report["components"]["temporal_analyzer"] = "unhealthy"
-                health_report["issues"].append(f"Temporal analyzer error: {str(e)}")
+                health_report["issues"].append(f"Temporal analyzer error: {e!s}")
 
             # Check golden dataset
             try:
@@ -395,7 +395,7 @@ class QualityPipeline:
                 health_report["components"]["golden_dataset"] = "healthy"
             except Exception as e:
                 health_report["components"]["golden_dataset"] = "unhealthy"
-                health_report["issues"].append(f"Golden dataset error: {str(e)}")
+                health_report["issues"].append(f"Golden dataset error: {e!s}")
 
             # Determine overall status
             unhealthy_components = [
@@ -415,5 +415,5 @@ class QualityPipeline:
         except Exception as e:
             self.logger.error(f"Error in health check: {e}")
             health_report["overall_status"] = "error"
-            health_report["issues"].append(f"Health check error: {str(e)}")
+            health_report["issues"].append(f"Health check error: {e!s}")
             return cast(dict[str, Any], health_report)

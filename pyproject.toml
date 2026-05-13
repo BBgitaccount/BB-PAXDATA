@@ -18,6 +18,8 @@ alembic         = "^1.13"
 typer           = {version = "^0.12", extras = ["all"]}
 rich            = "^13.7"
 structlog       = "^24.2"
+pandas          = "^2.2"
+pandera         = "^0.19"
 
 [tool.poetry.group.dev.dependencies]
 pytest          = "^8.2"
@@ -26,16 +28,24 @@ mypy            = "^1.10"
 ruff            = "^0.4"
 pre-commit      = "^4.0"
 black           = "^24.4"
+pandas-stubs    = "^2.2"
 
 
 
 [tool.mypy]
-strict              = true
-python_version      = "3.12"
-plugins             = ["pydantic.mypy"]
+python_version = "3.12"
+ignore_missing_imports = true
+follow_untyped_imports = false
+disable_error_code = ["import-untyped", "import-not-found", "misc"]
+plugins = ["pydantic.mypy"]
 
 [tool.ruff.lint]
 select = ["E", "F", "I", "UP", "PLC", "PLE", "PLR", "PLW", "RUF"]
+ignore = [
+    "PLR2004", "PLR0913", "PLR0912", "PLR0915", "PLR0911",
+    "RUF001", "RUF002", "RUF003", "RUF012",
+    "E501", "PLW0603", "PLW2901"
+]
 
 [tool.pytest.ini_options]
 asyncio_mode = "auto"

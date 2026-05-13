@@ -3,7 +3,10 @@ Unit tests for ExplainabilityService.
 """
 
 import pytest
-from bb_paxdata.domain.services.explainability import ExplainabilityService
+from bb_paxdata.domain.services.explainability import (
+    ExplainabilityService,
+    ExplanationContext,
+)
 
 
 class TestExplainabilityService:
@@ -18,9 +21,13 @@ class TestExplainabilityService:
         sentiment_score = 0.4
         risk_score = 2
 
-        explanation = service.explain_sentence(
-            sent_id, text, sentiment_score, risk_score
+        context = ExplanationContext(
+            sent_id=sent_id,
+            text=text,
+            sentiment_score=sentiment_score,
+            risk_score=risk_score,
         )
+        explanation = service.explain_sentence(context)
 
         assert explanation.sent_id == sent_id
         assert "destekliyor" in text
@@ -34,7 +41,10 @@ class TestExplainabilityService:
         """Test explanation for negated sentiment."""
         text = "Turkey does not support war."
         # "not" and "support" are key here
-        explanation = service.explain_sentence("S2", text, -0.2, 5)
+        context = ExplanationContext(
+            sent_id="S2", text=text, sentiment_score=-0.2, risk_score=5
+        )
+        explanation = service.explain_sentence(context)
 
         # Check if negation template is used (based on mock attributions)
         # In real test we might need to mock token_level_attribution to be sure
@@ -42,9 +52,14 @@ class TestExplainabilityService:
 
     def test_explain_sentence_high_risk(self, service: ExplainabilityService) -> None:
         """Test explanation for high risk and power level."""
-        explanation = service.explain_sentence(
-            "S3", "Conflict is imminent.", -0.8, 9, power_level=10
+        context = ExplanationContext(
+            sent_id="S3",
+            text="Conflict is imminent.",
+            sentiment_score=-0.8,
+            risk_score=9,
+            power_level=10,
         )
+        explanation = service.explain_sentence(context)
 
         assert (
             "kritik" in explanation.risk_explanation

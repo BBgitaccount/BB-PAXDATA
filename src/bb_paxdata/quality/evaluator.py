@@ -169,7 +169,7 @@ class QualityEvaluator:
                         score=0.0,
                         threshold=0.8,
                         passed=False,
-                        reason=f"Metric error: {str(e)}",
+                        reason=f"Metric error: {e!s}",
                         latency_ms=0,
                     )
                 )
@@ -210,7 +210,7 @@ class QualityEvaluator:
                         score=0.0,
                         threshold=0.7,
                         passed=False,
-                        reason=f"Deepeval error: {str(e)}",
+                        reason=f"Deepeval error: {e!s}",
                         latency_ms=0,
                     )
                 )

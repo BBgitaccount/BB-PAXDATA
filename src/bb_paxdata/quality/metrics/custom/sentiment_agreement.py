@@ -100,7 +100,7 @@ class SentimentAgreementMetric:
                 score=0.0,
                 threshold=self.threshold,
                 passed=False,
-                reason=f"Measurement error: {str(e)}",
+                reason=f"Measurement error: {e!s}",
             )
 
     def measure_batch(

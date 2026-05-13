@@ -94,7 +94,7 @@ class RiskCalibrationMetric:
                 score=0.0,
                 threshold=self.threshold,
                 passed=False,
-                reason=f"Measurement error: {str(e)}",
+                reason=f"Measurement error: {e!s}",
             )
 
     def measure_batch(
@@ -181,7 +181,7 @@ class RiskCalibrationMetric:
                 score=0.0,
                 threshold=self.threshold,
                 passed=False,
-                reason=f"Batch measurement error: {str(e)}",
+                reason=f"Batch measurement error: {e!s}",
             )
 
     def _risk_level_distance(self, level1: str, level2: str) -> int:

@@ -1,8 +1,10 @@
+from __future__ import annotations
+
 """
 Templates for Rule-based Explainability in BB-PAXDATA.
 """
 
-TEMPLATES = {
+TEMPLATES: dict[str, str] = {
     "risk_high_power": (
         "Güçlü aktör ({power}/10) tarafından iletilen '{signal}' ifadesi, "
         "diplomatik denge açısından {severity} kabul edilir."
@@ -24,7 +26,7 @@ TEMPLATES = {
     ),
     "dependency_actor_action": (
         "{subject} → {verb} → {object} yapısı tespit edildi. "
-        "Bu, {subject}’in {object} üzerinde aktif bir diplomatik "
+        "Bu, {subject}'in {object} üzerinde aktif bir diplomatik "
         "eylemde bulunduğunu gösterir."
     ),
     "risk_signal_formula": ("Formül tabanlı risk sinyalleri tespit edildi: {signals}."),

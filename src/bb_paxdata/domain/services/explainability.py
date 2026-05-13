@@ -1,12 +1,28 @@
 from __future__ import annotations
 
-from typing import cast
+from dataclasses import dataclass
 
 from bb_paxdata.domain.models.dependency import DependencyTriple
 from bb_paxdata.domain.models.explanation import SentenceExplanation, TokenContribution
 from bb_paxdata.domain.services.explanation_templates import TEMPLATES
 from bb_paxdata.domain.services.sentiment_service import SentimentService
 from bb_paxdata.domain.services.token_attribution import token_level_attribution
+
+TOP_K_FEATURES = 7
+NEGATIVE_THRESHOLD = -0.4
+
+
+@dataclass
+class ExplanationContext:
+    """Context for generating a sentence explanation."""
+
+    sent_id: str
+    text: str
+    sentiment_score: float
+    risk_score: int
+    triples: list[DependencyTriple] | None = None
+    ai_score: float | None = None
+    power_level: int = 5
 
 
 class ExplainabilityService:
@@ -19,17 +35,20 @@ class ExplainabilityService:
 
     def explain_sentence(
         self,
-        sent_id: str,
-        text: str,
-        sentiment_score: float,
-        risk_score: int,
-        triples: list[DependencyTriple] | None = None,
-        ai_score: float | None = None,
-        power_level: int = 5,
+        context: ExplanationContext,
     ) -> SentenceExplanation:
         """
         Generate a comprehensive explanation for a single sentence.
         """
+
+        # Extract values for readability (optional, but keeps logic cleaner)
+        sent_id = context.sent_id
+        text = context.text
+        sentiment_score = context.sentiment_score
+        risk_score = context.risk_score
+        triples = context.triples
+        ai_score = context.ai_score
+        power_level = context.power_level
 
         # 1. Token Level Attribution
         attributions = token_level_attribution(text, self.sentiment_service)
@@ -57,9 +76,9 @@ class ExplainabilityService:
             f"Bu cumle {sentiment_score:.2f} duygu ve {risk_score} risk puanina "
             f"sahiptir. "
         )
-        if risk_score > 7:
+        if risk_score > TOP_K_FEATURES:
             exec_summary += "Yuksek riskli bir diplomatik sinyal icermektedir."
-        elif sentiment_score < -0.4:
+        elif sentiment_score < NEGATIVE_THRESHOLD:
             exec_summary += "Belirgin bir olumsuz tutum sergilemektedir."
         else:
             exec_summary += "Genel olarak dengeli bir yapidadir."
@@ -89,14 +108,13 @@ class ExplainabilityService:
 
         primary = significant[0]
         if "olumsuzlandigi" in primary.explanation:
-            return cast(str, TEMPLATES["sentiment_negation"]).format(
+            return TEMPLATES["sentiment_negation"].format(
                 keyword=primary.token,
                 negation="olumsuzluk eki/kelimesi",  # Simplified
                 score=score,
             )
 
-
-        return cast(str, TEMPLATES["lexicon_match"]).format(
+        return TEMPLATES["lexicon_match"].format(
             token=primary.token, score=primary.sentiment_contrib, category="Duygu"
         )
 
@@ -104,13 +122,13 @@ class ExplainabilityService:
         self, risk_score: int, power_level: int, attributions: list[TokenContribution]
     ) -> str:
         """Generate explanation for the risk score."""
-        RISK_THRESHOLD = 7
+        RISK_THRESHOLD = TOP_K_FEATURES
         if risk_score > RISK_THRESHOLD:
-            return cast(str, TEMPLATES["risk_high_power"]).format(
-                power=power_level, signal="yüksek riskli kelimeler", severity="kritik"
+            return TEMPLATES["risk_high_power"].format(
+                power=power_level, signal="yuksek riskli kelimeler", severity="kritik"
             )
         if power_level > RISK_THRESHOLD:
-            return cast(str, TEMPLATES["power_level_impact"]).format(power=power_level)
+            return TEMPLATES["power_level_impact"].format(power=power_level)
 
         return "Belirgin bir diplomatik risk tespit edilmedi."
 
@@ -122,7 +140,7 @@ class ExplainabilityService:
             return None
 
         t = triples[0]
-        return cast(str, TEMPLATES["dependency_actor_action"]).format(
+        return TEMPLATES["dependency_actor_action"].format(
             subject=t.subject_resolved or t.subject_raw,
             verb=t.verb_lemma,
             object=t.object_resolved or t.object_raw,
@@ -133,6 +151,6 @@ class ExplainabilityService:
     ) -> str:
         """Generate explanation for difference between AI and Formula."""
         diff = abs(formula_score - ai_score)
-        return cast(str, TEMPLATES["discrepancy_sentiment"]).format(
+        return TEMPLATES["discrepancy_sentiment"].format(
             ai=ai_score, formula=formula_score, diff=diff
         )

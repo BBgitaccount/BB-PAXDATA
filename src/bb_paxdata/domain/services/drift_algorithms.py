@@ -8,6 +8,9 @@ import structlog
 
 logger = structlog.get_logger(__name__)
 
+MIN_SEGMENT_SIZE = 10
+MAX_LAG = 2
+
 
 def detect_sentiment_drift(
     sentiment_series: list[float], threshold: float = 0.3, drift_threshold: float = 2.0
@@ -23,7 +26,7 @@ def detect_sentiment_drift(
     Returns:
         List of drift points with start/end indices
     """
-    if len(sentiment_series) < 10:
+    if len(sentiment_series) < MIN_SEGMENT_SIZE:
         return []
 
     try:
@@ -47,8 +50,8 @@ def detect_sentiment_drift(
             z_score = (value - mean_val) / std_val
 
             # Update CUSUM statistics
-            cusum_pos = float(max(0.0, float(cusum_pos + z_score - threshold)))
-            cusum_neg = float(min(0.0, float(cusum_neg + z_score + threshold)))
+            cusum_pos = max(0.0, cusum_pos + z_score - threshold)
+            cusum_neg = min(0.0, cusum_neg + z_score + threshold)
 
             # Check for drift
             if not in_drift and (
@@ -66,8 +69,8 @@ def detect_sentiment_drift(
                 # Drift ended
                 drift_points.append(
                     {
-                        "start_index": max(0, drift_start - 2),  # Include context
-                        "end_index": min(len(sentiment_series) - 1, i + 2),
+                        "start_index": max(0, drift_start - MAX_LAG),  # Include context
+                        "end_index": min(len(sentiment_series) - 1, i + MAX_LAG),
                         "confidence": min(
                             1.0, (abs(cusum_pos) + abs(cusum_neg)) / drift_threshold
                         ),
@@ -204,7 +207,7 @@ def detect_tone_drift(
     Returns:
         List of drift points
     """
-    if len(tone_series) < 10:
+    if len(tone_series) < MIN_SEGMENT_SIZE:
         return []
 
     try:
@@ -258,7 +261,7 @@ def detect_risk_trajectory_drift(
     Returns:
         List of drift points
     """
-    if len(risk_scores) < 10:
+    if len(risk_scores) < MIN_SEGMENT_SIZE:
         return []
 
     try:
@@ -365,7 +368,7 @@ def _build_transition_matrix(
 
 def _calculate_slope(x: np.ndarray, y: np.ndarray) -> float:
     """Calculate slope using linear regression."""
-    if len(x) < 2:
+    if len(x) < MAX_LAG:
         return 0.0
 
     # Use least squares to find slope

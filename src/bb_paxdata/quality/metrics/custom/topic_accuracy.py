@@ -110,7 +110,7 @@ class TopicAccuracyMetric:
                 score=0.0,
                 threshold=self.threshold,
                 passed=False,
-                reason=f"Measurement error: {str(e)}",
+                reason=f"Measurement error: {e!s}",
             )
 
     def _normalize_topic(self, topic: str) -> str:

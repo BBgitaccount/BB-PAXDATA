@@ -161,7 +161,7 @@ class DataContractValidator:
 
             return ValidationResult(
                 passed=False,
-                message=f"AI output validation failed: {str(e)}",
+                message=f"AI output validation failed: {e!s}",
                 details={
                     "schema_error": str(e),
                     "failure_cases": (
@@ -174,6 +174,6 @@ class DataContractValidator:
 
             return ValidationResult(
                 passed=False,
-                message=f"Unexpected validation error: {str(e)}",
+                message=f"Unexpected validation error: {e!s}",
                 details={"error_type": type(e).__name__},
             )
