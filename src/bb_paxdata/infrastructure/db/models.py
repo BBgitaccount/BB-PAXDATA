@@ -1705,7 +1705,6 @@ class AICache(Base):
             processing_version=None,
             access_level=None,
             expires_at=None,
-            custom_fields={"hit_count": self.hit_count},
         )
 
     @classmethod
@@ -2193,3 +2192,86 @@ class AIFailCache(Base):
             result_json=str(cf.get("result_json") or ""),
             hit_count=int(cf.get("hit_count") or 0),
         )
+
+
+class DependencyTripleORM(Base):
+    __tablename__ = "dependency_triples"
+    __table_args__ = (
+        Index("idx_dep_sent", "sent_id"),
+        Index("idx_dep_panel", "panel_id"),
+        Index("idx_dep_from", "subject_resolved"),
+        Index("idx_dep_to", "object_resolved"),
+        Index("idx_dep_verb", "verb_lemma"),
+    )
+
+    triple_id: Mapped[int] = mapped_column(
+        Integer, primary_key=True, autoincrement=True
+    )
+    sent_id: Mapped[str] = mapped_column(String, nullable=False)
+    seg_id: Mapped[str | None] = mapped_column(String, nullable=True)
+    panel_id: Mapped[str | None] = mapped_column(String, nullable=True)
+    speaker_name: Mapped[str | None] = mapped_column(Text, nullable=True)
+    country: Mapped[str | None] = mapped_column(Text, nullable=True)
+
+    subject_raw: Mapped[str | None] = mapped_column(Text, nullable=True)
+    subject_resolved: Mapped[str | None] = mapped_column(Text, nullable=True)
+    verb_lemma: Mapped[str | None] = mapped_column(Text, nullable=True)
+    object_raw: Mapped[str | None] = mapped_column(Text, nullable=True)
+    object_resolved: Mapped[str | None] = mapped_column(Text, nullable=True)
+
+    is_passive: Mapped[int] = mapped_column(Integer, default=0)
+    is_negative: Mapped[int] = mapped_column(Integer, default=0)
+
+    sentiment_context: Mapped[float | None] = mapped_column(Float, nullable=True)
+    risk_score: Mapped[int | None] = mapped_column(Integer, nullable=True)
+
+    human_verified: Mapped[int] = mapped_column(Integer, default=0)
+    verification_status: Mapped[str] = mapped_column(Text, default="AUTO")
+    extracted_at: Mapped[datetime | None] = mapped_column(
+        DateTime, server_default=func.now(), nullable=True
+    )
+
+
+class ActorActionMatrixORM(Base):
+    __tablename__ = "actor_action_matrix"
+    __table_args__ = (
+        Index("idx_matrix_panel", "panel_id"),
+        Index("idx_matrix_from", "from_country"),
+        Index("idx_matrix_to", "to_country"),
+    )
+
+    matrix_id: Mapped[int] = mapped_column(
+        Integer, primary_key=True, autoincrement=True
+    )
+    panel_id: Mapped[str] = mapped_column(String, nullable=False)
+    from_country: Mapped[str] = mapped_column(Text, nullable=False)
+    to_country: Mapped[str] = mapped_column(Text, nullable=False)
+    verb: Mapped[str] = mapped_column(Text, nullable=False)
+    count: Mapped[int] = mapped_column(Integer, default=0)
+    avg_sentiment: Mapped[float] = mapped_column(Float, default=0)
+    is_passive_pct: Mapped[float] = mapped_column(Float, default=0)
+    is_negative_pct: Mapped[float] = mapped_column(Float, default=0)
+    last_updated: Mapped[datetime | None] = mapped_column(
+        DateTime, server_default=func.now(), nullable=True
+    )
+
+
+class AIExplanationsORM(Base):
+    __tablename__ = "ai_explanations"
+    __table_args__ = (Index("idx_exp_sent", "sent_id"),)
+
+    explanation_id: Mapped[int] = mapped_column(
+        Integer, primary_key=True, autoincrement=True
+    )
+    sent_id: Mapped[str] = mapped_column(String, nullable=False)
+    risk_explanation: Mapped[str] = mapped_column(Text, nullable=False)
+    sentiment_explanation: Mapped[str] = mapped_column(Text, nullable=False)
+    grammatical_explanation: Mapped[str | None] = mapped_column(Text, nullable=True)
+    discrepancy_explanation: Mapped[str | None] = mapped_column(Text, nullable=True)
+    executive_summary: Mapped[str] = mapped_column(Text, nullable=False)
+    token_attributions_json: Mapped[str | None] = mapped_column(
+        Text, nullable=True
+    )  # JSON string
+    generated_at: Mapped[datetime | None] = mapped_column(
+        DateTime, server_default=func.now(), nullable=True
+    )

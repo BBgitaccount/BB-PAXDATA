@@ -4,11 +4,12 @@ from __future__ import annotations
 
 from bb_paxdata.domain.models.sentence import Sentence
 from bb_paxdata.infrastructure.db.repositories.sentence import SentenceRepository
+from sqlalchemy.ext.asyncio import AsyncSession
 
 from tests.infrastructure.db.repositories.conftest import seed_panel_speaker_segment
 
 
-async def test_sentence_repo_add_and_get(db_session) -> None:
+async def test_sentence_repo_add_and_get(db_session: AsyncSession) -> None:
     await seed_panel_speaker_segment(db_session)
     repo = SentenceRepository(db_session)
     sentence = Sentence(
@@ -26,7 +27,7 @@ async def test_sentence_repo_add_and_get(db_session) -> None:
     assert result.segment_id == "seg1"
 
 
-async def test_sentence_repo_get_high_risk(db_session) -> None:
+async def test_sentence_repo_get_high_risk(db_session: AsyncSession) -> None:
     await seed_panel_speaker_segment(db_session)
     repo = SentenceRepository(db_session)
     low = Sentence(id="s_low", text="a", speaker_id="sp1", segment_id="seg1")

@@ -12,23 +12,23 @@ from bb_paxdata.domain.services.risk_service import RiskService
 class TestRiskService:
     """Test cases for RiskService."""
 
-    def setup_method(self):
+    def setup_method(self) -> None:
         """Set up test fixtures."""
         self.service = RiskService()
 
-    async def test_risk_service_initialization(self):
+    async def test_risk_service_initialization(self) -> None:
         """Test that RiskService initializes correctly."""
         assert self.service is not None
         assert self.service.confidence == 1.0
         assert self.service._ner_service is None
 
-    async def test_risk_service_with_ner(self):
+    async def test_risk_service_with_ner(self) -> None:
         """Test RiskService initialization with NER service."""
         mock_ner = Mock()
         service = RiskService(ner_service=mock_ner)
         assert service._ner_service is mock_ner
 
-    async def test_compute_sbi_formula(self):
+    async def test_compute_sbi_formula(self) -> None:
         """Test SBI calculation formula."""
         power_level = 10.0
         demand_weight = 0.8
@@ -39,7 +39,7 @@ class TestRiskService:
 
         assert actual_sbi == expected_sbi
 
-    async def test_compute_sbi_edge_cases(self):
+    async def test_compute_sbi_edge_cases(self) -> None:
         """Test SBI calculation with edge cases."""
         # Test with minimum values
         sbi = self.service.compute_sbi(0.0, 0.0, 0.0)
@@ -49,7 +49,7 @@ class TestRiskService:
         sbi = self.service.compute_sbi(10.0, 1.0, 10.0)
         assert sbi == 15.0  # (10 * 1) / 2 + 10
 
-    async def test_compute_dki_formula(self):
+    async def test_compute_dki_formula(self) -> None:
         """Test DKI calculation formula."""
         norm_diplo = 0.7
         norm_risk = 0.3
@@ -65,7 +65,7 @@ class TestRiskService:
 
         assert abs(actual_dki - expected_dki) < 0.001
 
-    async def test_compute_dki_edge_cases(self):
+    async def test_compute_dki_edge_cases(self) -> None:
         """Test DKI calculation with edge cases."""
         # Test with all zeros
         dki = self.service.compute_dki(0.0, 0.0, 0.0, 0.0)
@@ -77,7 +77,7 @@ class TestRiskService:
         expected = (1.0 * 0.4 + 0.0 * 0.3 + 1.0 * 0.2 + 0.0 * 0.1) * 2 - 1
         assert dki == expected
 
-    async def test_contextual_risk_basic(self):
+    async def test_contextual_risk_basic(self) -> None:
         """Test basic contextual risk calculation."""
         text = "This is unacceptable and we will retaliate."
 
@@ -86,7 +86,7 @@ class TestRiskService:
         assert risk_score > 0.0
         assert risk_score <= 10.0
 
-    async def test_contextual_risk_with_entities(self):
+    async def test_contextual_risk_with_entities(self) -> None:
         """Test contextual risk with NER entities."""
         text = "Syria conflict escalation unacceptable"
         entities = {"GPE": ["syria"], "ORG": ["military"]}
@@ -96,7 +96,7 @@ class TestRiskService:
         assert risk_score > 0.0
         assert risk_score <= 10.0
 
-    async def test_contextual_risk_with_ner_service(self):
+    async def test_contextual_risk_with_ner_service(self) -> None:
         """Test contextual risk using NER service."""
         mock_ner = Mock()
         mock_ner.extract_entities.return_value = {"GPE": ["Syria"]}
@@ -110,7 +110,7 @@ class TestRiskService:
         assert risk_score > 0.0
         mock_ner.extract_entities.assert_called_once_with(text)
 
-    async def test_risk_detect_basic(self):
+    async def test_risk_detect_basic(self) -> None:
         """Test basic risk detection."""
         text = "This is unacceptable and we will retaliate with military action."
 
@@ -121,7 +121,7 @@ class TestRiskService:
         assert "unacceptable" in [s.lower() for s in signals]
         assert risk_score <= 10.0
 
-    async def test_risk_detect_no_signals(self):
+    async def test_risk_detect_no_signals(self) -> None:
         """Test risk detection with no risk signals."""
         text = "We had a productive meeting yesterday."
 
@@ -130,7 +130,7 @@ class TestRiskService:
         assert risk_score == 0.0
         assert len(signals) == 0
 
-    async def test_risk_detect_multiple_signals(self):
+    async def test_risk_detect_multiple_signals(self) -> None:
         """Test risk detection with multiple signals."""
         text = "This is unacceptable red line. We will retaliate and escalate."
 
@@ -140,7 +140,7 @@ class TestRiskService:
         assert len(signals) >= 2
         assert risk_score <= 10.0
 
-    async def test_normalize_value(self):
+    async def test_normalize_value(self) -> None:
         """Test value normalization."""
         # Test normal case
         normalized = self.service._normalize_value(5.0, 0.0, 10.0)
@@ -154,7 +154,7 @@ class TestRiskService:
         assert self.service._normalize_value(-5.0, 0.0, 10.0) == 0.0
         assert self.service._normalize_value(15.0, 0.0, 10.0) == 1.0
 
-    async def test_classify_risk_severity(self):
+    async def test_classify_risk_severity(self) -> None:
         """Test risk severity classification."""
         assert self.service._classify_risk_severity(9.0) == RiskLevel.CRITICAL
         assert self.service._classify_risk_severity(7.0) == RiskLevel.CRITICAL
@@ -162,7 +162,7 @@ class TestRiskService:
         assert self.service._classify_risk_severity(3.0) == RiskLevel.MEDIUM
         assert self.service._classify_risk_severity(1.0) == RiskLevel.LOW
 
-    async def test_assess_risk_single_sentence(self):
+    async def test_assess_risk_single_sentence(self) -> None:
         """Test risk assessment with single sentence."""
         sentence = Sentence(id="1", text="This is unacceptable and we will retaliate.")
         segment = Segment(id="seg1", sentences=[sentence])
@@ -182,7 +182,7 @@ class TestRiskService:
         assert result.severity in RiskLevel
         assert 0.0 <= result.confidence <= 1.0
 
-    async def test_assess_risk_multiple_sentences(self):
+    async def test_assess_risk_multiple_sentences(self) -> None:
         """Test risk assessment with multiple sentences."""
         sentences = [
             Sentence(id="1", text="We must cooperate."),
@@ -197,7 +197,7 @@ class TestRiskService:
         assert result.risk_score > 0.0  # Should be elevated due to risk signals
         assert len(result.risk_signals) > 0
 
-    async def test_assess_risk_with_speaker_power(self):
+    async def test_assess_risk_with_speaker_power(self) -> None:
         """Test risk assessment considering speaker power."""
         sentence = Sentence(id="1", text="This is unacceptable.")
         segment = Segment(id="seg1", sentences=[sentence])
@@ -211,7 +211,7 @@ class TestRiskService:
 
         assert result.sbi_score > 0.0  # High power should increase SBI
 
-    async def test_assess_risk_empty_segment(self):
+    async def test_assess_risk_empty_segment(self) -> None:
         """Test risk assessment with empty segment."""
         segment = Segment(id="seg1", sentences=[])
 
@@ -222,7 +222,7 @@ class TestRiskService:
         assert len(result.risk_signals) == 0
         assert result.severity == RiskLevel.LOW
 
-    async def test_risk_signals_coverage(self):
+    async def test_risk_signals_coverage(self) -> None:
         """Test that risk signals list is comprehensive."""
         signals = self.service.RISK_SIGNALS
 
@@ -233,7 +233,7 @@ class TestRiskService:
         assert "retaliate" in signals
         assert "military option" in signals
 
-    async def test_risk_severity_mapping(self):
+    async def test_risk_severity_mapping(self) -> None:
         """Test risk severity mapping."""
         mapping = self.service.RISK_SEVERITY
 
@@ -245,7 +245,7 @@ class TestRiskService:
         assert mapping["low"] == RiskLevel.LOW
         assert mapping["critical"] == RiskLevel.CRITICAL
 
-    async def test_edge_case_very_risky_text(self):
+    async def test_edge_case_very_risky_text(self) -> None:
         """Test with very risky text."""
         text = (
             "UNACCEPTABLE RED LINE! We will retaliate with military action "
@@ -262,7 +262,7 @@ class TestRiskService:
             RiskLevel.CRITICAL,
         ]
 
-    async def test_edge_case_no_risk_text(self):
+    async def test_edge_case_no_risk_text(self) -> None:
         """Test with no risk text."""
         text = (
             "We had a productive discussion about cooperation and mutual understanding."
@@ -275,7 +275,7 @@ class TestRiskService:
         assert result.risk_score < 3.0
         assert result.severity in [RiskLevel.LOW, RiskLevel.MEDIUM]
 
-    async def test_confidence_calculation(self):
+    async def test_confidence_calculation(self) -> None:
         """Test confidence calculation based on signals."""
         text = "unacceptable"  # Single signal
         sentence = Sentence(id="1", text=text)

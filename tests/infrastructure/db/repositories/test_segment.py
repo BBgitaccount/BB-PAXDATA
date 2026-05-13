@@ -6,11 +6,12 @@ from bb_paxdata.domain.models.segment import Segment
 from bb_paxdata.domain.models.sentence import Sentence
 from bb_paxdata.infrastructure.db.repositories.segment import SegmentRepository
 from bb_paxdata.infrastructure.db.repositories.sentence import SentenceRepository
+from sqlalchemy.ext.asyncio import AsyncSession
 
 from tests.infrastructure.db.repositories.conftest import seed_panel_speaker_segment
 
 
-async def test_segment_repo_get_with_sentences_eager(db_session) -> None:
+async def test_segment_repo_get_with_sentences_eager(db_session: AsyncSession) -> None:
     await seed_panel_speaker_segment(db_session)
     srepo = SentenceRepository(db_session)
     await srepo.add(Sentence(id="sx1", text="one", speaker_id="sp1", segment_id="seg1"))
@@ -26,7 +27,7 @@ async def test_segment_repo_get_with_sentences_eager(db_session) -> None:
     assert texts == {"one", "two"}
 
 
-async def test_segment_repo_temporal_analysis(db_session) -> None:
+async def test_segment_repo_temporal_analysis(db_session: AsyncSession) -> None:
     await seed_panel_speaker_segment(db_session)
     from bb_paxdata.infrastructure.db import models as m
 
@@ -47,7 +48,7 @@ async def test_segment_repo_temporal_analysis(db_session) -> None:
     assert ta.risk_trend == "up"
 
 
-async def test_segment_add_many(db_session) -> None:
+async def test_segment_add_many(db_session: AsyncSession) -> None:
     await seed_panel_speaker_segment(db_session)
     repo = SegmentRepository(db_session)
     segs = [

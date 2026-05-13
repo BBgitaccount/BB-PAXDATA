@@ -11,52 +11,58 @@ class Topic(BaseModel):
 
     id: str = Field(..., description="Unique identifier for the topic")
     segment_id: str | None = Field(
-        None, description="ID of the segment where topic was discussed"
+        default=None, description="ID of the segment where topic was discussed"
     )
     speaker_id: str | None = Field(
-        None, description="ID of the speaker who introduced the topic"
+        default=None, description="ID of the speaker who introduced the topic"
     )
 
     # Topic classification
     topic_category: TopicCategory = Field(
         ..., description="Primary category of the topic"
     )
-    subcategory: str | None = Field(None, description="More specific subcategory")
+    subcategory: str | None = Field(
+        default=None, description="More specific subcategory"
+    )
     contextual_importance: ContextualImportance | None = Field(
-        None, description="Importance of the topic in context"
+        default=None, description="Importance of the topic in context"
     )
 
     # Content and context
     topic_name: str = Field(..., description="Name or title of the topic")
-    topic_description: str | None = Field(None, description="Description of the topic")
+    topic_description: str | None = Field(
+        default=None, description="Description of the topic"
+    )
     key_terms: list[str] = Field(
         default_factory=list, description="Key terms associated with the topic"
     )
-    context: str | None = Field(None, description="Context of the topic discussion")
+    context: str | None = Field(
+        default=None, description="Context of the topic discussion"
+    )
 
     # Temporal information
     first_mention_time: float | None = Field(
-        None, description="Time of first mention in seconds"
+        default=None, description="Time of first mention in seconds"
     )
     last_mention_time: float | None = Field(
-        None, description="Time of last mention in seconds"
+        default=None, description="Time of last mention in seconds"
     )
     duration: float | None = Field(
-        None, description="Total duration of topic discussion"
+        default=None, description="Total duration of topic discussion"
     )
 
     # Analysis metrics
     prominence_score: float | None = Field(
-        None, ge=0.0, le=1.0, description="Prominence of the topic"
+        default=None, ge=0.0, le=1.0, description="Prominence of the topic"
     )
     controversy_score: float | None = Field(
-        None, ge=0.0, le=1.0, description="Level of controversy"
+        default=None, ge=0.0, le=1.0, description="Level of controversy"
     )
     complexity_score: float | None = Field(
-        None, ge=0.0, le=1.0, description="Complexity of the topic"
+        default=None, ge=0.0, le=1.0, description="Complexity of the topic"
     )
     sentiment_score: float | None = Field(
-        None, ge=-1.0, le=1.0, description="Sentiment associated with the topic"
+        default=None, ge=-1.0, le=1.0, description="Sentiment associated with the topic"
     )
 
     # Evidence and confidence
@@ -70,7 +76,7 @@ class Topic(BaseModel):
 
     # Topic relationships
     parent_topic_id: str | None = Field(
-        None, description="ID of parent topic if this is a subtopic"
+        default=None, description="ID of parent topic if this is a subtopic"
     )
     related_topic_ids: list[str] = Field(
         default_factory=list, description="IDs of related topics"
@@ -87,23 +93,23 @@ class Topic(BaseModel):
         default_factory=dict, description="Engagement level per speaker"
     )
     audience_reception: str | None = Field(
-        None, description="Audience reception of the topic"
+        default=None, description="Audience reception of the topic"
     )
 
     # Topic evolution
     evolution_pattern: str | None = Field(
-        None, description="How the topic evolved during discussion"
+        default=None, description="How the topic evolved during discussion"
     )
     resolution_status: str | None = Field(
-        None, description="Resolution status of the topic"
+        default=None, description="Resolution status of the topic"
     )
     outcome: str | None = Field(
-        None, description="Outcome or decision related to the topic"
+        default=None, description="Outcome or decision related to the topic"
     )
 
     # Impact assessment
     impact_score: float | None = Field(
-        None, ge=0.0, le=1.0, description="Impact score on the conversation"
+        default=None, ge=0.0, le=1.0, description="Impact score on the conversation"
     )
     action_items: list[str] = Field(
         default_factory=list, description="Action items resulting from topic discussion"
@@ -121,7 +127,9 @@ class Topic(BaseModel):
     )
 
     # Notes and metadata
-    analysis_notes: str | None = Field(None, description="Notes from topic analysis")
+    analysis_notes: str | None = Field(
+        default=None, description="Notes from topic analysis"
+    )
     tags: list[str] = Field(default_factory=list, description="Tags for categorization")
     metadata: dict[str, Any] | None = Field(
         default_factory=lambda: {}, description="Additional metadata"

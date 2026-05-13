@@ -1,0 +1,102 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "Golden Dataset Schema",
+  "description": "Schema for BB-PAXDATA golden dataset fixtures",
+  "type": "object",
+  "properties": {
+    "fixture_id": {
+      "type": "string",
+      "pattern": "^gd_[0-9]{3}$",
+      "description": "Unique identifier for the fixture (e.g., gd_001)"
+    },
+    "sent_id": {
+      "type": "string",
+      "description": "Sentence ID from the database"
+    },
+    "source_text": {
+      "type": "string",
+      "minLength": 10,
+      "description": "Original sentence text"
+    },
+    "ground_truth": {
+      "type": "object",
+      "properties": {
+        "AI_Duygu_Skoru": {
+          "type": "number",
+          "minimum": -1.0,
+          "maximum": 1.0,
+          "description": "Sentiment score from -1 to 1"
+        },
+        "AI_Duygu_Kategorisi": {
+          "type": "string",
+          "enum": ["positive", "negative", "neutral", "concerned", "hopeful", "angry", "fearful"],
+          "description": "Sentiment category"
+        },
+        "AI_Risk_Skoru": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 10,
+          "description": "Risk score from 0 to 10"
+        },
+        "AI_Potansiyel_Risk": {
+          "type": "string",
+          "enum": ["none", "low", "medium", "high", "critical"],
+          "description": "Potential risk level"
+        },
+        "AI_Talep_Var": {
+          "type": "integer",
+          "enum": [0, 1],
+          "description": "Whether sentence contains a demand (0=no, 1=yes)"
+        },
+        "AI_Diplomatik_Ton": {
+          "type": "string",
+          "enum": ["assertive", "conciliatory", "evasive", "confrontational", "neutral", "persuasive", "defensive"],
+          "description": "Diplomatic tone"
+        },
+        "AI_Manipulasyon_Skor": {
+          "type": "number",
+          "minimum": 0.0,
+          "maximum": 1.0,
+          "description": "Manipulation score from 0 to 1"
+        },
+        "AI_Cerceveleme": {
+          "type": "string",
+          "description": "Framing type (e.g., security_frame, economic_frame)"
+        },
+        "AI_Birincil_Konu": {
+          "type": "string",
+          "description": "Primary topic (e.g., Güvenlik_Çatışma, Ekonomi)"
+        }
+      },
+      "required": ["AI_Duygu_Skoru", "AI_Risk_Skoru", "AI_Potansiyel_Risk", "AI_Talep_Var", "AI_Diplomatik_Ton"],
+      "additionalProperties": false
+    },
+    "metadata": {
+      "type": "object",
+      "properties": {
+        "why_selected": {
+          "type": "string",
+          "description": "Reason for selection (e.g., negation_trap, high_risk, topic_shift)"
+        },
+        "annotator": {
+          "type": "string",
+          "description": "Person who annotated this fixture"
+        },
+        "annotated_at": {
+          "type": "string",
+          "format": "date",
+          "description": "Date of annotation (YYYY-MM-DD)"
+        },
+        "version": {
+          "type": "string",
+          "pattern": "^[0-9]+\\.[0-9]+$",
+          "description": "Version of the annotation (e.g., 1.0)"
+        }
+      },
+      "required": ["why_selected", "annotator", "annotated_at", "version"],
+      "additionalProperties": false
+    }
+  },
+  "required": ["fixture_id", "sent_id", "source_text", "ground_truth", "metadata"],
+  "additionalProperties": false
+}

@@ -11,13 +11,13 @@ class Anomaly(BaseModel):
 
     id: str = Field(..., description="Unique identifier for the anomaly")
     segment_id: str | None = Field(
-        None, description="ID of the segment where anomaly was detected"
+        default=None, description="ID of the segment where anomaly was detected"
     )
     sentence_id: str | None = Field(
-        None, description="ID of the sentence where anomaly was detected"
+        default=None, description="ID of the sentence where anomaly was detected"
     )
     speaker_id: str | None = Field(
-        None, description="ID of the speaker associated with anomaly"
+        default=None, description="ID of the speaker associated with anomaly"
     )
 
     # Anomaly classification
@@ -28,9 +28,11 @@ class Anomaly(BaseModel):
     confidence_score: float = Field(
         ..., ge=0.0, le=1.0, description="Confidence in anomaly detection"
     )
-    detection_method: str | None = Field(None, description="Method used for detection")
+    detection_method: str | None = Field(
+        default=None, description="Method used for detection"
+    )
     detector_version: str | None = Field(
-        None, description="Version of the detection algorithm"
+        default=None, description="Version of the detection algorithm"
     )
 
     # Evidence and context
@@ -38,24 +40,26 @@ class Anomaly(BaseModel):
         default_factory=list, description="Types of evidence supporting the anomaly"
     )
     evidence_text: str | None = Field(
-        None, description="Textual evidence of the anomaly"
+        default=None, description="Textual evidence of the anomaly"
     )
-    context_window: str | None = Field(None, description="Context around the anomaly")
+    context_window: str | None = Field(
+        default=None, description="Context around the anomaly"
+    )
 
     # Temporal information
     detection_timestamp: datetime = Field(
         default_factory=datetime.utcnow, description="When anomaly was detected"
     )
     occurrence_time: float | None = Field(
-        None, description="Time when anomaly occurred in seconds"
+        default=None, description="Time when anomaly occurred in seconds"
     )
 
     # Analysis and impact
     impact_score: float | None = Field(
-        None, ge=0.0, le=1.0, description="Impact score of the anomaly"
+        default=None, ge=0.0, le=1.0, description="Impact score of the anomaly"
     )
     risk_contribution: float | None = Field(
-        None, ge=0.0, le=1.0, description="Contribution to overall risk"
+        default=None, ge=0.0, le=1.0, description="Contribution to overall risk"
     )
 
     # Related anomalies
@@ -65,23 +69,27 @@ class Anomaly(BaseModel):
     is_clustered: bool = Field(
         default=False, description="Whether this anomaly is part of a cluster"
     )
-    cluster_id: str | None = Field(None, description="ID of the cluster if applicable")
+    cluster_id: str | None = Field(
+        default=None, description="ID of the cluster if applicable"
+    )
 
     # Status and resolution
     is_resolved: bool = Field(
         default=False, description="Whether anomaly has been resolved"
     )
     resolution_method: str | None = Field(
-        None, description="Method used for resolution"
+        default=None, description="Method used for resolution"
     )
     resolution_timestamp: datetime | None = Field(
-        None, description="When anomaly was resolved"
+        default=None, description="When anomaly was resolved"
     )
 
     # Notes and explanations
-    description: str | None = Field(None, description="Description of the anomaly")
+    description: str | None = Field(
+        default=None, description="Description of the anomaly"
+    )
     explanation: str | None = Field(
-        None, description="Detailed explanation of why this is an anomaly"
+        default=None, description="Detailed explanation of why this is an anomaly"
     )
     recommendations: list[str] = Field(
         default_factory=list, description="Recommended actions"

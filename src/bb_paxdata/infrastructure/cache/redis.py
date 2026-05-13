@@ -17,7 +17,7 @@ logger = structlog.get_logger(__name__)
 
 REDIS_AVAILABLE = False
 try:
-    import redis.asyncio as _redis_check  # type: ignore[import-untyped]  # noqa: F401
+    import redis.asyncio as _redis_check  # noqa: F401
 
     REDIS_AVAILABLE = True
 except ImportError:

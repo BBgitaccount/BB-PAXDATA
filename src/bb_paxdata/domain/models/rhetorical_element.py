@@ -17,10 +17,10 @@ class RhetoricalElement(BaseModel):
 
     id: str = Field(..., description="Unique identifier for the rhetorical element")
     segment_id: str | None = Field(
-        None, description="ID of the segment where element was detected"
+        default=None, description="ID of the segment where element was detected"
     )
     sentence_id: str | None = Field(
-        None, description="ID of the sentence containing the element"
+        default=None, description="ID of the sentence containing the element"
     )
     speaker_id: str = Field(
         ..., description="ID of the speaker using the rhetorical element"
@@ -32,39 +32,47 @@ class RhetoricalElement(BaseModel):
     )
     strategy: RhetoricalStrategy = Field(..., description="Overall rhetorical strategy")
     politeness_act: PolitenessAct | None = Field(
-        None, description="Politeness act classification"
+        default=None, description="Politeness act classification"
     )
     diplomatic_tone: DiplomaticTone | None = Field(
-        None, description="Diplomatic tone classification"
+        default=None, description="Diplomatic tone classification"
     )
 
     # Content and context
     element_text: str = Field(..., description="Exact text of the rhetorical element")
     pattern_structure: str | None = Field(
-        None, description="Structure of the rhetorical pattern"
+        default=None, description="Structure of the rhetorical pattern"
     )
-    context: str | None = Field(None, description="Context surrounding the element")
+    context: str | None = Field(
+        default=None, description="Context surrounding the element"
+    )
 
     # Temporal information
     timestamp: float | None = Field(
-        None, description="Time when element was used in seconds"
+        default=None, description="Time when element was used in seconds"
     )
     duration: float | None = Field(
-        None, description="Duration of the rhetorical element"
+        default=None, description="Duration of the rhetorical element"
     )
 
     # Analysis metrics
     effectiveness_score: float | None = Field(
-        None, ge=0.0, le=1.0, description="Effectiveness of the rhetorical element"
+        default=None,
+        ge=0.0,
+        le=1.0,
+        description="Effectiveness of the rhetorical element",
     )
     persuasiveness_score: float | None = Field(
-        None, ge=0.0, le=1.0, description="Persuasiveness level"
+        default=None, ge=0.0, le=1.0, description="Persuasiveness level"
     )
     complexity_score: float | None = Field(
-        None, ge=0.0, le=1.0, description="Complexity of the rhetorical structure"
+        default=None,
+        ge=0.0,
+        le=1.0,
+        description="Complexity of the rhetorical structure",
     )
     sophistication_score: float | None = Field(
-        None, ge=0.0, le=1.0, description="Sophistication level"
+        default=None, ge=0.0, le=1.0, description="Sophistication level"
     )
 
     # Evidence and confidence
@@ -79,12 +87,14 @@ class RhetoricalElement(BaseModel):
     )
 
     # Target and purpose
-    target_audience: str | None = Field(None, description="Intended target audience")
+    target_audience: str | None = Field(
+        default=None, description="Intended target audience"
+    )
     intended_purpose: str | None = Field(
-        None, description="Intended purpose of the rhetorical element"
+        default=None, description="Intended purpose of the rhetorical element"
     )
     emotional_target: str | None = Field(
-        None, description="Emotional response being targeted"
+        default=None, description="Emotional response being targeted"
     )
 
     # Relationships and patterns
@@ -95,7 +105,7 @@ class RhetoricalElement(BaseModel):
         default=False, description="Whether this is a response to another element"
     )
     responding_to_id: str | None = Field(
-        None, description="ID of element being responded to"
+        default=None, description="ID of element being responded to"
     )
 
     # Linguistic features
@@ -111,23 +121,23 @@ class RhetoricalElement(BaseModel):
 
     # Strategic context
     conversation_goal: str | None = Field(
-        None, description="Goal within the conversation"
+        default=None, description="Goal within the conversation"
     )
     power_dynamics: str | None = Field(
-        None, description="Power dynamics being addressed"
+        default=None, description="Power dynamics being addressed"
     )
 
     # Impact assessment
     audience_impact: str | None = Field(
-        None, description="Assessment of audience impact"
+        default=None, description="Assessment of audience impact"
     )
     conversation_impact: str | None = Field(
-        None, description="Impact on conversation direction"
+        default=None, description="Impact on conversation direction"
     )
 
     # Status and lifecycle
     is_successful: bool | None = Field(
-        None, description="Whether the rhetorical element achieved its goal"
+        default=None, description="Whether the rhetorical element achieved its goal"
     )
     success_indicators: list[str] = Field(
         default_factory=list, description="Indicators of success"
@@ -135,7 +145,7 @@ class RhetoricalElement(BaseModel):
 
     # Notes and metadata
     analysis_notes: str | None = Field(
-        None, description="Notes from rhetorical analysis"
+        default=None, description="Notes from rhetorical analysis"
     )
     tags: list[str] = Field(default_factory=list, description="Tags for categorization")
     metadata: dict[str, Any] | None = Field(

@@ -14,35 +14,39 @@ class Metadata(BaseModel):
     )
 
     # Basic information
-    title: str | None = Field(None, description="Title or name")
-    description: str | None = Field(None, description="Detailed description")
+    title: str | None = Field(default=None, description="Title or name")
+    description: str | None = Field(default=None, description="Detailed description")
 
     # Classification and tagging
-    category: str | None = Field(None, description="Primary category")
-    subcategory: str | None = Field(None, description="Secondary category")
+    category: str | None = Field(default=None, description="Primary category")
+    subcategory: str | None = Field(default=None, description="Secondary category")
     tags: list[str] = Field(default_factory=list, description="Tags for categorization")
     keywords: list[str] = Field(default_factory=list, description="Keywords for search")
 
     # Source and provenance
-    source: str | None = Field(None, description="Source of the data")
-    source_url: str | None = Field(None, description="URL of the source if applicable")
-    source_date: datetime | None = Field(None, description="Date of the source data")
+    source: str | None = Field(default=None, description="Source of the data")
+    source_url: str | None = Field(
+        default=None, description="URL of the source if applicable"
+    )
+    source_date: datetime | None = Field(
+        default=None, description="Date of the source data"
+    )
 
     # Quality and validation
     quality_score: float | None = Field(
-        None, ge=0.0, le=1.0, description="Quality score"
+        default=None, ge=0.0, le=1.0, description="Quality score"
     )
-    validation_status: str | None = Field(None, description="Validation status")
+    validation_status: str | None = Field(default=None, description="Validation status")
     last_validated: datetime | None = Field(
-        None, description="Last validation timestamp"
+        default=None, description="Last validation timestamp"
     )
 
     # Processing information
     processed_by: str | None = Field(
-        None, description="System or user that processed this"
+        default=None, description="System or user that processed this"
     )
     processing_version: str | None = Field(
-        None, description="Version of processing pipeline"
+        default=None, description="Version of processing pipeline"
     )
     processing_parameters: dict[str, Any] | None = Field(
         default_factory=lambda: {}, description="Processing parameters used"
@@ -57,7 +61,7 @@ class Metadata(BaseModel):
     )
 
     # Access and permissions
-    access_level: str | None = Field(None, description="Access level required")
+    access_level: str | None = Field(default=None, description="Access level required")
     is_public: bool = Field(
         default=False, description="Whether this metadata is public"
     )
@@ -77,5 +81,5 @@ class Metadata(BaseModel):
         default_factory=datetime.utcnow, description="Last update timestamp"
     )
     expires_at: datetime | None = Field(
-        None, description="Expiration timestamp if applicable"
+        default=None, description="Expiration timestamp if applicable"
     )

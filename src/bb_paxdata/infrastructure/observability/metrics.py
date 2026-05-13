@@ -28,20 +28,24 @@ except ImportError:
         pass
 
     class Counter:  # type: ignore
-        def __init__(self, *args: Any, **kwargs: Any) -> None:
+        def __init__(
+            self, name: str, documentation: str, *args: Any, **kwargs: Any
+        ) -> None:
             pass
 
-        def labels(self, **kwargs: Any) -> "Counter":
+        def labels(self, **kwargs: Any) -> Any:
             return self
 
         def inc(self, amount: float = 1) -> None:
             pass
 
     class Gauge:  # type: ignore
-        def __init__(self, *args: Any, **kwargs: Any) -> None:
+        def __init__(
+            self, name: str, documentation: str, *args: Any, **kwargs: Any
+        ) -> None:
             pass
 
-        def labels(self, **kwargs: Any) -> "Gauge":
+        def labels(self, **kwargs: Any) -> Any:
             return self
 
         def set(self, value: float) -> None:
@@ -54,10 +58,12 @@ except ImportError:
             pass
 
     class Histogram:  # type: ignore
-        def __init__(self, *args: Any, **kwargs: Any) -> None:
+        def __init__(
+            self, name: str, documentation: str, *args: Any, **kwargs: Any
+        ) -> None:
             pass
 
-        def labels(self, **kwargs: Any) -> "Histogram":
+        def labels(self, **kwargs: Any) -> Any:
             return self
 
         def observe(self, amount: float) -> None:
@@ -71,55 +77,47 @@ class MetricsCollector:
         self._lock = threading.Lock()
         self._registry = CollectorRegistry()
 
-        if _prometheus_available:
-            self._ai_request_duration_seconds = Histogram(
-                "ai_request_duration_seconds",
-                "Her AI backend çağrısının süresini ölçer",
-                ["backend", "model", "status"],
-                registry=self._registry,
-            )
+        self._ai_request_duration_seconds = Histogram(
+            "ai_request_duration_seconds",
+            "Her AI backend çağrısının süresini ölçer",
+            ["backend", "model", "status"],
+            registry=self._registry,
+        )
 
-            self._cache_operations_total = Counter(
-                "cache_operations_total",
-                "Cache hit/miss sayacı",
-                ["cache_type", "operation", "result"],
-                registry=self._registry,
-            )
+        self._cache_operations_total = Counter(
+            "cache_operations_total",
+            "Cache hit/miss sayacı",
+            ["cache_type", "operation", "result"],
+            registry=self._registry,
+        )
 
-            self._batch_fallback_total = Counter(
-                "batch_fallback_total",
-                "Batch işlem bozulup tekli moda düştüğünde artır",
-                ["backend", "reason"],
-                registry=self._registry,
-            )
+        self._batch_fallback_total = Counter(
+            "batch_fallback_total",
+            "Batch işlem bozulup tekli moda düştüğünde artır",
+            ["backend", "reason"],
+            registry=self._registry,
+        )
 
-            self._active_tasks = Gauge(
-                "active_tasks",
-                "Şu anda işlenen cümle/segment/talep sayısı",
-                ["task_type"],
-                registry=self._registry,
-            )
+        self._active_tasks = Gauge(
+            "active_tasks",
+            "Şu anda işlenen cümle/segment/talep sayısı",
+            ["task_type"],
+            registry=self._registry,
+        )
 
-            self._processed_records_total = Counter(
-                "processed_records_total",
-                "Toplam İşlenen Kayıt",
-                ["task_type", "panel_id", "status"],
-                registry=self._registry,
-            )
+        self._processed_records_total = Counter(
+            "processed_records_total",
+            "Toplam İşlenen Kayıt",
+            ["task_type", "panel_id", "status"],
+            registry=self._registry,
+        )
 
-            self._json_recovery_attempts_total = Counter(
-                "json_recovery_attempts_total",
-                "JSON Recovery Denemesi",
-                ["level", "result"],
-                registry=self._registry,
-            )
-        else:
-            self._ai_request_duration_seconds = Histogram()
-            self._cache_operations_total = Counter()
-            self._batch_fallback_total = Counter()
-            self._active_tasks = Gauge()
-            self._processed_records_total = Counter()
-            self._json_recovery_attempts_total = Counter()
+        self._json_recovery_attempts_total = Counter(
+            "json_recovery_attempts_total",
+            "JSON Recovery Denemesi",
+            ["level", "result"],
+            registry=self._registry,
+        )
 
     def record_ai_request(
         self,

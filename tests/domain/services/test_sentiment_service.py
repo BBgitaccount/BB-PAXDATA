@@ -11,24 +11,24 @@ from bb_paxdata.domain.services.sentiment_service import SentimentService
 class TestSentimentService:
     """Test cases for SentimentService."""
 
-    def setup_method(self):
+    def setup_method(self) -> None:
         """Set up test fixtures."""
         self.service = SentimentService()
 
-    async def test_sentiment_service_initialization(self):
+    async def test_sentiment_service_initialization(self) -> None:
         """Test that SentimentService initializes correctly."""
         assert self.service is not None
         assert hasattr(self.service, "_vader_analyzer")
         assert self.service.confidence == 1.0
 
-    async def test_tokenize_words_basic(self):
+    async def test_tokenize_words_basic(self) -> None:
         """Test basic word tokenization."""
         text = "This is a simple test sentence."
         tokens = self.service.tokenize_words(text)
         expected = ["this", "is", "a", "simple", "test", "sentence"]
         assert tokens == expected
 
-    async def test_tokenize_words_with_contractions(self):
+    async def test_tokenize_words_with_contractions(self) -> None:
         """Test tokenization with contractions (won't -> won_t -> won't)."""
         text = "We don't want war, but we can't accept this."
         tokens = self.service.tokenize_words(text)
@@ -36,41 +36,41 @@ class TestSentimentService:
         assert "don't" in tokens
         assert "can't" in tokens
 
-    async def test_diplo_sentiment_positive(self):
+    async def test_diplo_sentiment_positive(self) -> None:
         """Test DIPLO sentiment analysis with positive text."""
         text = "We seek comprehensive peace and cooperation."
         score = self.service.diplo_sentiment(text)
         assert score > 0.0
         assert score <= 1.0
 
-    async def test_diplo_sentiment_negative(self):
+    async def test_diplo_sentiment_negative(self) -> None:
         """Test DIPLO sentiment analysis with negative text."""
         text = "This aggression and war must stop."
         score = self.service.diplo_sentiment(text)
         assert score < 0.0
         assert score >= -1.0
 
-    async def test_diplo_sentiment_neutral(self):
+    async def test_diplo_sentiment_neutral(self) -> None:
         """Test DIPLO sentiment analysis with neutral text."""
         text = "The meeting was held yesterday."
         score = self.service.diplo_sentiment(text)
         assert score == 0.0
 
-    async def test_negation_aware_diplo_with_negation(self):
+    async def test_negation_aware_diplo_with_negation(self) -> None:
         """Test negation-aware DIPLO sentiment with negation."""
         text = "We do not want war."
         score = self.service.negation_aware_diplo(text)
         # "war" is negative, but negated should make it positive
         assert score > 0.0
 
-    async def test_negation_aware_diplo_without_negation(self):
+    async def test_negation_aware_diplo_without_negation(self) -> None:
         """Test negation-aware DIPLO sentiment without negation."""
         text = "We want peace."
         score = self.service.negation_aware_diplo(text)
         # "peace" is positive, no negation
         assert score > 0.0
 
-    async def test_negation_aware_diplo_negation_window(self):
+    async def test_negation_aware_diplo_negation_window(self) -> None:
         """Test negation window functionality."""
         text = "We do not want this war, but we accept peace."
         score = self.service.negation_aware_diplo(text)
@@ -78,43 +78,43 @@ class TestSentimentService:
         # Overall sentiment should be mixed but leaning positive
         assert score > -0.5
 
-    async def test_classify_emotion_extreme_negative(self):
+    async def test_classify_emotion_extreme_negative(self) -> None:
         """Test emotion classification for extreme negative."""
         emotion = self.service._classify_emotion(-0.8)
         assert emotion == SentimentCategory.CONFRONTATIONAL
 
-    async def test_classify_emotion_negative_borderline(self):
+    async def test_classify_emotion_negative_borderline(self) -> None:
         """Test emotion classification for confrontational borderline."""
         emotion = self.service._classify_emotion(-0.4)
         assert emotion == SentimentCategory.CONFRONTATIONAL
 
-    async def test_classify_emotion_concerned(self):
+    async def test_classify_emotion_concerned(self) -> None:
         """Test emotion classification for concerned."""
         emotion = self.service._classify_emotion(-0.2)
         assert emotion == SentimentCategory.CONCERNED
 
-    async def test_classify_emotion_neutral(self):
+    async def test_classify_emotion_neutral(self) -> None:
         """Test emotion classification for neutral."""
         emotion = self.service._classify_emotion(0.0)
         assert emotion == SentimentCategory.NEUTRAL_CAUTIOUS
 
-    async def test_classify_emotion_positive_constructive(self):
+    async def test_classify_emotion_positive_constructive(self) -> None:
         """Test emotion classification for constructive."""
         emotion = self.service._classify_emotion(0.2)
         assert emotion == SentimentCategory.CONSTRUCTIVE
 
-    async def test_classify_emotion_cooperative_borderline(self):
+    async def test_classify_emotion_cooperative_borderline(self) -> None:
         """Test emotion classification for cooperative borderline."""
         emotion = self.service._classify_emotion(0.35)
         assert emotion == SentimentCategory.COOPERATIVE
 
-    async def test_classify_emotion_cooperative_extreme(self):
+    async def test_classify_emotion_cooperative_extreme(self) -> None:
         """Test emotion classification for cooperative extreme."""
         emotion = self.service._classify_emotion(0.8)
         assert emotion == SentimentCategory.COOPERATIVE
 
     @patch("vaderSentiment.vaderSentiment.SentimentIntensityAnalyzer")
-    async def test_analyze_sentence_basic(self, mock_vader):
+    async def test_analyze_sentence_basic(self, mock_vader: Mock) -> None:
         """Test basic sentence analysis."""
         # Mock VADER response
         mock_analyzer = Mock()
@@ -140,7 +140,7 @@ class TestSentimentService:
         assert -1.0 <= result.negation_aware_score <= 1.0
         assert 0.0 <= result.confidence <= 1.0
 
-    async def test_analyze_sentence_with_negation(self):
+    async def test_analyze_sentence_with_negation(self) -> None:
         """Test sentence analysis with negation."""
         sentence = Sentence(id="1", text="We do not want war.")
 
@@ -152,7 +152,7 @@ class TestSentimentService:
             SentimentCategory.COOPERATIVE,
         ]
 
-    async def test_analyze_sentence_empty_text(self):
+    async def test_analyze_sentence_empty_text(self) -> None:
         """Test sentence analysis with empty text."""
         sentence = Sentence(id="1", text="")
 
@@ -162,7 +162,7 @@ class TestSentimentService:
         assert result.negation_aware_score == 0.0
         assert result.emotion_category == SentimentCategory.NEUTRAL_CAUTIOUS
 
-    async def test_analyze_sentence_complex_diplomatic_text(self):
+    async def test_analyze_sentence_complex_diplomatic_text(self) -> None:
         """Test analysis with complex diplomatic text."""
         text = (
             "While we cannot accept this aggression, we remain committed to "
@@ -177,7 +177,7 @@ class TestSentimentService:
         assert -1.0 <= result.negation_aware_score <= 1.0
         assert result.confidence > 0.0  # Should have some confidence
 
-    async def test_diplo_lexicon_coverage(self):
+    async def test_diplo_lexicon_coverage(self) -> None:
         """Test that DIPLO lexicon has good coverage."""
         lexicon = self.service.DIPLO_LEXICON
 
@@ -192,7 +192,7 @@ class TestSentimentService:
         for _term, score in lexicon.items():
             assert -1.0 <= score <= 1.0
 
-    async def test_negation_words_coverage(self):
+    async def test_negation_words_coverage(self) -> None:
         """Test that negation words list is comprehensive."""
         negation_words = self.service.NEGATION_WORDS
 
@@ -203,7 +203,7 @@ class TestSentimentService:
         assert "cannot" in negation_words
         assert "don't" in negation_words
 
-    async def test_confidence_calculation(self):
+    async def test_confidence_calculation(self) -> None:
         """Test confidence calculation based on method agreement."""
         # Test with similar scores (high confidence)
         text = "peace cooperation"
@@ -214,7 +214,7 @@ class TestSentimentService:
         # Should have reasonable confidence
         assert result.confidence > 0.3
 
-    async def test_edge_case_very_long_sentence(self):
+    async def test_edge_case_very_long_sentence(self) -> None:
         """Test analysis with very long sentence."""
         text = "peace " * 100  # Long repetitive text
         sentence = Sentence(id="1", text=text)
@@ -224,7 +224,7 @@ class TestSentimentService:
         assert result is not None
         assert result.score > 0.0  # Should be very positive
 
-    async def test_edge_case_special_characters(self):
+    async def test_edge_case_special_characters(self) -> None:
         """Test analysis with special characters."""
         text = "We want peace! Cooperation... not war?"
         sentence = Sentence(id="1", text=text)

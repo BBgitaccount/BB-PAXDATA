@@ -16,39 +16,41 @@ class Relationship(BaseModel):
     # Relationship classification
     relationship_type: RelationshipType = Field(..., description="Type of relationship")
     relationship_status: str | None = Field(
-        None, description="Current status of the relationship"
+        default=None, description="Current status of the relationship"
     )
     relationship_nature: str | None = Field(
-        None, description="Nature of the relationship (formal, informal, etc.)"
+        default=None, description="Nature of the relationship (formal, informal, etc.)"
     )
 
     # Power dynamics
-    power_balance: str | None = Field(None, description="Power balance description")
+    power_balance: str | None = Field(
+        default=None, description="Power balance description"
+    )
     influence_a_to_b: InfluenceTier | None = Field(
-        None, description="Influence of speaker A on B"
+        default=None, description="Influence of speaker A on B"
     )
     influence_b_to_a: InfluenceTier | None = Field(
-        None, description="Influence of speaker B on A"
+        default=None, description="Influence of speaker B on A"
     )
     pressure_a_on_b: PressureTier | None = Field(
-        None, description="Pressure exerted by A on B"
+        default=None, description="Pressure exerted by A on B"
     )
     pressure_b_on_a: PressureTier | None = Field(
-        None, description="Pressure exerted by B on A"
+        default=None, description="Pressure exerted by B on A"
     )
 
     # Interaction patterns
     interaction_frequency: str | None = Field(
-        None, description="Frequency of interactions"
+        default=None, description="Frequency of interactions"
     )
     communication_style: str | None = Field(
-        None, description="Communication style between entities"
+        default=None, description="Communication style between entities"
     )
     conflict_level: float | None = Field(
-        None, ge=0.0, le=1.0, description="Level of conflict in relationship"
+        default=None, ge=0.0, le=1.0, description="Level of conflict in relationship"
     )
     cooperation_level: float | None = Field(
-        None, ge=0.0, le=1.0, description="Level of cooperation"
+        default=None, ge=0.0, le=1.0, description="Level of cooperation"
     )
 
     # Evidence and confidence
@@ -62,27 +64,29 @@ class Relationship(BaseModel):
 
     # Temporal information
     relationship_start: float | None = Field(
-        None, description="When relationship was first observed"
+        default=None, description="When relationship was first observed"
     )
     relationship_duration: float | None = Field(
-        None, description="Duration of relationship observation"
+        default=None, description="Duration of relationship observation"
     )
-    last_interaction: float | None = Field(None, description="Time of last interaction")
+    last_interaction: float | None = Field(
+        default=None, description="Time of last interaction"
+    )
 
     # Emotional and social aspects
     emotional_tone: str | None = Field(
-        None, description="Emotional tone of the relationship"
+        default=None, description="Emotional tone of the relationship"
     )
     trust_level: float | None = Field(
-        None, ge=0.0, le=1.0, description="Level of trust between entities"
+        default=None, ge=0.0, le=1.0, description="Level of trust between entities"
     )
     respect_level: float | None = Field(
-        None, ge=0.0, le=1.0, description="Level of respect between entities"
+        default=None, ge=0.0, le=1.0, description="Level of respect between entities"
     )
 
     # Context and environment
     relationship_context: str | None = Field(
-        None, description="Context in which relationship exists"
+        default=None, description="Context in which relationship exists"
     )
     environmental_factors: list[str] = Field(
         default_factory=list, description="Environmental factors affecting relationship"
@@ -90,18 +94,18 @@ class Relationship(BaseModel):
 
     # Evolution and changes
     relationship_evolution: str | None = Field(
-        None, description="How relationship has evolved"
+        default=None, description="How relationship has evolved"
     )
     change_indicators: list[str] = Field(
         default_factory=list, description="Indicators of relationship change"
     )
     trajectory: str | None = Field(
-        None, description="Projected trajectory of relationship"
+        default=None, description="Projected trajectory of relationship"
     )
 
     # Impact and consequences
     impact_on_conversation: str | None = Field(
-        None, description="Impact on conversation dynamics"
+        default=None, description="Impact on conversation dynamics"
     )
     consequences: list[str] = Field(
         default_factory=list, description="Consequences of the relationship"
@@ -126,7 +130,7 @@ class Relationship(BaseModel):
 
     # Notes and metadata
     analysis_notes: str | None = Field(
-        None, description="Notes from relationship analysis"
+        default=None, description="Notes from relationship analysis"
     )
     tags: list[str] = Field(default_factory=list, description="Tags for categorization")
     metadata: dict[str, Any] | None = Field(

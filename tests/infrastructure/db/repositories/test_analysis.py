@@ -9,11 +9,12 @@ from bb_paxdata.domain.models.validation_result import ValidationResult
 from bb_paxdata.infrastructure.db import models as m
 from bb_paxdata.infrastructure.db.repositories.analysis import AnalysisRepository
 from bb_paxdata.infrastructure.db.repositories.sentence import SentenceRepository
+from sqlalchemy.ext.asyncio import AsyncSession
 
 from tests.infrastructure.db.repositories.conftest import seed_panel_speaker_segment
 
 
-async def _seed_sentence(session) -> None:
+async def _seed_sentence(session: AsyncSession) -> None:
     await seed_panel_speaker_segment(session)
     await SentenceRepository(session).add(
         Sentence(id="s1", text="x", speaker_id="sp1", segment_id="seg1")
@@ -21,7 +22,9 @@ async def _seed_sentence(session) -> None:
     await session.commit()
 
 
-async def test_analysis_save_and_get_sentence_analysis(db_session) -> None:
+async def test_analysis_save_and_get_sentence_analysis(
+    db_session: AsyncSession,
+) -> None:
     await _seed_sentence(db_session)
     repo = AnalysisRepository(db_session)
     analysis = Analysis(
@@ -41,7 +44,7 @@ async def test_analysis_save_and_get_sentence_analysis(db_session) -> None:
     assert loaded.risk_level == RiskLevel.HIGH
 
 
-async def test_analysis_get_failures(db_session) -> None:
+async def test_analysis_get_failures(db_session: AsyncSession) -> None:
     await _seed_sentence(db_session)
     db_session.add(
         m.AISentenceAnalysis(
@@ -64,7 +67,7 @@ async def test_analysis_get_failures(db_session) -> None:
     assert len(fails) >= 1
 
 
-async def test_analysis_cache_roundtrip(db_session) -> None:
+async def test_analysis_cache_roundtrip(db_session: AsyncSession) -> None:
     repo = AnalysisRepository(db_session)
     await repo.set_cache("h1", '{"x":1}', "m1", "b1")
     await db_session.commit()
@@ -73,7 +76,7 @@ async def test_analysis_cache_roundtrip(db_session) -> None:
     assert meta.entity_id == "h1"
 
 
-async def test_validation_log_roundtrip(db_session) -> None:
+async def test_validation_log_roundtrip(db_session: AsyncSession) -> None:
     await _seed_sentence(db_session)
     repo = AnalysisRepository(db_session)
     vr = ValidationResult(

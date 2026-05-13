@@ -18,7 +18,7 @@ from bb_paxdata.domain.services.service_container import (
 class TestServiceContainer:
     """Test cases for ServiceContainer."""
 
-    async def test_service_container_initialization(self):
+    async def test_service_container_initialization(self) -> None:
         """Test ServiceContainer initialization."""
         container = ServiceContainer()
 
@@ -28,7 +28,7 @@ class TestServiceContainer:
         assert isinstance(container._ner_service, NERStub)
         assert isinstance(container._tokenizer_service, TokenizerStub)
 
-    async def test_service_container_with_custom_services(self):
+    async def test_service_container_with_custom_services(self) -> None:
         """Test ServiceContainer with custom services."""
         mock_ner = Mock()
         mock_tokenizer = Mock()
@@ -40,7 +40,7 @@ class TestServiceContainer:
         assert container._ner_service is mock_ner
         assert container._tokenizer_service is mock_tokenizer
 
-    async def test_sentiment_service_lazy_loading(self):
+    async def test_sentiment_service_lazy_loading(self) -> None:
         """Test lazy loading of sentiment service."""
         container = ServiceContainer()
 
@@ -55,7 +55,7 @@ class TestServiceContainer:
         # Subsequent access should return same instance
         assert container.sentiment is sentiment_service
 
-    async def test_risk_service_lazy_loading(self):
+    async def test_risk_service_lazy_loading(self) -> None:
         """Test lazy loading of risk service."""
         container = ServiceContainer()
 
@@ -66,7 +66,7 @@ class TestServiceContainer:
         assert container._risk_service is risk_service
         assert container.risk is risk_service
 
-    async def test_hedging_service_lazy_loading(self):
+    async def test_hedging_service_lazy_loading(self) -> None:
         """Test lazy loading of hedging service."""
         container = ServiceContainer()
 
@@ -76,7 +76,7 @@ class TestServiceContainer:
         assert hedging_service is not None
         assert container._hedging_service is hedging_service
 
-    async def test_framing_service_lazy_loading(self):
+    async def test_framing_service_lazy_loading(self) -> None:
         """Test lazy loading of framing service."""
         container = ServiceContainer()
 
@@ -86,7 +86,7 @@ class TestServiceContainer:
         assert framing_service is not None
         assert container._framing_service is framing_service
 
-    async def test_topic_service_lazy_loading(self):
+    async def test_topic_service_lazy_loading(self) -> None:
         """Test lazy loading of topic service."""
         container = ServiceContainer()
 
@@ -96,7 +96,7 @@ class TestServiceContainer:
         assert topic_service is not None
         assert container._topic_service is topic_service
 
-    async def test_anomaly_service_lazy_loading(self):
+    async def test_anomaly_service_lazy_loading(self) -> None:
         """Test lazy loading of anomaly service."""
         container = ServiceContainer()
 
@@ -106,7 +106,7 @@ class TestServiceContainer:
         assert anomaly_service is not None
         assert container._anomaly_service is anomaly_service
 
-    async def test_configure_service(self):
+    async def test_configure_service(self) -> None:
         """Test service configuration."""
         container = ServiceContainer()
 
@@ -119,7 +119,7 @@ class TestServiceContainer:
         # Service should be reset after configuration
         assert container._sentiment_service is None
 
-    async def test_get_service_config(self):
+    async def test_get_service_config(self) -> None:
         """Test getting service configuration."""
         container = ServiceContainer()
 
@@ -132,7 +132,7 @@ class TestServiceContainer:
         config = container.get_service_config("sentiment")
         assert config["confidence"] == 0.9
 
-    async def test_reset_service(self):
+    async def test_reset_service(self) -> None:
         """Test resetting individual service."""
         container = ServiceContainer()
 
@@ -149,7 +149,7 @@ class TestServiceContainer:
         assert new_sentiment_service is not None
         assert new_sentiment_service is not sentiment_service  # New instance
 
-    async def test_reset_all_services(self):
+    async def test_reset_all_services(self) -> None:
         """Test resetting all services."""
         container = ServiceContainer()
 
@@ -180,7 +180,7 @@ class TestServiceContainer:
         assert container._topic_service is None
         assert container._anomaly_service is None
 
-    async def test_get_service_status(self):
+    async def test_get_service_status(self) -> None:
         """Test getting service status."""
         container = ServiceContainer()
 
@@ -196,7 +196,7 @@ class TestServiceContainer:
         assert status["sentiment"] is True
         assert status["risk"] is False  # Still not loaded
 
-    async def test_create_analysis_pipeline(self):
+    async def test_create_analysis_pipeline(self) -> None:
         """Test creating analysis pipeline."""
         container = ServiceContainer()
 
@@ -210,7 +210,7 @@ class TestServiceContainer:
         assert hasattr(pipeline, "topic")
         assert hasattr(pipeline, "anomaly")
 
-    async def test_ner_stub_basic_functionality(self):
+    async def test_ner_stub_basic_functionality(self) -> None:
         """Test NER stub basic functionality."""
         ner = NERStub()
 
@@ -227,7 +227,7 @@ class TestServiceContainer:
         assert "Turkey" in entities["GPE"] or "turkey" in entities["GPE"]
         assert "NATO" in entities["ORG"]
 
-    async def test_ner_stub_no_entities(self):
+    async def test_ner_stub_no_entities(self) -> None:
         """Test NER stub with no entities."""
         ner = NERStub()
 
@@ -237,7 +237,7 @@ class TestServiceContainer:
         assert isinstance(entities, dict)
         assert all(len(entity_list) == 0 for entity_list in entities.values())
 
-    async def test_tokenizer_stub_basic_functionality(self):
+    async def test_tokenizer_stub_basic_functionality(self) -> None:
         """Test tokenizer stub basic functionality."""
         tokenizer = TokenizerStub()
 
@@ -250,14 +250,14 @@ class TestServiceContainer:
         assert "is" in tokens
         assert "sentence" in tokens
 
-    async def test_tokenizer_stub_empty_text(self):
+    async def test_tokenizer_stub_empty_text(self) -> None:
         """Test tokenizer stub with empty text."""
         tokenizer = TokenizerStub()
 
         tokens = tokenizer.tokenize_words("")
         assert tokens == []
 
-    async def test_analysis_pipeline_analyze_sentence(self):
+    async def test_analysis_pipeline_analyze_sentence(self) -> None:
         """Test analysis pipeline sentence analysis."""
         container = ServiceContainer()
         pipeline = container.create_analysis_pipeline()
@@ -278,7 +278,7 @@ class TestServiceContainer:
         assert hasattr(results["framing"], "frame_type")
         assert hasattr(results["topic"], "dominant_topic")
 
-    async def test_analysis_pipeline_analyze_segment(self):
+    async def test_analysis_pipeline_analyze_segment(self) -> None:
         """Test analysis pipeline segment analysis."""
         container = ServiceContainer()
         pipeline = container.create_analysis_pipeline()
@@ -296,7 +296,7 @@ class TestServiceContainer:
         assert hasattr(results["risk"], "risk_score")
         assert hasattr(results["risk"], "severity")
 
-    async def test_analysis_pipeline_detect_anomalies(self):
+    async def test_analysis_pipeline_detect_anomalies(self) -> None:
         """Test analysis pipeline anomaly detection."""
         container = ServiceContainer()
         pipeline = container.create_analysis_pipeline()
@@ -325,7 +325,7 @@ class TestServiceContainer:
         # Should detect some anomalies given the conflicting values
         assert len(anomalies) >= 0
 
-    async def test_get_default_container(self):
+    async def test_get_default_container(self) -> None:
         """Test global default container function."""
         container1 = get_default_container()
         container2 = get_default_container()
@@ -334,21 +334,21 @@ class TestServiceContainer:
         assert container1 is container2
         assert isinstance(container1, ServiceContainer)
 
-    async def test_get_sentiment_service(self):
+    async def test_get_sentiment_service(self) -> None:
         """Test global sentiment service function."""
         service = get_sentiment_service()
 
         assert service is not None
         assert hasattr(service, "analyze")
 
-    async def test_get_risk_service(self):
+    async def test_get_risk_service(self) -> None:
         """Test global risk service function."""
         service = get_risk_service()
 
         assert service is not None
         assert hasattr(service, "assess_risk")
 
-    async def test_service_integration(self):
+    async def test_service_integration(self) -> None:
         """Test integration between services."""
         container = ServiceContainer()
 

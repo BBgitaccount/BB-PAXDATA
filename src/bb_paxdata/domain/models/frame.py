@@ -11,44 +11,48 @@ class Frame(BaseModel):
 
     id: str = Field(..., description="Unique identifier for the frame")
     segment_id: str | None = Field(
-        None, description="ID of the segment where frame was detected"
+        default=None, description="ID of the segment where frame was detected"
     )
     sentence_id: str | None = Field(
-        None, description="ID of the sentence containing the frame"
+        default=None, description="ID of the sentence containing the frame"
     )
     speaker_id: str = Field(..., description="ID of the speaker using the frame")
 
     # Frame classification
     frame_type: FrameType = Field(..., description="Type of frame used")
-    dki_stance: DkiStance | None = Field(None, description="DKI stance classification")
+    dki_stance: DkiStance | None = Field(
+        default=None, description="DKI stance classification"
+    )
 
     # Content and context
     frame_text: str = Field(..., description="Exact text of the framed content")
     frame_elements: list[str] = Field(
         default_factory=list, description="Key elements of the frame"
     )
-    context: str | None = Field(None, description="Context surrounding the frame")
+    context: str | None = Field(
+        default=None, description="Context surrounding the frame"
+    )
 
     # Temporal information
     timestamp: float | None = Field(
-        None, description="Time when frame was used in seconds"
+        default=None, description="Time when frame was used in seconds"
     )
     duration: float | None = Field(
-        None, description="Duration of the framing in seconds"
+        default=None, description="Duration of the framing in seconds"
     )
 
     # Analysis metrics
     effectiveness_score: float | None = Field(
-        None, ge=0.0, le=1.0, description="Effectiveness of the frame"
+        default=None, ge=0.0, le=1.0, description="Effectiveness of the frame"
     )
     persuasiveness_score: float | None = Field(
-        None, ge=0.0, le=1.0, description="Persuasiveness level"
+        default=None, ge=0.0, le=1.0, description="Persuasiveness level"
     )
     emotional_appeal: float | None = Field(
-        None, ge=0.0, le=1.0, description="Emotional appeal strength"
+        default=None, ge=0.0, le=1.0, description="Emotional appeal strength"
     )
     logical_appeal: float | None = Field(
-        None, ge=0.0, le=1.0, description="Logical appeal strength"
+        default=None, ge=0.0, le=1.0, description="Logical appeal strength"
     )
 
     # Evidence and confidence
@@ -61,10 +65,12 @@ class Frame(BaseModel):
     )
 
     # Target and impact
-    target_audience: str | None = Field(None, description="Intended target audience")
-    target_concept: str | None = Field(None, description="Concept being framed")
+    target_audience: str | None = Field(
+        default=None, description="Intended target audience"
+    )
+    target_concept: str | None = Field(default=None, description="Concept being framed")
     impact_assessment: str | None = Field(
-        None, description="Assessment of frame impact"
+        default=None, description="Assessment of frame impact"
     )
 
     # Relationships and patterns
@@ -75,7 +81,7 @@ class Frame(BaseModel):
         default=False, description="Whether this is a counter-frame"
     )
     parent_frame_id: str | None = Field(
-        None, description="ID of parent frame if this is a response"
+        default=None, description="ID of parent frame if this is a response"
     )
 
     # Linguistic features
@@ -90,8 +96,12 @@ class Frame(BaseModel):
     )
 
     # Strategic purpose
-    strategic_goal: str | None = Field(None, description="Strategic goal of the frame")
-    intended_effect: str | None = Field(None, description="Intended effect on audience")
+    strategic_goal: str | None = Field(
+        default=None, description="Strategic goal of the frame"
+    )
+    intended_effect: str | None = Field(
+        default=None, description="Intended effect on audience"
+    )
 
     # Status and lifecycle
     is_active: bool = Field(
@@ -102,7 +112,9 @@ class Frame(BaseModel):
     )
 
     # Notes and metadata
-    analysis_notes: str | None = Field(None, description="Notes from frame analysis")
+    analysis_notes: str | None = Field(
+        default=None, description="Notes from frame analysis"
+    )
     tags: list[str] = Field(default_factory=list, description="Tags for categorization")
     metadata: dict[str, Any] | None = Field(
         default_factory=lambda: {}, description="Additional metadata"

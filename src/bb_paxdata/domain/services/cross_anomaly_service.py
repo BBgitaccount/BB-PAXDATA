@@ -158,7 +158,6 @@ class CrossAnomalyService(BaseService, CrossAnomalyServiceProtocol):
             ai_risk >= self.ANOMALY_RISK_HIGH
             and formula_hedging >= self.ANOMALY_HEDGE_HIGH
         ):
-
             severity = AnomalySeverity.HIGH if ai_risk >= 8 else AnomalySeverity.MEDIUM
 
             anomalies.append(
@@ -278,7 +277,6 @@ class CrossAnomalyService(BaseService, CrossAnomalyServiceProtocol):
             "cooperative",
             "peaceful",
         ]:
-
             anomalies.append(
                 AnomalyResult(
                     type=AnomalyType.HIGH_RISK_CONCILIATORY_MASK,
@@ -312,7 +310,6 @@ class CrossAnomalyService(BaseService, CrossAnomalyServiceProtocol):
             ai_manipulation >= self.ANOMALY_MANIP_HIGH
             and formula_hedging <= self.ANOMALY_HEDGE_LOW
         ):
-
             severity = (
                 AnomalySeverity.CRITICAL
                 if ai_manipulation >= 0.8
@@ -354,7 +351,6 @@ class CrossAnomalyService(BaseService, CrossAnomalyServiceProtocol):
             and sbi_score >= 7.0
             and ai_risk >= self.ANOMALY_RISK_MED
         ):
-
             anomalies.append(
                 AnomalyResult(
                     type=AnomalyType.DOMINANT_ACTOR_PRESSURE,
@@ -388,7 +384,6 @@ class CrossAnomalyService(BaseService, CrossAnomalyServiceProtocol):
         has_demand_indicators = ai_risk >= 4.0  # Proxy for demand language
 
         if formula_hedging >= self.ANOMALY_HEDGE_HIGH and has_demand_indicators:
-
             anomalies.append(
                 AnomalyResult(
                     type=AnomalyType.VAGUE_DEMAND_PLAUSIBLE_DENIABILITY,
@@ -424,7 +419,6 @@ class CrossAnomalyService(BaseService, CrossAnomalyServiceProtocol):
             and ai_sentiment >= self.ANOMALY_SENT_POS
             and ai_risk >= self.ANOMALY_RISK_MED
         ):
-
             anomalies.append(
                 AnomalyResult(
                     type=AnomalyType.CONFLICT_FRAME_POSITIVE_WRAP,
@@ -463,7 +457,6 @@ class CrossAnomalyService(BaseService, CrossAnomalyServiceProtocol):
         )
 
         if ai_manipulation >= self.ANOMALY_MANIP_MED and inconsistency_score >= 0.5:
-
             severity = (
                 AnomalySeverity.HIGH
                 if ai_manipulation >= self.ANOMALY_MANIP_HIGH
@@ -505,7 +498,6 @@ class CrossAnomalyService(BaseService, CrossAnomalyServiceProtocol):
             and ai_sentiment <= self.ANOMALY_SENT_NEG
             and ai_politeness >= 0.6
         ):  # Polite but negative
-
             anomalies.append(
                 AnomalyResult(
                     type=AnomalyType.NEGATIVE_APPRAISAL_PERSUASIVE_TONE,

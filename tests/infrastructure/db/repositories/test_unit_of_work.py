@@ -2,15 +2,20 @@
 
 from __future__ import annotations
 
+from collections.abc import Callable
+
 import pytest
 from bb_paxdata.domain.models.sentence import Sentence
 from bb_paxdata.infrastructure.db.repositories.sentence import SentenceRepository
 from bb_paxdata.infrastructure.db.repositories.unit_of_work import SqlAlchemyUnitOfWork
+from sqlalchemy.ext.asyncio import AsyncSession
 
 from tests.infrastructure.db.repositories.conftest import seed_panel_speaker_segment
 
 
-async def test_uow_commits_on_success(session_factory) -> None:
+async def test_uow_commits_on_success(
+    session_factory: Callable[[], AsyncSession]
+) -> None:
     async with session_factory() as session:
         await seed_panel_speaker_segment(session)
 
@@ -26,7 +31,9 @@ async def test_uow_commits_on_success(session_factory) -> None:
         assert check.text == "committed"
 
 
-async def test_uow_rollbacks_on_exception(session_factory) -> None:
+async def test_uow_rollbacks_on_exception(
+    session_factory: Callable[[], AsyncSession]
+) -> None:
     async with session_factory() as session:
         await seed_panel_speaker_segment(session)
 

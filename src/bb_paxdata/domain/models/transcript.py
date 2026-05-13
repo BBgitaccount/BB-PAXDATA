@@ -12,7 +12,9 @@ class Transcript(BaseModel):
     """Represents a complete transcript with all its components and metadata."""
 
     id: str = Field(..., description="Unique identifier for the transcript")
-    title: str | None = Field(None, description="Title or name of the transcript")
+    title: str | None = Field(
+        default=None, description="Title or name of the transcript"
+    )
 
     # Content components
     segments: list[Segment] = Field(
@@ -23,30 +25,30 @@ class Transcript(BaseModel):
     )
 
     # Temporal information
-    start_time: float | None = Field(None, description="Start time in seconds")
-    end_time: float | None = Field(None, description="End time in seconds")
+    start_time: float | None = Field(default=None, description="Start time in seconds")
+    end_time: float | None = Field(default=None, description="End time in seconds")
     total_duration: float | None = Field(
-        None, ge=0, description="Total duration in seconds"
+        default=None, ge=0, description="Total duration in seconds"
     )
     recording_date: datetime | None = Field(
-        None, description="Date of the original recording"
+        default=None, description="Date of the original recording"
     )
 
     # Content metrics
     total_sentences: int | None = Field(
-        None, ge=0, description="Total number of sentences"
+        default=None, ge=0, description="Total number of sentences"
     )
-    total_words: int | None = Field(None, ge=0, description="Total word count")
+    total_words: int | None = Field(default=None, ge=0, description="Total word count")
     total_speakers: int | None = Field(
-        None, ge=0, description="Total number of unique speakers"
+        default=None, ge=0, description="Total number of unique speakers"
     )
 
     # Processing information
     backend_type: BackendType | None = Field(
-        None, description="Backend system used for processing"
+        default=None, description="Backend system used for processing"
     )
     processing_version: str | None = Field(
-        None, description="Version of processing pipeline"
+        default=None, description="Version of processing pipeline"
     )
     processing_date: datetime = Field(
         default_factory=datetime.utcnow, description="When transcript was processed"
@@ -54,23 +56,23 @@ class Transcript(BaseModel):
 
     # Quality and confidence
     overall_confidence: float | None = Field(
-        None, ge=0.0, le=1.0, description="Overall confidence score"
+        default=None, ge=0.0, le=1.0, description="Overall confidence score"
     )
     transcription_quality: float | None = Field(
-        None, ge=0.0, le=1.0, description="Quality of transcription"
+        default=None, ge=0.0, le=1.0, description="Quality of transcription"
     )
 
     # Classification
-    language: str | None = Field(None, description="Language of the transcript")
+    language: str | None = Field(default=None, description="Language of the transcript")
     domain: str | None = Field(
-        None, description="Domain or context of the conversation"
+        default=None, description="Domain or context of the conversation"
     )
     classification: str | None = Field(
-        None, description="Overall classification of the transcript"
+        default=None, description="Overall classification of the transcript"
     )
-
-    # Metadata
-    source_file: str | None = Field(None, description="Source file path or identifier")
+    source_file: str | None = Field(
+        default=None, description="Source file path or identifier"
+    )
     metadata: dict[str, Any] | None = Field(
         default_factory=lambda: {}, description="Additional metadata"
     )
@@ -78,7 +80,7 @@ class Transcript(BaseModel):
 
     # Logging and debugging
     log_level: LogLevel | None = Field(
-        LogLevel.INFO, description="Logging level for this transcript"
+        default=LogLevel.INFO, description="Logging level for this transcript"
     )
     processing_log: list[str] | None = Field(
         default_factory=lambda: [], description="Processing log entries"

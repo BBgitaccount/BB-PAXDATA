@@ -15,7 +15,7 @@ logger = structlog.get_logger(__name__)
 
 AIOFILES_AVAILABLE = False
 try:
-    import aiofiles as _aiofiles_check  # type: ignore[import-untyped]  # noqa: F401
+    import aiofiles as _aiofiles_check  # noqa: F401
 
     AIOFILES_AVAILABLE = True
 except ImportError:
@@ -23,7 +23,6 @@ except ImportError:
 
 
 class DiskCacheBackend(CacheBackend):
-
     def __init__(
         self,
         cache_dir: str | Path = ".cache/bb_paxdata",

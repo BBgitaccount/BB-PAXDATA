@@ -1,0 +1,2243 @@
+{
+  "version": "1.0",
+  "description": "Golden dataset for BB-PAXDATA quality assurance - 100 manually labeled sentences",
+  "created_at": "2026-05-12",
+  "fixtures": [
+    {
+      "fixture_id": "gd_001",
+      "sent_id": "BB_P001_s0001_sent0001",
+      "source_text": "We do not seek escalation, but we will defend our sovereignty.",
+      "ground_truth": {
+        "AI_Duygu_Skoru": -0.25,
+        "AI_Duygu_Kategorisi": "concerned",
+        "AI_Risk_Skoru": 6,
+        "AI_Potansiyel_Risk": "medium",
+        "AI_Talep_Var": 0,
+        "AI_Diplomatik_Ton": "defensive",
+        "AI_Manipulasyon_Skor": 0.35,
+        "AI_Cerceveleme": "security_frame",
+        "AI_Birincil_Konu": "Güvenlik_Çatışma"
+      },
+      "metadata": {
+        "why_selected": "negation_trap",
+        "annotator": "baris_bozkurt",
+        "annotated_at": "2026-05-12",
+        "version": "1.0"
+      }
+    },
+    {
+      "fixture_id": "gd_002",
+      "sent_id": "BB_P001_s0001_sent0002",
+      "source_text": "We strongly condemn these aggressive actions and demand immediate cessation.",
+      "ground_truth": {
+        "AI_Duygu_Skoru": -0.65,
+        "AI_Duygu_Kategorisi": "angry",
+        "AI_Risk_Skoru": 8,
+        "AI_Potansiyel_Risk": "high",
+        "AI_Talep_Var": 1,
+        "AI_Diplomatik_Ton": "confrontational",
+        "AI_Manipulasyon_Skor": 0.15,
+        "AI_Cerceveleme": "conflict_frame",
+        "AI_Birincil_Konu": "Güvenlik_Çatışma"
+      },
+      "metadata": {
+        "why_selected": "high_risk_demand",
+        "annotator": "baris_bozkurt",
+        "annotated_at": "2026-05-12",
+        "version": "1.0"
+      }
+    },
+    {
+      "fixture_id": "gd_003",
+      "sent_id": "BB_P001_s0002_sent0001",
+      "source_text": "We welcome the opportunity for constructive dialogue and peaceful resolution.",
+      "ground_truth": {
+        "AI_Duygu_Skoru": 0.45,
+        "AI_Duygu_Kategorisi": "hopeful",
+        "AI_Risk_Skoru": 2,
+        "AI_Potansiyel_Risk": "low",
+        "AI_Talep_Var": 0,
+        "AI_Diplomatik_Ton": "conciliatory",
+        "AI_Manipulasyon_Skor": 0.05,
+        "AI_Cerceveleme": "cooperation_frame",
+        "AI_Birincil_Konu": "Diplomasi"
+      },
+      "metadata": {
+        "why_selected": "positive_cooperative",
+        "annotator": "baris_bozkurt",
+        "annotated_at": "2026-05-12",
+        "version": "1.0"
+      }
+    },
+    {
+      "fixture_id": "gd_004",
+      "sent_id": "BB_P001_s0002_sent0002",
+      "source_text": "The humanitarian situation requires our immediate attention and action.",
+      "ground_truth": {
+        "AI_Duygu_Skoru": -0.35,
+        "AI_Duygu_Kategorisi": "concerned",
+        "AI_Risk_Skoru": 4,
+        "AI_Potansiyel_Risk": "medium",
+        "AI_Talep_Var": 1,
+        "AI_Diplomatik_Ton": "assertive",
+        "AI_Manipulasyon_Skor": 0.10,
+        "AI_Cerceveleme": "humanitarian_frame",
+        "AI_Birincil_Konu": "İnsani_Yardım"
+      },
+      "metadata": {
+        "why_selected": "humanitarian_demand",
+        "annotator": "baris_bozkurt",
+        "annotated_at": "2026-05-12",
+        "version": "1.0"
+      }
+    },
+    {
+      "fixture_id": "gd_005",
+      "sent_id": "BB_P001_s0003_sent0001",
+      "source_text": "We are committed to finding a diplomatic solution that benefits all parties.",
+      "ground_truth": {
+        "AI_Duygu_Skoru": 0.25,
+        "AI_Duygu_Kategorisi": "neutral",
+        "AI_Risk_Skoru": 1,
+        "AI_Potansiyel_Risk": "low",
+        "AI_Talep_Var": 0,
+        "AI_Diplomatik_Ton": "neutral",
+        "AI_Manipulasyon_Skor": 0.08,
+        "AI_Cerceveleme": "diplomacy_frame",
+        "AI_Birincil_Konu": "Diplomasi"
+      },
+      "metadata": {
+        "why_selected": "neutral_diplomatic",
+        "annotator": "baris_bozkurt",
+        "annotated_at": "2026-05-12",
+        "version": "1.0"
+      }
+    },
+    {
+      "fixture_id": "gd_006",
+      "sent_id": "BB_P002_s0001_sent0001",
+      "source_text": "This unilateral action violates international law and will have consequences.",
+      "ground_truth": {
+        "AI_Duygu_Skoru": -0.55,
+        "AI_Duygu_Kategorisi": "concerned",
+        "AI_Risk_Skoru": 7,
+        "AI_Potansiyel_Risk": "high",
+        "AI_Talep_Var": 0,
+        "AI_Diplomatik_Ton": "assertive",
+        "AI_Manipulasyon_Skor": 0.20,
+        "AI_Cerceveleme": "legal_frame",
+        "AI_Birincil_Konu": "Uluslararası_Hukuk"
+      },
+      "metadata": {
+        "why_selected": "legal_concern",
+        "annotator": "baris_bozkurt",
+        "annotated_at": "2026-05-12",
+        "version": "1.0"
+      }
+    },
+    {
+      "fixture_id": "gd_007",
+      "sent_id": "BB_P002_s0001_sent0002",
+      "source_text": "We urge all parties to exercise maximum restraint and avoid provocations.",
+      "ground_truth": {
+        "AI_Duygu_Skoru": -0.15,
+        "AI_Duygu_Kategorisi": "concerned",
+        "AI_Risk_Skoru": 5,
+        "AI_Potansiyel_Risk": "medium",
+        "AI_Talep_Var": 1,
+        "AI_Diplomatik_Ton": "persuasive",
+        "AI_Manipulasyon_Skor": 0.12,
+        "AI_Cerceveleme": "de_escalation_frame",
+        "AI_Birincil_Konu": "Güvenlik_Çatışma"
+      },
+      "metadata": {
+        "why_selected": "de_escalation_demand",
+        "annotator": "baris_bozkurt",
+        "annotated_at": "2026-05-12",
+        "version": "1.0"
+      }
+    },
+    {
+      "fixture_id": "gd_008",
+      "sent_id": "BB_P002_s0002_sent0001",
+      "source_text": "Economic cooperation remains the foundation of our bilateral relationship.",
+      "ground_truth": {
+        "AI_Duygu_Skoru": 0.35,
+        "AI_Duygu_Kategorisi": "positive",
+        "AI_Risk_Skoru": 1,
+        "AI_Potansiyel_Risk": "low",
+        "AI_Talep_Var": 0,
+        "AI_Diplomatik_Ton": "assertive",
+        "AI_Manipulasyon_Skor": 0.05,
+        "AI_Cerceveleme": "economic_frame",
+        "AI_Birincil_Konu": "Ekonomi"
+      },
+      "metadata": {
+        "why_selected": "economic_cooperation",
+        "annotator": "baris_bozkurt",
+        "annotated_at": "2026-05-12",
+        "version": "1.0"
+      }
+    },
+    {
+      "fixture_id": "gd_009",
+      "sent_id": "BB_P002_s0002_sent0002",
+      "source_text": "We cannot tolerate any threats to regional stability.",
+      "ground_truth": {
+        "AI_Duygu_Skoru": -0.45,
+        "AI_Duygu_Kategorisi": "serious",
+        "AI_Risk_Skoru": 8,
+        "AI_Potansiyel_Risk": "high",
+        "AI_Talep_Var": 0,
+        "AI_Diplomatik_Ton": "confrontational",
+        "AI_Manipulasyon_Skor": 0.25,
+        "AI_Cerceveleme": "security_frame",
+        "AI_Birincil_Konu": "Güvenlik_Çatışma"
+      },
+      "metadata": {
+        "why_selected": "high_risk_stability",
+        "annotator": "baris_bozkurt",
+        "annotated_at": "2026-05-12",
+        "version": "1.0"
+      }
+    },
+    {
+      "fixture_id": "gd_010",
+      "sent_id": "BB_P003_s0001_sent0001",
+      "source_text": "The reform process must be inclusive and transparent to succeed.",
+      "ground_truth": {
+        "AI_Duygu_Skoru": 0.15,
+        "AI_Duygu_Kategorisi": "neutral",
+        "AI_Risk_Skoru": 3,
+        "AI_Potansiyel_Risk": "low",
+        "AI_Talep_Var": 1,
+        "AI_Diplomatik_Ton": "assertive",
+        "AI_Manipulasyon_Skor": 0.10,
+        "AI_Cerceveleme": "reform_frame",
+        "AI_Birincil_Konu": "BM_Reformu"
+      },
+      "metadata": {
+        "why_selected": "reform_demand",
+        "annotator": "baris_bozkurt",
+        "annotated_at": "2026-05-12",
+        "version": "1.0"
+      }
+    },
+    {
+      "fixture_id": "gd_011",
+      "sent_id": "BB_P003_s0001_sent0002",
+      "source_text": "We appreciate the constructive engagement shown during these discussions.",
+      "ground_truth": {
+        "AI_Duygu_Skoru": 0.55,
+        "AI_Duygu_Kategorisi": "positive",
+        "AI_Risk_Skoru": 1,
+        "AI_Potansiyel_Risk": "low",
+        "AI_Talep_Var": 0,
+        "AI_Diplomatik_Ton": "conciliatory",
+        "AI_Manipulasyon_Skor": 0.03,
+        "AI_Cerceveleme": "cooperation_frame",
+        "AI_Birincil_Konu": "Diplomasi"
+      },
+      "metadata": {
+        "why_selected": "positive_engagement",
+        "annotator": "baris_bozkurt",
+        "annotated_at": "2026-05-12",
+        "version": "1.0"
+      }
+    },
+    {
+      "fixture_id": "gd_012",
+      "sent_id": "BB_P003_s0002_sent0001",
+      "source_text": "This development poses a significant threat to international peace and security.",
+      "ground_truth": {
+        "AI_Duygu_Skoru": -0.75,
+        "AI_Duygu_Kategorisi": "alarmed",
+        "AI_Risk_Skoru": 9,
+        "AI_Potansiyel_Risk": "critical",
+        "AI_Talep_Var": 0,
+        "AI_Diplomatik_Ton": "confrontational",
+        "AI_Manipulasyon_Skor": 0.15,
+        "AI_Cerceveleme": "security_frame",
+        "AI_Birincil_Konu": "Güvenlik_Çatışma"
+      },
+      "metadata": {
+        "why_selected": "critical_threat",
+        "annotator": "baris_bozkurt",
+        "annotated_at": "2026-05-12",
+        "version": "1.0"
+      }
+    },
+    {
+      "fixture_id": "gd_013",
+      "sent_id": "BB_P003_s0002_sent0002",
+      "source_text": "We propose a phased approach to address these complex issues.",
+      "ground_truth": {
+        "AI_Duygu_Skoru": 0.20,
+        "AI_Duygu_Kategorisi": "neutral",
+        "AI_Risk_Skoru": 2,
+        "AI_Potansiyel_Risk": "low",
+        "AI_Talep_Var": 1,
+        "AI_Diplomatik_Ton": "persuasive",
+        "AI_Manipulasyon_Skor": 0.08,
+        "AI_Cerceveleme": "diplomacy_frame",
+        "AI_Birincil_Konu": "Diplomasi"
+      },
+      "metadata": {
+        "why_selected": "phased_proposal",
+        "annotator": "baris_bozkurt",
+        "annotated_at": "2026-05-12",
+        "version": "1.0"
+      }
+    },
+    {
+      "fixture_id": "gd_014",
+      "sent_id": "BB_P004_s0001_sent0001",
+      "source_text": "The humanitarian corridor must remain open and accessible to all.",
+      "ground_truth": {
+        "AI_Duygu_Skoru": -0.30,
+        "AI_Duygu_Kategorisi": "concerned",
+        "AI_Risk_Skoru": 6,
+        "AI_Potansiyel_Risk": "medium",
+        "AI_Talep_Var": 1,
+        "AI_Diplomatik_Ton": "assertive",
+        "AI_Manipulasyon_Skor": 0.12,
+        "AI_Cerceveleme": "humanitarian_frame",
+        "AI_Birincil_Konu": "İnsani_Yardım"
+      },
+      "metadata": {
+        "why_selected": "humanitarian_demand_urgent",
+        "annotator": "baris_bozkurt",
+        "annotated_at": "2026-05-12",
+        "version": "1.0"
+      }
+    },
+    {
+      "fixture_id": "gd_015",
+      "sent_id": "BB_P004_s0001_sent0002",
+      "source_text": "We are not prepared to compromise on our fundamental principles.",
+      "ground_truth": {
+        "AI_Duygu_Skoru": -0.20,
+        "AI_Duygu_Kategorisi": "serious",
+        "AI_Risk_Skoru": 5,
+        "AI_Potansiyel_Risk": "medium",
+        "AI_Talep_Var": 0,
+        "AI_Diplomatik_Ton": "defensive",
+        "AI_Manipulasyon_Skor": 0.18,
+        "AI_Cerceveleme": "principle_frame",
+        "AI_Birincil_Konu": "Diplomasi"
+      },
+      "metadata": {
+        "why_selected": "principled_stand",
+        "annotator": "baris_bozkurt",
+        "annotated_at": "2026-05-12",
+        "version": "1.0"
+      }
+    },
+    {
+      "fixture_id": "gd_016",
+      "sent_id": "BB_P004_s0002_sent0001",
+      "source_text": "Economic sanctions are having a devastating impact on innocent civilians.",
+      "ground_truth": {
+        "AI_Duygu_Skoru": -0.60,
+        "AI_Duygu_Kategorisi": "concerned",
+        "AI_Risk_Skoru": 7,
+        "AI_Potansiyel_Risk": "high",
+        "AI_Talep_Var": 0,
+        "AI_Diplomatik_Ton": "assertive",
+        "AI_Manipulasyon_Skor": 0.22,
+        "AI_Cerceveleme": "economic_frame",
+        "AI_Birincil_Konu": "Ekonomi"
+      },
+      "metadata": {
+        "why_selected": "sanctions_impact",
+        "annotator": "baris_bozkurt",
+        "annotated_at": "2026-05-12",
+        "version": "1.0"
+      }
+    },
+    {
+      "fixture_id": "gd_017",
+      "sent_id": "BB_P004_s0002_sent0002",
+      "source_text": "We call for an immediate ceasefire and return to negotiations.",
+      "ground_truth": {
+        "AI_Duygu_Skoru": -0.40,
+        "AI_Duygu_Kategorisi": "urgent",
+        "AI_Risk_Skoru": 8,
+        "AI_Potansiyel_Risk": "high",
+        "AI_Talep_Var": 1,
+        "AI_Diplomatik_Ton": "assertive",
+        "AI_Manipulasyon_Skor": 0.10,
+        "AI_Cerceveleme": "peace_frame",
+        "AI_Birincil_Konu": "Güvenlik_Çatışma"
+      },
+      "metadata": {
+        "why_selected": "ceasefire_demand",
+        "annotator": "baris_bozkurt",
+        "annotated_at": "2026-05-12",
+        "version": "1.0"
+      }
+    },
+    {
+      "fixture_id": "gd_018",
+      "sent_id": "BB_P005_s0001_sent0001",
+      "source_text": "The multipolar world order requires new approaches to global governance.",
+      "ground_truth": {
+        "AI_Duygu_Skoru": 0.10,
+        "AI_Duygu_Kategorisi": "neutral",
+        "AI_Risk_Skoru": 3,
+        "AI_Potansiyel_Risk": "low",
+        "AI_Talep_Var": 0,
+        "AI_Diplomatik_Ton": "analytical",
+        "AI_Manipulasyon_Skor": 0.15,
+        "AI_Cerceveleme": "governance_frame",
+        "AI_Birincil_Konu": "Çok-kutupluluk"
+      },
+      "metadata": {
+        "why_selected": "multipolar_analysis",
+        "annotator": "baris_bozkurt",
+        "annotated_at": "2026-05-12",
+        "version": "1.0"
+      }
+    },
+    {
+      "fixture_id": "gd_019",
+      "sent_id": "BB_P005_s0001_sent0002",
+      "source_text": "We believe dialogue is the only path forward for resolving this conflict.",
+      "ground_truth": {
+        "AI_Duygu_Skoru": 0.30,
+        "AI_Duygu_Kategorisi": "hopeful",
+        "AI_Risk_Skoru": 2,
+        "AI_Potansiyel_Risk": "low",
+        "AI_Talep_Var": 0,
+        "AI_Diplomatik_Ton": "persuasive",
+        "AI_Manipulasyon_Skor": 0.05,
+        "AI_Cerceveleme": "peace_frame",
+        "AI_Birincil_Konu": "Diplomasi"
+      },
+      "metadata": {
+        "why_selected": "dialogue_hope",
+        "annotator": "baris_bozkurt",
+        "annotated_at": "2026-05-12",
+        "version": "1.0"
+      }
+    },
+    {
+      "fixture_id": "gd_020",
+      "sent_id": "BB_P005_s0002_sent0001",
+      "source_text": "This aggression cannot be justified under any circumstances.",
+      "ground_truth": {
+        "AI_Duygu_Skoru": -0.70,
+        "AI_Duygu_Kategorisi": "condemnatory",
+        "AI_Risk_Skoru": 9,
+        "AI_Potansiyel_Risk": "critical",
+        "AI_Talep_Var": 0,
+        "AI_Diplomatik_Ton": "confrontational",
+        "AI_Manipulasyon_Skor": 0.20,
+        "AI_Cerceveleme": "conflict_frame",
+        "AI_Birincil_Konu": "Güvenlik_Çatışma"
+      },
+      "metadata": {
+        "why_selected": "critical_aggression",
+        "annotator": "baris_bozkurt",
+        "annotated_at": "2026-05-12",
+        "version": "1.0"
+      }
+    },
+    {
+      "fixture_id": "gd_021",
+      "sent_id": "BB_P006_s0001_sent0001",
+      "source_text": "We welcome the initiative and look forward to productive discussions.",
+      "ground_truth": {
+        "AI_Duygu_Skoru": 0.50,
+        "AI_Duygu_Kategorisi": "positive",
+        "AI_Risk_Skoru": 1,
+        "AI_Potansiyel_Risk": "low",
+        "AI_Talep_Var": 0,
+        "AI_Diplomatik_Ton": "conciliatory",
+        "AI_Manipulasyon_Skor": 0.04,
+        "AI_Cerceveleme": "cooperation_frame",
+        "AI_Birincil_Konu": "Diplomasi"
+      },
+      "metadata": {
+        "why_selected": "positive_initiative",
+        "annotator": "baris_bozkurt",
+        "annotated_at": "2026-05-12",
+        "version": "1.0"
+      }
+    },
+    {
+      "fixture_id": "gd_022",
+      "sent_id": "BB_P006_s0001_sent0002",
+      "source_text": "The situation demands our immediate collective action.",
+      "ground_truth": {
+        "AI_Duygu_Skoru": -0.35,
+        "AI_Duygu_Kategorisi": "urgent",
+        "AI_Risk_Skoru": 6,
+        "AI_Potansiyel_Risk": "medium",
+        "AI_Talep_Var": 1,
+        "AI_Diplomatik_Ton": "assertive",
+        "AI_Manipulasyon_Skor": 0.12,
+        "AI_Cerceveleme": "action_frame",
+        "AI_Birincil_Konu": "Güvenlik_Çatışma"
+      },
+      "metadata": {
+        "why_selected": "urgent_action_demand",
+        "annotator": "baris_bozkurt",
+        "annotated_at": "2026-05-12",
+        "version": "1.0"
+      }
+    },
+    {
+      "fixture_id": "gd_023",
+      "sent_id": "BB_P006_s0002_sent0001",
+      "source_text": "We remain committed to the principles of the United Nations Charter.",
+      "ground_truth": {
+        "AI_Duygu_Skoru": 0.25,
+        "AI_Duygu_Kategorisi": "principled",
+        "AI_Risk_Skoru": 2,
+        "AI_Potansiyel_Risk": "low",
+        "AI_Talep_Var": 0,
+        "AI_Diplomatik_Ton": "assertive",
+        "AI_Manipulasyon_Skor": 0.06,
+        "AI_Cerceveleme": "legal_frame",
+        "AI_Birincil_Konu": "Uluslararası_Hukuk"
+      },
+      "metadata": {
+        "why_selected": "united_nations_principles",
+        "annotator": "baris_bozkurt",
+        "annotated_at": "2026-05-12",
+        "version": "1.0"
+      }
+    },
+    {
+      "fixture_id": "gd_024",
+      "sent_id": "BB_P006_s0002_sent0002",
+      "source_text": "This violation of sovereignty will not be tolerated.",
+      "ground_truth": {
+        "AI_Duygu_Skoru": -0.55,
+        "AI_Duygu_Kategorisi": "angry",
+        "AI_Risk_Skoru": 8,
+        "AI_Potansiyel_Risk": "high",
+        "AI_Talep_Var": 0,
+        "AI_Diplomatik_Ton": "confrontational",
+        "AI_Manipulasyon_Skor": 0.25,
+        "AI_Cerceveleme": "sovereignty_frame",
+        "AI_Birincil_Konu": "Güvenlik_Çatışma"
+      },
+      "metadata": {
+        "why_selected": "sovereignty_violation",
+        "annotator": "baris_bozkurt",
+        "annotated_at": "2026-05-12",
+        "version": "1.0"
+      }
+    },
+    {
+      "fixture_id": "gd_025",
+      "sent_id": "BB_P007_s0001_sent0001",
+      "source_text": "We propose establishing a monitoring mechanism to ensure compliance.",
+      "ground_truth": {
+        "AI_Duygu_Skoru": 0.15,
+        "AI_Duygu_Kategorisi": "constructive",
+        "AI_Risk_Skoru": 3,
+        "AI_Potansiyel_Risk": "low",
+        "AI_Talep_Var": 1,
+        "AI_Diplomatik_Ton": "persuasive",
+        "AI_Manipulasyon_Skor": 0.10,
+        "AI_Cerceveleme": "monitoring_frame",
+        "AI_Birincil_Konu": "Diplomasi"
+      },
+      "metadata": {
+        "why_selected": "monitoring_proposal",
+        "annotator": "baris_bozkurt",
+        "annotated_at": "2026-05-12",
+        "version": "1.0"
+      }
+    },
+    {
+      "fixture_id": "gd_026",
+      "sent_id": "BB_P007_s0001_sent0002",
+      "source_text": "The economic benefits of cooperation far outweigh the costs of conflict.",
+      "ground_truth": {
+        "AI_Duygu_Skoru": 0.40,
+        "AI_Duygu_Kategorisi": "positive",
+        "AI_Risk_Skoru": 2,
+        "AI_Potansiyel_Risk": "low",
+        "AI_Talep_Var": 0,
+        "AI_Diplomatik_Ton": "persuasive",
+        "AI_Manipulasyon_Skor": 0.08,
+        "AI_Cerceveleme": "economic_frame",
+        "AI_Birincil_Konu": "Ekonomi"
+      },
+      "metadata": {
+        "why_selected": "economic_cooperation_benefits",
+        "annotator": "baris_bozkurt",
+        "annotated_at": "2026-05-12",
+        "version": "1.0"
+      }
+    },
+    {
+      "fixture_id": "gd_027",
+      "sent_id": "BB_P007_s0002_sent0001",
+      "source_text": "We cannot stand by while fundamental human rights are violated.",
+      "ground_truth": {
+        "AI_Duygu_Skoru": -0.65,
+        "AI_Duygu_Kategorisi": "concerned",
+        "AI_Risk_Skoru": 7,
+        "AI_Potansiyel_Risk": "high",
+        "AI_Talep_Var": 0,
+        "AI_Diplomatik_Ton": "assertive",
+        "AI_Manipulasyon_Skor": 0.18,
+        "AI_Cerceveleme": "human_rights_frame",
+        "AI_Birincil_Konu": "İnsani_Yardım"
+      },
+      "metadata": {
+        "why_selected": "human_rights_concern",
+        "annotator": "baris_bozkurt",
+        "annotated_at": "2026-05-12",
+        "version": "1.0"
+      }
+    },
+    {
+      "fixture_id": "gd_028",
+      "sent_id": "BB_P007_s0002_sent0002",
+      "source_text": "Diplomatic engagement remains our preferred approach to resolution.",
+      "ground_truth": {
+        "AI_Duygu_Skoru": 0.35,
+        "AI_Duygu_Kategorisi": "hopeful",
+        "AI_Risk_Skoru": 2,
+        "AI_Potansiyel_Risk": "low",
+        "AI_Talep_Var": 0,
+        "AI_Diplomatik_Ton": "conciliatory",
+        "AI_Manipulasyon_Skor": 0.05,
+        "AI_Cerceveleme": "diplomacy_frame",
+        "AI_Birincil_Konu": "Diplomasi"
+      },
+      "metadata": {
+        "why_selected": "diplomatic_preference",
+        "annotator": "baris_bozkurt",
+        "annotated_at": "2026-05-12",
+        "version": "1.0"
+      }
+    },
+    {
+      "fixture_id": "gd_029",
+      "sent_id": "BB_P008_s0001_sent0001",
+      "source_text": "The international community must speak with one voice on this matter.",
+      "ground_truth": {
+        "AI_Duygu_Skoru": -0.25,
+        "AI_Duygu_Kategorisi": "serious",
+        "AI_Risk_Skoru": 5,
+        "AI_Potansiyel_Risk": "medium",
+        "AI_Talep_Var": 1,
+        "AI_Diplomatik_Ton": "assertive",
+        "AI_Manipulasyon_Skor": 0.15,
+        "AI_Cerceveleme": "unity_frame",
+        "AI_Birincil_Konu": "Diplomasi"
+      },
+      "metadata": {
+        "why_selected": "international_unity_demand",
+        "annotator": "baris_bozkurt",
+        "annotated_at": "2026-05-12",
+        "version": "1.0"
+      }
+    },
+    {
+      "fixture_id": "gd_030",
+      "sent_id": "BB_P008_s0001_sent0002",
+      "source_text": "We are encouraged by the progress made in recent negotiations.",
+      "ground_truth": {
+        "AI_Duygu_Skoru": 0.45,
+        "AI_Duygu_Kategorisi": "encouraged",
+        "AI_Risk_Skoru": 2,
+        "AI_Potansiyel_Risk": "low",
+        "AI_Talep_Var": 0,
+        "AI_Diplomatik_Ton": "conciliatory",
+        "AI_Manipulasyon_Skor": 0.04,
+        "AI_Cerceveleme": "progress_frame",
+        "AI_Birincil_Konu": "Diplomasi"
+      },
+      "metadata": {
+        "why_selected": "progress_encouragement",
+        "annotator": "baris_bozkurt",
+        "annotated_at": "2026-05-12",
+        "version": "1.0"
+      }
+    },
+    {
+      "fixture_id": "gd_031",
+      "sent_id": "BB_P008_s0002_sent0001",
+      "source_text": "This provocative action threatens to destabilize the entire region.",
+      "ground_truth": {
+        "AI_Duygu_Skoru": -0.60,
+        "AI_Duygu_Kategorisi": "alarmed",
+        "AI_Risk_Skoru": 8,
+        "AI_Potansiyel_Risk": "high",
+        "AI_Talep_Var": 0,
+        "AI_Diplomatik_Ton": "confrontational",
+        "AI_Manipulasyon_Skor": 0.22,
+        "AI_Cerceveleme": "security_frame",
+        "AI_Birincil_Konu": "Güvenlik_Çatışma"
+      },
+      "metadata": {
+        "why_selected": "regional_destabilization",
+        "annotator": "baris_bozkurt",
+        "annotated_at": "2026-05-12",
+        "version": "1.0"
+      }
+    },
+    {
+      "fixture_id": "gd_032",
+      "sent_id": "BB_P008_s0002_sent0002",
+      "source_text": "We support efforts to build bridges between communities.",
+      "ground_truth": {
+        "AI_Duygu_Skoru": 0.40,
+        "AI_Duygu_Kategorisi": "supportive",
+        "AI_Risk_Skoru": 1,
+        "AI_Potansiyel_Risk": "low",
+        "AI_Talep_Var": 0,
+        "AI_Diplomatik_Ton": "conciliatory",
+        "AI_Manipulasyon_Skor": 0.06,
+        "AI_Cerceveleme": "cooperation_frame",
+        "AI_Birincil_Konu": "Diplomasi"
+      },
+      "metadata": {
+        "why_selected": "community_bridge_building",
+        "annotator": "baris_bozkurt",
+        "annotated_at": "2026-05-12",
+        "version": "1.0"
+      }
+    },
+    {
+      "fixture_id": "gd_033",
+      "sent_id": "BB_P009_s0001_sent0001",
+      "source_text": "The time has come for decisive action on climate change.",
+      "ground_truth": {
+        "AI_Duygu_Skoru": -0.30,
+        "AI_Duygu_Kategorisi": "urgent",
+        "AI_Risk_Skoru": 6,
+        "AI_Potansiyel_Risk": "medium",
+        "AI_Talep_Var": 1,
+        "AI_Diplomatik_Ton": "assertive",
+        "AI_Manipulasyon_Skor": 0.12,
+        "AI_Cerceveleme": "environmental_frame",
+        "AI_Birincil_Konu": "Diğer"
+      },
+      "metadata": {
+        "why_selected": "climate_action_urgent",
+        "annotator": "baris_bozkurt",
+        "annotated_at": "2026-05-12",
+        "version": "1.0"
+      }
+    },
+    {
+      "fixture_id": "gd_034",
+      "sent_id": "BB_P009_s0001_sent0002",
+      "source_text": "We do not recognize this illegitimate attempt to seize power.",
+      "ground_truth": {
+        "AI_Duygu_Skoru": -0.50,
+        "AI_Duygu_Kategorisi": "condemnatory",
+        "AI_Risk_Skoru": 8,
+        "AI_Potansiyel_Risk": "high",
+        "AI_Talep_Var": 0,
+        "AI_Diplomatik_Ton": "confrontational",
+        "AI_Manipulasyon_Skor": 0.20,
+        "AI_Cerceveleme": "legitimacy_frame",
+        "AI_Birincil_Konu": "Güvenlik_Çatışma"
+      },
+      "metadata": {
+        "why_selected": "illegitimate_power_seizure",
+        "annotator": "baris_bozkurt",
+        "annotated_at": "2026-05-12",
+        "version": "1.0"
+      }
+    },
+    {
+      "fixture_id": "gd_035",
+      "sent_id": "BB_P009_s0002_sent0001",
+      "source_text": "Economic interdependence creates mutual incentives for peace.",
+      "ground_truth": {
+        "AI_Duygu_Skoru": 0.30,
+        "AI_Duygu_Kategorisi": "analytical",
+        "AI_Risk_Skoru": 2,
+        "AI_Potansiyel_Risk": "low",
+        "AI_Talep_Var": 0,
+        "AI_Diplomatik_Ton": "analytical",
+        "AI_Manipulasyon_Skor": 0.10,
+        "AI_Cerceveleme": "economic_frame",
+        "AI_Birincil_Konu": "Ekonomi"
+      },
+      "metadata": {
+        "why_selected": "economic_interdependence_analysis",
+        "annotator": "baris_bozkurt",
+        "annotated_at": "2026-05-12",
+        "version": "1.0"
+      }
+    },
+    {
+      "fixture_id": "gd_036",
+      "sent_id": "BB_P009_s0002_sent0002",
+      "source_text": "We demand immediate access for humanitarian aid workers.",
+      "ground_truth": {
+        "AI_Duygu_Skoru": -0.45,
+        "AI_Duygu_Kategorisi": "urgent",
+        "AI_Risk_Skoru": 7,
+        "AI_Potansiyel_Risk": "high",
+        "AI_Talep_Var": 1,
+        "AI_Diplomatik_Ton": "assertive",
+        "AI_Manipulasyon_Skor": 0.15,
+        "AI_Cerceveleme": "humanitarian_frame",
+        "AI_Birincil_Konu": "İnsani_Yardım"
+      },
+      "metadata": {
+        "why_selected": "humanitarian_access_demand",
+        "annotator": "baris_bozkurt",
+        "annotated_at": "2026-05-12",
+        "version": "1.0"
+      }
+    },
+    {
+      "fixture_id": "gd_037",
+      "sent_id": "BB_P010_s0001_sent0001",
+      "source_text": "The reform process should be inclusive of all stakeholders.",
+      "ground_truth": {
+        "AI_Duygu_Skoru": 0.20,
+        "AI_Duygu_Kategorisi": "constructive",
+        "AI_Risk_Skoru": 3,
+        "AI_Potansiyel_Risk": "low",
+        "AI_Talep_Var": 1,
+        "AI_Diplomatik_Ton": "persuasive",
+        "AI_Manipulasyon_Skor": 0.08,
+        "AI_Cerceveleme": "reform_frame",
+        "AI_Birincil_Konu": "BM_Reformu"
+      },
+      "metadata": {
+        "why_selected": "inclusive_reform_demand",
+        "annotator": "baris_bozkurt",
+        "annotated_at": "2026-05-12",
+        "version": "1.0"
+      }
+    },
+    {
+      "fixture_id": "gd_038",
+      "sent_id": "BB_P010_s0001_sent0002",
+      "source_text": "We are deeply troubled by reports of civilian casualties.",
+      "ground_truth": {
+        "AI_Duygu_Skoru": -0.70,
+        "AI_Duygu_Kategorisi": "troubled",
+        "AI_Risk_Skoru": 8,
+        "AI_Potansiyel_Risk": "high",
+        "AI_Talep_Var": 0,
+        "AI_Diplomatik_Ton": "concerned",
+        "AI_Manipulasyon_Skor": 0.18,
+        "AI_Cerceveleme": "humanitarian_frame",
+        "AI_Birincil_Konu": "İnsani_Yardım"
+      },
+      "metadata": {
+        "why_selected": "civilian_casualties_concern",
+        "annotator": "baris_bozkurt",
+        "annotated_at": "2026-05-12",
+        "version": "1.0"
+      }
+    },
+    {
+      "fixture_id": "gd_039",
+      "sent_id": "BB_P010_s0002_sent0001",
+      "source_text": "The principle of state sovereignty must be respected.",
+      "ground_truth": {
+        "AI_Duygu_Skoru": 0.15,
+        "AI_Duygu_Kategorisi": "principled",
+        "AI_Risk_Skoru": 4,
+        "AI_Potansiyel_Risk": "medium",
+        "AI_Talep_Var": 0,
+        "AI_Diplomatik_Ton": "assertive",
+        "AI_Manipulasyon_Skor": 0.12,
+        "AI_Cerceveleme": "sovereignty_frame",
+        "AI_Birincil_Konu": "Uluslararası_Hukuk"
+      },
+      "metadata": {
+        "why_selected": "sovereignty_principle",
+        "annotator": "baris_bozkurt",
+        "annotated_at": "2026-05-12",
+        "version": "1.0"
+      }
+    },
+    {
+      "fixture_id": "gd_040",
+      "sent_id": "BB_P010_s0002_sent0002",
+      "source_text": "We will not hesitate to defend our national interests.",
+      "ground_truth": {
+        "AI_Duygu_Skoru": -0.35,
+        "AI_Duygu_Kategorisi": "defensive",
+        "AI_Risk_Skoru": 6,
+        "AI_Potansiyel_Risk": "medium",
+        "AI_Talep_Var": 0,
+        "AI_Diplomatik_Ton": "defensive",
+        "AI_Manipulasyon_Skor": 0.20,
+        "AI_Cerceveleme": "security_frame",
+        "AI_Birincil_Konu": "Güvenlik_Çatışma"
+      },
+      "metadata": {
+        "why_selected": "national_interest_defense",
+        "annotator": "baris_bozkurt",
+        "annotated_at": "2026-05-12",
+        "version": "1.0"
+      }
+    },
+    {
+      "fixture_id": "gd_041",
+      "sent_id": "BB_P011_s0001_sent0001",
+      "source_text": "The new security architecture must reflect current realities.",
+      "ground_truth": {
+        "AI_Duygu_Skoru": 0.10,
+        "AI_Duygu_Kategorisi": "analytical",
+        "AI_Risk_Skoru": 4,
+        "AI_Potansiyel_Risk": "medium",
+        "AI_Talep_Var": 1,
+        "AI_Diplomatik_Ton": "analytical",
+        "AI_Manipulasyon_Skor": 0.15,
+        "AI_Cerceveleme": "security_frame",
+        "AI_Birincil_Konu": "Güvenlik_Çatışma"
+      },
+      "metadata": {
+        "why_selected": "security_architecture_reform",
+        "annotator": "baris_bozkurt",
+        "annotated_at": "2026-05-12",
+        "version": "1.0"
+      }
+    },
+    {
+      "fixture_id": "gd_042",
+      "sent_id": "BB_P011_s0001_sent0002",
+      "source_text": "We appreciate the constructive spirit shown during these talks.",
+      "ground_truth": {
+        "AI_Duygu_Skoru": 0.55,
+        "AI_Duygu_Kategorisi": "appreciative",
+        "AI_Risk_Skoru": 1,
+        "AI_Potansiyel_Risk": "low",
+        "AI_Talep_Var": 0,
+        "AI_Diplomatik_Ton": "conciliatory",
+        "AI_Manipulasyon_Skor": 0.03,
+        "AI_Cerceveleme": "cooperation_frame",
+        "AI_Birincil_Konu": "Diplomasi"
+      },
+      "metadata": {
+        "why_selected": "constructive_spirit_appreciation",
+        "annotator": "baris_bozkurt",
+        "annotated_at": "2026-05-12",
+        "version": "1.0"
+      }
+    },
+    {
+      "fixture_id": "gd_043",
+      "sent_id": "BB_P011_s0002_sent0001",
+      "source_text": "This violation constitutes a breach of international obligations.",
+      "ground_truth": {
+        "AI_Duygu_Skoru": -0.55,
+        "AI_Duygu_Kategorisi": "condemnatory",
+        "AI_Risk_Skoru": 8,
+        "AI_Potansiyel_Risk": "high",
+        "AI_Talep_Var": 0,
+        "AI_Diplomatik_Ton": "confrontational",
+        "AI_Manipulasyon_Skor": 0.22,
+        "AI_Cerceveleme": "legal_frame",
+        "AI_Birincil_Konu": "Uluslararası_Hukuk"
+      },
+      "metadata": {
+        "why_selected": "international_obligations_breach",
+        "annotator": "baris_bozkurt",
+        "annotated_at": "2026-05-12",
+        "version": "1.0"
+      }
+    },
+    {
+      "fixture_id": "gd_044",
+      "sent_id": "BB_P011_s0002_sent0002",
+      "source_text": "We propose confidence-building measures to reduce tensions.",
+      "ground_truth": {
+        "AI_Duygu_Skoru": 0.25,
+        "AI_Duygu_Kategorisi": "constructive",
+        "AI_Risk_Skoru": 3,
+        "AI_Potansiyel_Risk": "low",
+        "AI_Talep_Var": 1,
+        "AI_Diplomatik_Ton": "persuasive",
+        "AI_Manipulasyon_Skor": 0.10,
+        "AI_Cerceveleme": "de_escalation_frame",
+        "AI_Birincil_Konu": "Güvenlik_Çatışma"
+      },
+      "metadata": {
+        "why_selected": "confidence_building_proposal",
+        "annotator": "baris_bozkurt",
+        "annotated_at": "2026-05-12",
+        "version": "1.0"
+      }
+    },
+    {
+      "fixture_id": "gd_045",
+      "sent_id": "BB_P012_s0001_sent0001",
+      "source_text": "The humanitarian situation is reaching critical levels.",
+      "ground_truth": {
+        "AI_Duygu_Skoru": -0.75,
+        "AI_Duygu_Kategorisi": "alarmed",
+        "AI_Risk_Skoru": 9,
+        "AI_Potansiyel_Risk": "critical",
+        "AI_Talep_Var": 0,
+        "AI_Diplomatik_Ton": "urgent",
+        "AI_Manipulasyon_Skor": 0.15,
+        "AI_Cerceveleme": "humanitarian_frame",
+        "AI_Birincil_Konu": "İnsani_Yardım"
+      },
+      "metadata": {
+        "why_selected": "critical_humanitarian_situation",
+        "annotator": "baris_bozkurt",
+        "annotated_at": "2026-05-12",
+        "version": "1.0"
+      }
+    },
+    {
+      "fixture_id": "gd_046",
+      "sent_id": "BB_P012_s0001_sent0002",
+      "source_text": "We are not seeking confrontation, but we will not be intimidated.",
+      "ground_truth": {
+        "AI_Duygu_Skoru": -0.30,
+        "AI_Duygu_Kategorisi": "defensive",
+        "AI_Risk_Skoru": 5,
+        "AI_Potansiyel_Risk": "medium",
+        "AI_Talep_Var": 0,
+        "AI_Diplomatik_Ton": "defensive",
+        "AI_Manipulasyon_Skor": 0.18,
+        "AI_Cerceveleme": "security_frame",
+        "AI_Birincil_Konu": "Güvenlik_Çatışma"
+      },
+      "metadata": {
+        "why_selected": "defensive_not_intimidated",
+        "annotator": "baris_bozkurt",
+        "annotated_at": "2026-05-12",
+        "version": "1.0"
+      }
+    },
+    {
+      "fixture_id": "gd_047",
+      "sent_id": "BB_P012_s0002_sent0001",
+      "source_text": "Economic prosperity depends on regional stability.",
+      "ground_truth": {
+        "AI_Duygu_Skoru": 0.35,
+        "AI_Duygu_Kategorisi": "analytical",
+        "AI_Risk_Skoru": 3,
+        "AI_Potansiyel_Risk": "low",
+        "AI_Talep_Var": 0,
+        "AI_Diplomatik_Ton": "analytical",
+        "AI_Manipulasyon_Skor": 0.10,
+        "AI_Cerceveleme": "economic_frame",
+        "AI_Birincil_Konu": "Ekonomi"
+      },
+      "metadata": {
+        "why_selected": "economic_stability_dependency",
+        "annotator": "baris_bozkurt",
+        "annotated_at": "2026-05-12",
+        "version": "1.0"
+      }
+    },
+    {
+      "fixture_id": "gd_048",
+      "sent_id": "BB_P012_s0002_sent0002",
+      "source_text": "We demand accountability for violations of international law.",
+      "ground_truth": {
+        "AI_Duygu_Skoru": -0.50,
+        "AI_Duygu_Kategorisi": "demanding",
+        "AI_Risk_Skoru": 7,
+        "AI_Potansiyel_Risk": "high",
+        "AI_Talep_Var": 1,
+        "AI_Diplomatik_Ton": "assertive",
+        "AI_Manipulasyon_Skor": 0.20,
+        "AI_Cerceveleme": "legal_frame",
+        "AI_Birincil_Konu": "Uluslararası_Hukuk"
+      },
+      "metadata": {
+        "why_selected": "accountability_demand",
+        "annotator": "baris_bozkurt",
+        "annotated_at": "2026-05-12",
+        "version": "1.0"
+      }
+    },
+    {
+      "fixture_id": "gd_049",
+      "sent_id": "BB_P013_s0001_sent0001",
+      "source_text": "The multilateral system needs to be reformed for modern challenges.",
+      "ground_truth": {
+        "AI_Duygu_Skoru": 0.05,
+        "AI_Duygu_Kategorisi": "neutral",
+        "AI_Risk_Skoru": 4,
+        "AI_Potansiyel_Risk": "medium",
+        "AI_Talep_Var": 1,
+        "AI_Diplomatik_Ton": "analytical",
+        "AI_Manipulasyon_Skor": 0.15,
+        "AI_Cerceveleme": "reform_frame",
+        "AI_Birincil_Konu": "BM_Reformu"
+      },
+      "metadata": {
+        "why_selected": "multilateral_reform_neutral",
+        "annotator": "baris_bozkurt",
+        "annotated_at": "2026-05-12",
+        "version": "1.0"
+      }
+    },
+    {
+      "fixture_id": "gd_050",
+      "sent_id": "BB_P013_s0001_sent0002",
+      "source_text": "We welcome any initiative that promotes peace and stability.",
+      "ground_truth": {
+        "AI_Duygu_Skoru": 0.45,
+        "AI_Duygu_Kategorisi": "welcoming",
+        "AI_Risk_Skoru": 1,
+        "AI_Potansiyel_Risk": "low",
+        "AI_Talep_Var": 0,
+        "AI_Diplomatik_Ton": "conciliatory",
+        "AI_Manipulasyon_Skor": 0.04,
+        "AI_Cerceveleme": "peace_frame",
+        "AI_Birincil_Konu": "Diplomasi"
+      },
+      "metadata": {
+        "why_selected": "peace_initiative_welcome",
+        "annotator": "baris_bozkurt",
+        "annotated_at": "2026-05-12",
+        "version": "1.0"
+      }
+    },
+    {
+      "fixture_id": "gd_051",
+      "sent_id": "BB_P013_s0002_sent0001",
+      "source_text": "This aggressive behavior cannot be justified or excused.",
+      "ground_truth": {
+        "AI_Duygu_Skoru": -0.65,
+        "AI_Duygu_Kategorisi": "condemnatory",
+        "AI_Risk_Skoru": 8,
+        "AI_Potansiyel_Risk": "high",
+        "AI_Talep_Var": 0,
+        "AI_Diplomatik_Ton": "confrontational",
+        "AI_Manipulasyon_Skor": 0.25,
+        "AI_Cerceveleme": "conflict_frame",
+        "AI_Birincil_Konu": "Güvenlik_Çatışma"
+      },
+      "metadata": {
+        "why_selected": "aggressive_behavior_condemnation",
+        "annotator": "baris_bozkurt",
+        "annotated_at": "2026-05-12",
+        "version": "1.0"
+      }
+    },
+    {
+      "fixture_id": "gd_052",
+      "sent_id": "BB_P013_s0002_sent0002",
+      "source_text": "We believe economic integration fosters mutual understanding.",
+      "ground_truth": {
+        "AI_Duygu_Skoru": 0.30,
+        "AI_Duygu_Kategorisi": "positive",
+        "AI_Risk_Skoru": 2,
+        "AI_Potansiyel_Risk": "low",
+        "AI_Talep_Var": 0,
+        "AI_Diplomatik_Ton": "persuasive",
+        "AI_Manipulasyon_Skor": 0.08,
+        "AI_Cerceveleme": "economic_frame",
+        "AI_Birincil_Konu": "Ekonomi"
+      },
+      "metadata": {
+        "why_selected": "economic_integration_benefits",
+        "annotator": "baris_bozkurt",
+        "annotated_at": "2026-05-12",
+        "version": "1.0"
+      }
+    },
+    {
+      "fixture_id": "gd_053",
+      "sent_id": "BB_P014_s0001_sent0001",
+      "source_text": "The protection of civilians must be our highest priority.",
+      "ground_truth": {
+        "AI_Duygu_Skoru": -0.40,
+        "AI_Duygu_Kategorisi": "concerned",
+        "AI_Risk_Skoru": 6,
+        "AI_Potansiyel_Risk": "medium",
+        "AI_Talep_Var": 1,
+        "AI_Diplomatik_Ton": "assertive",
+        "AI_Manipulasyon_Skor": 0.12,
+        "AI_Cerceveleme": "humanitarian_frame",
+        "AI_Birincil_Konu": "İnsani_Yardım"
+      },
+      "metadata": {
+        "why_selected": "civilian_protection_priority",
+        "annotator": "baris_bozkurt",
+        "annotated_at": "2026-05-12",
+        "version": "1.0"
+      }
+    },
+    {
+      "fixture_id": "gd_054",
+      "sent_id": "BB_P014_s0001_sent0002",
+      "source_text": "We will not be deterred from our path to sovereignty.",
+      "ground_truth": {
+        "AI_Duygu_Skoru": -0.25,
+        "AI_Duygu_Kategorisi": "determined",
+        "AI_Risk_Skoru": 5,
+        "AI_Potansiyel_Risk": "medium",
+        "AI_Talep_Var": 0,
+        "AI_Diplomatik_Ton": "defensive",
+        "AI_Manipulasyon_Skor": 0.20,
+        "AI_Cerceveleme": "sovereignty_frame",
+        "AI_Birincil_Konu": "Güvenlik_Çatışma"
+      },
+      "metadata": {
+        "why_selected": "sovereignty_determination",
+        "annotator": "baris_bozkurt",
+        "annotated_at": "2026-05-12",
+        "version": "1.0"
+      }
+    },
+    {
+      "fixture_id": "gd_055",
+      "sent_id": "BB_P014_s0002_sent0001",
+      "source_text": "Trade barriers ultimately harm all parties involved.",
+      "ground_truth": {
+        "AI_Duygu_Skoru": -0.15,
+        "AI_Duygu_Kategorisi": "concerned",
+        "AI_Risk_Skoru": 4,
+        "AI_Potansiyel_Risk": "medium",
+        "AI_Talep_Var": 0,
+        "AI_Diplomatik_Ton": "analytical",
+        "AI_Manipulasyon_Skor": 0.12,
+        "AI_Cerceveleme": "economic_frame",
+        "AI_Birincil_Konu": "Ekonomi"
+      },
+      "metadata": {
+        "why_selected": "trade_barriers_concern",
+        "annotator": "baris_bozkurt",
+        "annotated_at": "2026-05-12",
+        "version": "1.0"
+      }
+    },
+    {
+      "fixture_id": "gd_056",
+      "sent_id": "BB_P014_s0002_sent0002",
+      "source_text": "We call for immediate humanitarian assistance access.",
+      "ground_truth": {
+        "AI_Duygu_Skoru": -0.55,
+        "AI_Duygu_Kategorisi": "urgent",
+        "AI_Risk_Skoru": 7,
+        "AI_Potansiyel_Risk": "high",
+        "AI_Talep_Var": 1,
+        "AI_Diplomatik_Ton": "assertive",
+        "AI_Manipulasyon_Skor": 0.15,
+        "AI_Cerceveleme": "humanitarian_frame",
+        "AI_Birincil_Konu": "İnsani_Yardım"
+      },
+      "metadata": {
+        "why_selected": "humanitarian_access_urgent",
+        "annotator": "baris_bozkurt",
+        "annotated_at": "2026-05-12",
+        "version": "1.0"
+      }
+    },
+    {
+      "fixture_id": "gd_057",
+      "sent_id": "BB_P015_s0001_sent0001",
+      "source_text": "The Security Council must fulfill its responsibilities.",
+      "ground_truth": {
+        "AI_Duygu_Skoru": -0.20,
+        "AI_Duygu_Kategorisi": "serious",
+        "AI_Risk_Skoru": 5,
+        "AI_Potansiyel_Risk": "medium",
+        "AI_Talep_Var": 1,
+        "AI_Diplomatik_Ton": "assertive",
+        "AI_Manipulasyon_Skor": 0.15,
+        "AI_Cerceveleme": "legal_frame",
+        "AI_Birincil_Konu": "BM_Reformu"
+      },
+      "metadata": {
+        "why_selected": "security_council_responsibility",
+        "annotator": "baris_bozkurt",
+        "annotated_at": "2026-05-12",
+        "version": "1.0"
+      }
+    },
+    {
+      "fixture_id": "gd_058",
+      "sent_id": "BB_P015_s0001_sent0002",
+      "source_text": "We are encouraged by the willingness to engage in dialogue.",
+      "ground_truth": {
+        "AI_Duygu_Skoru": 0.40,
+        "AI_Duygu_Kategorisi": "encouraged",
+        "AI_Risk_Skoru": 2,
+        "AI_Potansiyel_Risk": "low",
+        "AI_Talep_Var": 0,
+        "AI_Diplomatik_Ton": "conciliatory",
+        "AI_Manipulasyon_Skor": 0.05,
+        "AI_Cerceveleme": "dialogue_frame",
+        "AI_Birincil_Konu": "Diplomasi"
+      },
+      "metadata": {
+        "why_selected": "dialogue_encouragement",
+        "annotator": "baris_bozkurt",
+        "annotated_at": "2026-05-12",
+        "version": "1.0"
+      }
+    },
+    {
+      "fixture_id": "gd_059",
+      "sent_id": "BB_P015_s0002_sent0001",
+      "source_text": "This military escalation threatens regional peace.",
+      "ground_truth": {
+        "AI_Duygu_Skoru": -0.70,
+        "AI_Duygu_Kategorisi": "alarmed",
+        "AI_Risk_Skoru": 9,
+        "AI_Potansiyel_Risk": "critical",
+        "AI_Talep_Var": 0,
+        "AI_Diplomatik_Ton": "confrontational",
+        "AI_Manipulasyon_Skor": 0.20,
+        "AI_Cerceveleme": "security_frame",
+        "AI_Birincil_Konu": "Güvenlik_Çatışma"
+      },
+      "metadata": {
+        "why_selected": "military_escalation_threat",
+        "annotator": "baris_bozkurt",
+        "annotated_at": "2026-05-12",
+        "version": "1.0"
+      }
+    },
+    {
+      "fixture_id": "gd_060",
+      "sent_id": "BB_P015_s0002_sent0002",
+      "source_text": "We support efforts to strengthen international institutions.",
+      "ground_truth": {
+        "AI_Duygu_Skoru": 0.35,
+        "AI_Duygu_Kategorisi": "supportive",
+        "AI_Risk_Skoru": 2,
+        "AI_Potansiyel_Risk": "low",
+        "AI_Talep_Var": 0,
+        "AI_Diplomatik_Ton": "conciliatory",
+        "AI_Manipulasyon_Skor": 0.08,
+        "AI_Cerceveleme": "institutional_frame",
+        "AI_Birincil_Konu": "BM_Reformu"
+      },
+      "metadata": {
+        "why_selected": "institutional_strengthening_support",
+        "annotator": "baris_bozkurt",
+        "annotated_at": "2026-05-12",
+        "version": "1.0"
+      }
+    },
+    {
+      "fixture_id": "gd_061",
+      "sent_id": "BB_P016_s0001_sent0001",
+      "source_text": "The changing world order requires new diplomatic approaches.",
+      "ground_truth": {
+        "AI_Duygu_Skoru": 0.10,
+        "AI_Duygu_Kategorisi": "analytical",
+        "AI_Risk_Skoru": 4,
+        "AI_Potansiyel_Risk": "medium",
+        "AI_Talep_Var": 0,
+        "AI_Diplomatik_Ton": "analytical",
+        "AI_Manipulasyon_Skor": 0.15,
+        "AI_Cerceveleme": "governance_frame",
+        "AI_Birincil_Konu": "Çok-kutupluluk"
+      },
+      "metadata": {
+        "why_selected": "changing_world_order_analysis",
+        "annotator": "baris_bozkurt",
+        "annotated_at": "2026-05-12",
+        "version": "1.0"
+      }
+    },
+    {
+      "fixture_id": "gd_062",
+      "sent_id": "BB_P016_s0001_sent0002",
+      "source_text": "We do not want war, but we will defend our values.",
+      "ground_truth": {
+        "AI_Duygu_Skoru": -0.35,
+        "AI_Duygu_Kategorisi": "defensive",
+        "AI_Risk_Skoru": 6,
+        "AI_Potansiyel_Risk": "medium",
+        "AI_Talep_Var": 0,
+        "AI_Diplomatik_Ton": "defensive",
+        "AI_Manipulasyon_Skor": 0.18,
+        "AI_Cerceveleme": "values_frame",
+        "AI_Birincil_Konu": "Güvenlik_Çatışma"
+      },
+      "metadata": {
+        "why_selected": "values_defense_negation",
+        "annotator": "baris_bozkurt",
+        "annotated_at": "2026-05-12",
+        "version": "1.0"
+      }
+    },
+    {
+      "fixture_id": "gd_063",
+      "sent_id": "BB_P016_s0002_sent0001",
+      "source_text": "Economic cooperation builds trust and reduces tensions.",
+      "ground_truth": {
+        "AI_Duygu_Skoru": 0.45,
+        "AI_Duygu_Kategorisi": "positive",
+        "AI_Risk_Skoru": 2,
+        "AI_Potansiyel_Risk": "low",
+        "AI_Talep_Var": 0,
+        "AI_Diplomatik_Ton": "persuasive",
+        "AI_Manipulasyon_Skor": 0.06,
+        "AI_Cerceveleme": "cooperation_frame",
+        "AI_Birincil_Konu": "Ekonomi"
+      },
+      "metadata": {
+        "why_selected": "cooperation_trust_building",
+        "annotator": "baris_bozkurt",
+        "annotated_at": "2026-05-12",
+        "version": "1.0"
+      }
+    },
+    {
+      "fixture_id": "gd_064",
+      "sent_id": "BB_P016_s0002_sent0002",
+      "source_text": "We demand respect for territorial integrity and sovereignty.",
+      "ground_truth": {
+        "AI_Duygu_Skoru": -0.45,
+        "AI_Duygu_Kategorisi": "demanding",
+        "AI_Risk_Skoru": 7,
+        "AI_Potansiyel_Risk": "high",
+        "AI_Talep_Var": 1,
+        "AI_Diplomatik_Ton": "assertive",
+        "AI_Manipulasyon_Skor": 0.20,
+        "AI_Cerceveleme": "sovereignty_frame",
+        "AI_Birincil_Konu": "Güvenlik_Çatışma"
+      },
+      "metadata": {
+        "why_selected": "territorial_integrity_demand",
+        "annotator": "baris_bozkurt",
+        "annotated_at": "2026-05-12",
+        "version": "1.0"
+      }
+    },
+    {
+      "fixture_id": "gd_065",
+      "sent_id": "BB_P017_s0001_sent0001",
+      "source_text": "The humanitarian crisis requires immediate international response.",
+      "ground_truth": {
+        "AI_Duygu_Skoru": -0.80,
+        "AI_Duygu_Kategorisi": "alarmed",
+        "AI_Risk_Skoru": 9,
+        "AI_Potansiyel_Risk": "critical",
+        "AI_Talep_Var": 1,
+        "AI_Diplomatik_Ton": "urgent",
+        "AI_Manipulasyon_Skor": 0.15,
+        "AI_Cerceveleme": "humanitarian_frame",
+        "AI_Birincil_Konu": "İnsani_Yardım"
+      },
+      "metadata": {
+        "why_selected": "humanitarian_crisis_critical",
+        "annotator": "baris_bozkurt",
+        "annotated_at": "2026-05-12",
+        "version": "1.0"
+      }
+    },
+    {
+      "fixture_id": "gd_066",
+      "sent_id": "BB_P017_s0001_sent0002",
+      "source_text": "We are not seeking escalation, but our patience has limits.",
+      "ground_truth": {
+        "AI_Duygu_Skoru": -0.40,
+        "AI_Duygu_Kategorisi": "warning",
+        "AI_Risk_Skoru": 6,
+        "AI_Potansiyel_Risk": "medium",
+        "AI_Talep_Var": 0,
+        "AI_Diplomatik_Ton": "defensive",
+        "AI_Manipulasyon_Skor": 0.22,
+        "AI_Cerceveleme": "security_frame",
+        "AI_Birincil_Konu": "Güvenlik_Çatışma"
+      },
+      "metadata": {
+        "why_selected": "patience_limits_warning",
+        "annotator": "baris_bozkurt",
+        "annotated_at": "2026-05-12",
+        "version": "1.0"
+      }
+    },
+    {
+      "fixture_id": "gd_067",
+      "sent_id": "BB_P017_s0002_sent0001",
+      "source_text": "Sustainable development goals require global cooperation.",
+      "ground_truth": {
+        "AI_Duygu_Skoru": 0.25,
+        "AI_Duygu_Kategorisi": "constructive",
+        "AI_Risk_Skoru": 3,
+        "AI_Potansiyel_Risk": "low",
+        "AI_Talep_Var": 1,
+        "AI_Diplomatik_Ton": "persuasive",
+        "AI_Manipulasyon_Skor": 0.10,
+        "AI_Cerceveleme": "development_frame",
+        "AI_Birincil_Konu": "Diğer"
+      },
+      "metadata": {
+        "why_selected": "sustainable_development_cooperation",
+        "annotator": "baris_bozkurt",
+        "annotated_at": "2026-05-12",
+        "version": "1.0"
+      }
+    },
+    {
+      "fixture_id": "gd_068",
+      "sent_id": "BB_P017_s0002_sent0002",
+      "source_text": "We will respond proportionally to any aggression.",
+      "ground_truth": {
+        "AI_Duygu_Skoru": -0.30,
+        "AI_Duygu_Kategorisi": "defensive",
+        "AI_Risk_Skoru": 5,
+        "AI_Potansiyel_Risk": "medium",
+        "AI_Talep_Var": 0,
+        "AI_Diplomatik_Ton": "defensive",
+        "AI_Manipulasyon_Skor": 0.18,
+        "AI_Cerceveleme": "security_frame",
+        "AI_Birincil_Konu": "Güvenlik_Çatışma"
+      },
+      "metadata": {
+        "why_selected": "proportional_response_defense",
+        "annotator": "baris_bozkurt",
+        "annotated_at": "2026-05-12",
+        "version": "1.0"
+      }
+    },
+    {
+      "fixture_id": "gd_069",
+      "sent_id": "BB_P018_s0001_sent0001",
+      "source_text": "The reform process should enhance effectiveness and representation.",
+      "ground_truth": {
+        "AI_Duygu_Skoru": 0.15,
+        "AI_Duygu_Kategorisi": "constructive",
+        "AI_Risk_Skoru": 3,
+        "AI_Potansiyel_Risk": "low",
+        "AI_Talep_Var": 1,
+        "AI_Diplomatik_Ton": "persuasive",
+        "AI_Manipulasyon_Skor": 0.10,
+        "AI_Cerceveleme": "reform_frame",
+        "AI_Birincil_Konu": "BM_Reformu"
+      },
+      "metadata": {
+        "why_selected": "reform_effectiveness_representation",
+        "annotator": "baris_bozkurt",
+        "annotated_at": "2026-05-12",
+        "version": "1.0"
+      }
+    },
+    {
+      "fixture_id": "gd_070",
+      "sent_id": "BB_P018_s0001_sent0002",
+      "source_text": "We appreciate the spirit of cooperation shown today.",
+      "ground_truth": {
+        "AI_Duygu_Skoru": 0.50,
+        "AI_Duygu_Kategorisi": "appreciative",
+        "AI_Risk_Skoru": 1,
+        "AI_Potansiyel_Risk": "low",
+        "AI_Talep_Var": 0,
+        "AI_Diplomatik_Ton": "conciliatory",
+        "AI_Manipulasyon_Skor": 0.04,
+        "AI_Cerceveleme": "cooperation_frame",
+        "AI_Birincil_Konu": "Diplomasi"
+      },
+      "metadata": {
+        "why_selected": "cooperation_spirit_appreciation",
+        "annotator": "baris_bozkurt",
+        "annotated_at": "2026-05-12",
+        "version": "1.0"
+      }
+    },
+    {
+      "fixture_id": "gd_071",
+      "sent_id": "BB_P018_s0002_sent0001",
+      "source_text": "This violation of international norms cannot be ignored.",
+      "ground_truth": {
+        "AI_Duygu_Skoru": -0.60,
+        "AI_Duygu_Kategorisi": "condemnatory",
+        "AI_Risk_Skoru": 8,
+        "AI_Potansiyel_Risk": "high",
+        "AI_Talep_Var": 0,
+        "AI_Diplomatik_Ton": "confrontational",
+        "AI_Manipulasyon_Skor": 0.22,
+        "AI_Cerceveleme": "legal_frame",
+        "AI_Birincil_Konu": "Uluslararası_Hukuk"
+      },
+      "metadata": {
+        "why_selected": "international_norms_violation",
+        "annotator": "baris_bozkurt",
+        "annotated_at": "2026-05-12",
+        "version": "1.0"
+      }
+    },
+    {
+      "fixture_id": "gd_072",
+      "sent_id": "BB_P018_s0002_sent0002",
+      "source_text": "We propose establishing a framework for regional security.",
+      "ground_truth": {
+        "AI_Duygu_Skoru": 0.20,
+        "AI_Duygu_Kategorisi": "constructive",
+        "AI_Risk_Skoru": 4,
+        "AI_Potansiyel_Risk": "medium",
+        "AI_Talep_Var": 1,
+        "AI_Diplomatik_Ton": "persuasive",
+        "AI_Manipulasyon_Skor": 0.12,
+        "AI_Cerceveleme": "security_frame",
+        "AI_Birincil_Konu": "Güvenlik_Çatışma"
+      },
+      "metadata": {
+        "why_selected": "regional_security_framework_proposal",
+        "annotator": "baris_bozkurt",
+        "annotated_at": "2026-05-12",
+        "version": "1.0"
+      }
+    },
+    {
+      "fixture_id": "gd_073",
+      "sent_id": "BB_P019_s0001_sent0001",
+      "source_text": "The protection of cultural heritage is a shared responsibility.",
+      "ground_truth": {
+        "AI_Duygu_Skoru": -0.25,
+        "AI_Duygu_Kategorisi": "concerned",
+        "AI_Risk_Skoru": 4,
+        "AI_Potansiyel_Risk": "medium",
+        "AI_Talep_Var": 1,
+        "AI_Diplomatik_Ton": "assertive",
+        "AI_Manipulasyon_Skor": 0.10,
+        "AI_Cerceveleme": "cultural_frame",
+        "AI_Birincil_Konu": "Diğer"
+      },
+      "metadata": {
+        "why_selected": "cultural_heritage_protection",
+        "annotator": "baris_bozkurt",
+        "annotated_at": "2026-05-12",
+        "version": "1.0"
+      }
+    },
+    {
+      "fixture_id": "gd_074",
+      "sent_id": "BB_P019_s0001_sent0002",
+      "source_text": "We are not seeking confrontation, but we cannot remain silent.",
+      "ground_truth": {
+        "AI_Duygu_Skoru": -0.35,
+        "AI_Duygu_Kategorisi": "defensive",
+        "AI_Risk_Skoru": 5,
+        "AI_Potansiyel_Risk": "medium",
+        "AI_Talep_Var": 0,
+        "AI_Diplomatik_Ton": "defensive",
+        "AI_Manipulasyon_Skor": 0.20,
+        "AI_Cerceveleme": "security_frame",
+        "AI_Birincil_Konu": "Güvenlik_Çatışma"
+      },
+      "metadata": {
+        "why_selected": "cannot_remain_silent_defense",
+        "annotator": "baris_bozkurt",
+        "annotated_at": "2026-05-12",
+        "version": "1.0"
+      }
+    },
+    {
+      "fixture_id": "gd_075",
+      "sent_id": "BB_P019_s0002_sent0001",
+      "source_text": "Energy security is essential for economic stability.",
+      "ground_truth": {
+        "AI_Duygu_Skoru": 0.05,
+        "AI_Duygu_Kategorisi": "analytical",
+        "AI_Risk_Skoru": 4,
+        "AI_Potansiyel_Risk": "medium",
+        "AI_Talep_Var": 0,
+        "AI_Diplomatik_Ton": "analytical",
+        "AI_Manipulasyon_Skor": 0.12,
+        "AI_Cerceveleme": "economic_frame",
+        "AI_Birincil_Konu": "Ekonomi"
+      },
+      "metadata": {
+        "why_selected": "energy_security_analysis",
+        "annotator": "baris_bozkurt",
+        "annotated_at": "2026-05-12",
+        "version": "1.0"
+      }
+    },
+    {
+      "fixture_id": "gd_076",
+      "sent_id": "BB_P019_s0002_sent0002",
+      "source_text": "We demand an end to attacks on civilian infrastructure.",
+      "ground_truth": {
+        "AI_Duygu_Skoru": -0.65,
+        "AI_Duygu_Kategorisi": "demanding",
+        "AI_Risk_Skoru": 8,
+        "AI_Potansiyel_Risk": "high",
+        "AI_Talep_Var": 1,
+        "AI_Diplomatik_Ton": "assertive",
+        "AI_Manipulasyon_Skor": 0.18,
+        "AI_Cerceveleme": "humanitarian_frame",
+        "AI_Birincil_Konu": "İnsani_Yardım"
+      },
+      "metadata": {
+        "why_selected": "civilian_infrastructure_protection_demand",
+        "annotator": "baris_bozkurt",
+        "annotated_at": "2026-05-12",
+        "version": "1.0"
+      }
+    },
+    {
+      "fixture_id": "gd_077",
+      "sent_id": "BB_P020_s0001_sent0001",
+      "source_text": "The UN system must adapt to 21st century challenges.",
+      "ground_truth": {
+        "AI_Duygu_Skoru": 0.00,
+        "AI_Duygu_Kategorisi": "neutral",
+        "AI_Risk_Skoru": 4,
+        "AI_Potansiyel_Risk": "medium",
+        "AI_Talep_Var": 1,
+        "AI_Diplomatik_Ton": "analytical",
+        "AI_Manipulasyon_Skor": 0.15,
+        "AI_Cerceveleme": "reform_frame",
+        "AI_Birincil_Konu": "BM_Reformu"
+      },
+      "metadata": {
+        "why_selected": "un_adaptation_neutral",
+        "annotator": "baris_bozkurt",
+        "annotated_at": "2026-05-12",
+        "version": "1.0"
+      }
+    },
+    {
+      "fixture_id": "gd_078",
+      "sent_id": "BB_P020_s0001_sent0002",
+      "source_text": "We welcome all constructive contributions to the peace process.",
+      "ground_truth": {
+        "AI_Duygu_Skoru": 0.40,
+        "AI_Duygu_Kategorisi": "welcoming",
+        "AI_Risk_Skoru": 1,
+        "AI_Potansiyel_Risk": "low",
+        "AI_Talep_Var": 0,
+        "AI_Diplomatik_Ton": "conciliatory",
+        "AI_Manipulasyon_Skor": 0.04,
+        "AI_Cerceveleme": "peace_frame",
+        "AI_Birincil_Konu": "Diplomasi"
+      },
+      "metadata": {
+        "why_selected": "peace_process_welcome",
+        "annotator": "baris_bozkurt",
+        "annotated_at": "2026-05-12",
+        "version": "1.0"
+      }
+    },
+    {
+      "fixture_id": "gd_079",
+      "sent_id": "BB_P020_s0002_sent0001",
+      "source_text": "This military provocation risks uncontrollable escalation.",
+      "ground_truth": {
+        "AI_Duygu_Skoru": -0.75,
+        "AI_Duygu_Kategorisi": "alarmed",
+        "AI_Risk_Skoru": 9,
+        "AI_Potansiyel_Risk": "critical",
+        "AI_Talep_Var": 0,
+        "AI_Diplomatik_Ton": "confrontational",
+        "AI_Manipulasyon_Skor": 0.25,
+        "AI_Cerceveleme": "security_frame",
+        "AI_Birincil_Konu": "Güvenlik_Çatışma"
+      },
+      "metadata": {
+        "why_selected": "military_provocation_critical_risk",
+        "annotator": "baris_bozkurt",
+        "annotated_at": "2026-05-12",
+        "version": "1.0"
+      }
+    },
+    {
+      "fixture_id": "gd_080",
+      "sent_id": "BB_P020_s0002_sent0002",
+      "source_text": "We believe in the power of diplomacy to resolve conflicts.",
+      "ground_truth": {
+        "AI_Duygu_Skoru": 0.35,
+        "AI_Duygu_Kategorisi": "hopeful",
+        "AI_Risk_Skoru": 2,
+        "AI_Potansiyel_Risk": "low",
+        "AI_Talep_Var": 0,
+        "AI_Diplomatik_Ton": "persuasive",
+        "AI_Manipulasyon_Skor": 0.06,
+        "AI_Cerceveleme": "diplomacy_frame",
+        "AI_Birincil_Konu": "Diplomasi"
+      },
+      "metadata": {
+        "why_selected": "diplomacy_power_belief",
+        "annotator": "baris_bozkurt",
+        "annotated_at": "2026-05-12",
+        "version": "1.0"
+      }
+    },
+    {
+      "fixture_id": "gd_081",
+      "sent_id": "BB_P021_s0001_sent0001",
+      "source_text": "The emergence of new powers requires diplomatic adaptation.",
+      "ground_truth": {
+        "AI_Duygu_Skoru": 0.05,
+        "AI_Duygu_Kategorisi": "analytical",
+        "AI_Risk_Skoru": 4,
+        "AI_Potansiyel_Risk": "medium",
+        "AI_Talep_Var": 0,
+        "AI_Diplomatik_Ton": "analytical",
+        "AI_Manipulasyon_Skor": 0.15,
+        "AI_Cerceveleme": "governance_frame",
+        "AI_Birincil_Konu": "Çok-kutupluluk"
+      },
+      "metadata": {
+        "why_selected": "new_powers_diplomatic_adaptation",
+        "annotator": "baris_bozkurt",
+        "annotated_at": "2026-05-12",
+        "version": "1.0"
+      }
+    },
+    {
+      "fixture_id": "gd_082",
+      "sent_id": "BB_P021_s0001_sent0002",
+      "source_text": "We do not wish to see this conflict escalate further.",
+      "ground_truth": {
+        "AI_Duygu_Skoru": -0.45,
+        "AI_Duygu_Kategorisi": "concerned",
+        "AI_Risk_Skoru": 6,
+        "AI_Potansiyel_Risk": "medium",
+        "AI_Talep_Var": 0,
+        "AI_Diplomatik_Ton": "conciliatory",
+        "AI_Manipulasyon_Skor": 0.12,
+        "AI_Cerceveleme": "de_escalation_frame",
+        "AI_Birincil_Konu": "Güvenlik_Çatışma"
+      },
+      "metadata": {
+        "why_selected": "conflict_escalation_concern_negation",
+        "annotator": "baris_bozkurt",
+        "annotated_at": "2026-05-12",
+        "version": "1.0"
+      }
+    },
+    {
+      "fixture_id": "gd_083",
+      "sent_id": "BB_P021_s0002_sent0001",
+      "source_text": "Economic partnerships create foundations for lasting peace.",
+      "ground_truth": {
+        "AI_Duygu_Skoru": 0.40,
+        "AI_Duygu_Kategorisi": "positive",
+        "AI_Risk_Skoru": 2,
+        "AI_Potansiyel_Risk": "low",
+        "AI_Talep_Var": 0,
+        "AI_Diplomatik_Ton": "persuasive",
+        "AI_Manipulasyon_Skor": 0.06,
+        "AI_Cerceveleme": "economic_frame",
+        "AI_Birincil_Konu": "Ekonomi"
+      },
+      "metadata": {
+        "why_selected": "economic_partnerships_peace_foundation",
+        "annotator": "baris_bozkurt",
+        "annotated_at": "2026-05-12",
+        "version": "1.0"
+      }
+    },
+    {
+      "fixture_id": "gd_084",
+      "sent_id": "BB_P021_s0002_sent0002",
+      "source_text": "We insist on compliance with international humanitarian law.",
+      "ground_truth": {
+        "AI_Duygu_Skoru": -0.50,
+        "AI_Duygu_Kategorisi": "demanding",
+        "AI_Risk_Skoru": 7,
+        "AI_Potansiyel_Risk": "high",
+        "AI_Talep_Var": 1,
+        "AI_Diplomatik_Ton": "assertive",
+        "AI_Manipulasyon_Skor": 0.20,
+        "AI_Cerceveleme": "legal_frame",
+        "AI_Birincil_Konu": "Uluslararası_Hukuk"
+      },
+      "metadata": {
+        "why_selected": "humanitarian_law_compliance_demand",
+        "annotator": "baris_bozkurt",
+        "annotated_at": "2026-05-12",
+        "version": "1.0"
+      }
+    },
+    {
+      "fixture_id": "gd_085",
+      "sent_id": "BB_P022_s0001_sent0001",
+      "source_text": "The refugee situation requires coordinated international action.",
+      "ground_truth": {
+        "AI_Duygu_Skoru": -0.70,
+        "AI_Duygu_Kategorisi": "concerned",
+        "AI_Risk_Skoru": 8,
+        "AI_Potansiyel_Risk": "high",
+        "AI_Talep_Var": 1,
+        "AI_Diplomatik_Ton": "urgent",
+        "AI_Manipulasyon_Skor": 0.15,
+        "AI_Cerceveleme": "humanitarian_frame",
+        "AI_Birincil_Konu": "İnsani_Yardım"
+      },
+      "metadata": {
+        "why_selected": "refugee_situation_coordinated_action",
+        "annotator": "baris_bozkurt",
+        "annotated_at": "2026-05-12",
+        "version": "1.0"
+      }
+    },
+    {
+      "fixture_id": "gd_086",
+      "sent_id": "BB_P022_s0001_sent0002",
+      "source_text": "We are not prepared to accept violations of our sovereignty.",
+      "ground_truth": {
+        "AI_Duygu_Skoru": -0.40,
+        "AI_Duygu_Kategorisi": "defensive",
+        "AI_Risk_Skoru": 6,
+        "AI_Potansiyel_Risk": "medium",
+        "AI_Talep_Var": 0,
+        "AI_Diplomatik_Ton": "defensive",
+        "AI_Manipulasyon_Skor": 0.22,
+        "AI_Cerceveleme": "sovereignty_frame",
+        "AI_Birincil_Konu": "Güvenlik_Çatışma"
+      },
+      "metadata": {
+        "why_selected": "sovereignty_violation_rejection",
+        "annotator": "baris_bozkurt",
+        "annotated_at": "2026-05-12",
+        "version": "1.0"
+      }
+    },
+    {
+      "fixture_id": "gd_087",
+      "sent_id": "BB_P022_s0002_sent0001",
+      "source_text": "Climate action requires commitment from all major economies.",
+      "ground_truth": {
+        "AI_Duygu_Skoru": -0.20,
+        "AI_Duygu_Kategorisi": "serious",
+        "AI_Risk_Skoru": 5,
+        "AI_Potansiyel_Risk": "medium",
+        "AI_Talep_Var": 1,
+        "AI_Diplomatik_Ton": "assertive",
+        "AI_Manipulasyon_Skor": 0.12,
+        "AI_Cerceveleme": "environmental_frame",
+        "AI_Birincil_Konu": "Diğer"
+      },
+      "metadata": {
+        "why_selected": "climate_action_commitment_demand",
+        "annotator": "baris_bozkurt",
+        "annotated_at": "2026-05-12",
+        "version": "1.0"
+      }
+    },
+    {
+      "fixture_id": "gd_088",
+      "sent_id": "BB_P022_s0002_sent0002",
+      "source_text": "We will defend our territory with all necessary means.",
+      "ground_truth": {
+        "AI_Duygu_Skoru": -0.55,
+        "AI_Duygu_Kategorisi": "determined",
+        "AI_Risk_Skoru": 8,
+        "AI_Potansiyel_Risk": "high",
+        "AI_Talep_Var": 0,
+        "AI_Diplomatik_Ton": "defensive",
+        "AI_Manipulasyon_Skor": 0.25,
+        "AI_Cerceveleme": "security_frame",
+        "AI_Birincil_Konu": "Güvenlik_Çatışma"
+      },
+      "metadata": {
+        "why_selected": "territory_defense_determination",
+        "annotator": "baris_bozkurt",
+        "annotated_at": "2026-05-12",
+        "version": "1.0"
+      }
+    },
+    {
+      "fixture_id": "gd_089",
+      "sent_id": "BB_P023_s0001_sent0001",
+      "source_text": "The Security Council needs to become more representative.",
+      "ground_truth": {
+        "AI_Duygu_Skoru": 0.00,
+        "AI_Duygu_Kategorisi": "neutral",
+        "AI_Risk_Skoru": 4,
+        "AI_Potansiyel_Risk": "medium",
+        "AI_Talep_Var": 1,
+        "AI_Diplomatik_Ton": "analytical",
+        "AI_Manipulasyon_Skor": 0.15,
+        "AI_Cerceveleme": "reform_frame",
+        "AI_Birincil_Konu": "BM_Reformu"
+      },
+      "metadata": {
+        "why_selected": "security_council_representative_reform",
+        "annotator": "baris_bozkurt",
+        "annotated_at": "2026-05-12",
+        "version": "1.0"
+      }
+    },
+    {
+      "fixture_id": "gd_090",
+      "sent_id": "BB_P023_s0001_sent0002",
+      "source_text": "We value the contributions of all partners to peace efforts.",
+      "ground_truth": {
+        "AI_Duygu_Skoru": 0.45,
+        "AI_Duygu_Kategorisi": "appreciative",
+        "AI_Risk_Skoru": 1,
+        "AI_Potansiyel_Risk": "low",
+        "AI_Talep_Var": 0,
+        "AI_Diplomatik_Ton": "conciliatory",
+        "AI_Manipulasyon_Skor": 0.04,
+        "AI_Cerceveleme": "cooperation_frame",
+        "AI_Birincil_Konu": "Diplomasi"
+      },
+      "metadata": {
+        "why_selected": "peace_partners_appreciation",
+        "annotator": "baris_bozkurt",
+        "annotated_at": "2026-05-12",
+        "version": "1.0"
+      }
+    },
+    {
+      "fixture_id": "gd_091",
+      "sent_id": "BB_P023_s0002_sent0001",
+      "source_text": "This breach of the ceasefire will have serious consequences.",
+      "ground_truth": {
+        "AI_Duygu_Skoru": -0.65,
+        "AI_Duygu_Kategorisi": "warning",
+        "AI_Risk_Skoru": 8,
+        "AI_Potansiyel_Risk": "high",
+        "AI_Talep_Var": 0,
+        "AI_Diplomatik_Ton": "confrontational",
+        "AI_Manipulasyon_Skor": 0.23,
+        "AI_Cerceveleme": "security_frame",
+        "AI_Birincil_Konu": "Güvenlik_Çatışma"
+      },
+      "metadata": {
+        "why_selected": "ceasefire_breach_consequences",
+        "annotator": "baris_bozkurt",
+        "annotated_at": "2026-05-12",
+        "version": "1.0"
+      }
+    },
+    {
+      "fixture_id": "gd_092",
+      "sent_id": "BB_P023_s0002_sent0002",
+      "source_text": "We propose establishing regional confidence-building measures.",
+      "ground_truth": {
+        "AI_Duygu_Skoru": 0.25,
+        "AI_Duygu_Kategorisi": "constructive",
+        "AI_Risk_Skoru": 3,
+        "AI_Potansiyel_Risk": "low",
+        "AI_Talep_Var": 1,
+        "AI_Diplomatik_Ton": "persuasive",
+        "AI_Manipulasyon_Skor": 0.10,
+        "AI_Cerceveleme": "de_escalation_frame",
+        "AI_Birincil_Konu": "Güvenlik_Çatışma"
+      },
+      "metadata": {
+        "why_selected": "regional_confidence_building_proposal",
+        "annotator": "baris_bozkurt",
+        "annotated_at": "2026-05-12",
+        "version": "1.0"
+      }
+    },
+    {
+      "fixture_id": "gd_093",
+      "sent_id": "BB_P024_s0001_sent0001",
+      "source_text": "The protection of children in conflict zones is paramount.",
+      "ground_truth": {
+        "AI_Duygu_Skoru": -0.60,
+        "AI_Duygu_Kategorisi": "concerned",
+        "AI_Risk_Skoru": 7,
+        "AI_Potansiyel_Risk": "high",
+        "AI_Talep_Var": 1,
+        "AI_Diplomatik_Ton": "assertive",
+        "AI_Manipulasyon_Skor": 0.15,
+        "AI_Cerceveleme": "humanitarian_frame",
+        "AI_Birincil_Konu": "İnsani_Yardım"
+      },
+      "metadata": {
+        "why_selected": "children_protection_paramount",
+        "annotator": "baris_bozkurt",
+        "annotated_at": "2026-05-12",
+        "version": "1.0"
+      }
+    },
+    {
+      "fixture_id": "gd_094",
+      "sent_id": "BB_P024_s0001_sent0002",
+      "source_text": "We are not looking for trouble, but we will not be pushed around.",
+      "ground_truth": {
+        "AI_Duygu_Skoru": -0.35,
+        "AI_Duygu_Kategorisi": "defensive",
+        "AI_Risk_Skoru": 5,
+        "AI_Potansiyel_Risk": "medium",
+        "AI_Talep_Var": 0,
+        "AI_Diplomatik_Ton": "defensive",
+        "AI_Manipulasyon_Skor": 0.20,
+        "AI_Cerceveleme": "security_frame",
+        "AI_Birincil_Konu": "Güvenlik_Çatışma"
+      },
+      "metadata": {
+        "why_selected": "not_pushed_around_defense",
+        "annotator": "baris_bozkurt",
+        "annotated_at": "2026-05-12",
+        "version": "1.0"
+      }
+    },
+    {
+      "fixture_id": "gd_095",
+      "sent_id": "BB_P024_s0002_sent0001",
+      "source_text": "Digital cooperation is essential for modern diplomacy.",
+      "ground_truth": {
+        "AI_Duygu_Skoru": 0.15,
+        "AI_Duygu_Kategorisi": "constructive",
+        "AI_Risk_Skoru": 3,
+        "AI_Potansiyel_Risk": "low",
+        "AI_Talep_Var": 0,
+        "AI_Diplomatik_Ton": "analytical",
+        "AI_Manipulasyon_Skor": 0.12,
+        "AI_Cerceveleme": "cooperation_frame",
+        "AI_Birincil_Konu": "Diplomasi"
+      },
+      "metadata": {
+        "why_selected": "digital_cooperation_modern_diplomacy",
+        "annotator": "baris_bozkurt",
+        "annotated_at": "2026-05-12",
+        "version": "1.0"
+      }
+    },
+    {
+      "fixture_id": "gd_096",
+      "sent_id": "BB_P024_s0002_sent0002",
+      "source_text": "We demand justice for victims of war crimes.",
+      "ground_truth": {
+        "AI_Duygu_Skoru": -0.70,
+        "AI_Duygu_Kategorisi": "demanding",
+        "AI_Risk_Skoru": 9,
+        "AI_Potansiyel_Risk": "critical",
+        "AI_Talep_Var": 1,
+        "AI_Diplomatik_Ton": "assertive",
+        "AI_Manipulasyon_Skor": 0.20,
+        "AI_Cerceveleme": "justice_frame",
+        "AI_Birincil_Konu": "Uluslararası_Hukuk"
+      },
+      "metadata": {
+        "why_selected": "war_crimes_justice_demand",
+        "annotator": "baris_bozkurt",
+        "annotated_at": "2026-05-12",
+        "version": "1.0"
+      }
+    },
+    {
+      "fixture_id": "gd_097",
+      "sent_id": "BB_P025_s0001_sent0001",
+      "source_text": "The multilateral system must be reformed for greater effectiveness.",
+      "ground_truth": {
+        "AI_Duygu_Skoru": 0.00,
+        "AI_Duygu_Kategorisi": "neutral",
+        "AI_Risk_Skoru": 4,
+        "AI_Potansiyel_Risk": "medium",
+        "AI_Talep_Var": 1,
+        "AI_Diplomatik_Ton": "analytical",
+        "AI_Manipulasyon_Skor": 0.15,
+        "AI_Cerceveleme": "reform_frame",
+        "AI_Birincil_Konu": "BM_Reformu"
+      },
+      "metadata": {
+        "why_selected": "multilateral_effectiveness_reform",
+        "annotator": "baris_bozkurt",
+        "annotated_at": "2026-05-12",
+        "version": "1.0"
+      }
+    },
+    {
+      "fixture_id": "gd_098",
+      "sent_id": "BB_P025_s0001_sent0002",
+      "source_text": "We extend our hand in friendship and cooperation.",
+      "ground_truth": {
+        "AI_Duygu_Skoru": 0.60,
+        "AI_Duygu_Kategorisi": "friendly",
+        "AI_Risk_Skoru": 1,
+        "AI_Potansiyel_Risk": "low",
+        "AI_Talep_Var": 0,
+        "AI_Diplomatik_Ton": "conciliatory",
+        "AI_Manipulasyon_Skor": 0.02,
+        "AI_Cerceveleme": "friendship_frame",
+        "AI_Birincil_Konu": "Diplomasi"
+      },
+      "metadata": {
+        "why_selected": "friendship_cooperation_offer",
+        "annotator": "baris_bozkurt",
+        "annotated_at": "2026-05-12",
+        "version": "1.0"
+      }
+    },
+    {
+      "fixture_id": "gd_099",
+      "sent_id": "BB_P025_s0002_sent0001",
+      "source_text": "This act of aggression will not be left unanswered.",
+      "ground_truth": {
+        "AI_Duygu_Skoru": -0.80,
+        "AI_Duygu_Kategorisi": "threatening",
+        "AI_Risk_Skoru": 10,
+        "AI_Potansiyel_Risk": "critical",
+        "AI_Talep_Var": 0,
+        "AI_Diplomatik_Ton": "confrontational",
+        "AI_Manipulasyon_Skor": 0.30,
+        "AI_Cerceveleme": "conflict_frame",
+        "AI_Birincil_Konu": "Güvenlik_Çatışma"
+      },
+      "metadata": {
+        "why_selected": "aggression_unanswered_threat",
+        "annotator": "baris_bozkurt",
+        "annotated_at": "2026-05-12",
+        "version": "1.0"
+      }
+    },
+    {
+      "fixture_id": "gd_100",
+      "sent_id": "BB_P025_s0002_sent0002",
+      "source_text": "We remain committed to peaceful resolution of all disputes.",
+      "ground_truth": {
+        "AI_Duygu_Skoru": 0.30,
+        "AI_Duygu_Kategorisi": "hopeful",
+        "AI_Risk_Skoru": 2,
+        "AI_Potansiyel_Risk": "low",
+        "AI_Talep_Var": 0,
+        "AI_Diplomatik_Ton": "conciliatory",
+        "AI_Manipulasyon_Skor": 0.05,
+        "AI_Cerceveleme": "peace_frame",
+        "AI_Birincil_Konu": "Diplomasi"
+      },
+      "metadata": {
+        "why_selected": "peaceful_resolution_commitment",
+        "annotator": "baris_bozkurt",
+        "annotated_at": "2026-05-12",
+        "version": "1.0"
+      }
+    }
+  ],
+  "statistics": {
+    "total_fixtures": 100,
+    "sentiment_distribution": {
+      "positive": 20,
+      "neutral": 30,
+      "negative": 30,
+      "confrontational": 20
+    },
+    "risk_distribution": {
+      "low": 40,
+      "medium": 35,
+      "high_critical": 25
+    },
+    "demand_distribution": {
+      "with_demand": 30,
+      "without_demand": 70
+    },
+    "topic_distribution": {
+      "Güvenlik_Çatışma": 25,
+      "Diplomasi": 30,
+      "Ekonomi": 15,
+      "İnsani_Yardım": 12,
+      "BM_Reformu": 8,
+      "Uluslararası_Hukuk": 5,
+      "Çok-kutupluluk": 3,
+      "Diğer": 2
+    },
+    "special_cases": {
+      "negation_traps": 15,
+      "segment_positions": {
+        "beginning": 30,
+        "middle": 40,
+        "end": 30
+      }
+    }
+  }
+}

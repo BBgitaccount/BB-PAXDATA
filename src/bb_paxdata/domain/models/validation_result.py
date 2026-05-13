@@ -31,13 +31,13 @@ class ValidationResult(BaseModel):
 
     # Scores and metrics
     overall_score: float | None = Field(
-        None, ge=0.0, le=1.0, description="Overall validation score"
+        default=None, ge=0.0, le=1.0, description="Overall validation score"
     )
     confidence_score: float | None = Field(
-        None, ge=0.0, le=1.0, description="Confidence in validation results"
+        default=None, ge=0.0, le=1.0, description="Confidence in validation results"
     )
     severity_score: float | None = Field(
-        None, ge=0.0, le=1.0, description="Severity of failures"
+        default=None, ge=0.0, le=1.0, description="Severity of failures"
     )
 
     # Individual check results
@@ -66,21 +66,25 @@ class ValidationResult(BaseModel):
     evidence_types: list[EvidenceType] = Field(
         default_factory=list, description="Types of evidence used in validation"
     )
-    evidence_summary: str | None = Field(None, description="Summary of evidence used")
+    evidence_summary: str | None = Field(
+        default=None, description="Summary of evidence used"
+    )
 
     # Temporal information
     validation_timestamp: datetime = Field(
         default_factory=datetime.utcnow, description="When validation was performed"
     )
     validation_duration: float | None = Field(
-        None, description="Duration of validation process"
+        default=None, description="Duration of validation process"
     )
 
     # Validation configuration
     validation_version: str | None = Field(
-        None, description="Version of validation rules used"
+        default=None, description="Version of validation rules used"
     )
-    validator_id: str | None = Field(None, description="ID of the validator system")
+    validator_id: str | None = Field(
+        default=None, description="ID of the validator system"
+    )
     validation_parameters: dict[str, Any] | None = Field(
         default_factory=lambda: {}, description="Parameters used for validation"
     )
@@ -98,7 +102,7 @@ class ValidationResult(BaseModel):
 
     # Logging and debugging
     log_level: LogLevel | None = Field(
-        LogLevel.INFO, description="Log level for this validation"
+        default=LogLevel.INFO, description="Log level for this validation"
     )
     log_entries: list[str] = Field(
         default_factory=list, description="Log entries from validation process"
@@ -112,10 +116,10 @@ class ValidationResult(BaseModel):
         default=False, description="Whether validation issues have been resolved"
     )
     resolution_method: str | None = Field(
-        None, description="Method used to resolve issues"
+        default=None, description="Method used to resolve issues"
     )
     resolution_timestamp: datetime | None = Field(
-        None, description="When issues were resolved"
+        default=None, description="When issues were resolved"
     )
 
     # Revalidation tracking
@@ -123,12 +127,16 @@ class ValidationResult(BaseModel):
         default=0, ge=0, description="Number of revalidations performed"
     )
     previous_validation_id: str | None = Field(
-        None, description="ID of previous validation if this is a revalidation"
+        default=None, description="ID of previous validation if this is a revalidation"
     )
 
     # Notes and metadata
-    summary: str | None = Field(None, description="Brief summary of validation results")
-    detailed_report: str | None = Field(None, description="Detailed validation report")
+    summary: str | None = Field(
+        default=None, description="Brief summary of validation results"
+    )
+    detailed_report: str | None = Field(
+        default=None, description="Detailed validation report"
+    )
     tags: list[str] = Field(default_factory=list, description="Tags for categorization")
     metadata: dict[str, Any] | None = Field(
         default_factory=lambda: {}, description="Additional metadata"

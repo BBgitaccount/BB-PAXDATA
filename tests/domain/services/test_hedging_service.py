@@ -8,17 +8,17 @@ from bb_paxdata.domain.services.hedging_service import HedgingService
 class TestHedgingService:
     """Test cases for HedgingService."""
 
-    def setup_method(self):
+    def setup_method(self) -> None:
         """Set up test fixtures."""
         self.service = HedgingService()
 
-    async def test_hedging_service_initialization(self):
+    async def test_hedging_service_initialization(self) -> None:
         """Test that HedgingService initializes correctly."""
         assert self.service is not None
         assert self.service.confidence == 1.0
         assert hasattr(self.service, "_patterns")
 
-    async def test_hedging_lexicon_coverage(self):
+    async def test_hedging_lexicon_coverage(self) -> None:
         """Test that hedging lexicon has all required categories."""
         lexicon = self.service.HEDGING_LEXICON
 
@@ -35,7 +35,7 @@ class TestHedgingService:
             assert category in lexicon
             assert len(lexicon[category]) > 0
 
-    async def test_category_mapping(self):
+    async def test_category_mapping(self) -> None:
         """Test that category mapping is complete."""
         mapping = self.service.CATEGORY_MAPPING
 
@@ -52,7 +52,7 @@ class TestHedgingService:
             assert category in mapping
             assert isinstance(mapping[category], HedgingType)
 
-    async def test_analyze_hedging_epistemic_high(self):
+    async def test_analyze_hedging_epistemic_high(self) -> None:
         """Test hedging analysis with epistemic high terms."""
         text = "I think this might possibly work, perhaps."
 
@@ -63,7 +63,7 @@ class TestHedgingService:
         assert 0.0 <= result.score <= 1.0
         assert 0.0 <= result.confidence <= 1.0
 
-    async def test_analyze_hedging_epistemic_medium(self):
+    async def test_analyze_hedging_epistemic_medium(self) -> None:
         """Test hedging analysis with epistemic medium terms."""
         text = "This typically happens in most cases."
 
@@ -72,7 +72,7 @@ class TestHedgingService:
         assert result.score > 0.0
         assert HedgingType.EPISTEMIC_MEDIUM in result.categories
 
-    async def test_analyze_hedging_anti_hedge(self):
+    async def test_analyze_hedging_anti_hedge(self) -> None:
         """Test hedging analysis with anti-hedge terms."""
         text = "This is definitely correct and certainly true."
 
@@ -82,7 +82,7 @@ class TestHedgingService:
         assert HedgingType.ANTI_HEDGE in result.categories
         # Score might be lower due to anti-hedge negative weight
 
-    async def test_analyze_hedging_approximator(self):
+    async def test_analyze_hedging_approximator(self) -> None:
         """Test hedging analysis with approximator terms."""
         text = "The cost is approximately 100 dollars, roughly."
 
@@ -91,7 +91,7 @@ class TestHedgingService:
         assert result.score > 0.0
         assert HedgingType.APPROXIMATOR in result.categories
 
-    async def test_analyze_hedging_shield(self):
+    async def test_analyze_hedging_shield(self) -> None:
         """Test hedging analysis with shield terms."""
         text = "I'm not sure, but from my perspective, I could be wrong."
 
@@ -100,7 +100,7 @@ class TestHedgingService:
         assert result.score > 0.0
         assert HedgingType.SHIELD in result.categories
 
-    async def test_analyze_hedging_attribution(self):
+    async def test_analyze_hedging_attribution(self) -> None:
         """Test hedging analysis with attribution terms."""
         text = "According to reports, it is allegedly said that..."
 
@@ -109,7 +109,7 @@ class TestHedgingService:
         assert result.score > 0.0
         assert HedgingType.ATTRIBUTION in result.categories
 
-    async def test_analyze_hedging_mixed_types(self):
+    async def test_analyze_hedging_mixed_types(self) -> None:
         """Test hedging analysis with multiple hedging types."""
         text = "I think approximately 100 people, according to reports, might attend."
 
@@ -122,7 +122,7 @@ class TestHedgingService:
             or HedgingType.ATTRIBUTION in result.categories
         )
 
-    async def test_analyze_hedging_no_hedging(self):
+    async def test_analyze_hedging_no_hedging(self) -> None:
         """Test hedging analysis with no hedging terms."""
         text = "This is a statement of fact."
 
@@ -131,7 +131,7 @@ class TestHedgingService:
         assert result.score == 0.0
         assert len(result.categories) == 0
 
-    async def test_analyze_hedging_case_insensitive(self):
+    async def test_analyze_hedging_case_insensitive(self) -> None:
         """Test that hedging detection is case insensitive."""
         text_lower = "i think this might work"
         text_upper = "I THINK THIS MIGHT WORK"
@@ -142,7 +142,7 @@ class TestHedgingService:
         assert result_lower.score == result_upper.score
         assert result_lower.categories == result_upper.categories
 
-    async def test_get_hedging_statistics(self):
+    async def test_get_hedging_statistics(self) -> None:
         """Test detailed hedging statistics."""
         text = "I think this might work. Approximately 100 people will attend."
 
@@ -154,7 +154,7 @@ class TestHedgingService:
         assert stats["epistemic_high"] > 0
         assert stats["approximator"] > 0
 
-    async def test_get_hedging_statistics_empty(self):
+    async def test_get_hedging_statistics_empty(self) -> None:
         """Test hedging statistics with no hedging."""
         text = "This is a simple statement."
 
@@ -163,7 +163,7 @@ class TestHedgingService:
         for count in stats.values():
             assert count == 0
 
-    async def test_is_hedged_sentence(self):
+    async def test_is_hedged_sentence(self) -> None:
         """Test hedged sentence detection."""
         hedged_text = "I think this might work."
         non_hedged_text = "This will work."
@@ -171,7 +171,7 @@ class TestHedgingService:
         assert self.service.is_hedged_sentence(hedged_text)
         assert not self.service.is_hedged_sentence(non_hedged_text)
 
-    async def test_is_hedged_sentence_threshold(self):
+    async def test_is_hedged_sentence_threshold(self) -> None:
         """Test hedged sentence detection with custom threshold."""
         text_high = "This might work."
         text_low = (
@@ -186,7 +186,7 @@ class TestHedgingService:
         # Should not be hedged with high threshold
         assert not self.service.is_hedged_sentence(text_low, threshold=0.9)
 
-    async def test_get_dominant_hedging_type(self):
+    async def test_get_dominant_hedging_type(self) -> None:
         """Test dominant hedging type detection."""
         text = "I think this might work. Perhaps we should consider it."
 
@@ -194,7 +194,7 @@ class TestHedgingService:
 
         assert dominant == HedgingType.EPISTEMIC_HIGH
 
-    async def test_get_dominant_hedging_type_none(self):
+    async def test_get_dominant_hedging_type_none(self) -> None:
         """Test dominant hedging type with no hedging."""
         text = "This is a statement."
 
@@ -202,7 +202,7 @@ class TestHedgingService:
 
         assert dominant == HedgingType.NONE
 
-    async def test_analyze_hedging_word_boundary(self):
+    async def test_analyze_hedging_word_boundary(self) -> None:
         """Test that hedging detection respects word boundaries."""
         text = "The think tank released a report."  # "think" should not match "I think"
 
@@ -210,7 +210,7 @@ class TestHedgingService:
 
         assert HedgingType.EPISTEMIC_HIGH not in result.categories
 
-    async def test_analyze_hedging_multi_word_phrases(self):
+    async def test_analyze_hedging_multi_word_phrases(self) -> None:
         """Test multi-word hedging phrase detection."""
         text = "According to reports, this is the case."
 
@@ -218,7 +218,7 @@ class TestHedgingService:
 
         assert HedgingType.ATTRIBUTION in result.categories
 
-    async def test_confidence_calculation(self):
+    async def test_confidence_calculation(self) -> None:
         """Test confidence calculation based on matches."""
         # High hedging text should have high confidence
         high_hedging = "I think perhaps maybe this might possibly work."
@@ -230,7 +230,7 @@ class TestHedgingService:
 
         assert high_result.confidence >= low_result.confidence
 
-    async def test_edge_case_very_hedged_text(self):
+    async def test_edge_case_very_hedged_text(self) -> None:
         """Test with very hedged text."""
         text = (
             "I think perhaps maybe possibly this might approximately work, "
@@ -243,7 +243,7 @@ class TestHedgingService:
         assert len(result.categories) >= 3
         assert result.confidence > 0.5
 
-    async def test_edge_case_very_long_text(self):
+    async def test_edge_case_very_long_text(self) -> None:
         """Test with very long text."""
         text = "I think " * 100  # Repetitive hedging
 
@@ -254,7 +254,7 @@ class TestHedgingService:
         # Length normalization should keep score reasonable
         assert result.score <= 1.0
 
-    async def test_edge_case_special_characters(self):
+    async def test_edge_case_special_characters(self) -> None:
         """Test hedging detection with special characters."""
         text = "I think... this might work! Perhaps?"
 
@@ -263,7 +263,7 @@ class TestHedgingService:
         assert result.score > 0.0
         assert HedgingType.EPISTEMIC_HIGH in result.categories
 
-    async def test_precompiled_patterns(self):
+    async def test_precompiled_patterns(self) -> None:
         """Test that patterns are precompiled correctly."""
         assert hasattr(self.service, "_patterns")
         assert len(self.service._patterns) == len(self.service.HEDGING_LEXICON)

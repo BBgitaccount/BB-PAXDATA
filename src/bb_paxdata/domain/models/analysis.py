@@ -21,17 +21,19 @@ class Analysis(BaseModel):
     """
 
     id: str = Field(..., description="Unique identifier for the analysis")
-    segment_id: str | None = Field(None, description="ID of analyzed segment")
-    sentence_id: str | None = Field(None, description="ID of analyzed sentence")
-    speaker_id: str | None = Field(None, description="ID of the speaker analyzed")
+    segment_id: str | None = Field(default=None, description="ID of analyzed segment")
+    sentence_id: str | None = Field(default=None, description="ID of analyzed sentence")
+    speaker_id: str | None = Field(
+        default=None, description="ID of the speaker analyzed"
+    )
 
     # Risk assessment
     risk_level: RiskLevel = Field(..., description="Current risk level")
     risk_trajectory: RiskTrajectory | None = Field(
-        None, description="Risk trajectory trend"
+        default=None, description="Risk trajectory trend"
     )
     future_risk_tier: FutureRiskTier | None = Field(
-        None, description="Projected future risk tier"
+        default=None, description="Projected future risk tier"
     )
 
     # Sentiment and emotional metrics
@@ -39,10 +41,10 @@ class Analysis(BaseModel):
         ..., ge=-1.0, le=1.0, description="Sentiment score from -1 to 1"
     )
     emotional_intensity: float | None = Field(
-        None, ge=0.0, le=1.0, description="Emotional intensity score"
+        default=None, ge=0.0, le=1.0, description="Emotional intensity score"
     )
     stress_level: float | None = Field(
-        None, ge=0.0, le=1.0, description="Stress level indicator"
+        default=None, ge=0.0, le=1.0, description="Stress level indicator"
     )
 
     # Anomaly detection
@@ -53,7 +55,7 @@ class Analysis(BaseModel):
         default_factory=list, description="Types of anomalies detected"
     )
     anomaly_confidence: float | None = Field(
-        None, ge=0.0, le=1.0, description="Confidence in anomaly detection"
+        default=None, ge=0.0, le=1.0, description="Confidence in anomaly detection"
     )
 
     # Validation results
@@ -61,10 +63,10 @@ class Analysis(BaseModel):
         default_factory=dict, description="Validation check results"
     )
     validation_score: float | None = Field(
-        None, ge=0.0, le=1.0, description="Overall validation score"
+        default=None, ge=0.0, le=1.0, description="Overall validation score"
     )
     fail_category: FailCategory | None = Field(
-        None, description="Category of validation failures"
+        default=None, description="Category of validation failures"
     )
 
     # Evidence and confidence
@@ -72,7 +74,7 @@ class Analysis(BaseModel):
         default_factory=list, description="Types of evidence found"
     )
     evidence_strength: float | None = Field(
-        None, ge=0.0, le=1.0, description="Strength of evidence"
+        default=None, ge=0.0, le=1.0, description="Strength of evidence"
     )
     confidence_score: float = Field(
         ..., ge=0.0, le=1.0, description="Overall confidence score"
@@ -80,13 +82,13 @@ class Analysis(BaseModel):
 
     # Additional metrics
     complexity_score: float | None = Field(
-        None, ge=0.0, le=1.0, description="Complexity score"
+        default=None, ge=0.0, le=1.0, description="Complexity score"
     )
     coherence_score: float | None = Field(
-        None, ge=0.0, le=1.0, description="Coherence score"
+        default=None, ge=0.0, le=1.0, description="Coherence score"
     )
     manipulation_score: float | None = Field(
-        None, ge=0.0, le=1.0, description="Manipulation likelihood score"
+        default=None, ge=0.0, le=1.0, description="Manipulation likelihood score"
     )
 
     # Analysis metadata
@@ -97,15 +99,15 @@ class Analysis(BaseModel):
         default_factory=datetime.utcnow, description="When analysis was performed"
     )
     analyzer_id: str | None = Field(
-        None, description="ID of analyzer system or analyst"
+        default=None, description="ID of analyzer system or analyst"
     )
 
     # Notes and explanations
     sumcomplexity_score: float | None = Field(
-        None, ge=0.0, le=1.0, description="Complexity score"
+        default=None, ge=0.0, le=1.0, description="Complexity score"
     )
     detailed_findings: str | None = Field(
-        None, description="Detailed analysis findings"
+        default=None, description="Detailed analysis findings"
     )
     recommendations: list[str] = Field(
         default_factory=list, description="Recommended actions based on analysis"
