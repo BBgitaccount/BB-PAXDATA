@@ -1,6 +1,6 @@
-"""
-Explainability Service for generating human-readable reasons for AI analysis.
-"""
+from __future__ import annotations
+
+from typing import cast
 
 from bb_paxdata.domain.models.dependency import DependencyTriple
 from bb_paxdata.domain.models.explanation import SentenceExplanation, TokenContribution
@@ -54,15 +54,15 @@ class ExplainabilityService:
 
         # 6. Executive Summary
         exec_summary = (
-            f"Bu cümle {sentiment_score:.2f} duygu ve {risk_score} risk puanına "
+            f"Bu cumle {sentiment_score:.2f} duygu ve {risk_score} risk puanina "
             f"sahiptir. "
         )
         if risk_score > 7:
-            exec_summary += "Yüksek riskli bir diplomatik sinyal içermektedir."
+            exec_summary += "Yuksek riskli bir diplomatik sinyal icermektedir."
         elif sentiment_score < -0.4:
             exec_summary += "Belirgin bir olumsuz tutum sergilemektedir."
         else:
-            exec_summary += "Genel olarak dengeli bir yapıdadır."
+            exec_summary += "Genel olarak dengeli bir yapidadir."
 
         return SentenceExplanation(
             sent_id=sent_id,
@@ -81,20 +81,22 @@ class ExplainabilityService:
         top_contribs = sorted(
             attributions, key=lambda x: abs(x.sentiment_contrib), reverse=True
         )
-        significant = [c for c in top_contribs if abs(c.sentiment_contrib) > 0.05]
+        THRESHOLD = 0.05
+        significant = [c for c in top_contribs if abs(c.sentiment_contrib) > THRESHOLD]
 
         if not significant:
-            return "Cümlede belirgin bir duygusal yüklü kelime bulunamadı."
+            return "Cumlede belirgin bir duygusal yuklu kelime bulunamadi."
 
         primary = significant[0]
-        if "olumsuzlandığı" in primary.explanation:
-            return TEMPLATES["sentiment_negation"].format(
+        if "olumsuzlandigi" in primary.explanation:
+            return cast(str, TEMPLATES["sentiment_negation"]).format(
                 keyword=primary.token,
                 negation="olumsuzluk eki/kelimesi",  # Simplified
                 score=score,
             )
 
-        return TEMPLATES["lexicon_match"].format(
+
+        return cast(str, TEMPLATES["lexicon_match"]).format(
             token=primary.token, score=primary.sentiment_contrib, category="Duygu"
         )
 
@@ -102,12 +104,13 @@ class ExplainabilityService:
         self, risk_score: int, power_level: int, attributions: list[TokenContribution]
     ) -> str:
         """Generate explanation for the risk score."""
-        if risk_score > 7:
-            return TEMPLATES["risk_high_power"].format(
+        RISK_THRESHOLD = 7
+        if risk_score > RISK_THRESHOLD:
+            return cast(str, TEMPLATES["risk_high_power"]).format(
                 power=power_level, signal="yüksek riskli kelimeler", severity="kritik"
             )
-        if power_level > 7:
-            return TEMPLATES["power_level_impact"].format(power=power_level)
+        if power_level > RISK_THRESHOLD:
+            return cast(str, TEMPLATES["power_level_impact"]).format(power=power_level)
 
         return "Belirgin bir diplomatik risk tespit edilmedi."
 
@@ -119,7 +122,7 @@ class ExplainabilityService:
             return None
 
         t = triples[0]
-        return TEMPLATES["dependency_actor_action"].format(
+        return cast(str, TEMPLATES["dependency_actor_action"]).format(
             subject=t.subject_resolved or t.subject_raw,
             verb=t.verb_lemma,
             object=t.object_resolved or t.object_raw,
@@ -130,6 +133,6 @@ class ExplainabilityService:
     ) -> str:
         """Generate explanation for difference between AI and Formula."""
         diff = abs(formula_score - ai_score)
-        return TEMPLATES["discrepancy_sentiment"].format(
+        return cast(str, TEMPLATES["discrepancy_sentiment"]).format(
             ai=ai_score, formula=formula_score, diff=diff
         )

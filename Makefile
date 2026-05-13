@@ -1,33 +1,39 @@
-# Değişken Tanımlamaları
-PYTHON = poetry run python
-PYTEST = poetry run pytest
+.PHONY: install lint typecheck test migrate validate clean
 
-.PHONY: build analyze test clean lint
+install:
+	poetry install --with dev
 
-# FAZ 0: Zemin Hazırlığı - Bağımlılıkların ve ortamın kurulumu
-build:
-	@echo "Sistem inşa ediliyor..."
-	poetry install
-	cp .env.example .env || true
-	poetry run alembic upgrade head
-	@echo "İnşa tamamlandı."
-
-# FAZ 7: Application Use Cases - Analiz sürecini başlatır
-analyze:
-	@echo "Diplomatik söylem analizi başlatılıyor..."
-	$(PYTHON) -m BB-PAXDATA.interfaces.cli.main analyze
-
-# FAZ 8: Test Tamamlama - Tüm test suitini çalıştırır
-test:
-	@echo "Testler koşturuluyor..."
-	$(PYTEST) tests/ --cov=src/BB-PAXDATA --cov-report=term-missing
-
-# Ekstra: Kod kalitesi ve temizlik
 lint:
-	poetry run ruff check src/
-	poetry run black --check src/
-	poetry run mypy src/
+	poetry run ruff check src tests
+	poetry run ruff format --check src tests
+
+typecheck:
+	poetry run mypy --strict src
+
+test:
+	poetry run pytest tests/ -v --tb=short
+
+test-cov:
+	poetry run pytest tests/ --cov=src/bb_paxdata --cov-report=term-missing
+
+migrate:
+	poetry run bbdbda migrate run --legacy-db $(LEGACY_DB)
+
+migrate-dry:
+	poetry run bbdbda migrate run --legacy-db $(LEGACY_DB) --dry-run
+
+validate:
+	poetry run bbdbda validate db --strict
+
+validate-json:
+	poetry run bbdbda validate db --json --output reports/validation.json
+
+install-completion-bash:
+	poetry run bbdbda completions install bash
+
+install-completion-zsh:
+	poetry run bbdbda completions install zsh
 
 clean:
-	rm -rf .pytest_cache .mypy_cache .ruff_cache
 	find . -type d -name "__pycache__" -exec rm -rf {} +
+	find . -name "*.pyc" -delete
