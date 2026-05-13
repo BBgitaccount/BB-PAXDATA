@@ -19,7 +19,7 @@ typer           = {version = "^0.12", extras = ["all"]}
 rich            = "^13.7"
 structlog       = "^24.2"
 pandas          = "^2.2"
-pandera         = "^0.19"
+pandera         = ">=0.20.0"
 
 [tool.poetry.group.dev.dependencies]
 pytest          = "^8.2"
@@ -37,7 +37,7 @@ python_version = "3.12"
 ignore_missing_imports = true
 follow_untyped_imports = false
 disable_error_code = ["import-untyped", "import-not-found", "misc"]
-plugins = ["pydantic.mypy"]
+plugins = ["pydantic.mypy", "pandera.mypy"]
 
 [tool.ruff.lint]
 select = ["E", "F", "I", "UP", "PLC", "PLE", "PLR", "PLW", "RUF"]
