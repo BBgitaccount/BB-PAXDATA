@@ -2,7 +2,7 @@
 
 import hashlib
 import sys
-from datetime import datetime
+from datetime import datetime, timezone
 from pathlib import Path
 
 import structlog
@@ -144,7 +144,7 @@ def build(
                     # Update processed files tracking
                     if existing:
                         existing.reprocess_count += 1
-                        existing.last_processed_at = datetime.utcnow()
+                        existing.last_processed_at = datetime.now(timezone.utc)
                         if force_rebuild:
                             existing.force_rebuild = 0
                     else:
@@ -157,8 +157,8 @@ def build(
                             idempotency_key=idempotency_key,
                             parser_version=get_parser_version(),
                             speaker_map_version=get_speaker_map_version(),
-                            first_processed_at=datetime.utcnow(),
-                            last_processed_at=datetime.utcnow(),
+                            first_processed_at=datetime.now(timezone.utc),
+                            last_processed_at=datetime.now(timezone.utc),
                             reprocess_count=0,
                             force_rebuild=0,
                         )

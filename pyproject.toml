@@ -6,7 +6,7 @@ authors = ["BB-PAXDATA Team"]
 packages = [{include = "bb_paxdata", from = "src"}]
 
 [tool.poetry.scripts]
-bbdbda = "bb_paxdata.interfaces.cli.main:entrypoint"
+bbpaxdata = "bb_paxdata.interfaces.cli.main:entrypoint"
 
 [tool.poetry.dependencies]
 python          = "^3.12"
@@ -15,11 +15,16 @@ pydantic-settings = "^2.3"
 sqlalchemy      = {version = "^2.0", extras = ["asyncio"]}
 aiosqlite       = "^0.20"
 alembic         = "^1.13"
-typer           = {version = "^0.12", extras = ["all"]}
+typer           = "^0.25.1"
 rich            = "^13.7"
 structlog       = "^24.2"
 pandas          = "^2.2"
 pandera         = ">=0.20.0"
+spacy           = "^3.7"
+vaderSentiment  = "^3.3"
+numpy           = "^2.0"
+scipy           = "^1.13"
+scikit-learn    = "^1.5"
 
 [tool.poetry.group.dev.dependencies]
 pytest          = "^8.2"
@@ -35,7 +40,6 @@ pandas-stubs    = "^2.2"
 [tool.mypy]
 python_version = "3.12"
 ignore_missing_imports = true
-follow_untyped_imports = false
 disable_error_code = ["import-untyped", "import-not-found", "misc"]
 plugins = ["pydantic.mypy", "pandera.mypy"]
 

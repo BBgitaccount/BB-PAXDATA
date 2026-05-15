@@ -58,8 +58,8 @@ def _build_result_table(result: MigrationResult) -> Table:
 
 @app.command(name="run")
 def migrate_run(
-    legacy_db: str = typer.Option(
-        ...,
+    legacy_db: str | None = typer.Option(
+        None,
         "--legacy-db",
         "-l",
         help="Path to legacy SQLite DB file",
@@ -85,6 +85,9 @@ def migrate_run(
     ),
 ) -> None:
     """Start migration. Partial success returns exit code 2."""
+    if not legacy_db:
+        console.print("[red]Error:[/red] --legacy-db option is required")
+        raise typer.Exit(code=1)
     legacy_path = Path(legacy_db).expanduser().resolve()
 
     if not legacy_path.exists():

@@ -5,10 +5,10 @@ from .sentence import SentenceRepository
 from .unit_of_work import AbstractUnitOfWork, SqlAlchemyUnitOfWork
 
 __all__ = [
-    "BaseRepository",
-    "SentenceRepository",
-    "SegmentRepository",
-    "AnalysisRepository",
     "AbstractUnitOfWork",
+    "AnalysisRepository",
+    "BaseRepository",
+    "SegmentRepository",
+    "SentenceRepository",
     "SqlAlchemyUnitOfWork",
 ]

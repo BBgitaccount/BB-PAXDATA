@@ -5,6 +5,7 @@ Provides high-level wrappers for processing text and batches using SpaCy.
 """
 
 from collections.abc import Iterable
+from typing import cast
 
 from spacy.tokens import Doc
 
@@ -29,7 +30,7 @@ class SpacyPipeline:
             A SpaCy Doc object.
         """
         nlp = SpacyModelManager.get_model(lang)
-        return nlp(text)
+        return cast(Doc, nlp(text))
 
     @staticmethod
     def process_batch(

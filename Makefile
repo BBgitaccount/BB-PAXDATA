@@ -17,22 +17,22 @@ test-cov:
 	poetry run pytest tests/ --cov=src/bb_paxdata --cov-report=term-missing
 
 migrate:
-	poetry run bbdbda migrate run --legacy-db $(LEGACY_DB)
+	poetry run bbpaxdata migrate run --legacy-db $(LEGACY_DB)
 
 migrate-dry:
-	poetry run bbdbda migrate run --legacy-db $(LEGACY_DB) --dry-run
+	poetry run bbpaxdata migrate run --legacy-db $(LEGACY_DB) --dry-run
 
 validate:
-	poetry run bbdbda validate db --strict
+	poetry run bbpaxdata validate db --strict
 
 validate-json:
-	poetry run bbdbda validate db --json --output reports/validation.json
+	poetry run bbpaxdata validate db --json --output reports/validation.json
 
 install-completion-bash:
-	poetry run bbdbda completions install bash
+	poetry run bbpaxdata completions install bash
 
 install-completion-zsh:
-	poetry run bbdbda completions install zsh
+	poetry run bbpaxdata completions install zsh
 
 clean:
 	find . -type d -name "__pycache__" -exec rm -rf {} +

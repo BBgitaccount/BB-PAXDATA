@@ -6,6 +6,7 @@ This CLI tool allows users to annotate golden dataset candidates
 with ground truth values for quality evaluation.
 """
 
+import argparse
 import csv
 import json
 import sys
@@ -362,8 +363,6 @@ class GoldenAnnotator:
 
 def main() -> None:
     """Main function."""
-    import argparse
-
     parser = argparse.ArgumentParser(description="Golden dataset annotation tool")
     parser.add_argument("candidates", help="Path to candidates CSV file")
     parser.add_argument("--batch", help="Export for batch annotation to this JSON file")

@@ -2,9 +2,7 @@
 Dependency Parsing Service for extraction of subject-verb-object triples.
 """
 
-from typing import Any
-
-from spacy.tokens import Doc, Token
+from spacy.tokens import Doc, Span, Token
 
 from bb_paxdata.domain.models.dependency import DependencyTriple
 
@@ -48,7 +46,7 @@ class DependencyService:
                     triples.append(triple)
         return triples
 
-    def _find_root(self, sent: Any) -> Token | None:
+    def _find_root(self, sent: Span) -> Token | None:
         """Find the root verb of the sentence."""
         for token in sent:
             if token.dep_ == "ROOT":

@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
+from typing import cast
 
 from bb_paxdata.domain.models.dependency import DependencyTriple
 from bb_paxdata.domain.models.explanation import SentenceExplanation, TokenContribution
@@ -108,14 +109,20 @@ class ExplainabilityService:
 
         primary = significant[0]
         if "olumsuzlandigi" in primary.explanation:
-            return TEMPLATES["sentiment_negation"].format(
-                keyword=primary.token,
-                negation="olumsuzluk eki/kelimesi",  # Simplified
-                score=score,
+            return cast(
+                str,
+                TEMPLATES["sentiment_negation"].format(
+                    keyword=primary.token,
+                    negation="olumsuzluk eki/kelimesi",  # Simplified
+                    score=score,
+                ),
             )
 
-        return TEMPLATES["lexicon_match"].format(
-            token=primary.token, score=primary.sentiment_contrib, category="Duygu"
+        return cast(
+            str,
+            TEMPLATES["lexicon_match"].format(
+                token=primary.token, score=primary.sentiment_contrib, category="Duygu"
+            ),
         )
 
     def _generate_risk_explanation(
@@ -124,11 +131,16 @@ class ExplainabilityService:
         """Generate explanation for the risk score."""
         RISK_THRESHOLD = TOP_K_FEATURES
         if risk_score > RISK_THRESHOLD:
-            return TEMPLATES["risk_high_power"].format(
-                power=power_level, signal="yuksek riskli kelimeler", severity="kritik"
+            return cast(
+                str,
+                TEMPLATES["risk_high_power"].format(
+                    power=power_level,
+                    signal="yuksek riskli kelimeler",
+                    severity="kritik",
+                ),
             )
         if power_level > RISK_THRESHOLD:
-            return TEMPLATES["power_level_impact"].format(power=power_level)
+            return cast(str, TEMPLATES["power_level_impact"].format(power=power_level))
 
         return "Belirgin bir diplomatik risk tespit edilmedi."
 
@@ -140,10 +152,13 @@ class ExplainabilityService:
             return None
 
         t = triples[0]
-        return TEMPLATES["dependency_actor_action"].format(
-            subject=t.subject_resolved or t.subject_raw,
-            verb=t.verb_lemma,
-            object=t.object_resolved or t.object_raw,
+        return cast(
+            str,
+            TEMPLATES["dependency_actor_action"].format(
+                subject=t.subject_resolved or t.subject_raw,
+                verb=t.verb_lemma,
+                object=t.object_resolved or t.object_raw,
+            ),
         )
 
     def _generate_discrepancy_explanation(
@@ -151,6 +166,9 @@ class ExplainabilityService:
     ) -> str:
         """Generate explanation for difference between AI and Formula."""
         diff = abs(formula_score - ai_score)
-        return TEMPLATES["discrepancy_sentiment"].format(
-            ai=ai_score, formula=formula_score, diff=diff
+        return cast(
+            str,
+            TEMPLATES["discrepancy_sentiment"].format(
+                ai=ai_score, formula=formula_score, diff=diff
+            ),
         )

@@ -9,7 +9,6 @@ from functools import lru_cache
 from typing import TYPE_CHECKING, Any, cast
 
 if TYPE_CHECKING:
-    from ...application.protocols import AnomalyResult
     from ..models.analysis import Analysis
     from ..models.segment import Segment
     from ..models.sentence import Sentence
@@ -17,10 +16,8 @@ else:
     Sentence = None
     Segment = None
     Analysis = None
-    AnomalyResult = None
 
 from ...application.protocols import (
-    CrossAnomalyServiceProtocol,
     FramingServiceProtocol,
     HedgingServiceProtocol,
     NERServiceProtocol,
@@ -32,6 +29,7 @@ from ...application.protocols import (
 from .cross_anomaly_service import CrossAnomalyService
 from .framing_service import FramingService
 from .hedging_service import HedgingService
+from .protocols import AnomalyResult, AnomalyServiceProtocol
 from .risk_service import RiskService
 from .segment_service import SegmentService
 from .sentiment_service import SentimentService
@@ -167,7 +165,7 @@ class ServiceContainer:
         self._hedging_service: HedgingServiceProtocol | None = None
         self._framing_service: FramingServiceProtocol | None = None
         self._topic_service: TopicServiceProtocol | None = None
-        self._anomaly_service: CrossAnomalyServiceProtocol | None = None
+        self._anomaly_service: AnomalyServiceProtocol | None = None
         self._segment_service: SegmentService | None = None
 
         # Service configuration
@@ -216,10 +214,11 @@ class ServiceContainer:
         return self._segment_service
 
     @property
-    def anomaly(self) -> CrossAnomalyServiceProtocol:
+    def anomaly(self) -> AnomalyServiceProtocol:
         """Get the cross-anomaly detection service."""
         if self._anomaly_service is None:
             self._anomaly_service = CrossAnomalyService()
+        assert self._anomaly_service is not None
         return self._anomaly_service
 
     @property
@@ -331,7 +330,7 @@ class AnalysisPipeline:
         hedging_service: HedgingServiceProtocol,
         framing_service: FramingServiceProtocol,
         topic_service: TopicServiceProtocol,
-        anomaly_service: CrossAnomalyServiceProtocol,
+        anomaly_service: AnomalyServiceProtocol,
         segment_service: SegmentService,
     ):
         """Initialize the analysis pipeline.
@@ -404,16 +403,16 @@ class AnalysisPipeline:
 
         return results
 
-    def detect_anomalies(self, analysis: "Analysis") -> list[AnomalyResult]:
+    def detect_anomalies(self, analysis: "Analysis") -> AnomalyResult:
         """Detect anomalies in analysis results.
 
         Args:
             analysis: Analysis results to check
 
         Returns:
-            List of detected anomalies
+            Detected anomaly result
         """
-        return self.anomaly.detect_anomalies(analysis)
+        return self.anomaly.detect(analysis)
 
 
 # Global service container instance
@@ -453,7 +452,7 @@ def get_topic_service() -> TopicServiceProtocol:
     return get_default_container().topic
 
 
-def get_anomaly_service() -> CrossAnomalyServiceProtocol:
+def get_anomaly_service() -> AnomalyServiceProtocol:
     """Get the default anomaly service."""
     return get_default_container().anomaly
 

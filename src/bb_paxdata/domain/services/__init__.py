@@ -15,14 +15,14 @@ from .service_container import AnalysisPipeline, ServiceContainer, get_default_c
 from .topic_service import TopicService
 
 __all__ = [
-    "SentimentService",
-    "RiskService",
-    "HedgingService",
-    "FramingService",
-    "TopicService",
-    "SegmentService",
-    "CrossAnomalyService",
-    "ServiceContainer",
     "AnalysisPipeline",
+    "CrossAnomalyService",
+    "FramingService",
+    "HedgingService",
+    "RiskService",
+    "SegmentService",
+    "SentimentService",
+    "ServiceContainer",
+    "TopicService",
     "get_default_container",
 ]

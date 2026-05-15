@@ -361,7 +361,7 @@ class QualityEvaluator:
             "evaluated_fixtures": len(reports),
             "model_used": self.model_name,
             "backend_used": self.backend_used,
-            "evaluated_at": datetime.utcnow().isoformat(),
+            "evaluated_at": datetime.now(UTC).isoformat(),
         }
 
     def _calculate_summary_statistics(

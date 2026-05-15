@@ -1,4 +1,4 @@
-from datetime import datetime
+from datetime import datetime, timezone
 from typing import Any
 
 from pydantic import BaseModel, Field
@@ -72,7 +72,8 @@ class ValidationResult(BaseModel):
 
     # Temporal information
     validation_timestamp: datetime = Field(
-        default_factory=datetime.utcnow, description="When validation was performed"
+        default_factory=lambda: datetime.now(timezone.utc),
+        description="When validation was performed",
     )
     validation_duration: float | None = Field(
         default=None, description="Duration of validation process"
@@ -143,8 +144,10 @@ class ValidationResult(BaseModel):
     )
 
     created_at: datetime = Field(
-        default_factory=datetime.utcnow, description="Creation timestamp"
+        default_factory=lambda: datetime.now(timezone.utc),
+        description="Creation timestamp",
     )
     updated_at: datetime = Field(
-        default_factory=datetime.utcnow, description="Last update timestamp"
+        default_factory=lambda: datetime.now(timezone.utc),
+        description="Last update timestamp",
     )

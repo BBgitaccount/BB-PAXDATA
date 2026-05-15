@@ -5,7 +5,7 @@ from .custom.sentiment_agreement import SentimentAgreementMetric
 from .custom.topic_accuracy import TopicAccuracyMetric
 
 __all__ = [
-    "SentimentAgreementMetric",
     "RiskCalibrationMetric",
+    "SentimentAgreementMetric",
     "TopicAccuracyMetric",
 ]

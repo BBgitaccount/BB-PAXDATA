@@ -4,6 +4,7 @@ Provides thread-safe prometheus metric collection and a singleton interface.
 """
 
 import threading
+import time
 from collections.abc import Iterator
 from contextlib import contextmanager
 from typing import Any
@@ -208,8 +209,6 @@ def track_ai_request(
         with track_ai_request(metrics, "anthropic", "claude-haiku-4-5-20251001"):
             result = call_anthropic(...)
     """
-    import time
-
     start_time = time.monotonic()
     status = "error"
     try:

@@ -3,6 +3,7 @@
 import asyncio
 import json
 import time
+from collections import Counter
 from typing import Any, Literal, cast
 
 import structlog
@@ -240,8 +241,6 @@ class UncertaintyScorer:
 
             if field_values:
                 # Get most frequent value
-                from collections import Counter
-
                 counter = Counter(field_values)
                 most_common = counter.most_common(1)[0][0]
                 consensus_map[field] = most_common

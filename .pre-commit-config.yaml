@@ -12,7 +12,7 @@ repos:
     rev: v1.9.0
     hooks:
       - id: mypy
-        additional_dependencies: [pydantic, sqlalchemy, types-requests, types-redis, types-aiofiles]
+        additional_dependencies: [pydantic, sqlalchemy, pandera, pandas, pandas-stubs, types-requests, types-redis, types-aiofiles]
 
         args: ["--config-file=pyproject.toml", "src"]
         pass_filenames: false

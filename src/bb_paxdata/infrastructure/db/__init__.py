@@ -18,11 +18,11 @@ from bb_paxdata.infrastructure.db.session import (
 )
 
 __all__ = [
+    "DATABASE_URL",
     "AbstractUnitOfWork",
     "AnalysisRepository",
     "Base",
     "BaseRepository",
-    "DATABASE_URL",
     "SegmentRepository",
     "SentenceRepository",
     "SessionLocal",

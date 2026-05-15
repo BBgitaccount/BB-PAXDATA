@@ -3,6 +3,7 @@
 from pathlib import Path
 from typing import Any, TypedDict, cast
 
+import pandas as pd
 import structlog
 from sqlalchemy.orm import Session
 
@@ -101,8 +102,6 @@ class QualityPipeline:
                 return summary
 
             # Step 2: Output validation
-            import pandas as pd
-
             df = pd.DataFrame(ai_results)
 
             output_validation = self.data_validator.validate_ai_output(df)

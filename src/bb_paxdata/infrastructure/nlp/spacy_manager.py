@@ -6,6 +6,7 @@ efficiently. Implemented as a singleton-like class manager.
 """
 
 import spacy
+from spacy.language import Language
 
 from .spacy_config import SPACY_PIPELINES
 
@@ -18,10 +19,10 @@ class SpacyModelManager:
     unloading models when they are no longer needed.
     """
 
-    _models: dict[str, spacy.Language] = {}
+    _models: dict[str, Language] = {}
 
     @classmethod
-    def get_model(cls, lang: str) -> spacy.Language:
+    def get_model(cls, lang: str) -> Language:
         """
         Get a SpaCy model for the specified language.
 

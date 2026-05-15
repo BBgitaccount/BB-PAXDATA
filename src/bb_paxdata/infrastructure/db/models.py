@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 import json
-from datetime import datetime
+from datetime import datetime, timezone
 from enum import Enum
 from typing import TYPE_CHECKING, Any, TypeVar, cast
 
@@ -1502,7 +1502,7 @@ class AISentenceAnalysis(Base):
             coherence_score=None,
             manipulation_score=self.manipulation_score,
             analysis_version="1.0",
-            analysis_timestamp=datetime.utcnow(),
+            analysis_timestamp=datetime.now(timezone.utc),
             analyzer_id=None,
             sumcomplexity_score=None,
             detailed_findings=None,

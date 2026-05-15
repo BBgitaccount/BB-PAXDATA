@@ -1,7 +1,7 @@
 """Duplicate panel protection service with idempotency key management."""
 
 import hashlib
-from datetime import datetime
+from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
 
@@ -137,7 +137,7 @@ class DuplicateProtectionService:
 
             if existing:
                 # Update existing record
-                existing.last_processed_at = datetime.utcnow()
+                existing.last_processed_at = datetime.now(timezone.utc)
                 existing.reprocess_count += 1
                 self.db_session.commit()
 
@@ -156,8 +156,8 @@ class DuplicateProtectionService:
                 idempotency_key=idempotency_key,
                 parser_version=parser_version,
                 speaker_map_version=speaker_map_version,
-                first_processed_at=datetime.utcnow(),
-                last_processed_at=datetime.utcnow(),
+                first_processed_at=datetime.now(timezone.utc),
+                last_processed_at=datetime.now(timezone.utc),
                 reprocess_count=0,
                 force_rebuild=0,
             )

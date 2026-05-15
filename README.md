@@ -272,10 +272,10 @@ $ poetry shell
 $ make migrate
 
 # 5. Run
-$ bbdbda build     # Build database from transcripts
-$ bbdbda analyze   # Run full analysis pipeline
-$ bbdbda failcheck # Anomaly & risk audit
-$ bbdbda report    # Generate HTML/PDF report
+$ bbpaxdata build     # Build database from transcripts
+$ bbpaxdata analyze   # Run full analysis pipeline
+$ bbpaxdata failcheck # Anomaly & risk audit
+$ bbpaxdata report    # Generate HTML/PDF report
 ```
 
 ### Makefile Targets

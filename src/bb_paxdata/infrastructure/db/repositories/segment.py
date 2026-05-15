@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from collections.abc import Sequence
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING, Any, cast
 
 if TYPE_CHECKING:
     from bb_paxdata.infrastructure.ai.prompt_registry import PromptRegistry
@@ -23,7 +23,7 @@ except ImportError:
             def get_version_string(self, name: str) -> str | None:
                 return None
 
-        return DummyRegistry()  # type: ignore
+        return cast("PromptRegistry", DummyRegistry())
 
 
 logger = structlog.get_logger(__name__)
@@ -89,7 +89,7 @@ class SegmentRepository(BaseRepository[Segment]):
             stmt = stmt.where(Segment.panel_id == panel_id)
 
         result = await self._session.execute(stmt)
-        return result.scalars().all()
+        return cast(Sequence[Segment], result.scalars().all())
 
     async def update_insight(self, seg_id: str, insight: str, version: str) -> None:
         """Update or create AI insight for a segment."""
@@ -128,7 +128,7 @@ class SegmentRepository(BaseRepository[Segment]):
         """Get all segments for a specific panel."""
         stmt = select(Segment).where(Segment.panel_id == panel_id)
         result = await self._session.execute(stmt)
-        return result.scalars().all()
+        return cast(Sequence[Segment], result.scalars().all())
 
     async def get_speaker_segments(
         self, speaker_name: str, panel_id: str | None = None
@@ -139,7 +139,7 @@ class SegmentRepository(BaseRepository[Segment]):
             stmt = stmt.where(Segment.panel_id == panel_id)
 
         result = await self._session.execute(stmt)
-        return result.scalars().all()
+        return cast(Sequence[Segment], result.scalars().all())
 
     async def get_with_insights(self, panel_id: str | None = None) -> Sequence[Segment]:
         """Get segments that have AI insights."""
@@ -152,7 +152,7 @@ class SegmentRepository(BaseRepository[Segment]):
             stmt = stmt.where(Segment.panel_id == panel_id)
 
         result = await self._session.execute(stmt)
-        return result.scalars().all()
+        return cast(Sequence[Segment], result.scalars().all())
 
     async def get_with_sentences_eager(self, seg_id: str) -> Segment | None:
         """Get segment with all its sentences loaded."""

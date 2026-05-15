@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from collections.abc import Sequence
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING, Any, cast
 
 import structlog
 from sqlalchemy import delete, func, select
@@ -29,7 +29,7 @@ except ImportError:
             def get_version_string(self, name: str) -> str | None:
                 return None
 
-        return DummyRegistry()  # type: ignore
+        return cast("PromptRegistry", DummyRegistry())
 
 
 logger = structlog.get_logger(__name__)
@@ -197,7 +197,7 @@ class AnalysisRepository(BaseRepository[AISentenceAnalysis]):
             stmt = stmt.where(AISentenceAnalysis.panel_id == panel_id)
 
         result = await self._session.execute(stmt)
-        return result.scalars().all()
+        return cast(Sequence[AISentenceAnalysis], result.scalars().all())
 
     async def get_backend_stats(self) -> dict[str, Any]:
         """Get backend statistics: total requests, avg latency, error rate."""

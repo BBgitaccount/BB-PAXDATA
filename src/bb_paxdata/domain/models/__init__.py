@@ -13,18 +13,18 @@ from .transcript import Transcript
 from .validation_result import ValidationResult
 
 __all__ = [
-    "Sentence",
-    "Segment",
-    "TemporalSegmentAnalysis",
-    "Speaker",
     "Analysis",
-    "Transcript",
-    "Metadata",
     "Anomaly",
     "Demand",
     "Frame",
-    "RhetoricalElement",
-    "Topic",
+    "Metadata",
     "Relationship",
+    "RhetoricalElement",
+    "Segment",
+    "Sentence",
+    "Speaker",
+    "TemporalSegmentAnalysis",
+    "Topic",
+    "Transcript",
     "ValidationResult",
 ]

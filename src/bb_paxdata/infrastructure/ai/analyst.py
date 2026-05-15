@@ -195,7 +195,7 @@ class OllamaBackend(BaseAIBackend):
 
         try:
             response = self.session.post(
-                f"{self.base_url}/api/chat", json=payload, timeout=120
+                f"{self.base_url}/api/chat", json=cast(Any, payload), timeout=120
             )
             response.raise_for_status()
 
@@ -260,8 +260,8 @@ class AnthropicBackend(BaseAIBackend):
         """Generate response using Anthropic API."""
         start_time = time.time()
 
-        headers = {
-            "x-api-key": self.api_key,
+        headers: dict[str, str] = {
+            "x-api-key": self.api_key or "",
             "content-type": "application/json",
             "anthropic-version": "2023-06-01",
         }
@@ -279,7 +279,10 @@ class AnthropicBackend(BaseAIBackend):
 
         try:
             response = self.session.post(
-                cast(str, self.base_url), headers=headers, json=payload, timeout=120
+                cast(str, self.base_url),
+                headers=headers,
+                json=cast(Any, payload),
+                timeout=120,
             )
             response.raise_for_status()
 

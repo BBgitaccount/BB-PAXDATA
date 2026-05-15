@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+import os
+import subprocess
 from pathlib import Path
 
 import typer
@@ -30,12 +32,10 @@ def _completion_script(shell: str) -> str:
     Generates script using Typer/Click's natural completion mechanism.
     `_BB_PAXDATA_COMPLETE` env variable is Click's source protocol.
     """
-    import subprocess
-
     env = {"_BB_PAXDATA_COMPLETE": f"source_{shell}"}
     result = subprocess.run(
-        ["bbdbda"],
-        env={**__import__("os").environ, **env},
+        ["bbpaxdata"],
+        env={**os.environ, **env},
         capture_output=True,
         text=True,
         timeout=10,

@@ -50,8 +50,8 @@ def detect_sentiment_drift(
             z_score = (value - mean_val) / std_val
 
             # Update CUSUM statistics
-            cusum_pos = max(0.0, cusum_pos + z_score - threshold)
-            cusum_neg = min(0.0, cusum_neg + z_score + threshold)
+            cusum_pos = max(0.0, float(cusum_pos + z_score - threshold))
+            cusum_neg = min(0.0, float(cusum_neg + z_score + threshold))
 
             # Check for drift
             if not in_drift and (
@@ -74,9 +74,7 @@ def detect_sentiment_drift(
                         "confidence": min(
                             1.0, (abs(cusum_pos) + abs(cusum_neg)) / drift_threshold
                         ),
-                        "magnitude": abs(
-                            sentiment_series[i] - sentiment_series[drift_start]
-                        ),
+                        "magnitude": abs(value - sentiment_series[drift_start]),
                     }
                 )
                 in_drift = False
@@ -236,7 +234,9 @@ def detect_tone_drift(
                     {
                         "start_index": max(0, i - window_size),
                         "end_index": min(len(tone_series) - 1, i + window_size),
-                        "confidence": min(1.0, matrix_diff / transition_threshold),
+                        "confidence": min(
+                            1.0, float(matrix_diff / transition_threshold)
+                        ),
                         "transition_change": matrix_diff,
                     }
                 )

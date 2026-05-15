@@ -3,6 +3,7 @@ Repository for Explainability data.
 """
 
 import json
+from typing import cast
 
 from sqlalchemy import select
 from sqlalchemy.orm import Session
@@ -38,7 +39,7 @@ class ExplanationRepository:
         )
         self.session.add(orm_exp)
         self.session.flush()
-        return orm_exp.explanation_id
+        return cast(int, orm_exp.explanation_id)
 
     def get_by_sentence(self, sent_id: str) -> AIExplanationsORM | None:
         """Get explanation for a specific sentence."""

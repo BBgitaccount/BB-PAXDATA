@@ -127,9 +127,6 @@ class DataContractValidator:
             ValidationResult with pass/fail status and details
         """
         try:
-            # Import here to avoid circular imports
-            import pandas as pd
-
             # Ensure we have a DataFrame
             if not isinstance(df, pd.DataFrame):
                 return ValidationResult(

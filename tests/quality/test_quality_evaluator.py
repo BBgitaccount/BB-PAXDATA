@@ -1,6 +1,6 @@
 """Tests for QualityEvaluator."""
 
-from datetime import datetime
+from datetime import datetime, timezone
 from typing import Any
 from unittest.mock import MagicMock, patch
 
@@ -259,7 +259,7 @@ class TestQualityEvaluator:
                 ],
                 model_used="test-model",
                 backend_used="test-backend",
-                evaluated_at=datetime.utcnow(),
+                evaluated_at=datetime.now(timezone.utc),
             ),
             QualityReport(
                 fixture_id="test_002",
@@ -277,7 +277,7 @@ class TestQualityEvaluator:
                 ],
                 model_used="test-model",
                 backend_used="test-backend",
-                evaluated_at=datetime.utcnow(),
+                evaluated_at=datetime.now(timezone.utc),
             ),
         ]
 

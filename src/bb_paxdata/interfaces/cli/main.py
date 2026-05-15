@@ -9,7 +9,6 @@ app = typer.Typer(
     name="BB-PAXDATA",
     help="[bold cyan]Diplomatic Discourse Analysis Engine[/bold cyan] — CLI Interface",
     no_args_is_help=True,
-    rich_markup_mode="rich",
     # Shell completion injected automatically by Typer
     add_completion=True,
 )
@@ -23,6 +22,8 @@ def _lazy_import_commands() -> None:
     This function runs once during `entrypoint()` call.
     """
     try:
+        from bb_paxdata.application.commands import build
+        from bb_paxdata.interfaces.cli import completions
         from bb_paxdata.interfaces.cli.commands import (
             migrate,
             validate,
@@ -34,6 +35,12 @@ def _lazy_import_commands() -> None:
             help="Migration from legacy format to new format",
         )
         app.add_typer(validate.app, name="validate", help="Database consistency check")
+        app.add_typer(
+            build.app, name="build", help="Build database from transcript files"
+        )
+        app.add_typer(
+            completions.app, name="completions", help="Shell autocomplete management"
+        )
     except ImportError:
         # Commands might not be created yet
         pass
@@ -41,7 +48,6 @@ def _lazy_import_commands() -> None:
 
 @app.callback(invoke_without_command=True)
 def main(
-    ctx: typer.Context,
     version: bool = typer.Option(
         False,
         "--version",
@@ -88,7 +94,7 @@ def entrypoint() -> None:
     """
     pyproject.toml entry point'i.
     [tool.poetry.scripts]
-    bbdbda = "bb_paxdata.interfaces.cli.main:entrypoint"
+    bbpaxdata = "bb_paxdata.interfaces.cli.main:entrypoint"
     """
     _lazy_import_commands()
     app()

@@ -1,4 +1,4 @@
-from datetime import datetime
+from datetime import datetime, timezone
 from typing import Any
 
 from pydantic import BaseModel, Field
@@ -51,7 +51,8 @@ class Transcript(BaseModel):
         default=None, description="Version of processing pipeline"
     )
     processing_date: datetime = Field(
-        default_factory=datetime.utcnow, description="When transcript was processed"
+        default_factory=lambda: datetime.now(timezone.utc),
+        description="When transcript was processed",
     )
 
     # Quality and confidence
@@ -98,8 +99,10 @@ class Transcript(BaseModel):
     )
 
     created_at: datetime = Field(
-        default_factory=datetime.utcnow, description="Creation timestamp"
+        default_factory=lambda: datetime.now(timezone.utc),
+        description="Creation timestamp",
     )
     updated_at: datetime = Field(
-        default_factory=datetime.utcnow, description="Last update timestamp"
+        default_factory=lambda: datetime.now(timezone.utc),
+        description="Last update timestamp",
     )
