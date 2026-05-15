@@ -14,6 +14,7 @@ sys.path.insert(0, r"C:\Users\THINKPAD\Desktop\BB-PAXDATA\src")
 # ── METADATA IMPORT ────────────────────────────────────────
 import bb_paxdata.infrastructure.db.models  # noqa: F401
 from bb_paxdata.infrastructure.db.base import Base
+from bb_paxdata.infrastructure.db.country_models import Base as CountryBase
 
 # ── ALEMBIC CONFIG ─────────────────────────────────────────
 config = context.config
@@ -21,7 +22,7 @@ config = context.config
 if config.config_file_name is not None:
     fileConfig(config.config_file_name)
 
-target_metadata = Base.metadata
+target_metadata = [Base.metadata, CountryBase.metadata]
 
 
 def run_migrations_offline() -> None:

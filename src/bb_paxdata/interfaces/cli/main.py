@@ -25,6 +25,7 @@ def _lazy_import_commands() -> None:
         from bb_paxdata.application.commands import build
         from bb_paxdata.interfaces.cli import completions
         from bb_paxdata.interfaces.cli.commands import (
+            analyze,
             migrate,
             validate,
         )
@@ -37,6 +38,9 @@ def _lazy_import_commands() -> None:
         app.add_typer(validate.app, name="validate", help="Database consistency check")
         app.add_typer(
             build.app, name="build", help="Build database from transcript files"
+        )
+        app.add_typer(
+            analyze.app, name="analyze", help="Diplomatic discourse analysis commands"
         )
         app.add_typer(
             completions.app, name="completions", help="Shell autocomplete management"

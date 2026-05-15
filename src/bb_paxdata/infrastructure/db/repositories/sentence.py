@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from collections.abc import Sequence
-from typing import Any, cast
+from typing import Any
 
 import structlog
 from sqlalchemy import select
@@ -51,19 +51,19 @@ class SentenceRepository(BaseRepository[Sentence]):
             stmt = stmt.limit(limit)
 
         result = await self._session.execute(stmt)
-        return cast(Sequence[Sentence], result.scalars().all())
+        return result.scalars().all()  # type: ignore[no-any-return]
 
     async def get_by_panel(self, panel_id: str) -> Sequence[Sentence]:
         """Get all sentences for a specific panel."""
         stmt = select(Sentence).where(Sentence.panel_id == panel_id)
         result = await self._session.execute(stmt)
-        return cast(Sequence[Sentence], result.scalars().all())
+        return result.scalars().all()  # type: ignore[no-any-return]
 
     async def get_by_segment(self, seg_id: str) -> Sequence[Sentence]:
         """Get all sentences for a specific segment."""
         stmt = select(Sentence).where(Sentence.seg_id == seg_id)
         result = await self._session.execute(stmt)
-        return cast(Sequence[Sentence], result.scalars().all())
+        return result.scalars().all()  # type: ignore[no-any-return]
 
     async def get_fail_sentences(
         self, panel_id: str | None = None, check_type: str | None = None
@@ -74,7 +74,7 @@ class SentenceRepository(BaseRepository[Sentence]):
             stmt = stmt.where(Sentence.panel_id == panel_id)
 
         result = await self._session.execute(stmt)
-        return cast(Sequence[Sentence], result.scalars().all())
+        return result.scalars().all()  # type: ignore[no-any-return]
 
     async def mark_analyzed(self, sent_id: str) -> None:
         """Mark a sentence as analyzed."""
@@ -106,7 +106,7 @@ class SentenceRepository(BaseRepository[Sentence]):
         ).limit(top_n)
 
         result = await self._session.execute(stmt)
-        return cast(Sequence[Sentence], result.scalars().all())
+        return result.scalars().all()  # type: ignore[no-any-return]
 
     async def update_analysis(
         self,
@@ -131,4 +131,4 @@ class SentenceRepository(BaseRepository[Sentence]):
         """Get high risk sentences."""
         stmt = select(Sentence).where(Sentence.risk_score >= min_risk_score)
         result = await self._session.execute(stmt)
-        return cast(Sequence[Sentence], result.scalars().all())
+        return result.scalars().all()  # type: ignore[no-any-return]

@@ -108,7 +108,7 @@ class CrossAnomalyService:
             NegativeSentimentRule(),
         ]
 
-    def detect(self, analysis: Analysis) -> AnomalyResult:
+    async def detect(self, analysis: Analysis) -> AnomalyResult:
         """
         Analysis nesnesi üzerinde tüm kuralları çalıştırır.
         Analysis'i mutate ETMEZ — AnomalyResult döner.

@@ -197,7 +197,7 @@ class AnalysisRepository(BaseRepository[AISentenceAnalysis]):
             stmt = stmt.where(AISentenceAnalysis.panel_id == panel_id)
 
         result = await self._session.execute(stmt)
-        return cast(Sequence[AISentenceAnalysis], result.scalars().all())
+        return result.scalars().all()  # type: ignore[no-any-return]
 
     async def get_backend_stats(self) -> dict[str, Any]:
         """Get backend statistics: total requests, avg latency, error rate."""

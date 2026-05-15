@@ -403,7 +403,7 @@ class AnalysisPipeline:
 
         return results
 
-    def detect_anomalies(self, analysis: "Analysis") -> AnomalyResult:
+    async def detect_anomalies(self, analysis: "Analysis") -> AnomalyResult:
         """Detect anomalies in analysis results.
 
         Args:
@@ -412,7 +412,7 @@ class AnalysisPipeline:
         Returns:
             Detected anomaly result
         """
-        return self.anomaly.detect(analysis)
+        return await self.anomaly.detect(analysis)
 
 
 # Global service container instance

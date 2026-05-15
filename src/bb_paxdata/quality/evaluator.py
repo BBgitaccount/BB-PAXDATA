@@ -86,6 +86,32 @@ class QualityEvaluator:
         # Initialize deepeval metrics
         self.deepeval_metrics: dict[str, DeepEvalMetric] = self._init_deepeval_metrics()
 
+    async def validate(self, output: Any, criteria: list[str] | None = None) -> bool:
+        """
+        AI çıktısını belirli kriterlere göre doğrular (ground-truth olmadan).
+
+        Şu an için şema uyumluluğu ve doluluk kontrolü yapar.
+        """
+        if not output:
+            return False
+
+        # Basit şema kontrolü
+        if criteria and "schema_conformance" in criteria:
+            if isinstance(output, list):
+                if not all(isinstance(item, dict) for item in output):
+                    return False
+            elif not isinstance(output, dict):
+                return False
+
+        # Doluluk kontrolü
+        if criteria and "completeness" in criteria:
+            if isinstance(output, list) and len(output) == 0:
+                return False
+            if isinstance(output, dict) and not output:
+                return False
+
+        return True
+
     def _init_deepeval_metrics(self) -> dict[str, DeepEvalMetric]:
         """Initialize Deepeval metrics."""
         # G-Eval for diplomatic analysis

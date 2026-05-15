@@ -23,6 +23,10 @@ class PromptEntry:
     tags: tuple[str, ...]
     prompt_version: str
 
+    def format(self, **kwargs: Any) -> str:
+        """Template'i verilen argümanlarla formatlar."""
+        return self.template.format(**kwargs)
+
 
 class PromptRegistry:
     """

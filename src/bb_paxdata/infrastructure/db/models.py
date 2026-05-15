@@ -823,10 +823,11 @@ class Word(Base):
 
 
 class CountryReference(Base):
-    __tablename__ = "country_references"
+    __tablename__ = "legacy_country_references"
+
     __table_args__ = (
-        Index("idx_coref_from", "from_country"),
-        Index("idx_coref_to", "to_country"),
+        Index("idx_legacy_coref_from", "from_country"),
+        Index("idx_legacy_coref_to", "to_country"),
     )
 
     ref_id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)

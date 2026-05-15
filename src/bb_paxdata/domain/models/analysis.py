@@ -222,7 +222,6 @@ SentenceAnalysis = Analysis
 
 
 class SegmentInsight(BaseModel):
-    # [FAZ3] PromptRegistry entegrasyonu
     prompt_version: str | None = Field(
         default=None,
         description="PromptRegistry versiyonu — '{name}:{ver}:{hash}' formatı",
@@ -230,7 +229,6 @@ class SegmentInsight(BaseModel):
 
 
 class DemandAnalysis(BaseModel):
-    # [FAZ3] PromptRegistry entegrasyonu
     prompt_version: str | None = Field(
         default=None,
         description="PromptRegistry versiyonu — '{name}:{ver}:{hash}' formatı",
@@ -238,7 +236,6 @@ class DemandAnalysis(BaseModel):
 
 
 class PanelSynthesis(BaseModel):
-    # [FAZ3] PromptRegistry entegrasyonu
     prompt_version: str | None = Field(
         default=None,
         description="PromptRegistry versiyonu — '{name}:{ver}:{hash}' formatı",
@@ -246,7 +243,6 @@ class PanelSynthesis(BaseModel):
 
 
 class FailCheckAnalysis(BaseModel):
-    # [FAZ3] PromptRegistry entegrasyonu
     prompt_version: str | None = Field(
         default=None,
         description="PromptRegistry versiyonu — '{name}:{ver}:{hash}' formatı",

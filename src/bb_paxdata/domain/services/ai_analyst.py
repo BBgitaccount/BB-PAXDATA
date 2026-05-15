@@ -40,7 +40,7 @@ class AIAnalyst:
         self.language_detector = language_detector or LanguageDetector()
         self.default_prompt_id = default_prompt_id
 
-    def analyze(
+    async def analyze(
         self,
         text: str,
         prompt_id: str | None = None,

@@ -1,4 +1,10 @@
 # Auto-generated enum package
+from bb_paxdata.domain.enums.country_enums import (
+    EdgeType,
+    ReferenceContext,
+    RelationshipType,
+)
+
 from .anomaly_severity import AnomalySeverity
 from .anomaly_type import AnomalyType
 from .appraisal_attitude import AppraisalAttitude
@@ -23,7 +29,8 @@ from .manipulation_tier import ManipulationTier
 from .negation_type import NegationType
 from .politeness_act import PolitenessAct
 from .pressure_tier import PressureTier
-from .relationship_type import RelationshipType
+
+# from .relationship_type import RelationshipType  # Overridden by country_enums
 from .rhetoric_pattern_type import RhetoricPatternType
 from .rhetorical_strategy import RhetoricalStrategy
 from .risk_level import RiskLevel
@@ -51,6 +58,7 @@ __all__ = [
     "DiplomaticTone",
     "DkiStance",
     "DynamicEvent",
+    "EdgeType",
     "EvidenceType",
     "FailCategory",
     "FrameType",
@@ -64,6 +72,8 @@ __all__ = [
     "NegationType",
     "PolitenessAct",
     "PressureTier",
+    "ReferenceContext",
+    "RelationshipType",
     "RelationshipType",
     "RhetoricPatternType",
     "RhetoricalStrategy",

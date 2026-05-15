@@ -22,6 +22,7 @@ pandas          = "^2.2"
 pandera         = ">=0.20.0"
 spacy           = "^3.7"
 vaderSentiment  = "^3.3"
+networkx        = "^3.0"
 numpy           = "^2.0"
 scipy           = "^1.13"
 scikit-learn    = "^1.5"
@@ -48,8 +49,12 @@ select = ["E", "F", "I", "UP", "PLC", "PLE", "PLR", "PLW", "RUF"]
 ignore = [
     "PLR2004", "PLR0913", "PLR0912", "PLR0915", "PLR0911",
     "RUF001", "RUF002", "RUF003", "RUF012",
-    "E501", "PLW0603", "PLW2901"
+    "E501", "PLW0603", "PLW2901", "PLC0415"
 ]
+
+[tool.ruff.lint.per-file-ignores]
+"src/bb_paxdata/interfaces/cli/main.py" = ["PLC0415", "E402"]
+"src/bb_paxdata/application/commands/build.py" = ["E402"]
 
 [tool.pytest.ini_options]
 asyncio_mode = "auto"

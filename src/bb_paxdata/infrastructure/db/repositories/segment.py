@@ -89,7 +89,7 @@ class SegmentRepository(BaseRepository[Segment]):
             stmt = stmt.where(Segment.panel_id == panel_id)
 
         result = await self._session.execute(stmt)
-        return cast(Sequence[Segment], result.scalars().all())
+        return result.scalars().all()  # type: ignore[no-any-return]
 
     async def update_insight(self, seg_id: str, insight: str, version: str) -> None:
         """Update or create AI insight for a segment."""
@@ -128,7 +128,7 @@ class SegmentRepository(BaseRepository[Segment]):
         """Get all segments for a specific panel."""
         stmt = select(Segment).where(Segment.panel_id == panel_id)
         result = await self._session.execute(stmt)
-        return cast(Sequence[Segment], result.scalars().all())
+        return result.scalars().all()  # type: ignore[no-any-return]
 
     async def get_speaker_segments(
         self, speaker_name: str, panel_id: str | None = None
@@ -139,7 +139,7 @@ class SegmentRepository(BaseRepository[Segment]):
             stmt = stmt.where(Segment.panel_id == panel_id)
 
         result = await self._session.execute(stmt)
-        return cast(Sequence[Segment], result.scalars().all())
+        return result.scalars().all()  # type: ignore[no-any-return]
 
     async def get_with_insights(self, panel_id: str | None = None) -> Sequence[Segment]:
         """Get segments that have AI insights."""
@@ -152,7 +152,7 @@ class SegmentRepository(BaseRepository[Segment]):
             stmt = stmt.where(Segment.panel_id == panel_id)
 
         result = await self._session.execute(stmt)
-        return cast(Sequence[Segment], result.scalars().all())
+        return result.scalars().all()  # type: ignore[no-any-return]
 
     async def get_with_sentences_eager(self, seg_id: str) -> Segment | None:
         """Get segment with all its sentences loaded."""

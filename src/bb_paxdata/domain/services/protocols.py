@@ -23,21 +23,21 @@ class AnomalyResult:
 
 @runtime_checkable
 class NERServiceProtocol(Protocol):
-    def extract(self, text: str, language: str | None = None) -> dict[str, Any]:
+    async def extract(self, text: str, language: str | None = None) -> dict[str, Any]:
         """{"entities": [...], "language": str} döner."""
         ...
 
 
 @runtime_checkable
 class TokenizerProtocol(Protocol):
-    def tokenize(self, text: str, language: str | None = None) -> dict[str, Any]:
+    async def tokenize(self, text: str, language: str | None = None) -> dict[str, Any]:
         """{"tokens": [...], "sentences": [...], "sentence_count": int, "language": str} döner."""
         ...
 
 
 @runtime_checkable
 class AIAnalystProtocol(Protocol):
-    def analyze(
+    async def analyze(
         self,
         text: str,
         prompt_id: str | None = None,
@@ -48,4 +48,4 @@ class AIAnalystProtocol(Protocol):
 
 @runtime_checkable
 class AnomalyServiceProtocol(Protocol):
-    def detect(self, analysis: Analysis) -> AnomalyResult: ...
+    async def detect(self, analysis: Analysis) -> AnomalyResult: ...

@@ -119,7 +119,7 @@ class SpacyNERService:
                 except (Exception, SystemExit) as e:
                     logger.error(f"spaCy modeli indirilemedi ({model_name}): {e}")
 
-    def extract(self, text: str, language: str | None = None) -> dict[str, Any]:
+    async def extract(self, text: str, language: str | None = None) -> dict[str, Any]:
         language = language or self.language_detector.detect(text)
         nlp = self._models.get(language) or self._models.get("en")
 

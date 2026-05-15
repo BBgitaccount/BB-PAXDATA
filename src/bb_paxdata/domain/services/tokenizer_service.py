@@ -1,8 +1,3 @@
-# ============================================================
-# DOSYA: src/bb_paxdata/domain/services/tokenizer_service.py
-# AÇIKLAMA: spaCy tabanlı tokenizer + basit fallback
-# ============================================================
-
 from __future__ import annotations
 
 import logging
@@ -47,7 +42,7 @@ class SpacyTokenizerService:
                 except (Exception, SystemExit) as e:
                     logger.error(f"Tokenizer modeli indirilemedi ({model_name}): {e}")
 
-    def tokenize(self, text: str, language: str | None = None) -> dict[str, Any]:
+    async def tokenize(self, text: str, language: str | None = None) -> dict[str, Any]:
         language = language or self.language_detector.detect(text)
         nlp = self._models.get(language) or self._models.get("en")
 

@@ -19,6 +19,7 @@ class AIAnalysisResult(BaseModel):
     risk_factors: list[str] = Field(default_factory=list)
     summary: str | None = None
     key_claims: list[str] = Field(default_factory=list)
+    raw_output: str | None = Field(default=None, description="Ham AI metin yanıtı")
 
     # Audit trail alanları — AnalysisAssembler tarafından Analysis modeline aktarılır
     prompt_version: str = Field(description="prompt_id@version formatı")

@@ -9,6 +9,9 @@ import logging
 
 from ...application.pipeline.analysis_pipeline import AnalysisPipeline
 from ...application.pipeline.assembler import AnalysisAssembler
+from ...application.pipeline.stages.country_reference_collector import (
+    CountryReferenceCollector,
+)
 from ...domain.services.ai_analyst import AIAnalyst
 from ...domain.services.cross_anomaly_service import CrossAnomalyService
 from ...domain.services.ner_service import SpacyNERService
@@ -49,6 +52,17 @@ class ServiceContainer:
         # ── Anomali Servisi ─────────────────────────────────────────
         self.anomaly_service = CrossAnomalyService()
 
+        # ── Pipeline Stages ────────────────────────────────────────
+        # Note: CountryReferenceCollector needs a spacy model.
+        # For the container, we use the default 'en' model from NER service.
+        self.country_collector = CountryReferenceCollector(
+            nlp=self.ner_service._models.get("en")
+            or self.ner_service._models.get("tr"),
+            country_vocabulary=set(),  # Vocabulary will be injected or loaded
+            llm_client=self.ai_analyst,
+            # recovery_engine and prompt_registry could be injected here if needed
+        )
+
         # ── Pipeline ────────────────────────────────────────────────
         self.assembler = AnalysisAssembler()
         self.pipeline = AnalysisPipeline(
@@ -56,6 +70,7 @@ class ServiceContainer:
             tokenizer_service=self.tokenizer_service,
             ai_analyst=self.ai_analyst,
             anomaly_service=self.anomaly_service,
+            country_collector=self.country_collector,
             assembler=self.assembler,
         )
 
