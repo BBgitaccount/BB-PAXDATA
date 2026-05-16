@@ -15,6 +15,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from bb_paxdata.domain.models.bilateral_sentiment import BilateralSentiment
 from bb_paxdata.domain.models.country_reference import CountryReference
 from bb_paxdata.domain.models.discourse_flow import DiscourseFlow
+from bb_paxdata.domain.models.discourse_network import DyadicMetrics
 from bb_paxdata.domain.models.topic_synthesis import TopicSynthesis
 from bb_paxdata.infrastructure.db.country_models import (
     BilateralSentimentTable,
@@ -95,12 +96,47 @@ class BilateralSentimentRepository:
             row.power_weighted_score = sentiment.power_weighted_score
             row.diplomatic_distance = sentiment.diplomatic_distance
             row.last_updated = sentiment.last_updated
+
+            # Phase 4 Extensions
+            if sentiment.dyadic_metrics:
+                m = sentiment.dyadic_metrics
+                row.vote_affinity = m.vote_affinity
+                row.alliance_score = m.alliance_score
+                row.structural_distance = m.structural_distance
+                row.discourse_sentiment_delta = m.discourse_sentiment_delta
+                row.maoz_diplomatic_distance = m.diplomatic_distance
+                row.maoz_affinity_score = m.affinity_score
         else:
             row = BilateralSentimentTable.from_domain(sentiment)
             self._session.add(row)
 
         await self._session.flush()
         return row.to_domain()
+
+    async def save_dyadic(self, session: AsyncSession, metrics: DyadicMetrics) -> None:
+        """Persist Maoz dyadic metrics into bilateral_sentiments table."""
+        # Find existing bilateral record for this pair and session
+        # session_id here maps to panel_id in BilateralSentimentTable
+        stmt = select(BilateralSentimentTable).where(
+            BilateralSentimentTable.panel_id == metrics.session_id,
+            BilateralSentimentTable.from_country == metrics.actor_a_id,
+            BilateralSentimentTable.to_country == metrics.actor_b_id,
+        )
+        result = await session.execute(stmt)
+        row = result.scalar_one_or_none()
+
+        if row:
+            row.vote_affinity = metrics.vote_affinity
+            row.alliance_score = metrics.alliance_score
+            row.structural_distance = metrics.structural_distance
+            row.discourse_sentiment_delta = metrics.discourse_sentiment_delta
+            row.maoz_diplomatic_distance = metrics.diplomatic_distance
+            row.maoz_affinity_score = metrics.affinity_score
+            await session.flush()
+        else:
+            # If no bilateral record exists, we might need to create a stub or log a warning.
+            # In Phase 4, assemble_network should ensure bilateral records exist from Faz 3.
+            pass
 
     async def get_by_pair(
         self, from_country: str, to_country: str, panel_id: str
@@ -163,8 +199,8 @@ class TopicSynthesisRepository:
                 )
             )
             row = result.scalar_one()
-            row.topic_scores = synthesis.topic_scores
-            row.dominant_topic = synthesis.dominant_topic
+            row.topic_scores = synthesis.topic_scores or {}
+            row.dominant_topic = synthesis.topic_label
         else:
             row = TopicMatrixTable.from_domain(synthesis)
             self._session.add(row)

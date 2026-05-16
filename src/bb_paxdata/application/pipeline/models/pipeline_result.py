@@ -20,6 +20,7 @@ class PipelineResult:
     raw_ner: dict[str, Any] = field(default_factory=dict)
     raw_tokenizer: dict[str, Any] = field(default_factory=dict)
     raw_ai: AIAnalysisResult | None = None
+    contradiction_score: float | None = None
     success: bool = True
     errors: list[str] = field(default_factory=list)
     stage: str = "completed"  # Hata durumunda hangi aşamada kaldığı

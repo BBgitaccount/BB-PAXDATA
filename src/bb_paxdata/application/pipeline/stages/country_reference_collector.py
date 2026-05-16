@@ -214,7 +214,16 @@ class CountryReferenceCollector:
             )
 
         try:
-            prompt_template = self._prompts.get("country_context_classifier@v1.0")
+            prompt_template_meta = await self._prompts.get(
+                "country_context_classifier@v1.0"
+            )
+            if not prompt_template_meta:
+                logger.warning("country_llm_classifier.prompt_missing")
+                return self._classify_with_rules(
+                    mentions, panel_id, speaker_country, power_level
+                )
+
+            prompt_template = prompt_template_meta.content
             mention_list = "\n".join(
                 f"- {country} (sentence {idx}, sentiment {sent:.2f})"
                 for idx, country, sent in mentions

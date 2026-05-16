@@ -9,11 +9,15 @@ from deepeval.metrics import AnswerRelevancyMetric, GEval, JsonCorrectnessMetric
 from deepeval.test_case import LLMTestCase, SingleTurnParams
 from pydantic import BaseModel
 
+from bb_paxdata.infrastructure.nlp.ensemble_sentiment_service import (
+    EnsembleSentimentService,
+)
 from tests.fixtures.golden_dataset import GoldenDataset
 
 from .metrics.custom.risk_calibration import RiskCalibrationMetric
 from .metrics.custom.sentiment_agreement import SentimentAgreementMetric
 from .metrics.custom.topic_accuracy import TopicAccuracyMetric
+from .metrics.custom.topic_coherence import TopicCoherenceEvaluator
 
 logger = structlog.get_logger(__name__)
 
@@ -75,12 +79,14 @@ class QualityEvaluator:
         self.backend_used = backend_used
         self.logger = structlog.get_logger(__name__)
         self.golden_dataset = GoldenDataset()
+        self.ensemble_sentiment = EnsembleSentimentService()
 
         # Initialize custom metrics
         self.custom_metrics = {
             "sentiment_agreement": SentimentAgreementMetric(),
             "risk_calibration": RiskCalibrationMetric(),
             "topic_accuracy": TopicAccuracyMetric(),
+            "topic_coherence": TopicCoherenceEvaluator(),
         }
 
         # Initialize deepeval metrics
@@ -264,7 +270,8 @@ class QualityEvaluator:
             "sentiment_agreement": 0.25,
             "risk_calibration": 0.20,
             "topic_accuracy": 0.15,
-            "diplomatic_analysis": 0.20,
+            "topic_coherence": 0.10,
+            "diplomatic_analysis": 0.15,
             "answer_relevancy": 0.10,
             "json_validity": 0.10,
         }

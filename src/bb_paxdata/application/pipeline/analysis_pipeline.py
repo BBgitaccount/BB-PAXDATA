@@ -11,17 +11,38 @@ from typing import TYPE_CHECKING, Any
 if TYPE_CHECKING:
     from sqlalchemy.ext.asyncio import AsyncSession
 
+from bb_paxdata.application.pipeline.dki_assembler import DKIAssembler
+from bb_paxdata.application.pipeline.frame.episodic_themetic_classifier import (
+    EpisodicThematicClassifier,
+)
+from bb_paxdata.application.pipeline.frame.frame_assembler import FrameAssembler
 from bb_paxdata.application.pipeline.models.pipeline_result import PipelineResult
+from bb_paxdata.application.pipeline.sbi_calculator import SBICalculator
+from bb_paxdata.domain.models.dki import SegmentWindow
+from bb_paxdata.infrastructure.ai.frame_detection.frame_detection_pipeline import (
+    FrameDetectionPipeline,
+)
+from bb_paxdata.infrastructure.ai.frame_detection.frame_lexicon_service import (
+    FrameLexiconService,
+)
 
 from ...domain.exceptions import MissingAIOutputException
 from ...domain.models.analysis import Analysis
 from ...domain.services.language_detector import LanguageDetector
+from ...domain.services.negation_detector_protocol import NegationDetectorProtocol
+from ...domain.services.power_calculator_protocol import PowerCalculatorProtocol
 from ...domain.services.protocols import (
     AIAnalystProtocol,
     AnomalyServiceProtocol,
     NERServiceProtocol,
     TokenizerProtocol,
 )
+from ...domain.services.risk_detector_protocol import RiskSignalDetectorProtocol
+from ...domain.services.sbi_protocols import (
+    EngagementScorerProtocol,
+    StanceDensityProtocol,
+)
+from ...domain.services.topic_modeling_protocol import TopicModelingProtocol
 from .assembler import AnalysisAssembler
 from .stages.collect_stage import CollectStage
 from .stages.country_reference_collector import CountryReferenceCollector
@@ -53,10 +74,22 @@ class AnalysisPipeline:
         ai_analyst: AIAnalystProtocol,
         anomaly_service: AnomalyServiceProtocol,
         country_collector: CountryReferenceCollector,
+        negation_detector: NegationDetectorProtocol,
+        risk_detector: RiskSignalDetectorProtocol,
+        power_calculator: PowerCalculatorProtocol,
+        topic_modeling_service: TopicModelingProtocol,
+        frame_pipeline: FrameDetectionPipeline,
+        lexicon_service: FrameLexiconService,
+        episodic_classifier: EpisodicThematicClassifier,
+        frame_assembler: FrameAssembler,
+        sbi_calculator: SBICalculator,
+        stance_calculator: StanceDensityProtocol,
+        engagement_scorer: EngagementScorerProtocol,
         language_detector: LanguageDetector | None = None,
         assembler: AnalysisAssembler | None = None,
         collect_stage: CollectStage | None = None,
         finalize_stage: FinalizeStage | None = None,
+        dki_assembler: DKIAssembler | None = None,
         fail_fast_on_missing_ai: bool = False,
     ):
         self.ner_service = ner_service
@@ -64,11 +97,30 @@ class AnalysisPipeline:
         self.ai_analyst = ai_analyst
         self.anomaly_service = anomaly_service
         self.country_collector = country_collector
+        self.negation_detector = negation_detector
+        self.risk_detector = risk_detector
+        self.power_calculator = power_calculator
+        self.topic_modeling_service = topic_modeling_service
+        self.sbi_calculator = sbi_calculator
         self.language_detector = language_detector or LanguageDetector()
-        self.assembler = assembler or AnalysisAssembler()
+        self.assembler = assembler or AnalysisAssembler(sbi_calculator=sbi_calculator)
+        self.dki_assembler = dki_assembler
 
         self.collect_stage = collect_stage or CollectStage(
-            ner_service, tokenizer_service, ai_analyst, country_collector
+            ner_service,
+            tokenizer_service,
+            ai_analyst,
+            country_collector,
+            negation_detector,
+            risk_detector,
+            power_calculator,
+            topic_modeling_service,
+            frame_pipeline,
+            lexicon_service,
+            episodic_classifier,
+            frame_assembler,
+            stance_calculator,
+            engagement_scorer,
         )
         # FinalizeStage needs a repository, which we'll assume is injected if finalize_stage is None
         # This is a bit tricky if we don't have the repo here.
@@ -84,6 +136,7 @@ class AnalysisPipeline:
         speaker_country: str = "unknown",
         speaker_power_level: float = 0.5,
         session: AsyncSession | None = None,
+        historical_analyses: list[Analysis] | None = None,
     ) -> PipelineResult:
         """Metni uçtan uca analiz eder. Tüm hatalar PipelineResult.errors'a eklenir."""
         errors: list[str] = []
@@ -105,6 +158,18 @@ class AnalysisPipeline:
             speaker_country=speaker_country,
             speaker_power_level=speaker_power_level,
             language=detected_language,
+            historical_segments=(
+                [
+                    SegmentWindow(
+                        segment_ids=[h.segment_id],
+                        texts=[h.source_text],
+                        speaker_id=h.speaker_id,
+                    )
+                    for h in (historical_analyses or [])
+                ]
+                if historical_analyses
+                else None
+            ),
         )
         errors.extend(collect_result.errors)
 
@@ -129,8 +194,35 @@ class AnalysisPipeline:
                 ner_result=collect_result.raw_ner,
                 tokenizer_result=collect_result.raw_tokenizer,
                 ai_result=ai_result,
+                negation_cues=collect_result.negation_cues,
+                risk_signals=collect_result.risk_signals,
+                power_indices=collect_result.power_indices,
+                topic_result=collect_result.topic_result,
+                frame_detection=collect_result.frame_detection,
+                frame_salience=collect_result.frame_salience,
+                # Note: sbi_result is calculated later at session level,
+                # but we can store individual components for now.
                 metadata=metadata,
             )
+
+            # Enrich analysis with collected SBI components
+            analysis = analysis.model_copy(
+                update={
+                    "emotional_intensity": collect_result.engagement_score,  # Proxy
+                    "complexity_score": (
+                        collect_result.stance_density / 100.0
+                        if collect_result.stance_density
+                        else None
+                    ),  # Proxy
+                }
+            )
+
+            # Phase 8: Attach DKI (Immutable copy chain)
+            if self.dki_assembler:
+                analysis = await self.dki_assembler.attach_dki(
+                    analysis=analysis,
+                    history=historical_analyses or [],
+                )
         except Exception as e:
             errors.append(f"[ASSEMBLE] {e}")
             logger.error(f"Assembly başarısız: {e}")

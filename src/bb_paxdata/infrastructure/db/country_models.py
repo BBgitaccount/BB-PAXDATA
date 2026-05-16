@@ -13,9 +13,10 @@ from __future__ import annotations
 
 import uuid
 from datetime import datetime
+from decimal import Decimal
 from typing import TYPE_CHECKING, Any
 
-from sqlalchemy import DateTime, Float, Index, Integer, String
+from sqlalchemy import DateTime, Float, Index, Integer, Numeric, String
 from sqlalchemy.dialects.sqlite import JSON
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column
 
@@ -119,6 +120,18 @@ class BilateralSentimentTable(Base):
     diplomatic_distance: Mapped[float] = mapped_column(
         Float, nullable=False, default=0.0
     )
+
+    # Faz 4 new fields (using Numeric for precision where possible)
+    vote_affinity: Mapped[Decimal | None] = mapped_column(Numeric(12, 6))
+    alliance_score: Mapped[Decimal | None] = mapped_column(Numeric(12, 6))
+    structural_distance: Mapped[Decimal | None] = mapped_column(Numeric(12, 6))
+    discourse_sentiment_delta: Mapped[Decimal | None] = mapped_column(Numeric(12, 6))
+    # Note: diplomatic_distance and affinity_score are already present as Float,
+    # but we might want to ensure they are consistent with Phase 4 expectations.
+    # For now, we'll keep the existing ones and add Maoz-specific Decimal fields if needed,
+    # or just use the existing ones. The prompt asks to add them as Faz 4 new fields.
+    maoz_diplomatic_distance: Mapped[Decimal | None] = mapped_column(Numeric(12, 6))
+    maoz_affinity_score: Mapped[Decimal | None] = mapped_column(Numeric(12, 6))
     last_updated: Mapped[datetime] = mapped_column(
         DateTime, nullable=False, default=datetime.utcnow
     )
@@ -244,7 +257,7 @@ class TopicMatrixTable(Base):
             panel_id=self.panel_id,
             country=self.country,
             topic_scores=self.topic_scores,
-            dominant_topic=self.dominant_topic,
+            topic_label=self.dominant_topic,
         )
 
     @classmethod
@@ -254,5 +267,5 @@ class TopicMatrixTable(Base):
             panel_id=entity.panel_id,
             country=entity.country,
             topic_scores=entity.topic_scores,
-            dominant_topic=entity.dominant_topic,
+            dominant_topic=entity.topic_label,
         )

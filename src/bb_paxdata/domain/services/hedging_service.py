@@ -9,7 +9,7 @@ import re
 from typing import Any, ClassVar
 
 from ...application.protocols import BaseService, HedgingResult, HedgingServiceProtocol
-from ...domain.enums import HedgingType
+from ...domain.enums import HedgeType
 
 
 class HedgingService(BaseService, HedgingServiceProtocol):
@@ -117,14 +117,14 @@ class HedgingService(BaseService, HedgingServiceProtocol):
         ],
     }
 
-    # Map category names to HedgingType enum
-    CATEGORY_MAPPING: ClassVar[dict[str, HedgingType]] = {
-        "epistemic_high": HedgingType.EPISTEMIC_HIGH,
-        "epistemic_medium": HedgingType.EPISTEMIC_MEDIUM,
-        "anti_hedge": HedgingType.ANTI_HEDGE,
-        "approximator": HedgingType.APPROXIMATOR,
-        "shield": HedgingType.SHIELD,
-        "attribution": HedgingType.ATTRIBUTION,
+    # Map category names to HedgeType enum
+    CATEGORY_MAPPING: ClassVar[dict[str, HedgeType]] = {
+        "epistemic_high": HedgeType.MODAL_VERBS,
+        "epistemic_medium": HedgeType.LEXICAL_VERBS,
+        "anti_hedge": HedgeType.MODAL_VERBS,  # Fallback or need to handle better
+        "approximator": HedgeType.APPROXIMATORS,
+        "shield": HedgeType.INTRODUCTORY_PHRASES,
+        "attribution": HedgeType.MODAL_PHRASES,
     }
 
     def __init__(self) -> None:
@@ -250,7 +250,7 @@ class HedgingService(BaseService, HedgingServiceProtocol):
         result = self.analyze_hedging(text)
         return result.score >= threshold
 
-    def get_dominant_hedging_type(self, text: str) -> HedgingType:
+    def get_dominant_hedging_type(self, text: str) -> HedgeType:
         """Get the dominant hedging type in the text.
 
         Args:
@@ -262,13 +262,13 @@ class HedgingService(BaseService, HedgingServiceProtocol):
         stats = self.get_hedging_statistics(text)
 
         if not stats or all(count == 0 for count in stats.values()):
-            return HedgingType.NONE
+            return HedgeType.NONE
 
         # Find category with highest count
         dominant_level = max(stats, key=lambda k: float(stats[k]))
         max_count = stats[dominant_level]
 
         if max_count == 0:
-            return HedgingType.NONE
+            return HedgeType.NONE
 
-        return self.CATEGORY_MAPPING.get(dominant_level, HedgingType.NONE)
+        return self.CATEGORY_MAPPING.get(dominant_level, HedgeType.NONE)

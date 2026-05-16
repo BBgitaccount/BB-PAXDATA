@@ -38,5 +38,7 @@ class AnalyticModel(Base):
     hedging_markers: Mapped[list[str]] = mapped_column(JSON, default=list)
     framing_labels: Mapped[dict[str, str]] = mapped_column(JSON, default=dict)
     raw_ai_output: Mapped[str | None] = mapped_column(Text)
+    topic_scores: Mapped[dict[str, float]] = mapped_column(JSON, default=dict)
+    topic_node_mapping: Mapped[dict[str, list[str]]] = mapped_column(JSON, default=dict)
 
     transcript: Mapped[TranscriptModel] = relationship(back_populates="analytics")

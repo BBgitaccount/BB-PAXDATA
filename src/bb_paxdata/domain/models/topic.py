@@ -143,3 +143,28 @@ class Topic(BaseModel):
         default_factory=lambda: datetime.now(timezone.utc),
         description="Last update timestamp",
     )
+
+
+class TopicAssignment(BaseModel):
+    """Assignment of topics to a specific segment."""
+
+    segment_id: str = Field(..., description="ID of the segment")
+    primary_topic: str = Field(..., description="ID of the dominant topic")
+    topic_scores: dict[str, float] = Field(
+        default_factory=dict, description="Probabilistic distribution of topics"
+    )
+
+
+class TopicResult(BaseModel):
+    """Aggregated results from the topic modeling service."""
+
+    assignments: list[TopicAssignment] = Field(
+        default_factory=list, description="List of topic assignments for each segment"
+    )
+    topic_keywords: dict[str, dict[str, float]] = Field(
+        default_factory=dict,
+        description="Top keywords for each topic with c-TF-IDF scores",
+    )
+    model_metadata: dict[str, Any] = Field(
+        default_factory=dict, description="Metadata about the topic modeling process"
+    )

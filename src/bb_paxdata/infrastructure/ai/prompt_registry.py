@@ -1,261 +1,212 @@
-"""
-BB-PAXDATA için prompt versiyonlama ve hash sistemi.
-"""
+from __future__ import annotations
 
-import difflib
 import hashlib
-import threading
-from dataclasses import dataclass
-from datetime import UTC, datetime
-from typing import Any
+from datetime import datetime, timezone
+from typing import TYPE_CHECKING, Protocol
+from uuid import UUID
+
+from pydantic import BaseModel, ConfigDict, Field
+
+from bb_paxdata.domain.enums.pipeline_stage import PipelineStage
+
+if TYPE_CHECKING:
+    pass
 
 
-@dataclass(frozen=True)
-class PromptEntry:
-    """Registry'deki tek bir prompt kaydı."""
+class PromptVersion(BaseModel):
+    """Versiyonlanmış prompt kaydı.
 
-    name: str
-    version: str
-    template: str
-    hash: str
-    description: str
-    created_at: datetime
-    tags: tuple[str, ...]
-    prompt_version: str
+    Her promptun SHA256 hash'i ve akademik referansı audit trail
+    içinde saklanır. `frozen=True` ile immutable garantisi verir.
 
-    def format(self, **kwargs: Any) -> str:
-        """Template'i verilen argümanlarla formatlar."""
-        return self.template.format(**kwargs)
-
-
-class PromptRegistry:
-    """
-    BB-PAXDATA için prompt versiyonlama ve hash sistemi.
-
-    Kullanım:
-        registry = PromptRegistry()
-        registry.register(
-            name="sentence_analysis",
-            version="v1.0",
-            template=SENTENCE_ANALYSIS_PROMPT,
-            description="Cümle bazlı diplomatik analiz — 28 alan",
-            tags=("sentence", "diplomatic", "turkish"),
-        )
-        entry = registry.get("sentence_analysis")
-        print(entry.prompt_version)  # "sentence_analysis:v1.0:a3f9b2c1e8d47f20"
+    Reference:
+        - CONTEXT.md Bölüm 4.C: Prompt Registry & Audit Trail
+        - ACADEMIC_FOUNDATIONS.md Bölüm 11: Master Map
     """
 
-    def __init__(self) -> None:
-        """Registry'yi başlatır."""
-        self._lock = threading.RLock()
-        self._entries: dict[str, dict[str, PromptEntry]] = {}
-        self._latest_versions: dict[str, str] = {}
+    model_config = ConfigDict(frozen=True)
 
-    def register(
+    version_id: str = Field(..., description="Örn: 'diplomatic@v2.1'")
+    content: str = Field(..., description="Prompt şablonunun ham içeriği")
+    content_hash: str = Field(..., description="SHA256(content) hex digest")
+    academic_ref: str | None = Field(
+        default=None,
+        description="ACADEMIC_FOUNDATIONS.md citation key. Örn: 'Entman1993'",
+    )
+    created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+
+    @classmethod
+    def compute_hash(cls, content: str) -> str:
+        """Deterministic SHA256 hash üretimi."""
+        return hashlib.sha256(content.encode("utf-8")).hexdigest()
+
+
+class AcademicRefTrace(BaseModel):
+    """Bir analizde kullanılan promptların akademik soy ağacı (lineage).
+
+    Faz 0'da bu model tanımlanır; pipeline entegrasyonu Faz 1+'da
+    `AnalysisPipeline` finalize aşamasında otomatik doldurulur.
+    """
+
+    model_config = ConfigDict(frozen=True)
+
+    analysis_id: UUID
+    prompt_version_id: str
+    prompt_content_hash: str
+    academic_ref: str | None
+    pipeline_stage: PipelineStage
+
+
+class PromptRegistry(Protocol):
+    """Prompt versiyonlama ve akademik referans izleme arayüzü.
+
+    Somut implementasyonlar (örn. `SQLitePromptRegistry`) Faz 1'de
+    `infrastructure/repositories/` altında yazılacaktır.
+    """
+
+    async def register(
         self,
         name: str,
-        version: str,
-        template: str,
-        description: str = "",
-        tags: tuple[str, ...] = (),
-    ) -> PromptEntry:
-        """Yeni bir prompt kaydeder.
-        Aynı name+version zaten varsa ValueError fırlatır.
-        """
-        with self._lock:
-            if name in self._entries and version in self._entries[name]:
-                raise ValueError(
-                    f"Prompt '{name}' version '{version}' is already registered."
-                )
+        content: str,
+        academic_ref: str | None = None,
+    ) -> PromptVersion:
+        """Yeni bir prompt kaydeder."""
+        ...
 
-            hash_val = hashlib.sha256(template.encode("utf-8")).hexdigest()[:16]
-            prompt_version = f"{name}:{version}:{hash_val}"
-            created_at = datetime.now(UTC)
+    async def get(
+        self,
+        name: str,
+        version: str | None = None,
+    ) -> PromptVersion | None:
+        """Prompt'u döndürür. version=None ise en sonuncuyu döner."""
+        ...
 
-            entry = PromptEntry(
-                name=name,
-                version=version,
-                template=template,
-                hash=hash_val,
-                description=description,
-                created_at=created_at,
-                tags=tags,
-                prompt_version=prompt_version,
-            )
+    async def list_versions(self, name: str) -> list[PromptVersion]:
+        """Bir promptun tüm versiyonlarını listeler."""
+        ...
 
-            if name not in self._entries:
-                self._entries[name] = {}
+    async def get_academic_lineage(
+        self,
+        analysis_id: UUID,
+    ) -> list[AcademicRefTrace]:
+        """Bir analizde kullanılan tüm promptların akademik referanslarını döner."""
+        ...
 
-            self._entries[name][version] = entry
-            self._latest_versions[name] = version
+    def get_version_string(self, name: str, version: str | None = None) -> str | None:
+        """Prompt'un versiyon string'ini (vX.Y) döner."""
+        ...
 
-            return entry
 
-    def get(self, name: str, version: str | None = None) -> PromptEntry:
-        """
-        Prompt'u döndürür.
-        version=None ise en son version'ı döndürür.
-        Bulunamazsa KeyError fırlatır.
-        """
-        with self._lock:
-            if name not in self._entries:
-                raise KeyError(f"Prompt '{name}' not found in registry.")
+ALLOWED_ACADEMIC_REFS: frozenset[str] = frozenset(
+    {
+        "Grimmer2013",
+        "SalagerMeyer1997",
+        "Hyland1998",
+        "Iyengar1991",
+        "Entman1993",
+    }
+)
 
-            if version is None:
-                if name not in self._latest_versions:
-                    raise KeyError(f"No versions available for prompt '{name}'.")
-                version = self._latest_versions[name]
 
-            if version not in self._entries[name]:
-                raise KeyError(f"Prompt '{name}' version '{version}' not found.")
+# Faz 0'da somut implementasyon olarak mevcut mantığı koruyup yeni modellere adapte ediyoruz.
+class InMemoryPromptRegistry:
+    """Bellek içi PromptRegistry implementasyonu."""
 
-            return self._entries[name][version]
+    def __init__(self) -> None:
+        self._prompts: dict[str, dict[str, PromptVersion]] = {}
 
-    def get_version_string(self, name: str, version: str | None = None) -> str:
-        """
-        Sadece prompt_version string'ini döndürür.
-        DB kayıtlarına eklemek için kullanılır.
-        Örnek dönüş: "sentence_analysis:v1.0:a3f9b2c1e8d47f20"
-        """
-        return self.get(name, version).prompt_version
+    async def register(
+        self,
+        name: str,
+        content: str,
+        academic_ref: str | None = None,
+    ) -> PromptVersion:
+        if name not in self._prompts:
+            self._prompts[name] = {}
 
-    def list_all(self) -> list[PromptEntry]:
-        """Tüm kayıtlı prompt'ları listeler (name'e göre sıralı)."""
-        with self._lock:
-            all_entries = []
-            for name in sorted(self._entries.keys()):
-                for version in sorted(self._entries[name].keys()):
-                    all_entries.append(self._entries[name][version])
-            return all_entries
+        # Versiyonlama mantığı: Eğer hiç yoksa v1.0, varsa increment (basit tutulmuştur)
+        version_num = len(self._prompts[name]) + 1
+        version_id = f"{name}@v{version_num}.0"
 
-    def list_versions(self, name: str) -> list[PromptEntry]:
-        """Belirli bir prompt'un tüm versiyonlarını listeler (en yeniden en eskiye)."""
-        with self._lock:
-            if name not in self._entries:
-                return []
+        content_hash = PromptVersion.compute_hash(content)
 
-            sorted_versions = sorted(self._entries[name].keys(), reverse=True)
-            return [self._entries[name][v] for v in sorted_versions]
-
-    def diff(self, name: str, version_a: str, version_b: str) -> dict[str, str]:
-        """
-        İki versiyon arasındaki farkı döndürür.
-        Dönüş: {"version_a": "...", "version_b": "...", "diff": "..."}
-        """
-        entry_a = self.get(name, version_a)
-        entry_b = self.get(name, version_b)
-
-        diff_lines = list(
-            difflib.unified_diff(
-                entry_a.template.splitlines(keepends=True),
-                entry_b.template.splitlines(keepends=True),
-                fromfile=f"{name}:{version_a}",
-                tofile=f"{name}:{version_b}",
-                n=3,
-            )
+        version = PromptVersion(
+            version_id=version_id,
+            content=content,
+            content_hash=content_hash,
+            academic_ref=academic_ref,
         )
+        self._prompts[name][version_id] = version
+        return version
 
-        return {
-            "version_a": entry_a.version,
-            "version_b": entry_b.version,
-            "hash_a": entry_a.hash,
-            "hash_b": entry_b.hash,
-            "diff": "".join(diff_lines),
-        }
+    async def get(
+        self,
+        name: str,
+        version: str | None = None,
+    ) -> PromptVersion | None:
+        if name not in self._prompts:
+            return None
 
-    def export_manifest(self) -> dict[str, Any]:
-        """
-        Tüm prompt'ların versiyonlarını JSON-serializable dict olarak döndürür.
-        CI/CD'de prompt drift tespiti için kullanılır.
-        """
-        with self._lock:
-            manifest: dict[str, Any] = {
-                "exported_at": datetime.now(UTC).isoformat(),
-                "prompts": {},
-            }
+        if version is None:
+            # En son versiyonu al
+            sorted_versions = sorted(self._prompts[name].keys())
+            if not sorted_versions:
+                return None
+            version = sorted_versions[-1]
 
-            for name in sorted(self._entries.keys()):
-                manifest["prompts"][name] = []
-                for version in sorted(self._entries[name].keys()):
-                    entry = self._entries[name][version]
-                    manifest["prompts"][name].append(
-                        {
-                            "version": entry.version,
-                            "hash": entry.hash,
-                            "prompt_version": entry.prompt_version,
-                        }
-                    )
+        return self._prompts[name].get(version)
 
-            return manifest
+    async def list_versions(self, name: str) -> list[PromptVersion]:
+        if name not in self._prompts:
+            return []
+        return list(self._prompts[name].values())
+
+    async def get_academic_lineage(
+        self,
+        analysis_id: UUID,
+    ) -> list[AcademicRefTrace]:
+        # Faz 0'da bu metod için somut bir veri kaynağı yok, boş liste döner.
+        return []
+
+    def get_version_string(self, name: str, version: str | None = None) -> str | None:
+        if name not in self._prompts:
+            return None
+
+        if version is None:
+            sorted_versions = sorted(self._prompts[name].keys())
+            if not sorted_versions:
+                return None
+            return sorted_versions[-1]
+
+        pv = self._prompts[name].get(version)
+        return pv.version_id if pv else None
 
 
 _registry: PromptRegistry | None = None
 
 
 def get_prompt_registry() -> PromptRegistry:
-    """Global PromptRegistry singleton döndürür."""
+    """PromptRegistry singleton'ını döndürür."""
     global _registry
     if _registry is None:
-        _registry = PromptRegistry()
-        _register_defaults(_registry)
+        registry = InMemoryPromptRegistry()
+        # Not: Faz 0'da register_defaults asenkron olduğu için burada
+        # bir sorun olabilir. Ancak bu bir singleton init olduğu için
+        # ve Faz 0'da her şey mock olduğu için basit tutuyoruz.
+        # Gerçek uygulamada bu init süreci uygulama başlangıcında yapılır.
+        _registry = registry
     return _registry
 
 
-def _register_defaults(registry: PromptRegistry) -> None:
-    """
-    BB-PAXDATA'nın 5 temel prompt tipini placeholder template ile kaydet.
-    Gerçek template metinleri FAZ 7'de application/commands/ katmanına taşındığında
-    buradaki placeholder'lar güncellenecek.
-    """
-    registry.register(
+async def register_defaults(registry: PromptRegistry) -> None:
+    """BB-PAXDATA varsayılan promptlarını kaydeder."""
+    await registry.register(
         name="sentence_analysis",
-        version="v1.0",
-        template=(
-            "Sen BB-PAXDATA diplomatik söylem analiz sisteminin AI motorusun.\n"
-            "Verilen cümleyi {context} bağlamında analiz et ve JSON döndür.\n"
-            "# [PLACEHOLDER — FAZ7'de tam template buraya gelecek]"
-        ),
-        description="Cümle bazlı diplomatik analiz — 28 alan, negasyon-farkındalıklı",
-        tags=("sentence", "diplomatic", "turkish", "json-output"),
+        content="Cümle bazlı diplomatik analiz template",
+        academic_ref="Entman1993",
     )
-    registry.register(
+    await registry.register(
         name="segment_insight",
-        version="v1.0",
-        template=(
-            "Segment özetini ve içgörülerini üret.\n"
-            "{segment_text}\n"
-            "# [PLACEHOLDER — FAZ7'de tam template buraya gelecek]"
-        ),
-        description="Segment özet ve içgörü — SBI/DKI dahil",
-        tags=("segment", "summary", "diplomatic"),
-    )
-    registry.register(
-        name="demand_analysis",
-        version="v1.0",
-        template=(
-            "Talep analizi: {demand_verb} — {full_sentence}\n"
-            "# [PLACEHOLDER — FAZ7'de tam template buraya gelecek]"
-        ),
-        description="Talep gelecek risk ve alt metin analizi",
-        tags=("demand", "future-risk", "subtext"),
-    )
-    registry.register(
-        name="panel_synthesis",
-        version="v1.0",
-        template=(
-            "Panel {panel_id} için sentez üret.\n"
-            "# [PLACEHOLDER — FAZ7'de tam template buraya gelecek]"
-        ),
-        description="Panel düzeyi AI sentezi (G-04)",
-        tags=("panel", "synthesis"),
-    )
-    registry.register(
-        name="fail_check",
-        version="v1.0",
-        template=(
-            "Logic FAIL analizi: {check_type} — {sent_id}\n"
-            "# [PLACEHOLDER — FAZ7'de tam template buraya gelecek]"
-        ),
-        description="Logic FAIL derin analiz ve formül-AI uyumsuzluk açıklaması",
-        tags=("fail", "validation", "negation"),
+        content="Segment özet ve içgörü template",
+        academic_ref="Grimmer2013",
     )

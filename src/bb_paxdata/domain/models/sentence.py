@@ -1,3 +1,4 @@
+from collections.abc import Sequence
 from datetime import datetime, timezone
 
 from pydantic import BaseModel, Field
@@ -8,13 +9,14 @@ from ..enums import (
     DiplomaticTone,
     EvidenceType,
     FrameType,
-    HedgingType,
+    HedgeType,
     NegationType,
     PolitenessAct,
     SentimentCategory,
     TensionLevel,
     TopicCategory,
 )
+from .negation_cue import NegationCue
 
 
 class Sentence(BaseModel):
@@ -55,7 +57,10 @@ class Sentence(BaseModel):
     negation_type: NegationType | None = Field(
         default=None, description="Type of negation if present"
     )
-    hedging_type: HedgingType | None = Field(
+    negation_cues: Sequence[NegationCue] = Field(
+        default_factory=tuple, description="List of negation cues in this sentence"
+    )
+    hedging_type: HedgeType | None = Field(
         default=None, description="Type of hedging language used"
     )
     hedging_score: float | None = Field(
@@ -130,3 +135,13 @@ class Sentence(BaseModel):
         default_factory=lambda: datetime.now(timezone.utc),
         description="Last update timestamp",
     )
+
+    @property
+    def has_negation(self) -> bool:
+        """Checks if the sentence contains any negation cues."""
+        return len(self.negation_cues) > 0
+
+    @property
+    def negation_count(self) -> int:
+        """Returns the number of negation cues in the sentence."""
+        return len(self.negation_cues)

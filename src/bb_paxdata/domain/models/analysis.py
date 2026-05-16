@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import uuid
+from collections.abc import Sequence
 from datetime import datetime, timezone
 from typing import Any
 
@@ -16,6 +17,15 @@ from ..enums import (
     RiskTrajectory,
     ValidationCheckType,
 )
+from .bilateral_sentiment import BilateralSentiment
+from .discourse_network import DiscourseFlow
+from .dki import DKIResult
+from .frame_annotation import FrameDetectionResult, FrameSalienceResult
+from .negation_cue import NegationCue
+from .power_index import PowerIndex
+from .risk_signal import RiskSignal
+from .sbi_models import SBIResult
+from .topic_synthesis import TopicSynthesis
 
 
 class Analysis(BaseModel):
@@ -75,6 +85,15 @@ class Analysis(BaseModel):
     tokens: list[str] = Field(default_factory=list, description="Tokenizer çıktısı")
     sentences: list[str] = Field(
         default_factory=list, description="Cümle segmentasyonu"
+    )
+    negation_cues: Sequence[NegationCue] = Field(
+        default_factory=tuple, description="Negation cues for the analysis"
+    )
+    risk_signals: Sequence[RiskSignal] = Field(
+        default_factory=tuple, description="Risk signals for the analysis"
+    )
+    power_indices: dict[str, PowerIndex] = Field(
+        default_factory=dict, description="Speaker ID -> PowerIndex"
     )
     sentence_count: int = Field(default=0, description="Cümle sayısı")
 
@@ -196,6 +215,38 @@ class Analysis(BaseModel):
         default_factory=list, description="Recommended actions based on analysis"
     )
 
+    # Phase 5 Topic Modeling
+    topic_node_mapping: dict[str, list[str]] = Field(
+        default_factory=dict, description="BERTopic topic_id -> list of DNA node_ids"
+    )
+    topic_synthesis: TopicSynthesis | None = Field(
+        default=None, description="Probabilistic topic modeling results (Faz 5)"
+    )
+    discourse_flow: DiscourseFlow | None = Field(
+        default=None, description="DNA network flow (Faz 4)"
+    )
+    bilateral_metrics: list[BilateralSentiment] = Field(
+        default_factory=list, description="Bilateral relationship metrics (Faz 4)"
+    )
+
+    # Phase 6 Computational Framing
+    frame_detection: FrameDetectionResult | None = Field(
+        default=None, description="Hamborg (2023) PFA pipeline results"
+    )
+    frame_salience: FrameSalienceResult | None = Field(
+        default=None, description="Entman (1993) frame salience results"
+    )
+
+    # Phase 7 Speaker-Based Index
+    sbi_result: SBIResult | None = Field(
+        default=None, description="Composite Speaker-Based Index results (Faz 7)"
+    )
+
+    # Phase 8 Discourse-Kinetic Index
+    dki_result: DKIResult | None = Field(
+        default=None, description="Discourse-Kinetic Index results (Faz 8)"
+    )
+
     # ── None-Safety Hesaplama Property'leri ───────────────────────
 
     @property
@@ -215,6 +266,18 @@ class Analysis(BaseModel):
     def effective_risk(self) -> float:
         """AI risk skoru varsa onu, yoksa 0.0 döner."""
         return self.ai_risk_score if self.ai_risk_score is not None else 0.0
+
+    @property
+    def escalated_risk_score(self) -> float:
+        """Zagare (2004) escalation multiplier'lı risk skoru."""
+        base_risk = self.effective_risk
+        if not self.risk_signals:
+            return base_risk
+
+        max_multiplier = max(s.escalation_multiplier for s in self.risk_signals)
+        weighted_sum = sum(s.weighted_risk_contribution for s in self.risk_signals)
+
+        return (base_risk * max_multiplier) + (weighted_sum * 0.1)
 
 
 # Alias for compatibility with instructions

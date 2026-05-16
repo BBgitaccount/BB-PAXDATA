@@ -13,6 +13,8 @@ from ..enums import (
     TemporalPattern,
     TopicCategory,
 )
+from .lodp_result import LODPResult
+from .risk_signal import RiskSignal
 from .sentence import Sentence
 
 
@@ -91,7 +93,7 @@ class Segment(BaseModel):
         default=None, description="Diplomatic Position Index (DKI)"
     )
     risk_score: int = Field(default=0, description="Aggregated risk score")
-    risk_signals: list[str] = Field(
+    risk_signals: list[RiskSignal] = Field(
         default_factory=list, description="Detected risk signals"
     )
     risk_trajectory: str | None = Field(
@@ -128,6 +130,42 @@ class Segment(BaseModel):
     )
     formula_manip_score: float | None = Field(
         default=None, description="Aggregated manipulation score"
+    )
+
+    @property
+    def text(self) -> str:
+        """Segment içindeki tüm cümlelerin birleştirilmiş metni."""
+        return " ".join(s.text for s in self.sentences)
+
+    @property
+    def escalated_risk_score(self) -> float:
+        """Zagare (2004) escalation multiplier'lı risk skoru.
+
+        BaseRisk = lexical_risk_density × severity_weight (assumed to be risk_score here)
+        RiskScore = BaseRisk × max(EscalationMultiplier_i)
+        """
+        if not self.risk_signals:
+            return float(self.risk_score)
+
+        max_multiplier = max(s.escalation_multiplier for s in self.risk_signals)
+        weighted_sum = sum(s.weighted_risk_contribution for s in self.risk_signals)
+
+        # Zagare formülü: BaseRisk × max_multiplier + weighted_contributions
+        return (float(self.risk_score) * max_multiplier) + (weighted_sum * 0.1)
+
+    # Lodp & Key phrases
+    tokens: list[str] = Field(default_factory=list, description="Tokenized text")
+    key_concepts: list[str] = Field(
+        default_factory=list, description="Extracted key concepts (Faz 4/5/6)"
+    )
+    key_phrases: list[str] = Field(
+        default_factory=list, description="Distinctive words/phrases"
+    )
+    lodp_results: list[LODPResult] | None = Field(
+        default=None, description="Monroe LODP analysis results"
+    )
+    negation_density: float = Field(
+        default=0.0, ge=0.0, description="Negation cues per token"
     )
 
     # Metadata

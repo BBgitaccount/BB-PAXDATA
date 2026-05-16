@@ -24,6 +24,7 @@ class PromptVersion:
     model_name: str = "gpt-4o"
     created_at: str = ""
     language: str = "any"  # "tr", "en", "any" — dil bazlı seçim için
+    academic_ref: str | None = None  # Örn: "Grootendorst2022"
 
     # OTOMATİK HESAPLANAN ALAN
     template_hash: str = field(init=False, default="")
@@ -112,12 +113,26 @@ class PromptRegistry:
         logger.warning(f"Aktif prompt bulunamadı: {prompt_id} (language={language})")
         return None
 
+    def get_version_string(self, prompt_id: str, language: str = "any") -> str | None:
+        """Aktif versiyonun version string'ini (vX.Y) döner."""
+        pv = self.get_active(prompt_id, language)
+        return pv.version if pv else None
+
     def get_version(self, prompt_id: str, version: str) -> PromptVersion | None:
         """Belirli bir versiyonu döner."""
         for pv in self._registry.get(prompt_id, []):
             if pv.version == version:
                 return pv
         return None
+
+    async def get(self, name: str, version: str | None = None) -> PromptVersion | None:
+        """
+        Infrastructure katmanı uyumluluğu için async wrapper.
+        version verilmezse aktifi döner.
+        """
+        if version:
+            return self.get_version(name, version)
+        return self.get_active(name)
 
     def get_history(self, prompt_id: str) -> list[PromptVersion]:
         """Bir prompt'un tüm versiyon geçmişini döner (en yeniden en eskiye)."""
@@ -219,4 +234,13 @@ def build_default_registry() -> PromptRegistry:
         )
     )
 
+    registry.register(
+        PromptVersion(
+            prompt_id="Grootendorst2022",
+            version="v1.0",
+            template="BERTopic Analysis Stub",
+            description="Academic reference for BERTopic",
+            academic_ref="Grootendorst, M. (2022). BERTopic: Neural Topic Modeling.",
+        )
+    )
     return registry

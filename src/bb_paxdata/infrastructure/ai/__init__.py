@@ -5,11 +5,17 @@ from .factory import AIClientFactory
 from .gemini import GeminiClient
 from .groq import GroqClient
 from .ollama import OllamaClient
-from .prompt_registry import PromptEntry, PromptRegistry, get_prompt_registry
+from .prompt_registry import (
+    AcademicRefTrace,
+    PromptRegistry,
+    PromptVersion,
+    get_prompt_registry,
+)
 
 __all__ = [
     "AIClient",
     "AIClientFactory",
+    "AcademicRefTrace",
     "AnthropicClient",
     "BatchItem",
     "BatchProcessor",
@@ -20,7 +26,7 @@ __all__ = [
     "GeminiClient",
     "GroqClient",
     "OllamaClient",
-    "PromptEntry",
     "PromptRegistry",
+    "PromptVersion",
     "get_prompt_registry",
 ]

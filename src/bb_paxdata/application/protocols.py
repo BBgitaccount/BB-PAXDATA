@@ -17,12 +17,12 @@ from ..domain.enums import (
     AudienceType,
     EvidenceType,
     FrameType,
-    HedgingType,
+    HedgeType,
     RiskLevel,
     SentimentCategory,
     TopicCategory,
 )
-from ..domain.models import Analysis, Segment, Sentence
+from ..domain.models import Analysis, RiskSignal, Segment, Sentence
 
 
 # Result models for service outputs
@@ -47,7 +47,7 @@ class RiskAssessment(BaseModel):
     sbi_score: float = Field(..., description="Söylemsel Baskı İndeksi score")
     dki_score: float = Field(..., description="Diplomatik Konum İndeksi score")
     risk_score: float = Field(..., ge=0.0, le=10.0, description="Overall risk score")
-    risk_signals: list[str] = Field(
+    risk_signals: list[RiskSignal] = Field(
         default_factory=list, description="Detected risk signals"
     )
     severity: RiskLevel = Field(..., description="Risk severity level")
@@ -60,7 +60,7 @@ class HedgingResult(BaseModel):
     """Result of hedging analysis."""
 
     score: float = Field(..., ge=0.0, le=1.0, description="Hedging score from 0 to 1")
-    categories: list[HedgingType] = Field(
+    categories: list[HedgeType] = Field(
         default_factory=list, description="Detected hedging categories"
     )
     confidence: float = Field(

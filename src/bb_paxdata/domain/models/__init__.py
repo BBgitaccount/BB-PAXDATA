@@ -6,8 +6,10 @@ from .demand import Demand
 from .discourse_flow import DiscourseFlow
 from .frame import Frame
 from .metadata import Metadata
+from .power_index import PowerIndex
 from .relationship import Relationship
 from .rhetorical_element import RhetoricalElement
+from .risk_signal import RiskSignal
 from .segment import Segment, TemporalSegmentAnalysis
 from .sentence import Sentence
 from .speaker import Speaker
@@ -25,8 +27,10 @@ __all__ = [
     "DiscourseFlow",
     "Frame",
     "Metadata",
+    "PowerIndex",
     "Relationship",
     "RhetoricalElement",
+    "RiskSignal",
     "Segment",
     "Sentence",
     "Speaker",

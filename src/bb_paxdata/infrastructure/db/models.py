@@ -42,6 +42,9 @@ if TYPE_CHECKING:
     from bb_paxdata.domain.models.topic import Topic
     from bb_paxdata.domain.models.transcript import Transcript
     from bb_paxdata.domain.models.validation_result import ValidationResult
+    from bb_paxdata.infrastructure.db.discourse_network_table import (
+        DiscourseNetworkEdgeTable,
+    )
 
 E = TypeVar("E", bound=Enum)
 
@@ -120,6 +123,10 @@ class Panel(Base):
 
     segments: Mapped[list[Segment]] = relationship(
         back_populates="panel", cascade="all, delete-orphan"
+    )
+
+    network_edges: Mapped[list[DiscourseNetworkEdgeTable]] = relationship(
+        back_populates="panel", cascade="all, delete-orphan", lazy="selectin"
     )
 
     def to_domain(self) -> Transcript:

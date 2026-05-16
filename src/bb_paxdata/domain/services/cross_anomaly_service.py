@@ -9,8 +9,9 @@ import logging
 from typing import Protocol, runtime_checkable
 
 from ...core.config import settings
-from ..enums import RiskLevel
+from ..enums import NegationType, RiskLevel
 from ..models.analysis import Analysis
+from ..models.negation_cue import NegationCue
 from .protocols import AnomalyResult
 
 logger = logging.getLogger(__name__)
@@ -30,29 +31,88 @@ class AnomalyRule(Protocol):
 
 class SentimentRiskDivergenceRule:
     """
-    Duygu skoru ile risk skoru anlamlı biçimde çelişiyorsa anomali işaretler.
-    Örnek: Pozitif duygu ama çok yüksek risk → çelişki.
+    Tsytsarau (2017) contradiction measure 'C' formülünü kullanarak
+    duygu-risk çelişkisini tespit eder.
+
+    Reference:
+        - Tsytsarau, M. et al. (2017). Identifying Sentiment-based Contradictions.
+          C = (n·M₂ − M₁²) / ((ϑ·n² + M₁²)·W)
     """
 
-    DIVERGENCE_THRESHOLD = 0.5
+    THETA = 0.1
+    THRESHOLD = 0.1
+
+    def __init__(self) -> None:
+        from vaderSentiment.vaderSentiment import SentimentIntensityAnalyzer
+
+        self._vader = SentimentIntensityAnalyzer()
 
     def evaluate(self, analysis: Analysis) -> tuple[bool, float, str]:
-        # AI verisi yoksa bu kural sessizce atlanır — sahte anomali üretilmez
+        # AI verisi yoksa bu kural sessizce atlanır
         if not analysis.has_ai_output:
             return False, 0.0, ""
 
-        sentiment = analysis.effective_sentiment  # -1.0 ile +1.0 arası
-        risk = analysis.effective_risk  # 0.0 ile 1.0 arası
+        sentences = analysis.sentences
+        if not sentences:
+            return False, 0.0, ""
 
-        # Pozitif duygu ama yüksek risk → gerçek bir çelişki sinyali
-        if sentiment > 0.3 and risk > 0.6:
-            divergence_score = (risk - sentiment) * 0.4
+        # Her cümle için polarity (VADER compound) hesapla
+        polarities = [self._vader.polarity_scores(s)["compound"] for s in sentences]
+        n = len(polarities)
+
+        # Moment hesaplamaları
+        m1 = sum(polarities) / n
+        m2 = sum(p * p for p in polarities) / n
+
+        # Tsytsarau formülü
+        w = float(n)
+        numerator = (n * m2) - (m1 * m1)
+        denominator = ((self.THETA * n * n) + (m1 * m1)) * w
+
+        c = (numerator / denominator) if denominator != 0 else 0.0
+
+        # Faz 2: Negasyon filtrelemesi
+        adjustment = self._compute_negation_adjustment(analysis)
+        adjusted_score = max(0.0, c - adjustment)
+
+        # Risk ile birleştirme (Opsiyonel: Tsytsarau sadece sentiment çelişkisidir,
+        # ancak kural ismi sentiment-risk diverjansı olduğu için risk skoruyla da ilişkilendirebiliriz)
+        risk = analysis.effective_risk
+
+        # Eğer çelişki yüksekse (adjusted_score > THRESHOLD) anomali işaretle
+        if adjusted_score > self.THRESHOLD:
             return (
                 True,
-                min(divergence_score, 0.4),
-                f"SENTIMENT_RISK_DIVERGENCE: sentiment={sentiment:.2f}, risk={risk:.2f}",
+                round(adjusted_score, 4),
+                f"SENTIMENT_RISK_DIVERGENCE: Tsytsarau adjusted_C={adjusted_score:.4f}, risk={risk:.2f}",
             )
+
         return False, 0.0, ""
+
+    def _compute_negation_adjustment(self, analysis: Analysis) -> float:
+        """Negasyon kaynaklı false positive'leri hesapla."""
+        if not analysis.negation_cues:
+            return 0.0
+
+        total_adjustment = 0.0
+        for cue in analysis.negation_cues:
+            total_adjustment += self._evaluate_cue_false_positive_risk(cue)
+
+        # Normalize by sentence count
+        n = len(analysis.sentences)
+        return min(1.0, total_adjustment / n) if n > 0 else 0.0
+
+    def _evaluate_cue_false_positive_risk(self, cue: NegationCue) -> float:
+        """Tek bir negasyon cue'yu için false positive risk skoru."""
+        if cue.negation_type == NegationType.SEMANTIC and cue.confidence > 0.8:
+            return 0.35
+        if cue.negation_type == NegationType.SURFACE and not cue.has_scope:
+            return 0.25
+        if cue.negation_type == NegationType.SYNTACTIC and cue.has_scope:
+            return 0.20
+        if cue.negation_type == NegationType.SCOPE_WIDE:
+            return 0.10
+        return 0.0
 
 
 class HighRiskThresholdRule:
@@ -94,6 +154,84 @@ class NegativeSentimentRule:
         return False, 0.0, ""
 
 
+class PowerAsymmetryAnomalyRule:
+    """Güç asimetrisi ve sentiment farkı üzerinden anomali tespiti.
+
+    asymmetry_score > 0.5 + sentiment_delta < -0.3 -> POWER_ASYMMETRY_ANOMALY
+    """
+
+    THRESHOLD_ASYMMETRY = 0.5
+    THRESHOLD_DELTA = -0.3
+
+    def evaluate(self, analysis: Analysis) -> tuple[bool, float, str]:
+        # Eğer Analysis'te birden fazla power_index varsa (örneğin speaker ve mentioned country)
+        # asimetriyi hesapla.
+        if len(analysis.power_indices) < 2:
+            return False, 0.0, ""
+
+        indices = list(analysis.power_indices.values())
+        idx_a = indices[0].total_power_index
+        idx_b = indices[1].total_power_index
+
+        raw_diff = abs(idx_a - idx_b)
+        max_idx = max(idx_a, idx_b)
+        asymmetry = (raw_diff / max_idx) if max_idx > 0 else 0.0
+
+        sentiment = analysis.effective_sentiment
+
+        if asymmetry > self.THRESHOLD_ASYMMETRY and sentiment < self.THRESHOLD_DELTA:
+            return (
+                True,
+                asymmetry * 0.5,
+                f"POWER_ASYMMETRY_ANOMALY: asymmetry={asymmetry:.2f}, sentiment={sentiment:.2f}",
+            )
+
+        return False, 0.0, ""
+
+
+class CheapTalkAnomalyRule:
+    """Cheap talk anomalisi tespiti (Trager 2010).
+
+    power_weighted_score > threshold + signal_credibility < 0.4 -> CHEAP_TALK_ANOMALY
+    """
+
+    THRESHOLD_POWER = 0.1
+    THRESHOLD_CREDIBILITY = 0.4
+
+    def evaluate(self, analysis: Analysis) -> tuple[bool, float, str]:
+        # Risk sinyalleri üzerinden credibility ve weighted score hesapla
+        if not analysis.risk_signals:
+            return False, 0.0, ""
+
+        # Basitleştirilmiş Trager proxy (Analysis üzerinde)
+        power = 1.0  # Default
+        if analysis.speaker_id in analysis.power_indices:
+            power = analysis.power_indices[analysis.speaker_id].total_power_index
+
+        max_multiplier = max(s.escalation_multiplier for s in analysis.risk_signals)
+        weighted_score = power * max_multiplier
+
+        # commitment_cost proxy: COSTLY_SIGNAL oranı
+        costly_count = sum(
+            1
+            for s in analysis.risk_signals
+            if s.signal_type in ("costly_signal", "red_line")
+        )
+        credibility = costly_count / len(analysis.risk_signals)
+
+        if (
+            weighted_score > self.THRESHOLD_POWER
+            and credibility < self.THRESHOLD_CREDIBILITY
+        ):
+            return (
+                True,
+                0.4,
+                f"CHEAP_TALK_ANOMALY: weighted_score={weighted_score:.2f}, credibility={credibility:.2f}",
+            )
+
+        return False, 0.0, ""
+
+
 class CrossAnomalyService:
     """
     Tüm anomali kurallarını koordine eden servis.
@@ -106,6 +244,8 @@ class CrossAnomalyService:
             SentimentRiskDivergenceRule(),
             HighRiskThresholdRule(),
             NegativeSentimentRule(),
+            PowerAsymmetryAnomalyRule(),
+            CheapTalkAnomalyRule(),
         ]
 
     async def detect(self, analysis: Analysis) -> AnomalyResult:
