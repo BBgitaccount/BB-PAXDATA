@@ -18,7 +18,7 @@ sqlalchemy      = {version = "^2.0", extras = ["asyncio"]}
 aiosqlite       = "^0.20"
 alembic         = "^1.13"
 typer           = "^0.25.1"
-rich            = "^13.7"
+rich            = ">=13.7,<15.0"
 structlog       = "^24.2"
 pandas          = "^2.2"
 pandera         = ">=0.20.0"
