@@ -1,0 +1,187 @@
+# BB-PAXDATA Dependabot Configuration
+# https://docs.github.com/en/code-security/dependabot/dependabot-version-updates/configuration-options-for-the-dependabot.yml-file
+
+version: 2
+
+# ---------------------------------------------------------------------------
+# CORE DEPENDENCIES: Poetry (Python)
+# ---------------------------------------------------------------------------
+# BB-PAXDATA uses Poetry for deterministic dependency resolution.
+# All Python packages (Pydantic, SQLAlchemy, spaCy, sentence-transformers,
+# scikit-learn, structlog, etc.) are managed via pyproject.toml + poetry.lock
+# Security audit: poetry audit (via pip-audit/safety) runs weekly in CI.
+# ---------------------------------------------------------------------------
+updates:
+  - package-ecosystem: "pip"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+      time: "06:00"
+      timezone: "Europe/Istanbul"
+    open-pull-requests-limit: 10
+    reviewers:
+      - "bb-paxdata/maintainers"
+    assignees:
+      - "bb-paxdata/security-lead"
+    labels:
+      - "dependencies"
+      - "python"
+      - "security"
+    commit-message:
+      prefix: "deps(py)"
+      prefix-development: "deps(dev)"
+      include: "scope"
+    # Group related updates to reduce PR noise
+    groups:
+      pydantic-and-validation:
+        patterns:
+          - "pydantic*"
+          - "pandera"
+          - "email-validator"
+        update-types:
+          - "minor"
+          - "patch"
+      sqlalchemy-and-db:
+        patterns:
+          - "sqlalchemy*"
+          - "alembic"
+          - "asyncpg"
+          - "aiosqlite"
+        update-types:
+          - "minor"
+          - "patch"
+      nlp-and-ml:
+        patterns:
+          - "spacy*"
+          - "scikit-learn"
+          - "sentence-transformers"
+          - "vaderSentiment"
+          - "bertopic"
+          - "umap-learn"
+          - "hdbscan"
+        update-types:
+          - "minor"
+          - "patch"
+      llm-and-ai:
+        patterns:
+          - "anthropic"
+          - "google-generativeai"
+          - "groq"
+          - "ollama"
+          - "openai"
+          - "httpx"
+        update-types:
+          - "minor"
+          - "patch"
+      testing-and-quality:
+        patterns:
+          - "pytest*"
+          - "deepeval"
+          - "mypy"
+          - "ruff"
+          - "coverage"
+          - "hypothesis"
+        update-types:
+          - "minor"
+          - "patch"
+    # Security-critical packages: auto-merge patch updates after CI passes
+    # (Requires GitHub Actions workflow with auto-merge logic)
+    ignore:
+      # spaCy model compatibility: major version bumps require manual model re-download
+      - dependency-name: "spacy"
+        update-types: ["version-update:semver-major"]
+      # SQLAlchemy 2.0 is a hard requirement; block major version jumps
+      - dependency-name: "sqlalchemy"
+        update-types: ["version-update:semver-major"]
+      # Pydantic v2 migration was costly; block v3 until explicitly planned
+      - dependency-name: "pydantic"
+        update-types: ["version-update:semver-major"]
+    # Allow direct commits to main for security patches (emergency only)
+    # Requires branch protection rules with 'allow specific actors' configured
+    target-branch: "main"
+
+# ---------------------------------------------------------------------------
+# GITHUB ACTIONS
+# ---------------------------------------------------------------------------
+# CI/CD workflows (pytest, mypy, ruff, security audit, Docker build)
+# ---------------------------------------------------------------------------
+  - package-ecosystem: "github-actions"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+      time: "06:30"
+      timezone: "Europe/Istanbul"
+    open-pull-requests-limit: 5
+    reviewers:
+      - "bb-paxdata/maintainers"
+    labels:
+      - "dependencies"
+      - "github-actions"
+      - "ci-cd"
+    commit-message:
+      prefix: "deps(ci)"
+      include: "scope"
+    groups:
+      github-actions:
+        patterns:
+          - "*"
+        update-types:
+          - "minor"
+          - "patch"
+
+# ---------------------------------------------------------------------------
+# DOCKER
+# ---------------------------------------------------------------------------
+# Base images (python:3.12-slim, postgres:16-alpine)
+# ---------------------------------------------------------------------------
+  - package-ecosystem: "docker"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+      time: "07:00"
+      timezone: "Europe/Istanbul"
+    open-pull-requests-limit: 5
+    reviewers:
+      - "bb-paxdata/maintainers"
+    labels:
+      - "dependencies"
+      - "docker"
+      - "infrastructure"
+    commit-message:
+      prefix: "deps(docker)"
+      include: "scope"
+    ignore:
+      # Python 3.12 is a hard requirement (strict typing, asyncio features)
+      - dependency-name: "python"
+        update-types: ["version-update:semver-major"]
+
+# ---------------------------------------------------------------------------
+# SECURITY ADVISORIES
+# ---------------------------------------------------------------------------
+# Enable Dependabot security alerts and auto-generated PRs for CVEs
+# These are SEPARATE from version updates and use the 'security' label
+# ---------------------------------------------------------------------------
+# (Configured in GitHub UI: Settings > Security > Code security and analysis)
+# Dependabot security updates: ENABLED
+# Secret scanning: ENABLED
+# Push protection for secrets: ENABLED
+
+# ---------------------------------------------------------------------------
+# VULNERABILITY ALLOWLIST (Emergency Only)
+# ---------------------------------------------------------------------------
+# If a CVE is determined to be a false positive for BB-PAXDATA's use case,
+# it can be temporarily ignored here with a documented justification.
+# ALL entries MUST include:
+#   - cve-id: CVE identifier
+#   - package-name: Affected package
+#   - reason: Detailed justification with maintainer sign-off
+#   - expires: ISO 8601 date (max 90 days)
+# ---------------------------------------------------------------------------
+# Example:
+#   - cve-id: "CVE-202X-XXXXX"
+#     package-name: "example-package"
+#     reason: "False positive: vulnerability is in CLI tool, not the library API used by BB-PAXDATA. Signed-off-by: @security-lead"
+#     expires: "2026-08-17"
