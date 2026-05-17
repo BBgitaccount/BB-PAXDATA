@@ -1,4 +1,4 @@
-from bb_paxdata_anomaly.rules.tone_drift import ToneDriftRule
+from bb_paxdata.anomaly.rules.tone_drift import ToneDriftRule
 
 from .base import BaseAnomalyTest
 

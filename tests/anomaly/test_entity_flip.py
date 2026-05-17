@@ -1,4 +1,4 @@
-from bb_paxdata_anomaly.rules.entity_flip import EntityFlipRule
+from bb_paxdata.anomaly.rules.entity_flip import EntityFlipRule
 
 from .base import BaseAnomalyTest
 

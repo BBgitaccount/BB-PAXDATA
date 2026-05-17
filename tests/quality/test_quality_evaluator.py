@@ -10,7 +10,8 @@ from bb_paxdata.quality.evaluator import (
     QualityEvaluator,
     QualityReport,
 )
-from bb_paxdata.tests.fixtures.golden_dataset import GoldenDataset  # type: ignore
+
+from tests.fixtures.golden_dataset import GoldenDataset
 
 
 class TestQualityEvaluator:
@@ -52,7 +53,7 @@ class TestQualityEvaluator:
         assert evaluator.model_name == "test-model"
         assert evaluator.backend_used == "test-backend"
         assert evaluator.golden_dataset is not None
-        assert len(evaluator.custom_metrics) == 3
+        assert len(evaluator.custom_metrics) == 4
         assert len(evaluator.deepeval_metrics) == 3
 
     def test_evaluate_single_fixture_perfect_match(

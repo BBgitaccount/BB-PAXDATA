@@ -1,4 +1,4 @@
-from bb_paxdata_anomaly.rules.frame_contradiction import FrameContradictionRule
+from bb_paxdata.anomaly.rules.frame_contradiction import FrameContradictionRule
 
 from .base import BaseAnomalyTest
 

@@ -1,4 +1,4 @@
-from bb_paxdata_anomaly.rules.translation_artifact import TranslationArtifactRule
+from bb_paxdata.anomaly.rules.translation_artifact import TranslationArtifactRule
 
 from .base import BaseAnomalyTest
 

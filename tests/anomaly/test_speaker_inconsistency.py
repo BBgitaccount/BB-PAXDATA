@@ -1,4 +1,4 @@
-from bb_paxdata_anomaly.rules.speaker_inconsistency import SpeakerInconsistencyRule
+from bb_paxdata.anomaly.rules.speaker_inconsistency import SpeakerInconsistencyRule
 
 from .base import BaseAnomalyTest
 

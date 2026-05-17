@@ -29,7 +29,15 @@
         },
         "AI_Duygu_Kategorisi": {
           "type": "string",
-          "enum": ["positive", "negative", "neutral", "concerned", "hopeful", "angry", "fearful"],
+          "enum": [
+            "positive",
+            "negative",
+            "neutral",
+            "concerned",
+            "hopeful",
+            "angry",
+            "fearful"
+          ],
           "description": "Sentiment category"
         },
         "AI_Risk_Skoru": {
@@ -40,17 +48,34 @@
         },
         "AI_Potansiyel_Risk": {
           "type": "string",
-          "enum": ["none", "low", "medium", "high", "critical"],
+          "enum": [
+            "none",
+            "low",
+            "medium",
+            "high",
+            "critical"
+          ],
           "description": "Potential risk level"
         },
         "AI_Talep_Var": {
           "type": "integer",
-          "enum": [0, 1],
+          "enum": [
+            0,
+            1
+          ],
           "description": "Whether sentence contains a demand (0=no, 1=yes)"
         },
         "AI_Diplomatik_Ton": {
           "type": "string",
-          "enum": ["assertive", "conciliatory", "evasive", "confrontational", "neutral", "persuasive", "defensive"],
+          "enum": [
+            "assertive",
+            "conciliatory",
+            "evasive",
+            "confrontational",
+            "neutral",
+            "persuasive",
+            "defensive"
+          ],
           "description": "Diplomatic tone"
         },
         "AI_Manipulasyon_Skor": {
@@ -68,7 +93,13 @@
           "description": "Primary topic (e.g., Güvenlik_Çatışma, Ekonomi)"
         }
       },
-      "required": ["AI_Duygu_Skoru", "AI_Risk_Skoru", "AI_Potansiyel_Risk", "AI_Talep_Var", "AI_Diplomatik_Ton"],
+      "required": [
+        "AI_Duygu_Skoru",
+        "AI_Risk_Skoru",
+        "AI_Potansiyel_Risk",
+        "AI_Talep_Var",
+        "AI_Diplomatik_Ton"
+      ],
       "additionalProperties": false
     },
     "metadata": {
@@ -93,10 +124,21 @@
           "description": "Version of the annotation (e.g., 1.0)"
         }
       },
-      "required": ["why_selected", "annotator", "annotated_at", "version"],
+      "required": [
+        "why_selected",
+        "annotator",
+        "annotated_at",
+        "version"
+      ],
       "additionalProperties": false
     }
   },
-  "required": ["fixture_id", "sent_id", "source_text", "ground_truth", "metadata"],
+  "required": [
+    "fixture_id",
+    "sent_id",
+    "source_text",
+    "ground_truth",
+    "metadata"
+  ],
   "additionalProperties": false
 }

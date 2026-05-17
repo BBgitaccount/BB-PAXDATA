@@ -24,7 +24,8 @@ class ConfidenceCalculator:
         """Threshold üzerindeki sapmayı sigmoid-like mapler."""
         if deviation <= 0:
             return 0.0
-        return min(1.0, (deviation / threshold) ** steepness)
+        val = (deviation / threshold) ** steepness
+        return val if val < 1.0 else 1.0
 
     @staticmethod
     def from_binary_match(

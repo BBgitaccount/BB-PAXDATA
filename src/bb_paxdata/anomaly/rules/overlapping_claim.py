@@ -1,4 +1,5 @@
 from dataclasses import dataclass
+from typing import Any
 
 from ..core.context import AnalysisContext
 from ..core.models import Analysis, AnomalyResult, AnomalySeverity, SegmentRef
@@ -9,9 +10,9 @@ from .base import BaseAnomalyRule
 class OverlappingClaimConfig:
     """Overlapping claim kuralı konfigürasyonu."""
 
-    mutually_exclusive_verbs: set[tuple[str, str]] = None
+    mutually_exclusive_verbs: set[tuple[str, str]] | None = None
 
-    def __post_init__(self):
+    def __post_init__(self) -> None:
         if self.mutually_exclusive_verbs is None:
             object.__setattr__(
                 self,
@@ -54,7 +55,7 @@ class OverlappingClaimRule(BaseAnomalyRule):
         self, analysis: Analysis, context: AnalysisContext
     ) -> AnomalyResult | None:
         # Konuşmacı bazlı iddiaları topla
-        speaker_claims: dict[str, list[dict]] = {}
+        speaker_claims: dict[str, list[dict[str, Any]]] = {}
 
         for segment in analysis.transcript.segments:
             speaker = segment.speaker_id or "unknown"
@@ -98,9 +99,11 @@ class OverlappingClaimRule(BaseAnomalyRule):
                             and claim1["subject"]
                             and claim1["object"]
                         ):
-
                             verb_pair = tuple(sorted([claim1["verb"], claim2["verb"]]))
-                            if verb_pair in self._config.mutually_exclusive_verbs:
+                            mutually_exclusive = (
+                                self._config.mutually_exclusive_verbs or set()
+                            )
+                            if verb_pair in mutually_exclusive:
                                 conflict_count += 1
                                 conflicting_pairs.append(
                                     {

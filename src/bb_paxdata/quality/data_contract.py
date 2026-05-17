@@ -7,9 +7,15 @@ from typing import Any, cast
 import pandas as pd
 import pandera as pa
 import structlog
+from pandera.errors import SchemaError
 from pandera.typing import Series
 
 logger = structlog.get_logger(__name__)
+
+
+class _AISentenceConfig:
+    strict = True
+    coerce = True
 
 
 class AISentenceOutputSchema(pa.DataFrameModel):
@@ -38,9 +44,7 @@ class AISentenceOutputSchema(pa.DataFrameModel):
     AI_Birincil_Konu: Series[str] = pa.Field(nullable=True)
     AI_Cerceveleme: Series[str] = pa.Field(nullable=True)
 
-    class Config:
-        strict = True
-        coerce = True
+    Config = _AISentenceConfig  # type: ignore[assignment]
 
 
 class ValidationResult:
@@ -149,7 +153,7 @@ class DataContractValidator:
                 details={"row_count": len(cast(Sized, validated_df))},
             )
 
-        except pa.errors.SchemaError as e:
+        except SchemaError as e:
             self.logger.error(
                 "AI output validation failed",
                 error=str(e),

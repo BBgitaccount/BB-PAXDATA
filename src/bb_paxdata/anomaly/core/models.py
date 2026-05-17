@@ -1,5 +1,5 @@
 from dataclasses import dataclass, field
-from datetime import datetime
+from datetime import datetime, timezone
 from enum import Enum, auto
 from typing import Any
 
@@ -74,9 +74,9 @@ class AnomalyResult:
     description: str
     metadata: dict[str, Any] = field(default_factory=dict)
     affected_segments: list[SegmentRef] = field(default_factory=list)
-    timestamp: datetime = field(default_factory=datetime.utcnow)
+    timestamp: datetime = field(default_factory=lambda: datetime.now(timezone.utc))
 
-    def __post_init__(self):
+    def __post_init__(self) -> None:
         if not 0.0 <= self.confidence_score <= 1.0:
             raise ValueError(
                 f"Confidence score must be in [0, 1], got {self.confidence_score}"

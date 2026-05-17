@@ -12,7 +12,7 @@ class EntityFlipConfig:
 
     window_size: int = 3
     flip_threshold: float = 1.2  # Örn: +0.8'den -0.4'e geçiş
-    entity_types: tuple = ("GPE", "PERSON")
+    entity_types: tuple[str, ...] = ("GPE", "PERSON")
 
 
 class EntityFlipRule(BaseAnomalyRule):
@@ -69,7 +69,7 @@ class EntityFlipRule(BaseAnomalyRule):
 
             for window_indices in windows:
                 # Pencere içindeki varlıkların duygu skorlarını topla
-                window_entity_map: dict[str, list[tuple]] = {}
+                window_entity_map: dict[str, list[tuple[int, float, str]]] = {}
 
                 for idx in window_indices:
                     sent = sentences[idx]

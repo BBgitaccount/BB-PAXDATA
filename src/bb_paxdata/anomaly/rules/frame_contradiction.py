@@ -9,10 +9,10 @@ from .base import BaseAnomalyRule
 class FrameContradictionConfig:
     """Frame Contradiction kuralı için konfigürasyon."""
 
-    contradiction_matrix: dict[tuple[str, str], float] = None
+    contradiction_matrix: dict[tuple[str, str], float] | None = None
     min_frame_confidence: float = 0.7
 
-    def __post_init__(self):
+    def __post_init__(self) -> None:
         # Varsayılan çelişki matrisi
         if self.contradiction_matrix is None:
             object.__setattr__(
@@ -76,13 +76,10 @@ class FrameContradictionRule(BaseAnomalyRule):
                     continue
 
                 # Matris üzerinden çelişkiyi kontrol et
-                contradiction = self._config.contradiction_matrix.get(
-                    (f1_type, f2_type)
-                )
+                matrix = self._config.contradiction_matrix or {}
+                contradiction = matrix.get((f1_type, f2_type))
                 if contradiction is None:
-                    contradiction = self._config.contradiction_matrix.get(
-                        (f2_type, f1_type)
-                    )
+                    contradiction = matrix.get((f2_type, f1_type))
 
                 if contradiction:
                     confidence = contradiction * min(f1_conf, f2_conf)

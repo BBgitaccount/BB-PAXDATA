@@ -79,6 +79,6 @@ class CrossAnomalyService:
             logger.exception(f"Rule {rule.rule_id} evaluation error: {e}")
             return None
 
-    def shutdown(self):
+    def shutdown(self) -> None:
         """Servisi kapatır."""
         self._executor.shutdown(wait=True)

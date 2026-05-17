@@ -13,10 +13,10 @@ class TranslationArtifactConfig:
     """Translation artifact kuralı konfigürasyonu."""
 
     min_tokens: int = 10
-    ngram_weights: dict[int, float] = None
-    reference_profile: dict[str, float] = None
+    ngram_weights: dict[int, float] | None = None
+    reference_profile: dict[str, float] | None = None
 
-    def __post_init__(self):
+    def __post_init__(self) -> None:
         if self.ngram_weights is None:
             object.__setattr__(self, "ngram_weights", {1: 0.2, 2: 0.3, 3: 0.5})
 
@@ -62,6 +62,8 @@ class TranslationArtifactRule(BaseAnomalyRule):
                 },
             )
 
+        profile = ref_profile or {}
+
         max_confidence = 0.0
         anomalous_segments = []
 
@@ -71,9 +73,10 @@ class TranslationArtifactRule(BaseAnomalyRule):
             try:
                 # Servisten POS dağılımı ve n-gramları al
                 pos_dist = context.spacy_pipeline.get_pos_distribution(text)
+                ngram_weights = self._config.ngram_weights or {}
                 pos_ngrams = {
                     n: context.spacy_pipeline.get_pos_ngrams(text, n)
-                    for n in self._config.ngram_weights.keys()
+                    for n in ngram_weights.keys()
                 }
             except Exception:
                 continue
@@ -84,7 +87,7 @@ class TranslationArtifactRule(BaseAnomalyRule):
             total_divergence = 0.0
             total_weight = 0.0
 
-            for n, weight in self._config.ngram_weights.items():
+            for n, weight in ngram_weights.items():
                 ngrams = pos_ngrams.get(n, [])
                 if not ngrams:
                     continue
@@ -98,7 +101,7 @@ class TranslationArtifactRule(BaseAnomalyRule):
                 ]
                 # Basitleştirilmiş: POS profili üzerinden beklenen değeri tahmin et
                 expected = [
-                    ref_profile.get(tag, 0.05) if isinstance(tag, str) else 0.05
+                    profile.get(tag, 0.05) if isinstance(tag, str) else 0.05
                     for tag in set(observed_counts)
                 ]
 
@@ -135,6 +138,6 @@ class TranslationArtifactRule(BaseAnomalyRule):
             affected_segments=anomalous_segments,
             metadata={
                 "divergence_method": "KL",
-                "ngram_levels": list(self._config.ngram_weights.keys()),
+                "ngram_levels": list(ngram_weights.keys()),
             },
         )

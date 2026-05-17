@@ -9,9 +9,9 @@ from .base import BaseAnomalyRule
 class MissingGPEConfig:
     """Missing GPE kuralı konfigürasyonu."""
 
-    policy_verbs: dict[str, float] = None
+    policy_verbs: dict[str, float] | None = None
 
-    def __post_init__(self):
+    def __post_init__(self) -> None:
         if self.policy_verbs is None:
             object.__setattr__(
                 self,
@@ -82,7 +82,8 @@ class MissingGPERule(BaseAnomalyRule):
                     rel = dep.get("rel", "")
                     dep_word = dep.get("dep", "").lower()
 
-                    verb_weight = self._config.policy_verbs.get(head)
+                    policy_verbs = self._config.policy_verbs or {}
+                    verb_weight = policy_verbs.get(head)
                     if not verb_weight:
                         continue
 

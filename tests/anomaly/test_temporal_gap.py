@@ -1,5 +1,5 @@
-from bb_paxdata_anomaly.core.models import Analysis, Segment, Sentence, Transcript
-from bb_paxdata_anomaly.rules.temporal_gap import TemporalGapRule
+from bb_paxdata.anomaly.core.models import Analysis, Segment, Sentence, Transcript
+from bb_paxdata.anomaly.rules.temporal_gap import TemporalGapRule
 
 from .base import BaseAnomalyTest
 

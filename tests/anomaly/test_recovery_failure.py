@@ -1,4 +1,4 @@
-from bb_paxdata_anomaly.rules.recovery_failure import RecoveryFailureRule
+from bb_paxdata.anomaly.rules.recovery_failure import RecoveryFailureRule
 
 from .base import BaseAnomalyTest
 

@@ -1,8 +1,8 @@
 import unittest
 from unittest.mock import MagicMock
 
-from bb_paxdata_anomaly.core.context import AnalysisContext
-from bb_paxdata_anomaly.core.models import Analysis, Segment, Sentence, Transcript
+from bb_paxdata.anomaly.core.context import AnalysisContext
+from bb_paxdata.anomaly.core.models import Analysis, Segment, Sentence, Transcript
 
 
 class BaseAnomalyTest(unittest.TestCase):

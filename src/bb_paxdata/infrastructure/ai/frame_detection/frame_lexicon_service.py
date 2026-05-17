@@ -6,6 +6,8 @@ of Political Framing. ACL Anthology. Discourse connectives, modal particles,
 POS/dependency feature set for fine-grained frame detection.]
 """
 
+from __future__ import annotations
+
 from typing import TYPE_CHECKING, Any, Final
 
 if TYPE_CHECKING:

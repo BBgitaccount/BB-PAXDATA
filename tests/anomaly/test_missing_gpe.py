@@ -1,4 +1,4 @@
-from bb_paxdata_anomaly.rules.missing_gpe import MissingGPERule
+from bb_paxdata.anomaly.rules.missing_gpe import MissingGPERule
 
 from .base import BaseAnomalyTest
 

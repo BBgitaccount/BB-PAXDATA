@@ -1,4 +1,4 @@
-from bb_paxdata_anomaly.rules.modal_collapse import ModalCollapseRule
+from bb_paxdata.anomaly.rules.modal_collapse import ModalCollapseRule
 
 from .base import BaseAnomalyTest
 

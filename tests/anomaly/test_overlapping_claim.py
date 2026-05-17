@@ -1,5 +1,5 @@
-from bb_paxdata_anomaly.core.models import Analysis, Segment, Sentence, Transcript
-from bb_paxdata_anomaly.rules.overlapping_claim import OverlappingClaimRule
+from bb_paxdata.anomaly.core.models import Analysis, Segment, Sentence, Transcript
+from bb_paxdata.anomaly.rules.overlapping_claim import OverlappingClaimRule
 
 from .base import BaseAnomalyTest
 

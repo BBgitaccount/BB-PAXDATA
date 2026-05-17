@@ -12,7 +12,8 @@ from bb_paxdata.quality.data_contract import DataContractValidator
 from bb_paxdata.quality.evaluator import QualityEvaluator, QualityReport
 from bb_paxdata.quality.review_queue import ReviewFlagger, ReviewQueueManager
 from bb_paxdata.quality.uncertainty import UncertaintyScore, UncertaintyScorer
-from bb_paxdata.tests.fixtures.golden_dataset import GoldenDataset  # type: ignore
+
+from tests.fixtures.golden_dataset import GoldenDataset
 
 
 class TestQualityPipelineIntegration:

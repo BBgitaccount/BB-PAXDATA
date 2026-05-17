@@ -19,7 +19,7 @@ import structlog
 # Add src to path for imports
 sys.path.insert(0, str(Path(__file__).parent.parent.parent / "src"))
 
-from bb_paxdata.tests.fixtures.golden_dataset import GoldenDataset  # type: ignore
+from tests.fixtures.golden_dataset import GoldenDataset
 
 logger = structlog.get_logger(__name__)
 
