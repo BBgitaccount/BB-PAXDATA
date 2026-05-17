@@ -15,7 +15,7 @@ python          = "^3.12"
 pydantic        = "^2.7"
 pydantic-settings = "^2.3"
 sqlalchemy      = {version = "^2.0", extras = ["asyncio"]}
-aiosqlite       = "^0.20"
+aiosqlite       = ">=0.20,<0.23"
 alembic         = "^1.13"
 typer           = "^0.25.1"
 rich            = "^13.7"
