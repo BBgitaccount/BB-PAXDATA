@@ -44,9 +44,12 @@ class WordfishScaler:
         logger.info("wordfish.fitting_started", n_docs=n_docs, n_terms=n_terms)
 
         # Initial estimates
-        # Simple log-frequency based initialization
+        # Simple log-frequency based initialization with independence baseline adjustment
         self.alpha_ = np.array(np.log(doc_term_matrix.sum(axis=1) + 1e-6))
-        self.psi_ = np.array(np.log(doc_term_matrix.sum(axis=0) + 1e-6))
+        self.psi_ = np.array(
+            np.log(doc_term_matrix.sum(axis=0) + 1e-6)
+            - np.log(doc_term_matrix.sum() + 1e-6)
+        )
         self.beta_ = np.array(np.random.normal(0, 0.1, n_terms))
         self.theta_ = np.array(np.random.normal(0, 1.0, n_docs))
 
@@ -56,61 +59,64 @@ class WordfishScaler:
             np.std(self.theta_) + 1e-9
         )
 
-        # Flatten parameters for initial state
         # Iterate between document and word parameters
         for i in range(self.params.max_iter):
             assert self.theta_ is not None
             old_theta = self.theta_.copy()
 
-            # 1. Fix theta, alpha. Optimize psi, beta (Word parameters)
-            def word_objective(p_word: np.ndarray) -> float:
-                psi = p_word[:n_terms]
-                beta = p_word[n_terms:]
-                assert self.alpha_ is not None and self.theta_ is not None
-                log_lambda = (
-                    self.alpha_[:, np.newaxis]
-                    + psi[np.newaxis, :]
-                    + np.outer(self.theta_, beta)
-                )
+            # 1. Fix theta, alpha. Optimize psi, beta (Word parameters) independently
+            def word_objective(
+                p_word: np.ndarray,
+                y_col: np.ndarray,
+                alpha: np.ndarray,
+                theta: np.ndarray,
+            ) -> float:
+                psi_j, beta_j = p_word
+                log_lambda = alpha + psi_j + beta_j * theta
                 log_lambda = np.clip(log_lambda, -10, 10)
                 # Poisson loss: exp(log_lambda) - y * log_lambda
-                loss = np.exp(log_lambda) - doc_term_matrix * log_lambda
-                return float(
-                    np.sum(loss) + 0.5 * self.params.beta_prior * np.sum(beta**2)
-                )
+                loss = np.exp(log_lambda) - y_col * log_lambda
+                return float(np.sum(loss) + 0.5 * self.params.beta_prior * (beta_j**2))
 
             assert self.psi_ is not None and self.beta_ is not None
-            word_p0 = np.concatenate([self.psi_, self.beta_])
-            # Use BFGS for better convergence on small problems
-            res_word = minimize(
-                word_objective, word_p0, method="BFGS", options={"maxiter": 10}
-            )
-            self.psi_ = res_word.x[:n_terms]
-            self.beta_ = res_word.x[n_terms:]
-
-            # 2. Fix psi, beta. Optimize alpha, theta (Document parameters)
-            def doc_objective(p_doc: np.ndarray) -> float:
-                alpha = p_doc[:n_docs]
-                theta = p_doc[n_docs:]
-                assert self.beta_ is not None and self.psi_ is not None
-                log_lambda = (
-                    alpha[:, np.newaxis]
-                    + self.psi_[np.newaxis, :]
-                    + np.outer(theta, self.beta_)
+            for j in range(n_terms):
+                y_col = doc_term_matrix[:, j]
+                p0 = np.array([self.psi_[j], self.beta_[j]])
+                res_word = minimize(
+                    word_objective,
+                    p0,
+                    args=(y_col, self.alpha_, self.theta_),
+                    method="BFGS",
+                    options={"maxiter": 10},
                 )
+                self.psi_[j] = res_word.x[0]
+                self.beta_[j] = res_word.x[1]
+
+            # 2. Fix psi, beta. Optimize alpha, theta (Document parameters) independently
+            def doc_objective(
+                p_doc: np.ndarray, y_row: np.ndarray, psi: np.ndarray, beta: np.ndarray
+            ) -> float:
+                alpha_i, theta_i = p_doc
+                log_lambda = alpha_i + psi + beta * theta_i
                 log_lambda = np.clip(log_lambda, -10, 10)
-                loss = np.exp(log_lambda) - doc_term_matrix * log_lambda
+                loss = np.exp(log_lambda) - y_row * log_lambda
                 return float(
-                    np.sum(loss) + 0.5 * self.params.alpha_prior * np.sum(alpha**2)
+                    np.sum(loss) + 0.5 * self.params.alpha_prior * (alpha_i**2)
                 )
 
             assert self.alpha_ is not None and self.theta_ is not None
-            doc_p0 = np.concatenate([self.alpha_, self.theta_])
-            res_doc = minimize(
-                doc_objective, doc_p0, method="BFGS", options={"maxiter": 10}
-            )
-            self.alpha_ = res_doc.x[:n_docs]
-            self.theta_ = res_doc.x[n_docs:]
+            for i_doc in range(n_docs):
+                y_row = doc_term_matrix[i_doc, :]
+                p0 = np.array([self.alpha_[i_doc], self.theta_[i_doc]])
+                res_doc = minimize(
+                    doc_objective,
+                    p0,
+                    args=(y_row, self.psi_, self.beta_),
+                    method="BFGS",
+                    options={"maxiter": 10},
+                )
+                self.alpha_[i_doc] = res_doc.x[0]
+                self.theta_[i_doc] = res_doc.x[1]
 
             # 3. Identification: Normalize theta
             assert self.theta_ is not None

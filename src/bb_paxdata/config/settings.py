@@ -65,6 +65,18 @@ class Settings(BaseSettings):
     legacy_data_root: Path | None = Field(default=None)
     legacy_schema_version: str = Field(default="5.8")  # Esneklik için
 
+    # ── DualGate Konfigürasyonu ──────────────────────────────────────────
+    anomaly_context_window: int = Field(
+        default=5, description="AIAnomalyController'a verilecek bağlam cümle sayısı"
+    )
+    anomaly_controller_enabled: bool = Field(
+        default=True,
+        description="AIAnomalyController'ı devre dışı bırakmak için False yap",
+    )
+    anomaly_soft_log_only: bool = Field(
+        default=True, description="SOFT_ANOMALY'leri sadece logla, HITL'e gönderme"
+    )
+
     # ── Validators ────────────────────────────────────────────────────────
 
     @field_validator("database_url", mode="before")

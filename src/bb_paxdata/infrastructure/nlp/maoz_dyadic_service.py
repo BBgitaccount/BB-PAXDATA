@@ -27,12 +27,24 @@ class MaozDyadicService:
         alliance_score: Decimal | None,
         structural_distance: Decimal | None,
         discourse_sentiment_delta: Decimal | None,
+        citations_a_to_b: int | None = None,
+        citations_b_to_a: int | None = None,
     ) -> DyadicMetrics:
         """
         Maoz formulas:
         - diplomatic_distance = 1 − (vote_affinity × alliance_score)
         - affinity_score = discourse_sentiment_delta × (1 / structural_distance)
+        - citation_asymmetry_ratio = Count(A->B) / (Count(B->A) + 1)
         """
+        asymmetry_ratio = None
+        obsession = False
+        ignore = False
+
+        if citations_a_to_b is not None and citations_b_to_a is not None:
+            asymmetry_ratio = float(citations_a_to_b) / (float(citations_b_to_a) + 1.0)
+            obsession = asymmetry_ratio > 3.0
+            ignore = asymmetry_ratio < 0.33
+
         metrics = DyadicMetrics(
             actor_a_id=actor_a_id,
             actor_b_id=actor_b_id,
@@ -41,6 +53,9 @@ class MaozDyadicService:
             alliance_score=alliance_score,
             structural_distance=structural_distance,
             discourse_sentiment_delta=discourse_sentiment_delta,
+            citation_asymmetry_ratio=asymmetry_ratio,
+            obsession_flag=obsession,
+            ignore_flag=ignore,
         )
         computed = metrics.compute()
 

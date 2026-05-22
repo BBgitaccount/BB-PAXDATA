@@ -58,5 +58,5 @@ class TestSpacyModelManager:
         assert model == mock_nlp
         # Verify it was loaded as English
         mock_spacy_load.assert_called_with(
-            "en_core_web_trf", disable=["attribute_ruler", "lemmatizer"]
+            "en_core_web_lg", disable=["attribute_ruler", "lemmatizer"]
         )

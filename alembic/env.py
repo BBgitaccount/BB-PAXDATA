@@ -12,7 +12,7 @@ from alembic import context
 sys.path.insert(0, r"C:\Users\THINKPAD\Desktop\BB-PAXDATA\src")
 
 # ── METADATA IMPORT ────────────────────────────────────────
-import bb_paxdata.infrastructure.db.models
+import bb_paxdata.infrastructure.db.human_review_table
 import bb_paxdata.infrastructure.db.topic_models  # noqa: F401
 from bb_paxdata.infrastructure.db.base import Base
 from bb_paxdata.infrastructure.db.country_models import Base as CountryBase

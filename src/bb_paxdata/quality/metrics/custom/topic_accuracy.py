@@ -24,9 +24,10 @@ class TopicAccuracyMetric:
         self.threshold = threshold
         self.logger = structlog.get_logger(__name__)
 
-        # Topic mapping for partial matches
         self.topic_groups = {
             "Güvenlik_Çatışma": [
+                "güvenlik",
+                "çatışma",
                 "security",
                 "conflict",
                 "defense",
@@ -34,6 +35,7 @@ class TopicAccuracyMetric:
                 "threat",
             ],
             "Ekonomi": [
+                "ekonomi",
                 "economy",
                 "economic",
                 "trade",
@@ -41,12 +43,40 @@ class TopicAccuracyMetric:
                 "market",
                 "currency",
             ],
-            "Diplomasi": ["diplomacy", "diplomatic", "negotiation", "talks", "summit"],
-            "İnsani_Yardım": ["humanitarian", "aid", "refugee", "relief", "assistance"],
-            "BM_Reformu": ["un", "reform", "united nations", "security council"],
+            "Diplomasi": [
+                "diplomasi",
+                "diplomacy",
+                "diplomatic",
+                "negotiation",
+                "talks",
+                "summit",
+            ],
+            "İnsani_Yardım": [
+                "insani",
+                "yardım",
+                "humanitarian",
+                "aid",
+                "refugee",
+                "relief",
+                "assistance",
+            ],
+            "BM_Reformu": [
+                "bm",
+                "reform",
+                "un",
+                "united nations",
+                "security council",
+            ],
             "Gazze": ["gaza", "gazze", "palestine", "israel", "hamas"],
-            "Ukrayna": ["ukraine", "russia", "kyiv", "moscow", "war"],
-            "Çok_kutupluluk": ["multipolar", "brics", "china", "russia", "west"],
+            "Ukrayna": ["ukraine", "ukrayna", "russia", "kyiv", "moscow", "war"],
+            "Çok_kutupluluk": [
+                "çok kutupluluk",
+                "multipolar",
+                "brics",
+                "china",
+                "russia",
+                "west",
+            ],
         }
 
     def measure(

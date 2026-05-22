@@ -1,5 +1,6 @@
 """Drift detection algorithms for temporal analysis."""
 
+import math
 from collections import Counter
 from typing import Any
 
@@ -382,3 +383,223 @@ def _calculate_slope(x: np.ndarray, y: np.ndarray) -> float:
         return 0.0
 
     return float(numerator / denominator)
+
+
+def detect_red_line_flexibility(
+    risk_signals: list[int],
+    stances: list[str],
+) -> dict[str, Any]:
+    """
+    B1: Red Line Flexibility Index.
+    If at t0, Risk_Signal == 3 (RED_LINE), and at t1, Risk_Signal == 1 and Stance == HEDGE
+    then concession_detected = True.
+    """
+    concession_count = 0
+    red_line_count = 0
+
+    for i in range(len(risk_signals) - 1):
+        if risk_signals[i] == 3:
+            red_line_count += 1
+            if risk_signals[i + 1] <= 1 and (
+                stances[i + 1].upper() == "HEDGE" or "HEDGE" in stances[i + 1].upper()
+            ):
+                concession_count += 1
+
+    flexibility_index = concession_count / red_line_count if red_line_count > 0 else 0.0
+    return {
+        "concession_detected": concession_count > 0,
+        "red_line_flexibility_index": round(flexibility_index, 4),
+        "red_line_count": red_line_count,
+        "concession_count": concession_count,
+    }
+
+
+def detect_action_discourse_gap(
+    commitments: list[str],
+    has_action: list[bool],
+) -> dict[str, Any]:
+    """
+    B5: Action-Discourse Gap.
+    If the same high-commitment expression (e.g. 'will implement') is repeated 3+ times
+    without actions, stalling_flag = True.
+    """
+    if len(commitments) < 3:
+        return {
+            "commitment_repetition_count": 0,
+            "action_discourse_gap_score": 0.0,
+            "stalling_flag": False,
+        }
+
+    repeats = 0
+    max_repeats = 0
+    last_comm = None
+
+    for idx, comm in enumerate(commitments):
+        # We only check repeats when there's no action
+        action_taken = has_action[idx] if idx < len(has_action) else False
+        if not action_taken and comm and (comm == last_comm or last_comm is None):
+            repeats += 1
+            max_repeats = max(max_repeats, repeats)
+        else:
+            repeats = 1 if not action_taken else 0
+        last_comm = comm
+
+    stalling_flag = max_repeats >= 3
+    score = min(max_repeats / 10.0, 1.0)
+    return {
+        "commitment_repetition_count": max_repeats,
+        "action_discourse_gap_score": round(score, 4),
+        "stalling_flag": stalling_flag,
+    }
+
+
+def calculate_mtld(tokens: list[str], threshold: float = 0.72) -> float:
+    """
+    A5: Measure of Textual Lexical Diversity (MTLD).
+    Calculates vocabulary richness based on the stabilization point of TTR.
+    """
+    if not tokens:
+        return 0.0
+
+    def mtld_dir(toks: list[str]) -> float:
+        factors = 0.0
+        now_toks = []
+        for t in toks:
+            now_toks.append(t.lower())
+            ttr = len(set(now_toks)) / len(now_toks)
+            if ttr < threshold:
+                factors += 1.0
+                now_toks = []
+        if now_toks:
+            ttr = len(set(now_toks)) / len(now_toks)
+            if ttr < 1.0:
+                factors += (1.0 - ttr) / (1.0 - threshold)
+        return len(toks) / max(factors, 0.0001)
+
+    forward = mtld_dir(tokens)
+    backward = mtld_dir(list(reversed(tokens)))
+    return round((forward + backward) / 2.0, 4)
+
+
+def estimate_sentiment_garch_volatility(
+    sentiment_series: list[float],
+    omega: float = 0.05,
+    alpha: float = 0.15,
+    beta: float = 0.8,
+) -> dict[str, Any]:
+    """
+    A7: Sentiment Volatility GARCH(1,1).
+    Recursively estimate conditional variance sigma^2_t = omega + alpha * eps^2_{t-1} + beta * sigma^2_{t-1}.
+    """
+    if not sentiment_series:
+        return {"sentiment_volatility": 0.0, "volatility_regime": "LOW_VOLATILITY"}
+
+    mean_val = sum(sentiment_series) / len(sentiment_series)
+    residuals = [x - mean_val for x in sentiment_series]
+
+    current_variance = (
+        sum(r**2 for r in residuals) / len(residuals) if len(residuals) > 0 else 0.01
+    )
+    if current_variance == 0:
+        current_variance = 0.01
+
+    volatilities = []
+    for r in residuals:
+        current_variance = omega + alpha * (r**2) + beta * current_variance
+        volatilities.append(math.sqrt(current_variance))
+
+    last_vol = volatilities[-1] if volatilities else 0.0
+    if last_vol > 0.4:
+        regime = "HIGH_VOLATILITY"
+    elif last_vol > 0.15:
+        regime = "ARCH_EFFECTS"
+    else:
+        regime = "LOW_VOLATILITY"
+
+    return {
+        "sentiment_volatility": round(last_vol, 6),
+        "volatility_regime": regime,
+        "volatilities_series": [round(v, 6) for v in volatilities],
+    }
+
+
+def calculate_entity_salience_half_life(counts: list[int]) -> dict[str, Any]:
+    """
+    B8: Entity Salience Half-Life.
+    Fits counts to f(t) = f0 * exp(-lambda * t) using regression on log(counts + 1).
+    """
+    if len(counts) < 2:
+        return {
+            "salience_half_life": 999.0,
+            "decay_rate": 0.0,
+            "agenda_permanence": "STRUCTURAL",
+        }
+
+    x = np.arange(len(counts))
+    y = np.log1p(np.array(counts, dtype=float))
+
+    x_mean = np.mean(x)
+    y_mean = np.mean(y)
+
+    x_diff = x - x_mean
+    y_diff = y - y_mean
+
+    num = np.sum(x_diff * y_diff)
+    den = np.sum(x_diff**2)
+
+    b = float(num / den) if den != 0 else 0.0
+    decay_rate = -b
+
+    if decay_rate > 0.001:
+        half_life = math.log(2.0) / decay_rate
+    else:
+        half_life = 999.0  # Stable
+
+    if half_life < 2.0:
+        permanence = "FLASH"
+    elif half_life < 5.0:
+        permanence = "TACTICAL"
+    elif half_life < 15.0:
+        permanence = "STRATEGIC"
+    else:
+        permanence = "STRUCTURAL"
+
+    return {
+        "salience_half_life": round(half_life, 4),
+        "decay_rate": round(decay_rate, 4),
+        "agenda_permanence": permanence,
+    }
+
+
+def calculate_lexical_entropy(tokens: list[str]) -> float:
+    """Calculate Shannon entropy of the token distribution."""
+    if not tokens:
+        return 0.0
+    counts = Counter(tokens)
+    total = len(tokens)
+    entropy = -sum((c / total) * math.log2(c / total) for c in counts.values())
+    return round(entropy, 4)
+
+
+def detect_entropy_constriction(
+    entropy_series: list[float],
+    threshold: float = -0.1,
+) -> dict[str, Any]:
+    """
+    B10: Lexical Entropy Constriction.
+    Triggers flag if shannon entropy drops substantially over the series.
+    """
+    if len(entropy_series) < 2:
+        return {
+            "shannon_entropy": entropy_series[-1] if entropy_series else 0.0,
+            "entropy_delta": 0.0,
+            "lexical_constriction_flag": False,
+        }
+
+    delta = entropy_series[-1] - entropy_series[0]
+    flag = delta < threshold
+    return {
+        "shannon_entropy": round(entropy_series[-1], 4),
+        "entropy_delta": round(delta, 4),
+        "lexical_constriction_flag": flag,
+    }

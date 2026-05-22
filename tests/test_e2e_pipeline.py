@@ -52,33 +52,33 @@ class TestCrossAnomalyService:
     def setup_method(self):
         self.service = CrossAnomalyService()
 
-    def test_no_getattr_usage(self):
+    async def test_no_getattr_usage(self):
         """Servis analysis.effective_risk kullanmalı, 0.0 sabit dönmemeli."""
         a = Analysis(source_text="Test", ai_sentiment_score=0.5, ai_risk_score=0.9)
-        result = self.service.detect(a)
+        result = await self.service.detect(a)
         assert result.score > 0.0  # Gerçek AI skorları görülüyor
 
-    def test_divergence_rule_triggered(self):
+    async def test_divergence_rule_triggered(self):
         """Pozitif duygu + yüksek risk → DIVERGENCE anomalisi tetiklenmeli."""
         a = Analysis(source_text="Test", ai_sentiment_score=0.5, ai_risk_score=0.85)
-        result = self.service.detect(a)
+        result = await self.service.detect(a)
         assert result.score > 0.0
         assert len(result.flags) > 0
         assert any("DIVERGENCE" in flag or "RISK" in flag for flag in result.flags)
 
-    def test_no_fake_anomaly_without_ai_output(self):
+    async def test_no_fake_anomaly_without_ai_output(self):
         """AI çıktısı yoksa sahte anomali üretilmemeli."""
         a = Analysis(source_text="Test")
-        result = self.service.detect(a)
+        result = await self.service.detect(a)
         assert result.score == 0.0
         assert any("NO_AI_OUTPUT" in flag for flag in result.flags)
 
-    def test_returns_anomaly_result_not_analysis(self):
+    async def test_returns_anomaly_result_not_analysis(self):
         """detect() Analysis mutate etmemeli, AnomalyResult döndürmeli."""
         from bb_paxdata.domain.services.cross_anomaly_service import AnomalyResult
 
         a = Analysis(source_text="Test", ai_sentiment_score=-0.8, ai_risk_score=0.85)
-        result = self.service.detect(a)
+        result = await self.service.detect(a)
         assert isinstance(result, AnomalyResult)
         assert a.anomaly_score is None  # Orijinal nesne mutate edilmedi!
 
@@ -132,14 +132,14 @@ class TestPromptRegistry:
         assert active is not None
         assert active.is_active is True
 
-    def test_ai_result_has_prompt_version_stamp(self):
-        result = self.analyst.analyze("Test metni")
+    async def test_ai_result_has_prompt_version_stamp(self):
+        result = await self.analyst.analyze("Test metni")
         assert result.prompt_version is not None
         assert "@" in result.prompt_version
         assert result.prompt_version != "diplomatic_analysis@unknown"
 
-    def test_prompt_hash_present(self):
-        result = self.analyst.analyze("Test metni")
+    async def test_prompt_hash_present(self):
+        result = await self.analyst.analyze("Test metni")
         assert result.prompt_hash is not None
         assert len(result.prompt_hash) == 16  # SHA256'nın ilk 16 karakteri
 
@@ -157,29 +157,17 @@ class TestPipelineIntegration:
     """HATA 2 + 3: Pipeline uçtan uca çalışmalı, immutable data flow korunmalı."""
 
     def setup_method(self):
-        registry = build_default_registry()
-        self.ai_analyst = AIAnalyst(registry=registry)
-        self.anomaly_service = CrossAnomalyService()
-        self.assembler = AnalysisAssembler()
-
-        from bb_paxdata.domain.services.ner_service import SpacyNERService
-        from bb_paxdata.domain.services.tokenizer_service import SpacyTokenizerService
-
-        self.ner_service = SpacyNERService()
-        self.tokenizer_service = SpacyTokenizerService()
-
-        self.pipeline = AnalysisPipeline(
-            ner_service=self.ner_service,
-            tokenizer_service=self.tokenizer_service,
-            ai_analyst=self.ai_analyst,
-            anomaly_service=self.anomaly_service,
-            assembler=self.assembler,
+        from bb_paxdata.infrastructure.container.service_container import (
+            ServiceContainer,
         )
 
-    def test_full_e2e_diplomatic_mixed_text(self):
+        self.container = ServiceContainer()
+        self.pipeline = self.container.pipeline
+
+    async def test_full_e2e_diplomatic_mixed_text(self):
         """Türkçe-İngilizce karma diplomatik metin tam pipeline'dan geçmeli."""
         text = "NATO zirvesinde Türkiye ve ABD arasında diplomatik gerilim yaşandı."
-        result = self.pipeline.run(text)
+        result = await self.pipeline.run(text)
 
         assert isinstance(result, PipelineResult)
         assert isinstance(result.analysis, Analysis)
@@ -190,36 +178,49 @@ class TestPipelineIntegration:
         assert "@" in result.analysis.prompt_version
         assert result.analysis.anomaly_score is not None
 
-    def test_immutability_preserved(self):
+    async def test_immutability_preserved(self):
         """DETECT aşaması orijinal Analysis nesnesini mutate etmemeli."""
         text = "Kriz büyüyor."
-        result = self.pipeline.run(text)
+        result = await self.pipeline.run(text)
         # raw_ai içindeki orijinal AIAnalysisResult etkilenmemiş olmalı
         if result.raw_ai:
             assert result.raw_ai.sentiment_score == result.analysis.ai_sentiment_score
 
-    def test_analyze_sentence_alias_works(self):
+    async def test_analyze_sentence_alias_works(self):
         """Geriye uyumlu alias çalışmalı."""
         text = "Müzakereler başarısız oldu."
-        result1 = self.pipeline.run(text)
-        result2 = self.pipeline.analyze_sentence(text)
+        result1 = await self.pipeline.run(text)
+        result2 = await self.pipeline.analyze_sentence(text)
         assert isinstance(result1, type(result2))
 
-    def test_fail_fast_mode(self):
+    async def test_fail_fast_mode(self):
         """fail_fast_on_missing_ai=True ile AI çıktısı yoksa hata rapor edilmeli."""
         mock_ai = MagicMock()
-        mock_ai.analyze.return_value = AIAnalysisResult(
-            prompt_version="test@v1",
-            # sentiment_score ve risk_score None → has_ai_output=False
-        )
+
+        async def mock_analyze(text, **kwargs):
+            return AIAnalysisResult(prompt_version="test@v1")
+
+        mock_ai.analyze = mock_analyze
 
         pipeline_strict = AnalysisPipeline(
-            ner_service=self.ner_service,
-            tokenizer_service=self.tokenizer_service,
+            ner_service=self.container.ner_service,
+            tokenizer_service=self.container.tokenizer_service,
             ai_analyst=mock_ai,
-            anomaly_service=self.anomaly_service,
-            assembler=self.assembler,
+            anomaly_service=self.container.anomaly_service,
+            country_collector=self.container.country_collector,
+            negation_detector=self.container.negation_detector,
+            risk_detector=self.container.risk_detector,
+            power_calculator=self.container.power_calculator,
+            topic_modeling_service=self.container.topic_modeling_service,
+            frame_pipeline=self.container.frame_pipeline,
+            lexicon_service=self.container.frame_lexicon_service,
+            episodic_classifier=self.container.episodic_classifier,
+            frame_assembler=self.container.frame_assembler,
+            sbi_calculator=self.container.sbi_calculator,
+            stance_calculator=self.container.stance_calculator,
+            engagement_scorer=self.container.engagement_analyzer,
+            assembler=self.container.assembler,
             fail_fast_on_missing_ai=True,
         )
-        result = pipeline_strict.run("Test metni")
+        result = await pipeline_strict.run("Test metni")
         assert any("MISSING_AI" in err for err in result.errors)

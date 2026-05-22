@@ -284,20 +284,15 @@ class TestDuplicateProtectionService:
         mock_db_session.query.return_value.count.return_value = 10
         mock_db_session.query.return_value.filter.return_value.count.return_value = 3
         mock_query = mock_db_session.query.return_value
+        mock_query.scalar.return_value = 2.5
         mock_query.order_by.return_value.limit.return_value.all.return_value = []
 
-        # Mock avg query
-        with patch(
-            "bb_paxdata.domain.services.duplicate_protection.func.avg"
-        ) as mock_avg:
-            mock_avg.return_value.scalar.return_value = 2.5
+        stats = service.get_processing_statistics()
 
-            stats = service.get_processing_statistics()
-
-            assert stats["total_processed_files"] == 10
-            assert stats["force_rebuild_count"] == 3
-            assert stats["average_reprocess_count"] == 2.5
-            assert isinstance(stats["most_processed_files"], list)
+        assert stats["total_processed_files"] == 10
+        assert stats["force_rebuild_count"] == 3
+        assert stats["average_reprocess_count"] == 2.5
+        assert isinstance(stats["most_processed_files"], list)
 
     def test_cleanup_old_records(
         self, service: DuplicateProtectionService, mock_db_session: Mock

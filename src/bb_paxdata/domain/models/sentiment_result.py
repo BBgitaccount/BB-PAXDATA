@@ -50,3 +50,6 @@ class LIWCScores:
     authenticity: float | None = None
     tone: float | None = None
     word_count: int = 0
+    cognitive_processing_score: float | None = None
+    causal_word_ratio: float | None = None
+    certainty_vs_tentative_ratio: float | None = None

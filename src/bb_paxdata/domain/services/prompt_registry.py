@@ -243,4 +243,46 @@ def build_default_registry() -> PromptRegistry:
             academic_ref="Grootendorst, M. (2022). BERTopic: Neural Topic Modeling.",
         )
     )
+
+    ANOMALY_VALIDATION_PROMPT_TEXT = """You are an expert in diplomatic discourse analysis acting as an anomaly validation judge.
+
+## CONTEXT (last {self._max_ctx} sentences):
+{ctx_block}
+
+## SENTENCE UNDER ANALYSIS:
+"{sentence.text}"
+
+## DETERMINISTIC ANOMALY ENGINE RESULT:
+{anomaly_block}
+
+## YOUR TASK:
+Analyze the sentence in its diplomatic context and validate or challenge the deterministic result.
+Consider:
+- Is this genuine contradiction or strategic irony/rhetoric?
+- Does the speaker use diplomatic subtext that rules cannot capture?
+- Are there hidden coercive signals or tone shifts the rules missed?
+
+Respond ONLY with a valid JSON object:
+{{
+  "decision": "<CONFIRMED|DISMISSED|ESCALATED|AI_ONLY|INCONCLUSIVE>",
+  "coherence_score": <0.0-1.0, where 1.0=fully coherent/no anomaly>,
+  "reasoning": "<concise explanation in the same language as the sentence>",
+  "detected_subtype": "<irony|rhetorical_strategy|coercive_signal|tone_drift|null>",
+  "confidence": <0.0-1.0>
+}}"""
+
+    # We skip hashing here because PromptVersion computes it in __post_init__ automatically
+    registry.register(
+        PromptVersion(
+            prompt_id="anomaly_validation",
+            version="v1.0",
+            template=ANOMALY_VALIDATION_PROMPT_TEXT,
+            description="LLM-as-a-Judge semantic anomaly validation",
+            is_active=True,
+            model_name="gpt-4o",
+            language="any",
+            academic_ref="Tsytsarau et al. (2017) | LLM-as-a-Judge (Zheng et al. 2023)",
+        )
+    )
+
     return registry

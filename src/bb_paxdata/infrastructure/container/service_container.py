@@ -6,6 +6,7 @@
 from __future__ import annotations
 
 import logging
+from typing import Any, cast
 
 from ...application.pipeline.analysis_pipeline import AnalysisPipeline
 from ...application.pipeline.assembler import AnalysisAssembler
@@ -49,9 +50,22 @@ class ServiceContainer:
         )
 
         # ── Prompt Registry + AI Analyst ───────────────────────────
+        from bb_paxdata.application.services.few_shot_injector import FewShotInjector
+        from bb_paxdata.infrastructure.db.repositories.unit_of_work import (
+            SqlAlchemyUnitOfWork,
+        )
+        from bb_paxdata.infrastructure.db.session import SessionLocal
+
+        def uow_factory() -> SqlAlchemyUnitOfWork:
+            return SqlAlchemyUnitOfWork(SessionLocal)
+
+        self.few_shot_injector = FewShotInjector(uow_factory=uow_factory)
+
         self.prompt_registry = build_default_registry()
         self.ai_analyst = AIAnalyst(
-            registry=self.prompt_registry, language_detector=self.language_detector
+            registry=self.prompt_registry,
+            language_detector=self.language_detector,
+            few_shot_injector=self.few_shot_injector,
         )
 
         # ── Anomali Servisi ─────────────────────────────────────────
@@ -74,8 +88,7 @@ class ServiceContainer:
         # Note: CountryReferenceCollector needs a spacy model.
         # For the container, we use the default 'en' model from NER service.
         self.country_collector = CountryReferenceCollector(
-            nlp=self.ner_service._models.get("en")
-            or self.ner_service._models.get("tr"),
+            nlp=common_nlp,
             country_vocabulary=set(),  # Vocabulary will be injected or loaded
             llm_client=self.ai_analyst,
             # recovery_engine and prompt_registry could be injected here if needed
@@ -123,10 +136,25 @@ class ServiceContainer:
             coreference_resolver=None,
             embedding_matcher=None,
             five_w_one_h_extractor=None,
-            llm_client=self.ai_analyst,
+            llm_client=cast(Any, self.ai_analyst),
             topic_service=self.topic_modeling_service,
             recovery_engine=self.recovery_engine,
         )
+
+        # ── Dual-Gate Consensus (Faz 4) ───────────────────────────
+        from ...application.consensus.dual_gate import DualGateConsensusLayer
+        from ...config.settings import get_settings
+        from ..ai.anomaly_controller import AIAnomalyController
+
+        settings = get_settings()
+
+        self.anomaly_controller = AIAnomalyController(
+            ai_client=cast(Any, self.ai_analyst),
+            recovery_engine=self.recovery_engine,
+            max_context_sentences=settings.anomaly_context_window,
+        )
+
+        self.consensus_layer = DualGateConsensusLayer()
 
         # ── Pipeline ────────────────────────────────────────────────
         self.assembler = AnalysisAssembler(sbi_calculator=self.sbi_calculator)
@@ -148,6 +176,8 @@ class ServiceContainer:
             stance_calculator=self.stance_calculator,
             engagement_scorer=self.engagement_analyzer,
             assembler=self.assembler,
+            dual_gate_layer=self.consensus_layer,
+            anomaly_controller=self.anomaly_controller,
         )
 
         logger.info("ServiceContainer hazır — tüm servisler aktif.")

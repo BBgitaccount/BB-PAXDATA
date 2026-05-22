@@ -6,17 +6,19 @@ Political Issues. Episodic (individual/event-focused) vs Thematic (structural/co
 frame distinction.]
 """
 
+from __future__ import annotations
+
 import asyncio
 from dataclasses import dataclass
 from typing import TYPE_CHECKING, Final
-
-if TYPE_CHECKING:
-    from spacy.language import Language
 
 import structlog
 from bb_paxdata.domain.enums.frame_type import FrameType
 from bb_paxdata.domain.models.segment import Segment
 from spacy.tokens import Doc
+
+if TYPE_CHECKING:
+    from spacy.language import Language
 
 logger = structlog.get_logger(__name__)
 

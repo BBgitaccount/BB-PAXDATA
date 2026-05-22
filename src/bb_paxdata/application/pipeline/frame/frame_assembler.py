@@ -6,11 +6,10 @@ Paradigm. Journal of Communication, 43(4), 51–58.
 FrameSalience_k = Σ(KeywordWeight_i × PositionBoost_i) / SegmentLength]
 """
 
+from __future__ import annotations
+
 import asyncio
 from typing import TYPE_CHECKING, Final
-
-if TYPE_CHECKING:
-    from spacy.language import Language
 
 import structlog
 from bb_paxdata.domain.enums.frame_type import FrameType
@@ -24,6 +23,9 @@ from bb_paxdata.infrastructure.ai.frame_detection.frame_lexicon_service import (
     FrameLexiconService,
 )
 from spacy.tokens import Doc
+
+if TYPE_CHECKING:
+    from spacy.language import Language
 
 logger = structlog.get_logger(__name__)
 

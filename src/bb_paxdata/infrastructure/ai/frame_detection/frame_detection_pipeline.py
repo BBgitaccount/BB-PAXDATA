@@ -28,7 +28,7 @@ from bb_paxdata.domain.services.frame_detection import (
 )
 from bb_paxdata.domain.services.topic_modeling_protocol import TopicModelingProtocol
 from bb_paxdata.infrastructure.ai.clients.llm_client_protocol import LLMClientProtocol
-from bb_paxdata.infrastructure.ai.recovery_engine import RecoveryEngine
+from bb_paxdata.infrastructure.ai.recovery import RecoveryEngine
 from sklearn.metrics.pairwise import cosine_similarity
 
 logger = structlog.get_logger(__name__)

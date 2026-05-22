@@ -36,7 +36,25 @@
             "concerned",
             "hopeful",
             "angry",
-            "fearful"
+            "fearful",
+            "serious",
+            "demanding",
+            "troubled",
+            "friendly",
+            "urgent",
+            "appreciative",
+            "alarmed",
+            "principled",
+            "constructive",
+            "condemnatory",
+            "supportive",
+            "warning",
+            "determined",
+            "encouraged",
+            "analytical",
+            "threatening",
+            "welcoming",
+            "defensive"
           ],
           "description": "Sentiment category"
         },
@@ -74,7 +92,10 @@
             "confrontational",
             "neutral",
             "persuasive",
-            "defensive"
+            "defensive",
+            "analytical",
+            "concerned",
+            "urgent"
           ],
           "description": "Diplomatic tone"
         },

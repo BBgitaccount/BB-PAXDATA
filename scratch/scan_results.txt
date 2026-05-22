@@ -1,0 +1,5187 @@
+=== FILE: anomaly\core\context.py ===
+Classes:
+  - Class: AnalysisContext
+    Doc: Analiz sırasında gerekli olan harici servisleri ve
+servis çağrısı sonuçlarını saklayan bağlam (Context).
+    Methods:
+      * get_cached(self, key, compute_fn)
+        Doc: Servis çağrılarını memoize eder.
+
+Args:
+    key: Cache anahtarı.
+    compute_fn: Veri bulunamazsa çalıştırılacak fonksiyon.
+
+=== FILE: anomaly\core\models.py ===
+Classes:
+  - Class: AnomalySeverity
+    Doc: Anomali şiddet seviyeleri.
+  - Class: SegmentRef
+    Doc: Anomaliden etkilenen bir segment referansı.
+  - Class: Sentence
+    Doc: Tek bir cümle ve duygu skoru.
+  - Class: Segment
+    Doc: Cümleler topluluğu ve konuşmacı bilgisi.
+  - Class: Transcript
+    Doc: Tam transcript yapısı.
+  - Class: Analysis
+    Doc: Analiz nesnesi - Immutable.
+  - Class: AnomalyResult
+    Doc: Anomali tespit sonucu.
+    Methods:
+      * __post_init__(self)
+
+=== FILE: anomaly\core\protocols.py ===
+Classes:
+  - Class: AnomalyRule
+    Doc: Tüm anomali kuralları bu protokolü implement etmelidir.
+Protocol-based architecture ile loose coupling sağlanır.
+    Methods:
+      * rule_id(self)
+        Doc: Kuralın benzersiz kimliği.
+      * rule_name(self)
+        Doc: Kuralın insan tarafından okunabilir adı.
+      * severity(self)
+        Doc: Kuralın varsayılan şiddet seviyesi.
+      * evaluate(self, analysis, context)
+        Doc: Analiz nesnesini değerlendirir.
+
+Args:
+    analysis: Immutable analiz verisi.
+    context: Harici servisler ve cache sağlayan bağlam.
+
+Returns:
+    Anomali bulunursa AnomalyResult, yoksa None.
+
+=== FILE: anomaly\core\service.py ===
+Classes:
+  - Class: CrossAnomalyService
+    Doc: Tüm anomali kurallarını koordine eden merkezi servis.
+Thread-safe ve concurrent evaluation destekler.
+    Methods:
+      * __init__(self, max_workers)
+      * register_rule(self, rule)
+        Doc: Kuralı sisteme kaydeder.
+      * unregister_rule(self, rule_id)
+        Doc: Kuralı sistemden çıkarır.
+      * evaluate(self, analysis, context)
+        Doc: Tüm kayıtlı kuralları paralel olarak çalıştırır.
+      * evaluate_single(self, rule_id, analysis, context)
+        Doc: Belirli bir kuralı çalıştırır.
+      * _safe_evaluate(self, rule, analysis, context)
+        Doc: Kuralı hata yakalayarak çalıştırır.
+      * shutdown(self)
+        Doc: Servisi kapatır.
+
+=== FILE: anomaly\rules\base.py ===
+Classes:
+  - Class: BaseAnomalyRule
+    Doc: Tüm anomali kuralları için ortak davranışları barındıran temel sınıf.
+    Methods:
+      * rule_id(self)
+      * rule_name(self)
+      * severity(self)
+      * evaluate(self, analysis, context)
+        Doc: Kuralın ana mantığı burada implement edilir.
+
+=== FILE: anomaly\rules\entity_flip.py ===
+Classes:
+  - Class: EntityFlipConfig
+    Doc: Entity Flip kuralı için konfigürasyon.
+  - Class: EntityFlipRule
+    Doc: ID: RULE_ENTITY_FLIP
+Mantık: Aynı entity (GPE veya Person) 3 cümlelik kayan pencerede
+        taban tabana zıt duygu skorları alıyorsa anomali.
+    Methods:
+      * __init__(self, config)
+      * rule_id(self)
+      * rule_name(self)
+      * severity(self)
+      * evaluate(self, analysis, context)
+
+=== FILE: anomaly\rules\frame_contradiction.py ===
+Classes:
+  - Class: FrameContradictionConfig
+    Doc: Frame Contradiction kuralı için konfigürasyon.
+    Methods:
+      * __post_init__(self)
+  - Class: FrameContradictionRule
+    Doc: ID: RULE_FRAME_CONTRADICTION
+Mantık: Problem tanımı ile çözüm önerisi çerçevelerinin çelişmesi.
+    Methods:
+      * __init__(self, config)
+      * rule_id(self)
+      * rule_name(self)
+      * severity(self)
+      * evaluate(self, analysis, context)
+
+=== FILE: anomaly\rules\missing_gpe.py ===
+Classes:
+  - Class: MissingGPEConfig
+    Doc: Missing GPE kuralı konfigürasyonu.
+    Methods:
+      * __post_init__(self)
+  - Class: MissingGPERule
+    Doc: ID: RULE_MISSING_GPE
+Mantık: Politika fiili kullanılmasına rağmen cümlede herhangi bir GPE argümanı bulunmaması.
+    Methods:
+      * __init__(self, config)
+      * rule_id(self)
+      * rule_name(self)
+      * severity(self)
+      * evaluate(self, analysis, context)
+
+=== FILE: anomaly\rules\modal_collapse.py ===
+Classes:
+  - Class: ModalCollapseConfig
+    Doc: Modal Collapse kuralı için konfigürasyon.
+  - Class: ModalCollapseRule
+    Doc: ID: RULE_MODAL_COLLAPSE
+Mantık: Risk skoru > 0.8 olan bir önermede hedging skoru tam olarak 0 ise anomali.
+       Kritik bir konuda yumuşatma ifadesi eksikliği.
+    Methods:
+      * __init__(self, config)
+      * rule_id(self)
+      * rule_name(self)
+      * severity(self)
+      * evaluate(self, analysis, context)
+
+=== FILE: anomaly\rules\overlapping_claim.py ===
+Classes:
+  - Class: OverlappingClaimConfig
+    Doc: Overlapping claim kuralı konfigürasyonu.
+    Methods:
+      * __post_init__(self)
+  - Class: OverlappingClaimRule
+    Doc: ID: RULE_OVERLAPPING_CLAIM
+Mantık: Birden fazla konuşmacının aynı olaya birbirini dışlayan nedensellikler ataması.
+    Methods:
+      * __init__(self, config)
+      * rule_id(self)
+      * rule_name(self)
+      * severity(self)
+      * evaluate(self, analysis, context)
+
+=== FILE: anomaly\rules\recovery_failure.py ===
+Classes:
+  - Class: RecoveryFailureConfig
+    Doc: Recovery failure kuralı konfigürasyonu.
+  - Class: RecoveryFailureRule
+    Doc: ID: RULE_RECOVERY_FAILURE
+Mantık: AI çıktısının 6 seviyeli recovery sürecinden geçmesine rağmen
+       hala şemaya uygun olmaması ve verinin kayıp olarak işaretlenmesi.
+    Methods:
+      * __init__(self, config)
+      * rule_id(self)
+      * rule_name(self)
+      * severity(self)
+      * evaluate(self, analysis, context)
+
+=== FILE: anomaly\rules\speaker_inconsistency.py ===
+Classes:
+  - Class: SpeakerInconsistencyConfig
+    Doc: Konuşmacı tutarsızlığı kuralı konfigürasyonu.
+  - Class: SpeakerInconsistencyRule
+    Doc: ID: RULE_SPEAKER_INCONSISTENCY
+Mantık: Konuşmacının SBI risk skorlarının geçmiş verilerden anlamlı derecede sapması.
+    Methods:
+      * __init__(self, config)
+      * rule_id(self)
+      * rule_name(self)
+      * severity(self)
+      * evaluate(self, analysis, context)
+
+=== FILE: anomaly\rules\temporal_gap.py ===
+Classes:
+  - Class: TemporalGapConfig
+    Doc: Zaman boşluğu kuralı konfigürasyonu.
+  - Class: TemporalGapRule
+    Doc: ID: RULE_TEMPORAL_GAP
+Mantık: Uzun sessizlik sonrası önceki konuya (çözülemeyen anafora) referans verme.
+    Methods:
+      * __init__(self, config)
+      * rule_id(self)
+      * rule_name(self)
+      * severity(self)
+      * evaluate(self, analysis, context)
+
+=== FILE: anomaly\rules\tone_drift.py ===
+Classes:
+  - Class: ToneDriftConfig
+    Doc: Kurala özgü konfigürasyon.
+  - Class: ToneDriftRule
+    Doc: ID: RULE_TONE_DRIFT
+Mantık: Tek segment içinde ardışık cümlelerin sentiment skorlarının varyansı
+       popülasyonun 2 standart sapması (2σ) üzerine çıkarsa anomali.
+    Methods:
+      * __init__(self, config)
+      * rule_id(self)
+      * rule_name(self)
+      * severity(self)
+      * evaluate(self, analysis, context)
+
+=== FILE: anomaly\rules\translation_artifact.py ===
+Classes:
+  - Class: TranslationArtifactConfig
+    Doc: Translation artifact kuralı konfigürasyonu.
+    Methods:
+      * __post_init__(self)
+  - Class: TranslationArtifactRule
+    Doc: ID: RULE_TRANSLATION_ARTIFACT
+Mantık: POS n-gram dağılımında doğal dilden sapan istatistiksel kaymalar (MT tespiti).
+    Methods:
+      * __init__(self, config)
+      * rule_id(self)
+      * rule_name(self)
+      * severity(self)
+      * evaluate(self, analysis, context)
+
+=== FILE: anomaly\utils\confidence.py ===
+Classes:
+  - Class: ConfidenceCalculator
+    Doc: Farklı kural tipleri için istatistiksel confidence skoru hesaplama araçları.
+    Methods:
+      * from_z_score(z, max_z)
+        Doc: Z-skorunu 0-1 arası confidence'a mapler.
+      * from_kl_divergence(kl, expected_max)
+        Doc: KL divergence'ı confidence skoruna çevirir.
+      * from_deviation(deviation, threshold, steepness)
+        Doc: Threshold üzerindeki sapmayı sigmoid-like mapler.
+      * from_binary_match(matches, total, base_confidence)
+        Doc: Binary eşleşmelerden confidence üretir.
+      * sigmoid(x, center, steepness)
+        Doc: Standart sigmoid fonksiyonu.
+
+=== FILE: anomaly\utils\statistics.py ===
+Classes:
+  - Class: StatisticalUtils
+    Doc: Tekrar eden istatistiksel hesaplamalar için yardımcı sınıf.
+    Methods:
+      * compute_variance(scores)
+        Doc: Listenin varyansını hesaplar (Sample variance).
+      * compute_std(scores)
+        Doc: Standart sapmayı hesaplar.
+      * compute_z_score(value, mean, std)
+        Doc: Z-skorunu hesaplar.
+      * sliding_window(items, window_size)
+        Doc: Kayan pencere oluşturur.
+      * chi_square_test(observed, expected)
+        Doc: Chi-square testi yapar.
+      * kl_divergence(p, q)
+        Doc: Kullback-Leibler Divergence hesaplar.
+
+=== FILE: application\cli\use_cases\migration.py ===
+Classes:
+  - Class: LegacyReader
+    Doc: Legacy DB reading interface. Infrastructure independent.
+    Methods:
+      * fetch_transcripts(self, batch_size, offset)
+      * fetch_analytics(self, transcript_ids)
+      * count_transcripts(self)
+      * close(self)
+  - Class: ModernWriter
+    Doc: Modern DB writing interface. Infrastructure independent.
+    Methods:
+      * upsert_transcripts(self, session, items)
+      * upsert_analytics(self, session, items)
+  - Class: MigrationResult
+    Methods:
+      * success_rate(self)
+  - Class: MigrationUseCase
+    Doc: Legacy -> Modern DB migration orchestrator.
+
+Flow:
+1. Get source row count
+2. Read in batches
+3. Bulk fetch analytics for each batch (prevent N+1)
+4. Write to new DB within transaction
+5. Failure -> individual retry
+6. Return MigrationResult
+    Methods:
+      * __init__(self, settings, legacy_reader, modern_writer, session_factory)
+      * execute(self, dry_run)
+      * _retry_singles(self, batch, dry_run)
+
+=== FILE: application\cli\use_cases\validation.py ===
+Classes:
+  - Class: Severity
+  - Class: ValidationIssue
+    Methods:
+      * to_dict(self)
+  - Class: ValidationResult
+    Methods:
+      * critical_count(self)
+      * warning_count(self)
+      * to_dict(self)
+  - Class: SchemaChecker
+    Methods:
+      * check_alembic_head(self, session)
+      * check_foreign_keys(self, session)
+      * check_column_types(self, session)
+  - Class: DataChecker
+    Methods:
+      * check_orphan_transcripts(self, session)
+      * check_analytic_completeness(self, session)
+      * check_score_ranges(self, session)
+      * check_null_mandatory_fields(self, session)
+      * check_duplicate_transcripts(self, session)
+  - Class: ValidationUseCase
+    Doc: Five-dimensional DB validation orchestrator.
+All checks run independently; if one fails, others continue.
+    Methods:
+      * __init__(self, schema_checker, data_checker, session_factory)
+      * execute(self)
+
+=== FILE: application\commands\build.py ===
+Docstring: Build database command with duplicate protection and quality integration.
+Functions:
+  - calculate_idempotency_key(file_content, file_name, parser_version, speaker_map_version)
+    Doc: Calculate idempotency key for file processing.
+  - get_parser_version()
+    Doc: Get current parser version.
+  - get_speaker_map_version()
+    Doc: Get speaker map version hash.
+  - build(data_dir, force_rebuild, panel_filter, dry_run)
+    Doc: Build database from transcript files with duplicate protection.
+  - status(file_path)
+    Doc: Check processing status of a specific file.
+  - clean(panel_id, older_than, force)
+    Doc: Clean processed files and panels.
+
+=== FILE: application\pipeline\analysis_pipeline.py ===
+Classes:
+  - Class: AnalysisPipeline
+    Doc: Diplomatik metin analizi için uçtan uca 4 aşamalı pipeline.
+
+Aşamalar:
+1. COLLECT  — Her alt-servis bağımsız çalışır, ham veri/model üretir
+2. ASSEMBLE — AnalysisAssembler ile Analysis modeline dönüştürülür
+3. DETECT   — CrossAnomalyService ile anomali tespiti; model_copy ile güncellenir
+4. FINALIZE — PipelineResult zarfı oluşturulur
+
+Tasarım kararları:
+- Hiçbir aşama Analysis nesnesini doğrudan mutate etmez (immutable data flow)
+- Birden fazla aşama hatası tolere edilir (graceful degradation)
+- AI çıktısı eksikse MissingAIOutputException loglanır ama pipeline durdurmaz
+    Methods:
+      * __init__(self, ner_service, tokenizer_service, ai_analyst, anomaly_service, country_collector, negation_detector, risk_detector, power_calculator, topic_modeling_service, frame_pipeline, lexicon_service, episodic_classifier, frame_assembler, sbi_calculator, stance_calculator, engagement_scorer, language_detector, assembler, collect_stage, finalize_stage, dki_assembler, fail_fast_on_missing_ai)
+      * run(self, text, metadata, panel_id, speaker_country, speaker_power_level, session, historical_analyses)
+        Doc: Metni uçtan uca analiz eder. Tüm hatalar PipelineResult.errors'a eklenir.
+      * analyze_sentence(self, text, metadata)
+        Doc: Geriye uyumlu alias — dış API contract'ı bozulmaz.
+
+=== FILE: application\pipeline\assembler.py ===
+Classes:
+  - Class: AnalysisAssembler
+    Doc: Alt-servis dict çıktılarını + AIAnalysisResult'ı
+doğrulanmış bir Analysis (Pydantic) nesnesine dönüştürür.
+
+LODP (Monroe 2009) kullanarak ayırt edici kelime çıkarımı yapar.
+    Methods:
+      * __init__(self, lodp_service, sbi_calculator)
+      * assemble(self, source_text, language, ner_result, tokenizer_result, ai_result, negation_cues, risk_signals, power_indices, topic_result, frame_detection, frame_salience, sbi_result, metadata)
+        Doc: Tüm alt-servis çıktılarını birleştirip doğrulanmış Analysis üretir.
+      * _map_topics_to_nodes(self, topic_result, edges)
+        Doc: BERTopic konularını DNA ağ düğümlerine eşler.
+
+Eşleme kuralı: Bir konunun top-3 kelimesinden biri, bir düğümün (konsept)
+ID'sinde (veya etiketinde) geçiyorsa eşleştir.
+      * enrich_with_lodp(self, segments, reference_segments)
+        Doc: Segmentleri LODP z-skoruyla zenginleştirir.
+
+Reference:
+    - Monroe, B.L. et al. (2009). Fightin' Words.
+      * _calculate_commitment_cost_ratio(self, signals)
+        Doc: COSTLY_SIGNAL oranı = commitment cost proxy (Trager 2010).
+      * build_bilateral_sentiment(self, panel_id, speaker_a, speaker_b, sentiment_delta, power_a, power_b, risk_signals)
+        Doc: Segment üzerinde ikili sentiment + güç asimetrisi hesapla (Trager/Zagare/Van Dijk).
+
+=== FILE: application\pipeline\dki_assembler.py ===
+Classes:
+  - Class: DKIAssembler
+    Doc: Orchestrates DKI computation during ASSEMBLE phase.
+
+Rules:
+- DKI = (Δθᵢ/Δt) × SemanticShift × βⱼ
+- If components are missing, defaults to 1.0 (neutral).
+- Returns a new Analysis instance with dki_result attached.
+    Methods:
+      * __init__(self, shift_calc, position_tracker, dki_threshold)
+      * attach_dki(self, analysis, history)
+        Doc: Compute DKI and attach to the analysis object.
+
+=== FILE: application\pipeline\frame\episodic_themetic_classifier.py ===
+Docstring: Iyengar (1991) Episodic vs Thematic framing classifier.
+
+[Academic Reference: Iyengar, S. (1991). Is Anyone Responsible? How Television Frames 
+Political Issues. Episodic (individual/event-focused) vs Thematic (structural/context-focused) 
+frame distinction.]
+Classes:
+  - Class: EpisodicThematicFeatures
+    Doc: Iyengar (1991) distinctive feature vector.
+    Methods:
+      * episodic_score(self)
+      * thematic_score(self)
+  - Class: EpisodicThematicClassifier
+    Doc: Iyengar (1991) Episodic vs Thematic framing sınıflandırıcısı.
+    Methods:
+      * __init__(self, nlp)
+      * classify(self, segment)
+        Doc: Segment'i Episodic veya Thematic olarak sınıflandır.
+      * _extract_features(self, doc)
+
+=== FILE: application\pipeline\frame\frame_assembler.py ===
+Docstring: Entman (1993) FrameSalience calculation and assembly.
+
+[Academic Reference: Entman, R.M. (1993). Framing: Toward Clarification of a Fractured 
+Paradigm. Journal of Communication, 43(4), 51–58. 
+FrameSalience_k = Σ(KeywordWeight_i × PositionBoost_i) / SegmentLength]
+Classes:
+  - Class: FrameAssembler
+    Doc: Entman (1993) FrameSalience formülünün implementasyonu.
+    Methods:
+      * __init__(self, lexicon_service, nlp)
+      * assemble_frame_salience(self, segment, annotations, cues)
+        Doc: Segment için tüm frame salience skorlarını hesapla.
+      * _compute_frame_salience(self, doc, annotations, cues, frame_type)
+        Doc: Tek bir frame tipi için Entman (1993) salience skorunu hesapla.
+      * _position_boost(self, position, total_length)
+      * _determine_dominant_frame(self, scores)
+      * _analyze_frame_competition(self, scores)
+
+=== FILE: application\pipeline\models\collect_result.py ===
+Docstring: COLLECT aşamasından çıkan ara veri modeli.
+CountryReferenceCollector'ın ürettiği entity'leri taşır.
+Classes:
+  - Class: CountryCollectResult
+    Doc: COLLECT aşamasının country-extraction çıktısı.
+Immutable taşıyıcıdır; persistence bu aşamada yapılmaz.
+    Methods:
+      * succeeded(self)
+  - Class: CollectResult
+    Doc: COLLECT aşamasının tüm servis çıktılarının birleşimi.
+
+=== FILE: application\pipeline\models\pipeline_result.py ===
+Classes:
+  - Class: PipelineResult
+    Doc: Pipeline çıktı zarfı.
+Hem nihai Analysis modelini hem ham servis verilerini taşır.
+Ham veriler debug ve audit amacıyla korunur.
+
+=== FILE: application\pipeline\sbi_calculator.py ===
+Classes:
+  - Class: SBICalculator
+    Doc: Orchestrates the computation of Speaker-Based Index (SBI).
+
+Integrates multiple NLP services to produce a composite latent position
+and engagement profile for each speaker.
+    Methods:
+      * __init__(self, wordfish, stance, engagement, wordscores, weights)
+      * compute(self, analyses)
+        Doc: Orchestrate parallel computation of SBI components.
+
+Args:
+    analyses: Sequence of Analysis objects representing speaker contributions.
+
+Returns:
+    SBIResult containing SpeakerPosition for each unique speaker.
+
+=== FILE: application\pipeline\stages\assemble_network.py ===
+Classes:
+  - Class: NetworkAssemblyStage
+    Doc: Faz 4 ASSEMBLE step:
+1. Build Fischer DNA network from segments (COLLECT output)
+2. Compute Maoz dyadic metrics using Faz 3 inputs
+    Methods:
+      * __init__(self, fischer_service, maoz_service)
+      * process(self, analysis)
+        Doc: Enrich Analysis with DiscourseFlow and BilateralSentiment.
+Immutable: returns new Analysis instance.
+      * _extract_actor_profiles(self, segments)
+        Doc: Aggregate concepts per actor from segments.
+      * _prepare_pairwise_inputs(self, analysis, actor_ids)
+        Doc: Gather Faz 3 inputs for Maoz formulas.
+      * _get_actor_sentiment(self, analysis, actor_id)
+        Doc: Extract effective sentiment for actor from Faz 1 results.
+
+=== FILE: application\pipeline\stages\base.py ===
+Classes:
+  - Class: AssemblyStage
+    Doc: Base class for pipeline ASSEMBLE stages.
+    Methods:
+      * process(self, analysis)
+  - Class: FinalizeStage
+    Doc: Base class for pipeline FINALIZE stages.
+    Methods:
+      * process(self, session, analysis)
+
+=== FILE: application\pipeline\stages\collect_stage.py ===
+Docstring: Pipeline COLLECT aşaması.
+Tüm alt-servisleri paralel (asyncio.gather) çalıştırır.
+Classes:
+  - Class: CollectStage
+    Methods:
+      * __init__(self, ner_service, tokenizer_service, ai_analyst, country_collector, negation_detector, risk_detector, power_calculator, topic_modeling_service, frame_pipeline, lexicon_service, episodic_classifier, frame_assembler, stance_calculator, engagement_scorer, llm_position_estimator, semantic_shift_calculator)
+      * run(self, text, panel_id, speaker_country, speaker_power_level, language, historical_segments)
+        Doc: Tüm servisleri paralel çalıştırır.
+Hataları toplar ama pipeline'ı durdurmaz (graceful degradation).
+
+=== FILE: application\pipeline\stages\country_reference_collector.py ===
+Docstring: COLLECT aşamasının country-extraction worker'ı.
+
+Sorumluluklar:
+1. spaCy NER ile metinden ülke entity'lerini çıkar.
+2. Her atıf için konuşmacı ve bağlam bilgisini belirle.
+3. Opsiyonel: LLM ile bağlam sınıflandırması yap (ReferenceContext).
+4. CountryReference entity listesi döndür — kaydetme, sadece döndür.
+
+LLM çağrısı yapıldığında:
+- PromptRegistry'den versiyonlu prompt al.
+- RecoveryEngine üzerinden parse et.
+- quality/evaluator ile doğrula.
+Classes:
+  - Class: CountryReferenceCollector
+    Doc: COLLECT aşamasının country-extraction worker'ı.
+
+Constructor bağımlılıkları:
+- nlp: spaCy Language objesi (infrastructure/nlp'den inject edilir)
+- country_vocabulary: bilinen ülke adları sözlüğü
+- llm_client: LLM istemcisi (opsiyonel — None ise sadece NER kullanılır)
+- recovery_engine: AI yanıtlarını parse eden engine
+- prompt_registry: versiyonlu prompt yöneticisi
+- quality_evaluator: çıktı kalitesini denetleyen judge
+
+Tüm bu bağımlılıklar dışarıdan inject edilir — collector içinde örneklenmez.
+    Methods:
+      * __init__(self, nlp, country_vocabulary, llm_client, recovery_engine, prompt_registry, quality_evaluator, use_llm_context)
+      * collect(self, text, panel_id, speaker_country, speaker_power_level)
+        Doc: Ana giriş noktası. COLLECT aşamasından asyncio.gather() ile çağrılır.
+Exception fırlatmaz; hata durumunda error field'lı CountryCollectResult döndürür.
+      * _extract_mentions(self, text, speaker_country)
+        Doc: spaCy ile metinden ülke entity'lerini çıkarır.
+Döndürür: [(sentence_index, country_name, vader_sentiment), ...]
+
+spaCy IO-bound değildir ama CPU-bound olduğu için
+asyncio event loop'u bloke etmemek için executor'da çalıştırılır.
+      * _vader_score(self, text)
+        Doc: VADER ile basit cümle duygu skoru.
+VADER zaten infrastructure/nlp'de mevcut olmalı; burada sadece kullanılır.
+Mevcut VADER entegrasyonu farklıysa bu metodu o entegrasyona uyarla.
+      * _classify_with_rules(self, mentions, panel_id, speaker_country, power_level)
+        Doc: Kural tabanlı bağlam sınıflandırması.
+Sentiment eşiklerine göre ReferenceContext atar.
+      * _classify_with_llm(self, mentions, full_text, panel_id, speaker_country, power_level)
+        Doc: LLM ile gelişmiş bağlam sınıflandırması.
+
+Akış:
+1. PromptRegistry'den prompt al (versiyonlu, audit trail için)
+2. LLM'e gönder
+3. RecoveryEngine ile parse et (6 seviyeli kurtarma)
+4. QualityEvaluator ile doğrula
+5. Başarısız olursa kural tabanlı fallback'e dön
+      * _build_from_llm_output(self, parsed, mentions, panel_id, speaker_country, power_level)
+        Doc: LLM çıktısından CountryReference listesi oluşturur.
+      * _calculate_confidence(self, references)
+        Doc: Extraction güven skoru. Kural tabanlıda orta güven,
+LLM tabanlıda yüksek güven (eğer quality geçtiyse) döner.
+
+=== FILE: application\pipeline\stages\finalize_network.py ===
+Classes:
+  - Class: NetworkFinalizeStage
+    Doc: Faz 4 FINALIZE step:
+Persist DiscourseFlow edges and BilateralSentiment dyadic metrics.
+    Methods:
+      * __init__(self, network_repo, bilateral_repo)
+      * process(self, session, analysis)
+        Doc: Persist network and bilateral data.
+
+=== FILE: application\pipeline\stages\finalize_stage.py ===
+Docstring: Pipeline FINALIZE aşaması.
+Persistence işlemlerini koordine eder ve nihai PipelineResult üretir.
+Classes:
+  - Class: FinalizeStage
+    Methods:
+      * __init__(self, country_ref_repo)
+      * run(self, analysis, collect_result, success, errors, session)
+        Doc: Nihai sonuçları DB'ye yazar (opsiyonel) ve zarfı döndürür.
+      * _persist_country_references(self, references, session)
+        Doc: COLLECT aşamasından gelen CountryReference entity'lerini DB'ye yazar.
+
+=== FILE: application\protocols.py ===
+Docstring: Application protocols for domain services.
+
+This module defines the interfaces that all domain services must implement.
+It provides a clean separation between the application layer and domain layer,
+following the Dependency Inversion Principle.
+Classes:
+  - Class: SentimentResult
+    Doc: Result of sentiment analysis.
+  - Class: RiskAssessment
+    Doc: Result of risk assessment.
+  - Class: HedgingResult
+    Doc: Result of hedging analysis.
+  - Class: FrameResult
+    Doc: Result of frame detection.
+  - Class: TopicAnalysis
+    Doc: Result of topic analysis.
+  - Class: AnomalyResult
+    Doc: Result of anomaly detection.
+  - Class: SentimentServiceProtocol
+    Doc: Protocol for sentiment analysis services.
+    Methods:
+      * analyze(self, sentence)
+        Doc: Analyze sentiment of a sentence.
+
+Args:
+    sentence: The sentence to analyze
+
+Returns:
+    SentimentResult containing sentiment scores and categories
+  - Class: RiskServiceProtocol
+    Doc: Protocol for risk assessment services.
+    Methods:
+      * assess_risk(self, segment, sentences)
+        Doc: Assess risk level of a segment.
+
+Args:
+    segment: The segment to assess
+    sentences: Optional list of sentences
+
+Returns:
+    RiskAssessment containing risk scores and severity
+  - Class: HedgingServiceProtocol
+    Doc: Protocol for hedging analysis services.
+    Methods:
+      * analyze_hedging(self, text)
+        Doc: Analyze hedging language in text.
+
+Args:
+    text: The text to analyze
+
+Returns:
+    HedgingResult containing hedging score and categories
+  - Class: FramingServiceProtocol
+    Doc: Protocol for frame detection services.
+    Methods:
+      * detect_frame(self, sentence)
+        Doc: Detect framing in a sentence.
+
+Args:
+    sentence: The sentence to analyze
+
+Returns:
+    FrameResult containing frame type and related information
+  - Class: TopicServiceProtocol
+    Doc: Protocol for topic analysis services.
+    Methods:
+      * analyze_topics(self, text, tfidf_keywords)
+        Doc: Analyze topics in text.
+
+Args:
+    text: The text to analyze
+    tfidf_keywords: Optional TF-IDF keywords for enhanced analysis
+
+Returns:
+    TopicAnalysis containing topic scores and dominant topic
+  - Class: CrossAnomalyServiceProtocol
+    Doc: Protocol for cross-anomaly detection services.
+    Methods:
+      * detect_anomalies(self, analysis)
+        Doc: Detect cross-anomalies in analysis results.
+
+Args:
+    analysis: The analysis results to check for anomalies
+
+Returns:
+    List of detected anomalies
+  - Class: NERServiceProtocol
+    Doc: Protocol for Named Entity Recognition services.
+    Methods:
+      * extract_entities(self, text)
+        Doc: Extract named entities from text.
+
+Args:
+    text: The text to analyze
+
+Returns:
+    Dictionary mapping entity types to lists of entities
+  - Class: TokenizerServiceProtocol
+    Doc: Protocol for tokenization services.
+    Methods:
+      * tokenize_words(self, text)
+        Doc: Tokenize text into words.
+
+Args:
+    text: The text to tokenize
+
+Returns:
+    List of word tokens
+  - Class: BaseService
+    Doc: Base class for all services providing common functionality.
+    Methods:
+      * __init__(self)
+        Doc: Initialize the service.
+      * analyze(self)
+        Doc: Abstract method for analysis operations.
+      * confidence(self)
+        Doc: Get the service confidence level.
+      * confidence(self, value)
+        Doc: Set the service confidence level.
+
+=== FILE: application\services\cross_anomaly_service.py ===
+Classes:
+  - Class: ContradictionResult
+    Doc: Tsytsarau (2017) contradiction measure sonucu.
+
+Attributes:
+    score: C değeri (0.0 = çelişki yok, 1.0+ = yüksek çelişki)
+    threshold: Tetikleme eşiği (varsayılan 0.5)
+    is_anomaly: C > threshold mu?
+    anomaly_type: SENTIMENT_RISK_DIVERGENCE
+    n_sentences: Cümle sayısı
+    m1: Birinci moment (ortalama polarity)
+    m2: İkinci moment (polarity kareler ortalaması)
+    theta: Kullanılan hassasiyet parametresi
+    window: Kullanılan pencere boyutu
+  - Class: CrossAnomalyService
+    Doc: Duygu-risk çelişkisi ve diğer anomali tespit servisi.
+
+Faz 1'de Tsytsarau (2017) contradiction measure implemente edilir.
+Faz 3'te Zagare (2004) risk çarpanları ile entegre edilecektir.
+    Methods:
+      * detect_sentiment_risk_divergence(self, segment, polarity_values, theta, window, threshold)
+      * detect_power_asymmetry_anomaly(self, asymmetry_score, sentiment_delta, threshold_asymmetry, threshold_delta)
+      * detect_cheap_talk_anomaly(self, power_weighted_score, signal_credibility, threshold_power, threshold_credibility)
+
+=== FILE: application\use_cases\aggregate_bilateral_sentiment.py ===
+Docstring: Use Case: Bir paneldeki tüm CountryReference'lardan BilateralSentiment aggregate'lerini üretir.
+Classes:
+  - Class: AggregateBilateralSentimentInput
+  - Class: AggregateBilateralSentimentOutput
+    Methods:
+      * succeeded(self)
+  - Class: AggregateBilateralSentimentUseCase
+    Doc: Panel içindeki tüm atıfları (CountryReference) okuyarak
+ülke çiftleri arasındaki BilateralSentiment kayıtlarını upsert eder.
+    Methods:
+      * __init__(self, ref_repo, sentiment_repo)
+      * execute(self, input_data)
+
+=== FILE: application\use_cases\aggregate_panel_topics.py ===
+Docstring: Use Case: Panel × ülke bazında konu skorlarını çaprazlar, TopicSynthesis üretir.
+Classes:
+  - Class: AggregatePanelTopicsInput
+  - Class: AggregatePanelTopicsOutput
+    Methods:
+      * succeeded(self)
+  - Class: AggregatePanelTopicsUseCase
+    Doc: Panel içindeki ülkelere göre konu skorlarını çaprazlar.
+    Methods:
+      * __init__(self, ref_repo, synthesis_repo)
+      * execute(self, input_data)
+
+=== FILE: application\use_cases\build_panel_network.py ===
+Docstring: Use Case: BilateralSentiment kayıtlarından DiscourseFlow (ağ kenarı) üretir.
+Classes:
+  - Class: BuildPanelNetworkInput
+  - Class: BuildPanelNetworkOutput
+    Methods:
+      * succeeded(self)
+  - Class: BuildPanelNetworkUseCase
+    Doc: BilateralSentiment kayıtlarından DiscourseFlow edge'leri üretir.
+networkx SADECE bellek içi analiz için kullanılır.
+    Methods:
+      * __init__(self, sentiment_repo, flow_repo)
+      * execute(self, input_data)
+      * _classify_edge_type(self, relationship)
+      * _calculate_weight(self, sentiment)
+        Doc: Kenar ağırlığı = toplam atıf × |affinity_score|
+      * _count_confrontational(self, sentiment)
+        Doc: avg_sentiment < -0.2 olan atıfların tahmini sayısı.
+      * _count_cooperative(self, sentiment)
+      * _compute_centrality(self, flows)
+        Doc: networkx ile betweenness centrality hesabı.
+
+=== FILE: config\base.py ===
+Docstring: Base configuration for BB-PAXDATA.
+Classes:
+  - Class: Settings
+    Doc: Global settings for BB-PAXDATA.
+
+=== FILE: config\constants.py ===
+
+=== FILE: config\logging.py ===
+Docstring: Structlog configuration for BB-PAXDATA.
+
+JSON ve pretty konsol çıktısı desteği ile yapılandırılmış logging.
+Functions:
+  - setup_logging(level, pretty, log_file, session_id)
+    Doc: Tüm uygulama için structlog yapılandırır.
+main() veya CLI entry point'inin en başında bir kez çağrılır.
+  - get_logger(name)
+    Doc: Modüllerin `structlog.get_logger(__name__)` yerine kullanabileceği
+kısa yol. initial_context varsa bind eder.
+
+Kullanım:
+    logger = get_logger(__name__, component="batch")
+  - is_configured()
+    Doc: Logging yapılandırıldı mı kontrol et.
+  - reset_configuration()
+    Doc: Test için yapılandırmayı sıfırla.
+
+=== FILE: config\settings.py ===
+Classes:
+  - Class: Settings
+    Doc: Uygulama çapındaki yapılandırma.
+Tüm env değişkenleri BBPAX_ prefix'i ile tanımlanır.
+
+Örnek .env:
+    BBPAX_DEBUG=true
+    BBPAX_LOG_LEVEL=DEBUG
+    BBPAX_DATABASE_PATH=/data/bb-paxdata.db
+    BBPAX_ANTHROPIC_API_KEY=sk-ant-...
+    BBPAX_LEGACY_DB_PATH=/old/data/legacy.db
+    Methods:
+      * _build_database_url(cls, v, info)
+        Doc: SQLite için URL otomatik üretir; dışarıdan verilmişse dokunmaz.
+      * _resolve_paths(cls, v)
+      * _validate_postgresql_url(self)
+        Doc: PostgreSQL seçilmişse URL'in tanımlı olduğunu doğrula.
+      * _validate_ai_key_present(self)
+        Doc: AI provider seçilmişse ilgili API key'in tanımlı olduğunu kontrol eder.
+      * is_async_db(self)
+      * has_legacy_config(self)
+      * active_ai_api_key(self)
+        Doc: Seçili provider'ın API key'ini döndürür.
+      * is_test_environment(self)
+Functions:
+  - get_settings()
+    Doc: Global settings singleton.
+Test ortamında `reset_settings()` ile temizlenebilir.
+CI/CD'de BBPAX_ENVIRONMENT=test ile test moduna alınır.
+  - reset_settings()
+    Doc: Test teardown ve hot-reload için singleton'ı temizle.
+  - override_settings()
+    Doc: Test yardımcısı: belirli alanları ezerek geçici Settings oluşturur.
+
+Kullanım:
+    s = override_settings(debug=True, batch_size=1)
+
+=== FILE: core\config.py ===
+Classes:
+  - Class: AppSettings
+    Doc: Uygulama ayarları — magic number'ların tek kaynağı (Single Source of Truth).
+
+=== FILE: domain\entities\legacy.py ===
+Classes:
+  - Class: LegacyTranscript
+    Doc: Eski sistemdeki transkript satırının domain temsili.
+Frozen dataclass: immutable, hashable, test edilebilir.
+  - Class: LegacyAnalyticIndex
+    Doc: Eski sistemdeki analitik indeksler — readonly domain temsili.
+
+=== FILE: domain\enums\anomaly_severity.py ===
+Classes:
+  - Class: AnomalySeverity
+
+=== FILE: domain\enums\anomaly_type.py ===
+Classes:
+  - Class: AnomalyType
+    Doc: CrossAnomalyService tarafından tespit edilen anomali türleri.
+
+References:
+    - Tsytsarau et al. (2017): SENTIMENT_RISK_DIVERGENCE
+    - Zagare (2004): Risk escalation multipliers (Faz 3 entegrasyonu)
+    - CONTEXT.md Bölüm 4.B: CrossAnomalyService
+    Methods:
+      * is_sentiment_related(self)
+        Doc: Bu anomali türü duygu analizi ile mi ilişkilidir?
+
+=== FILE: domain\enums\appraisal_attitude.py ===
+Classes:
+  - Class: AppraisalAttitude
+
+=== FILE: domain\enums\audience_type.py ===
+Classes:
+  - Class: AudienceType
+
+=== FILE: domain\enums\backend_type.py ===
+Classes:
+  - Class: BackendType
+
+=== FILE: domain\enums\base.py ===
+Classes:
+  - Class: LogLevel
+  - Class: DatabaseMode
+  - Class: AIProvider
+  - Class: MigrationStatus
+    Doc: Migration process state machine.
+
+=== FILE: domain\enums\bloc_type.py ===
+Classes:
+  - Class: BlocType
+
+=== FILE: domain\enums\contextual_importance.py ===
+Classes:
+  - Class: ContextualImportance
+
+=== FILE: domain\enums\country_enums.py ===
+Classes:
+  - Class: RelationshipType
+    Doc: İki ülke arasındaki diplomatik ilişkinin analitik sınıfı.
+  - Class: ReferenceContext
+    Doc: Ülke atıfının gerçekleştiği diplomatik bağlam.
+  - Class: EdgeType
+    Doc: Söylem ağındaki kenar (edge) tipi.
+
+=== FILE: domain\enums\demand_category.py ===
+Classes:
+  - Class: DemandCategory
+
+=== FILE: domain\enums\demand_type.py ===
+Classes:
+  - Class: DemandType
+
+=== FILE: domain\enums\diplomatic_tone.py ===
+Classes:
+  - Class: DiplomaticTone
+
+=== FILE: domain\enums\dki_stance.py ===
+Classes:
+  - Class: DkiStance
+
+=== FILE: domain\enums\dynamic_event.py ===
+Classes:
+  - Class: DynamicEvent
+
+=== FILE: domain\enums\evidence_type.py ===
+Classes:
+  - Class: EvidenceType
+
+=== FILE: domain\enums\fail_category.py ===
+Classes:
+  - Class: FailCategory
+
+=== FILE: domain\enums\frame_type.py ===
+Classes:
+  - Class: FrameType
+    Doc: Diplomatik metinlerdeki çerçeveleme (framing) türleri.
+
+Entman (1993)'ın 4 işlevsel çerçevesi ile Iyengar (1991)'ın
+episodic/thematic boyutunu birleştirir. Bir `dominant_frame`
+hem Entman fonksiyonu hem de Iyengar boyutu taşıyabilir.
+
+References:
+    - Entman, R.M. (1993). Framing: Toward Clarification of a
+      Fractured Paradigm. Journal of Communication, 43(4), 51–58.
+    - Iyengar, S. (1991). Is Anyone Responsible? How Television
+      Frames Political Issues.
+    - Chong, D. & Druckman, J.N. (2007). Framing Theory.
+      Annual Review of Political Science.
+    Methods:
+      * is_entman_function(self)
+        Doc: Bu değer Entman'ın 4 fonksiyonel çerçevesinden biri mi?
+      * is_iyengar_dimension(self)
+        Doc: Bu değer Iyengar'ın episodic/thematic boyutundan biri mi?
+      * entman_function(self)
+        Doc: Eğer bu bir Iyengar boyutu ise, ilişkili Entman fonksiyonu.
+
+Not: Faz 6'da LLM + embedding hibrit frame detection ile
+`EPISODIC` -> `PROBLEM_DEFINITION` gibi eşleştirmeler otomatik
+çıkarılacaktır. Faz 0'da bu property `None` döner.
+
+=== FILE: domain\enums\future_risk_tier.py ===
+Classes:
+  - Class: FutureRiskTier
+
+=== FILE: domain\enums\hedge_type.py ===
+Classes:
+  - Class: HedgeType
+    Doc: Salager-Meyer (1997) 7-kategori hedging şeması.
+
+Hyland (1998) ile kesişen kategoriler (MODAL_VERBS, LEXICAL_VERBS)
+aynı semantik alana işaret eder. Faz 1'de `HedgeDensity` ve
+`HedgeTypeRatio` formülleri bu enum üzerinden hesaplanacaktır.
+
+References:
+    - Salager-Meyer, F. (1997). Hedges and Textual Communicative
+      Function in Medical English Written Discourse.
+    - Hyland, K. (1998). Hedging in Scientific Research Articles.
+    Methods:
+      * default_weight(self)
+        Doc: Faz 1'de `HedgeDensity` formülünde kullanılacak ağırlık.
+
+Şu an varsayılan değerler placeholder'dır; ampirik kalibrasyon
+Faz 1'de yapılacaktır (ACADEMIC_FOUNDATIONS.md Bölüm 2, A2).
+      * is_lexical(self)
+        Doc: Hyland'ın lexical/non-lexical ayrımına göre sınıflandırma.
+
+`HedgeTypeRatio = LexicalHedge% / NonLexicalHedge%` hesabında
+kullanılır (ACADEMIC_FOUNDATIONS.md, A2 Formül Önerisi).
+
+=== FILE: domain\enums\influence_tier.py ===
+Classes:
+  - Class: InfluenceTier
+
+=== FILE: domain\enums\logic_result.py ===
+Classes:
+  - Class: LogicResult
+
+=== FILE: domain\enums\manipulation_tier.py ===
+Classes:
+  - Class: ManipulationTier
+
+=== FILE: domain\enums\metric_type.py ===
+Classes:
+  - Class: MetricType
+    Doc: Analiz metrik türleri.
+
+=== FILE: domain\enums\negation_type.py ===
+Classes:
+  - Class: NegationType
+    Doc: Morante & Blanco (2012) SemEval-2012 Task 7 negasyon taksonomisi.
+
+=== FILE: domain\enums\pipeline_stage.py ===
+Classes:
+  - Class: PipelineStage
+    Doc: BB-PAXDATA analiz pipeline aşamaları.
+
+=== FILE: domain\enums\politeness_act.py ===
+Classes:
+  - Class: PolitenessAct
+
+=== FILE: domain\enums\pressure_tier.py ===
+Classes:
+  - Class: PressureTier
+
+=== FILE: domain\enums\priority.py ===
+Classes:
+  - Class: Priority
+    Doc: İnceleme talebi öncelik seviyeleri.
+
+=== FILE: domain\enums\relationship_type.py ===
+Classes:
+  - Class: RelationshipType
+
+=== FILE: domain\enums\review_status.py ===
+Classes:
+  - Class: ReviewStatus
+    Doc: İnsan inceleme talebi durumu.
+
+=== FILE: domain\enums\review_type.py ===
+Classes:
+  - Class: ReviewType
+    Doc: İnsan doğrulama inceleme türleri.
+
+Reference:
+    - Grimmer & Stewart (2013) - Principle 4: Exploratory vs. Confirmatory.
+
+=== FILE: domain\enums\rhetoric_pattern_type.py ===
+Classes:
+  - Class: RhetoricPatternType
+
+=== FILE: domain\enums\rhetorical_strategy.py ===
+Classes:
+  - Class: RhetoricalStrategy
+
+=== FILE: domain\enums\risk_level.py ===
+Classes:
+  - Class: RiskLevel
+
+=== FILE: domain\enums\risk_trajectory.py ===
+Classes:
+  - Class: RiskTrajectory
+
+=== FILE: domain\enums\sentiment_arc.py ===
+Classes:
+  - Class: SentimentArc
+
+=== FILE: domain\enums\sentiment_category.py ===
+Classes:
+  - Class: SentimentCategory
+
+=== FILE: domain\enums\sentiment_polarity.py ===
+Classes:
+  - Class: SentimentPolarity
+    Doc: Duygu polaritesi sınıflandırması.
+
+=== FILE: domain\enums\signal_type.py ===
+Classes:
+  - Class: SignalType
+    Doc: Trager (2010) sinyal türleri + Zagare (2004) tırmanış seviyeleri.
+
+=== FILE: domain\enums\speaker_role.py ===
+Classes:
+  - Class: SpeakerRole
+    Methods:
+      * power_level(self)
+
+=== FILE: domain\enums\temporal_pattern.py ===
+Classes:
+  - Class: TemporalPattern
+
+=== FILE: domain\enums\tension_level.py ===
+Classes:
+  - Class: TensionLevel
+
+=== FILE: domain\enums\topic_category.py ===
+Classes:
+  - Class: TopicCategory
+
+=== FILE: domain\enums\validation_check_type.py ===
+Classes:
+  - Class: ValidationCheckType
+
+=== FILE: domain\exceptions.py ===
+Classes:
+  - Class: MissingAIOutputException
+    Doc: AI servisinden beklenen çıktı gelmediğinde fırlatılır.
+    Methods:
+      * __init__(self, analysis_id, missing_fields)
+  - Class: PipelineStageException
+    Doc: Pipeline'ın belirli bir aşamasında oluşan hata.
+    Methods:
+      * __init__(self, stage, message)
+
+=== FILE: domain\lexicon\tr_diplo_lexicon.py ===
+Docstring: Turkish diplomatic lexicon for BB-PAXDATA.
+
+Provides:
+- DIPLO_LEXICON_TR: Sentiment scores for Turkish diplomatic vocabulary
+- NEGATION_WORDS_TR: Turkish negation markers
+
+Scoring convention (same as English DIPLO_LEXICON):
+    Positive values → cooperative/constructive diplomatic tone
+    Negative values → confrontational/aggressive diplomatic tone
+    Range: [-1.0, 1.0]
+
+Note:
+    This lexicon covers ~50 high-priority Turkish diplomatic terms.
+    Scores are aligned with the English DIPLO_LEXICON via manual
+    review of diplomatic usage. Machine translation was used as a
+    starting point; all scores were validated for diplomatic context.
+
+=== FILE: domain\lexicon\tr_stopwords.py ===
+Docstring: Turkish stopword list for BB-PAXDATA.
+
+Stopwords are high-frequency function words that carry minimal
+semantic information for diplomatic sentiment analysis.
+
+Source: Compiled from standard Turkish NLP resources,
+filtered for diplomatic transcript context.
+
+=== FILE: domain\models\ai_analysis.py ===
+Classes:
+  - Class: AIAnalysisResult
+    Doc: AIAnalyst.analyze() metodunun dönüş tipi.
+Ham dict yerine Pydantic modeli kullanılır → tip güvenliği + validasyon.
+
+=== FILE: domain\models\analysis.py ===
+Classes:
+  - Class: Analysis
+    Doc: Represents analysis results for a segment or sentence with various assessments.
+
+Includes risk, sentiment, and anomaly assessments.
+Pipeline boyunca her aşamada model_copy(update=...) ile zenginleştirilir.
+Hiçbir zaman doğrudan mutate edilmez (immutable data flow).
+    Methods:
+      * has_ai_output(self)
+        Doc: AI çıktısının gerçekten mevcut olup olmadığını döner.
+Anomali servisi bu property'yi kontrol etmeli — sahte anomali üretimi engellenir.
+      * effective_sentiment(self)
+        Doc: AI sentiment skoru varsa onu, yoksa nötr (0.0) döner.
+Tüketici kodlar getattr KULLANMAMALI — bu property yeterli.
+      * effective_risk(self)
+        Doc: AI risk skoru varsa onu, yoksa 0.0 döner.
+      * escalated_risk_score(self)
+        Doc: Zagare (2004) escalation multiplier'lı risk skoru.
+  - Class: SegmentInsight
+  - Class: DemandAnalysis
+  - Class: PanelSynthesis
+  - Class: FailCheckAnalysis
+
+=== FILE: domain\models\anomaly.py ===
+Classes:
+  - Class: Anomaly
+    Doc: Represents an anomaly detected in the conversation analysis.
+
+=== FILE: domain\models\bilateral_sentiment.py ===
+Classes:
+  - Class: BilateralSentiment
+    Doc: İki ülke arasındaki diplomatik söylem dinamiğinin aggregate modeli.
+
+Trager (2010) costly signaling + Zagare (2004) escalation + Van Dijk (1993) Power Index.
+    Methods:
+      * power_weighted_score_a(self)
+        Doc: Aktör A'nın güç ağırlıklı skoru (Trager 2010).
+      * power_weighted_score_b(self)
+        Doc: Aktör B'nın güç ağırlıklı skoru.
+      * signal_credibility_a(self)
+        Doc: Aktör A'nın sinyal güvenilirliği (Trager 2010).
+      * signal_credibility_b(self)
+        Doc: Aktör B'nın sinyal güvenilirliği.
+      * combined_demand_pressure(self)
+        Doc: Birleşik talep baskısı: ağırlıklı ortalama.
+      * asymmetry_score(self)
+        Doc: Güç asimetrisi: |PowerIndex(A) − PowerIndex(B)| (Van Dijk 1993 + Maoz 2005).
+      * dominant_actor(self)
+        Doc: Güçlü aktör kim? (asymmetry > 0.2 ise anlamlı).
+      * effective_relationship(self)
+      * with_new_reference(self, sentiment, power_level)
+
+=== FILE: domain\models\country_reference.py ===
+Classes:
+  - Class: CountryReference
+    Doc: Bir diplomatik metinde tespit edilen ülke atıfını temsil eder.
+
+Kim (speaker_country), kimi (referenced_country), hangi bağlamda
+(reference_context) ve hangi panelde bahsetti bilgisini tutar.
+Bu model immutable'dır; güncelleme için model_copy(update={}) kullanılır.
+    Methods:
+      * is_hostile(self)
+        Doc: Atıfın düşmanca bir bağlamda yapılıp yapılmadığını döndürür.
+      * weighted_sentiment(self)
+        Doc: Güç seviyesiyle ağırlıklandırılmış duygu skoru.
+
+=== FILE: domain\models\demand.py ===
+Classes:
+  - Class: Demand
+    Doc: Represents a demand or request made during the conversation.
+
+=== FILE: domain\models\dependency.py ===
+Docstring: Domain models for Dependency Parsing and Actor-Action Matrix in BB-PAXDATA.
+Classes:
+  - Class: DependencyTriple
+    Doc: Represents a subject-verb-object triple extracted from a sentence.
+  - Class: ActorActionMatrix
+    Doc: Aggregate matrix of actor-to-actor actions within a panel.
+
+=== FILE: domain\models\discourse_flow.py ===
+Classes:
+  - Class: DiscourseFlow
+    Doc: Söylem ağındaki yönlü kenar (directed edge).
+Eski 'discourse_network_edges' tablosunun DDD karşılığı.
+
+Grafiksel analiz (merkezilik, kümeleme vb.) için bu entity'ler
+infrastructure'dan çekilip uygulama katmanında networkx'e yüklenir.
+Bu model sadece veriyi taşır; analiz Application katmanının görevidir.
+    Methods:
+      * tension_ratio(self)
+        Doc: Çatışma / işbirliği oranı. Sıfır bölme korumalı.
+
+=== FILE: domain\models\discourse_network.py ===
+Classes:
+  - Class: NetworkEdge
+    Doc: Fischer DNA: Bipartite graph edge (Actor → Concept).
+    Methods:
+      * with_weight(self, new_weight)
+  - Class: DiscourseFlow
+    Doc: Fischer DNA: Complete discourse flow for a single analysis session.
+    Methods:
+      * edge_count(self)
+      * add_edge(self, edge)
+  - Class: DyadicMetrics
+    Doc: Maoz (2005): Dyadic relationship metrics between two actors.
+    Methods:
+      * effective_structural_distance(self)
+        Doc: None-safe structural distance with epsilon guard.
+      * has_required_inputs(self)
+      * compute(self)
+        Doc: Idempotent computation: returns new instance with calculated fields.
+
+=== FILE: domain\models\dki.py ===
+Classes:
+  - Class: SegmentWindow
+    Doc: Data structure for embedding context in semantic shift calculation.
+  - Class: SemanticShiftResult
+    Doc: Immutable result of semantic shift calculation (Azarbonyad 2017).
+  - Class: DynamicPositionResult
+    Doc: Result of speaker position time-series tracking (Poole-Rosenthal 1997).
+  - Class: DKIComponents
+    Doc: Individual factors contributing to the DKI score.
+  - Class: DKIResult
+    Doc: Composite Discourse-Kinetic Index (DKI) result.
+  - Class: LLMPositionEstimate
+    Doc: Deterministic LLM-based position estimation (Cambridge Core 2026).
+  - Class: PositionCalibration
+    Doc: Calibration report between LLM and Wordfish positions.
+  - Class: SpeakerTrajectory
+    Doc: Time-ordered sequence of positions for a speaker.
+
+=== FILE: domain\models\explanation.py ===
+Docstring: Domain models for Explainability and XAI (Explainable AI) in BB-PAXDATA.
+Classes:
+  - Class: TokenContribution
+    Doc: Contribution of a specific token to the overall sentiment or risk score.
+  - Class: SentenceExplanation
+    Doc: Comprehensive explanation for a sentence's analysis results.
+
+=== FILE: domain\models\frame.py ===
+Classes:
+  - Class: Frame
+    Doc: Represents a framing device or rhetorical frame used in the conversation.
+
+=== FILE: domain\models\frame_annotation.py ===
+Classes:
+  - Class: FrameAnnotation
+    Doc: Bir segment içindeki tek frame annotation'ı. Immutable.
+
+[Academic Ref: Entman, R.M. (1993). Framing: Toward Clarification of a Fractured Paradigm.]
+  - Class: ResolvedEntity
+    Doc: Coreference resolution sonucu. Immutable.
+
+[Academic Ref: Hamborg, F. (2023). NLP Techniques for Automated Frame Analysis.]
+  - Class: FiveWOneH
+    Doc: 5W1H çıkarım sonucu. Immutable.
+
+[Academic Ref: Hamborg, F. (2023). NLP Techniques for Automated Frame Analysis. Who, What, When, Where, Why, How.]
+  - Class: PerspectiveCluster
+    Doc: Perspektif kümeleme sonucu. Immutable.
+
+[Academic Ref: Hamborg, F. (2023). Perspective clustering — identifying actor-based viewpoints.]
+  - Class: BiasSeverity
+  - Class: BiasSignal
+    Doc: Bias tespiti sinyali. Immutable.
+
+[Academic Ref: Hamborg, F. (2023). Bias detection via cosine similarity thresholding.]
+  - Class: FrameDetectionResult
+    Doc: Hamborg (2023) PFA pipeline tam sonucu. Immutable.
+  - Class: FrameSalienceResult
+    Doc: Entman (1993) frame salience hesaplama sonucu. Immutable.
+
+[Academic Ref: Entman, R.M. (1993). Framing: Toward Clarification of a Fractured Paradigm.]
+    Methods:
+      * effective_dominant(self)
+        Doc: None-safe dominant frame erişimi.
+  - Class: CueMatch
+    Doc: Lexicon match result for El-Assady (2023) cues.
+
+=== FILE: domain\models\lodp_result.py ===
+Classes:
+  - Class: LODPResult
+    Doc: Monroe (2009) LODP ayırt edici kelime sonucu.
+
+Attributes:
+    word: Ayırt edici kelime.
+    z_score: LODP z-skoru (pozitif = corpus1'e özgü, negatif = corpus2'ye özgü).
+    log_odds_diff: Log odds farkı.
+    corpus1_count: Kelimenin corpus1'deki frekansı.
+    corpus2_count: Kelimenin corpus2'deki frekansı.
+    se: Standart hata.
+
+Reference:
+    - Monroe, B.L. et al. (2009). Fightin' Words.
+
+=== FILE: domain\models\metadata.py ===
+Classes:
+  - Class: Metadata
+    Doc: Represents metadata for various entities in the system.
+
+=== FILE: domain\models\negation_cue.py ===
+Classes:
+  - Class: NegationCue
+    Doc: Bir negasyon cue'unun domain modeli.
+
+Morante & Blanco (2012)'ye göre: cue → scope → focus üçlüsü.
+Immutable. Her güncelleme model_copy(update=...) ile yapılır.
+    Methods:
+      * has_scope(self)
+      * with_scope(self, indices, text, focus_idx, focus_txt)
+        Doc: Immutable scope güncellemesi.
+
+=== FILE: domain\models\power_index.py ===
+Classes:
+  - Class: PowerIndex
+    Doc: Konuşmacının söylemsel güç indeksi (Van Dijk 1993 CDA).
+
+PowerIndex(speaker) = α·AuthorityMarkers + β·DominancePatterns + γ·LegitimationStrategies
+    Methods:
+      * total_power_index(self)
+        Doc: Bileşik güç indeksi (Van Dijk 1993).
+
+=== FILE: domain\models\relationship.py ===
+Classes:
+  - Class: Relationship
+    Doc: Represents a relationship between speakers or entities in the conversation.
+
+=== FILE: domain\models\rhetorical_element.py ===
+Classes:
+  - Class: RhetoricalElement
+    Doc: Represents a rhetorical element or pattern detected in the conversation.
+
+=== FILE: domain\models\risk_signal.py ===
+Classes:
+  - Class: RiskSignal
+    Doc: Diplomatik metindeki risk sinyalinin domain modeli.
+
+Zagare (2004) escalation theory + Trager (2010) costly signaling.
+Immutable.
+    Methods:
+      * weighted_risk_contribution(self)
+        Doc: Bu sinyalin risk skoruna katkısı: multiplier × credibility.
+
+=== FILE: domain\models\sbi_models.py ===
+Classes:
+  - Class: WordfishParams
+    Doc: Parameters for the Wordfish EM algorithm.
+  - Class: SpeakerPosition
+    Doc: Latent position and component scores for a speaker in a session.
+    Methods:
+      * recalibrate_weights(self, alpha, beta, gamma)
+        Doc: Return new instance with updated weights and recalculated SBI.
+  - Class: SBIResult
+    Doc: Enveloping result for Speaker-Based Index calculations across multiple speakers.
+
+=== FILE: domain\models\segment.py ===
+Classes:
+  - Class: TemporalSegmentAnalysis
+    Doc: Intro / develop / conclusion sentiment arc for a stored segment row.
+  - Class: Segment
+    Doc: Represents a segment of conversation containing multiple sentences.
+    Methods:
+      * text(self)
+        Doc: Segment içindeki tüm cümlelerin birleştirilmiş metni.
+      * escalated_risk_score(self)
+        Doc: Zagare (2004) escalation multiplier'lı risk skoru.
+
+BaseRisk = lexical_risk_density × severity_weight (assumed to be risk_score here)
+RiskScore = BaseRisk × max(EscalationMultiplier_i)
+
+=== FILE: domain\models\sentence.py ===
+Classes:
+  - Class: Sentence
+    Doc: Represents a single sentence in a transcript with analysis metadata.
+    Methods:
+      * has_negation(self)
+        Doc: Checks if the sentence contains any negation cues.
+      * negation_count(self)
+        Doc: Returns the number of negation cues in the sentence.
+
+=== FILE: domain\models\sentiment_result.py ===
+Classes:
+  - Class: ModelSentiment
+    Doc: Tek bir modelin duygu analizi sonucu.
+  - Class: EnsembleSentiment
+    Doc: Bonacchi (2024) majority voting ensemble sonucu.
+
+Reference:
+    - Bonacchi, C. et al. (2024). Political Uses of the Ancient Past
+      on Social Media. PLOS ONE.
+  - Class: LIWCScores
+    Doc: Pennebaker (2015) LIWC2015 proxy skorları.
+
+Faz 7'de SBI'nin "otoritatif/savunmacı söylem" alt boyutuna
+`clout` ve `analytic` skorları katkı sağlar.
+
+Reference:
+    - Pennebaker, J.W. et al. (2015). LIWC2015.
+
+=== FILE: domain\models\speaker.py ===
+Classes:
+  - Class: Speaker
+    Doc: Represents a speaker in the conversation with their characteristics and role.
+
+=== FILE: domain\models\topic.py ===
+Classes:
+  - Class: Topic
+    Doc: Represents a topic or subject discussed in the conversation.
+  - Class: TopicAssignment
+    Doc: Assignment of topics to a specific segment.
+  - Class: TopicResult
+    Doc: Aggregated results from the topic modeling service.
+
+=== FILE: domain\models\topic_synthesis.py ===
+Classes:
+  - Class: TopicSynthesis
+    Doc: Panel × ülke bazında konu skorlarını tutan Value Object.
+
+Bu bir Entity değil, Value Object'tir:
+- Kimliği kendi verisiyle tanımlanır (panel_id + country).
+- DB'de tek bir JSON sütunu olarak veya ayrı satırlar olarak saklanabilir.
+- Hesaplama Application katmanında yapılır; bu model sadece sonucu taşır.
+    Methods:
+      * effective_topic(self)
+        Doc: None-safe topic scores.
+      * dominant_topic_id(self)
+        Doc: En yüksek olasılıklı konu ID'si.
+      * topic_diversity(self)
+        Doc: Konu dağılımının entropisi (ne kadar odaklı/karışık).
+      * from_scores(cls, panel_id, country, raw_scores)
+        Doc: Ham skorlardan normalize edilmiş bir TopicSynthesis oluşturur.
+
+=== FILE: domain\models\transcript.py ===
+Classes:
+  - Class: Transcript
+    Doc: Represents a complete transcript with all its components and metadata.
+
+=== FILE: domain\models\validation_result.py ===
+Classes:
+  - Class: ValidationResult
+    Doc: Represents the result of validation checks performed on data.
+
+=== FILE: domain\services\actor_resolver.py ===
+Docstring: Actor Resolver Service for mapping extracted entities to diplomatic actors.
+Classes:
+  - Class: ActorResolver
+    Doc: Resolves raw text entities to canonical diplomatic actors.
+    Methods:
+      * resolve_actor(text)
+        Doc: Map a text string to a canonical country or organization name.
+
+Args:
+    text: The raw entity text (e.g., "Türkiye Cumhuriyeti").
+
+Returns:
+    The canonical name (e.g., "Turkey") or None if not resolved.
+
+=== FILE: domain\services\ai_analyst.py ===
+Classes:
+  - Class: AIAnalyst
+    Doc: AI tabanlı metin analiz servisi.
+
+Her analiz çağrısında:
+1. Aktif prompt versiyonunu dil bazlı olarak registry'den çeker
+2. Şablonu metinle doldurur
+3. AI modeli çağırır (gerçek implementasyonda OpenAI/Anthropic SDK)
+4. Yanıtı parse eder
+5. prompt_version + prompt_hash damgasını çıktıya ekler
+6. AIAnalysisResult Pydantic modeli döner (ham dict değil)
+    Methods:
+      * __init__(self, registry, language_detector, default_prompt_id)
+      * analyze(self, text, prompt_id, forced_version, language)
+        Doc: Metin üzerinde AI analizi çalıştırır.
+AIAnalysisResult (Pydantic) döner — ham dict değil.
+      * _call_ai_model(self, rendered_prompt, model_name)
+        Doc: AI modeli çağrısı.
+Üretimde bu metod OpenAI/Anthropic SDK ile değiştirilir.
+Şu an mock yanıt döner — gerçek implementasyon için aşağıdaki yorumlu bloğu aç.
+      * _parse_response(self, raw)
+        Doc: AI yanıtını parse eder. Markdown kod bloğu içindeki JSON'u da çıkarır.
+
+=== FILE: domain\services\country_repositories.py ===
+Docstring: Repository Protocol tanımları — saf domain katmanı.
+
+Concrete implementasyonlar infrastructure/repositories/ içinde bulunur.
+Bu dosya sadece sözleşmeyi (contract) tanımlar; hiçbir import dışa bağımlı değil.
+Classes:
+  - Class: ICountryReferenceRepository
+    Methods:
+      * save(self, reference)
+      * save_batch(self, references)
+      * get_by_panel(self, panel_id)
+      * get_by_pair(self, speaker, referenced, panel_id)
+  - Class: IBilateralSentimentRepository
+    Methods:
+      * upsert(self, sentiment)
+      * get_by_pair(self, from_country, to_country, panel_id)
+      * get_all_for_panel(self, panel_id)
+  - Class: IDiscourseFlowRepository
+    Methods:
+      * save(self, flow)
+      * save_batch(self, flows)
+      * get_edges_for_panel(self, panel_id)
+  - Class: ITopicSynthesisRepository
+    Methods:
+      * upsert(self, synthesis)
+      * get_by_country(self, panel_id, country)
+      * get_all_for_panel(self, panel_id)
+
+=== FILE: domain\services\cross_anomaly_service.py ===
+Classes:
+  - Class: AnomalyRule
+    Doc: Her anomali kuralının implement etmesi gereken arayüz.
+Yeni kural eklemek için bu Protocol'u karşılayan bir sınıf yazmak yeterli.
+    Methods:
+      * evaluate(self, analysis)
+        Doc: (tetiklendi_mi, anomali_skoru_katkısı, flag_mesajı) döner.
+  - Class: SentimentRiskDivergenceRule
+    Doc: Tsytsarau (2017) contradiction measure 'C' formülünü kullanarak
+duygu-risk çelişkisini tespit eder.
+
+Reference:
+    - Tsytsarau, M. et al. (2017). Identifying Sentiment-based Contradictions.
+      C = (n·M₂ − M₁²) / ((ϑ·n² + M₁²)·W)
+    Methods:
+      * __init__(self)
+      * evaluate(self, analysis)
+      * _compute_negation_adjustment(self, analysis)
+        Doc: Negasyon kaynaklı false positive'leri hesapla.
+      * _evaluate_cue_false_positive_risk(self, cue)
+        Doc: Tek bir negasyon cue'yu için false positive risk skoru.
+  - Class: HighRiskThresholdRule
+    Doc: AI risk skoru kritik eşiği doğrudan aşıyorsa anomali işaretler.
+    Methods:
+      * evaluate(self, analysis)
+  - Class: NegativeSentimentRule
+    Doc: Aşırı negatif duygu tek başına da anomali sinyali olabilir.
+    Methods:
+      * evaluate(self, analysis)
+  - Class: PowerAsymmetryAnomalyRule
+    Doc: Güç asimetrisi ve sentiment farkı üzerinden anomali tespiti.
+
+asymmetry_score > 0.5 + sentiment_delta < -0.3 -> POWER_ASYMMETRY_ANOMALY
+    Methods:
+      * evaluate(self, analysis)
+  - Class: CheapTalkAnomalyRule
+    Doc: Cheap talk anomalisi tespiti (Trager 2010).
+
+power_weighted_score > threshold + signal_credibility < 0.4 -> CHEAP_TALK_ANOMALY
+    Methods:
+      * evaluate(self, analysis)
+  - Class: CrossAnomalyService
+    Doc: Tüm anomali kurallarını koordine eden servis.
+Plugin mimarisi: rules listesine yeni kural sınıfı eklemek yeterli.
+IMMUTABLE: Analysis nesnesini mutate etmez; AnomalyResult döner.
+    Methods:
+      * __init__(self, rules)
+      * detect(self, analysis)
+        Doc: Analysis nesnesi üzerinde tüm kuralları çalıştırır.
+Analysis'i mutate ETMEZ — AnomalyResult döner.
+Pipeline bu sonucu model_copy(update=...) ile Analysis'e uygular.
+      * _determine_risk_level(analysis)
+        Doc: Bileşik risk seviyesi hesaplama — Dinamik Ağırlıklandırma.
+AI verisi yoksa anomali tek başına karar verici olur.
+
+=== FILE: domain\services\dependency.py ===
+Docstring: Dependency Parsing Service for extraction of subject-verb-object triples.
+Classes:
+  - Class: DependencyService
+    Doc: Service to extract grammatical triples from SpaCy Doc objects.
+    Methods:
+      * extract_triples(self, doc)
+        Doc: Extract subject-verb-object triples from each sentence in the Doc.
+      * _find_root(self, sent)
+        Doc: Find the root verb of the sentence.
+      * _find_subjects(self, root)
+        Doc: Find nominal or passive subjects of the root.
+      * _find_objects(self, root)
+        Doc: Find direct, indirect or oblique objects/nominals.
+      * _subtree_text(self, token)
+        Doc: Get the full text of the subtree rooted at this token.
+      * _is_passive(self, root)
+        Doc: Check if the verb is in passive voice.
+      * _is_negative(self, root)
+        Doc: Check for negation modifiers in the verb's children.
+
+=== FILE: domain\services\drift_algorithms.py ===
+Docstring: Drift detection algorithms for temporal analysis.
+Functions:
+  - detect_sentiment_drift(sentiment_series, threshold, drift_threshold)
+    Doc: Detect sentiment drift using CUSUM (Cumulative Sum) algorithm.
+
+Args:
+    sentiment_series: List of sentiment scores
+    threshold: Threshold for CUSUM detection
+    drift_threshold: Drift detection threshold
+
+Returns:
+    List of drift points with start/end indices
+  - detect_topic_drift(topic_distributions, window_size, divergence_threshold)
+    Doc: Detect topic drift using Jensen-Shannon divergence.
+
+Args:
+    topic_distributions: List of topic labels
+    window_size: Size of sliding window
+    divergence_threshold: Threshold for drift detection
+
+Returns:
+    List of drift points
+  - detect_lexical_drift(word_counts, window_size, mattr_threshold)
+    Doc: Detect lexical drift using Moving-Average Type-Token Ratio (MATTR).
+
+Args:
+    word_counts: List of word counts per sentence
+    window_size: Size of sliding window
+    mattr_threshold: Threshold for drift detection
+
+Returns:
+    List of drift points
+  - detect_tone_drift(tone_series, transition_threshold)
+    Doc: Detect tone drift using Markov transition matrix analysis.
+
+Args:
+    tone_series: List of tone labels
+    transition_threshold: Threshold for transition change
+
+Returns:
+    List of drift points
+  - detect_risk_trajectory_drift(risk_scores, slope_threshold)
+    Doc: Detect risk trajectory drift using slope change detection.
+
+Args:
+    risk_scores: List of risk scores
+    slope_threshold: Threshold for slope change
+
+Returns:
+    List of drift points
+  - _topics_to_distribution(topics)
+    Doc: Convert list of topics to probability distribution.
+  - _jensen_shannon_divergence(dist1, dist2)
+    Doc: Calculate Jensen-Shannon divergence between two distributions.
+  - _build_transition_matrix(tone_series, tone_to_idx)
+    Doc: Build Markov transition matrix from tone series.
+  - _calculate_slope(x, y)
+    Doc: Calculate slope using linear regression.
+
+=== FILE: domain\services\duplicate_protection.py ===
+Docstring: Duplicate panel protection service with idempotency key management.
+Classes:
+  - Class: DuplicateProtectionService
+    Doc: Manages duplicate panel protection using idempotency keys.
+    Methods:
+      * __init__(self, db_session)
+      * generate_idempotency_key(self, file_content, file_name, parser_version, speaker_map_version)
+        Doc: Generate idempotency key for file processing.
+
+Args:
+    file_content: Raw file content
+    file_name: Name of the file
+    parser_version: Version of parser being used
+    speaker_map_version: Version of speaker mapping
+
+Returns:
+    SHA256 hash as idempotency key
+      * is_already_processed(self, idempotency_key, force_rebuild)
+        Doc: Check if a file has already been processed.
+
+Args:
+    idempotency_key: Idempotency key to check
+    force_rebuild: Whether to force rebuild regardless of processing status
+
+Returns:
+    Tuple of (is_processed, processed_file_record)
+      * mark_as_processed(self, file_path, file_content, idempotency_key, parser_version, speaker_map_version)
+        Doc: Mark a file as processed.
+
+Args:
+    file_path: Path to the processed file
+    file_content: Raw file content
+    idempotency_key: Generated idempotency key
+    parser_version: Version of parser used
+    speaker_map_version: Version of speaker mapping used
+
+Returns:
+    ProcessedFile record or None if failed
+      * get_existing_panel(self, file_path, file_content, idempotency_key)
+        Doc: Get existing panel for a processed file.
+
+Args:
+    file_path: Path to the file
+    file_content: Raw file content
+    idempotency_key: Idempotency key
+
+Returns:
+    Existing Panel object or None
+      * soft_delete_existing_panel(self, file_path, file_content, idempotency_key)
+        Doc: Soft delete existing panel (set is_active=0).
+
+Args:
+    file_path: Path to the file
+    file_content: Raw file content
+    idempotency_key: Idempotency key
+
+Returns:
+    True if successful, False otherwise
+      * mark_force_rebuild(self, file_path, file_content, idempotency_key)
+        Doc: Mark a file for force rebuild.
+
+Args:
+    file_path: Path to the file
+    file_content: Raw file content
+    idempotency_key: Idempotency key
+
+Returns:
+    True if successful, False otherwise
+      * get_processing_statistics(self)
+        Doc: Get statistics about processed files.
+
+Returns:
+    Dictionary with processing statistics
+      * cleanup_old_records(self, days_to_keep)
+        Doc: Clean up old processed file records.
+
+Args:
+    days_to_keep: Number of days to keep records
+
+Returns:
+    Number of records cleaned up
+
+=== FILE: domain\services\explainability.py ===
+Classes:
+  - Class: ExplanationContext
+    Doc: Context for generating a sentence explanation.
+  - Class: ExplainabilityService
+    Doc: Generates automated, reason-based explanations for analytical scores.
+    Methods:
+      * __init__(self, sentiment_service)
+      * explain_sentence(self, context)
+        Doc: Generate a comprehensive explanation for a single sentence.
+      * _generate_sentiment_explanation(self, text, score, attributions)
+        Doc: Generate explanation for the sentiment score.
+      * _generate_risk_explanation(self, risk_score, power_level, attributions)
+        Doc: Generate explanation for the risk score.
+      * _generate_grammatical_explanation(self, triples)
+        Doc: Generate explanation based on SVO triples.
+      * _generate_discrepancy_explanation(self, formula_score, ai_score)
+        Doc: Generate explanation for difference between AI and Formula.
+
+=== FILE: domain\services\explanation_templates.py ===
+
+=== FILE: domain\services\frame_detection.py ===
+Classes:
+  - Class: ConceptExtractorProtocol
+    Doc: Protocol for target concept extraction following Hamborg (2023).
+    Methods:
+      * extract_concepts(self, segment)
+  - Class: CoreferenceResolverProtocol
+    Doc: Protocol for coreference resolution following Hamborg (2023).
+    Methods:
+      * resolve(self, segment)
+  - Class: EmbeddingFrameMatcherProtocol
+    Doc: Protocol for embedding-based frame matching following Hamborg (2023).
+    Methods:
+      * match_frames(self, segment, concepts, frame_embeddings)
+  - Class: FiveWOneHExtractorProtocol
+    Doc: Protocol for 5W1H extraction following Hamborg (2023).
+    Methods:
+      * extract(self, segment)
+
+=== FILE: domain\services\framing_service.py ===
+Docstring: Framing analysis service for diplomatic discourse.
+
+This service detects and analyzes framing strategies in diplomatic discourse.
+It identifies different frame types, evidence types, appraisal attitudes, and
+target audiences to understand how issues are presented and positioned.
+Classes:
+  - Class: FramingService
+    Doc: Service for framing analysis in diplomatic discourse.
+    Methods:
+      * __init__(self, ner_service)
+        Doc: Initialize the framing service.
+
+Args:
+    ner_service: Optional NER service for enhanced analysis
+      * analyze(self, sentence)
+        Doc: Analyze framing in a sentence.
+
+Args:
+    sentence: The sentence to analyze
+    **kwargs: Additional analysis parameters
+
+Returns:
+    FramingResult containing frame analysis
+      * detect_frame(self, sentence)
+        Doc: Detect framing in a sentence.
+
+Args:
+    sentence: The sentence to analyze
+
+Returns:
+    FrameResult containing frame type and related information
+      * _infer_topic(self, text)
+        Doc: Infer the dominant topic from text.
+
+Args:
+    text: Text to analyze
+
+Returns:
+    Inferred topic name or None
+      * _detect_frame_type(self, text, topic)
+        Doc: Detect the dominant frame type.
+
+Args:
+    text: Text to analyze
+    topic: Optional topic for context-aware framing
+
+Returns:
+    Detected frame type
+      * _classify_evidence(self, text)
+        Doc: Classify evidence types used in the text.
+
+Args:
+    text: Text to analyze
+
+Returns:
+    List of detected evidence types
+      * _appraisal_score(self, text)
+        Doc: Determine the appraisal attitude.
+
+Args:
+    text: Text to analyze
+
+Returns:
+    Appraisal attitude
+      * _detect_audience(self, text)
+        Doc: Detect the target audience.
+
+Args:
+    text: Text to analyze
+
+Returns:
+    Target audience type
+      * _calculate_confidence(self, text, frame_type, evidence_types)
+        Doc: Calculate confidence score for the analysis.
+
+Args:
+    text: Original text
+    frame_type: Detected frame type
+    evidence_types: Detected evidence types
+
+Returns:
+    Confidence score (0-1)
+
+=== FILE: domain\services\hedging_service.py ===
+Docstring: Hedging analysis service for diplomatic discourse.
+
+This service detects and analyzes hedging language in diplomatic discourse.
+It identifies different types of hedging expressions and calculates hedging scores
+to measure the level of uncertainty or indirectness in communication.
+Classes:
+  - Class: HedgingService
+    Doc: Service for hedging language analysis.
+    Methods:
+      * __init__(self)
+        Doc: Initialize the hedging service.
+      * analyze(self, text)
+        Doc: Analyze hedging in text.
+
+Args:
+    text: The text to analyze
+    **kwargs: Additional analysis parameters
+
+Returns:
+    HedgingResult containing hedging analysis
+      * _compile_patterns(self)
+        Doc: Pre-compile regex patterns for hedging detection.
+      * analyze_hedging(self, text)
+        Doc: Analyze hedging language in text.
+
+Args:
+    text: The text to analyze
+
+Returns:
+    HedgingResult containing hedging score and categories
+      * get_hedging_statistics(self, text)
+        Doc: Get detailed statistics for each hedging category.
+
+Args:
+    text: The text to analyze
+
+Returns:
+    Dictionary mapping category names to match counts
+      * is_hedged_sentence(self, text, threshold)
+        Doc: Determine if a sentence contains hedging language.
+
+Args:
+    text: The text to check
+    threshold: Minimum hedging score to consider as hedged
+
+Returns:
+    True if the text is hedged above the threshold
+      * get_dominant_hedging_type(self, text)
+        Doc: Get the dominant hedging type in the text.
+
+Args:
+    text: The text to analyze
+
+Returns:
+    The most frequently detected hedging type
+
+=== FILE: domain\services\language_detector.py ===
+Docstring: Language detection service for BB-PAXDATA.
+
+Wraps `langdetect` with:
+- Deterministic seeding for reproducibility
+- Script-based fallback for Arabic (Unicode U+0600–U+06FF)
+  and Cyrillic (U+0400–U+04FF)
+- Safe exception handling (always returns a valid language code)
+
+Supported output codes:
+    "tr"  → Turkish   (tr_core_news_trf SpaCy model)
+    "en"  → English   (en_core_web_trf SpaCy model)
+    "ar"  → Arabic    (no SpaCy model yet; regex fallback)
+    "ru"  → Russian / Cyrillic (no SpaCy model yet; regex fallback)
+Classes:
+  - Class: LanguageDetector
+    Doc: Detect the primary language of a diplomatic transcript text.
+
+The detection pipeline:
+1. Attempt `langdetect.detect()` for ISO 639-1 code.
+2. If the detected language is in SUPPORTED_LANGS, return it.
+3. If not supported, try Unicode script detection (Arabic/Cyrillic).
+4. Fallback to FALLBACK_LANG ("en") for any error or unknown script.
+
+Usage::
+
+    lang = LanguageDetector.detect("Türkiye diyalogu desteklemektedir.")
+    # Returns: "tr"
+    Methods:
+      * detect(cls, text)
+        Doc: Detect the primary language of the given text.
+
+Args:
+    text: Plain text to analyze. Should be at least a sentence
+          for reliable detection (langdetect needs ~20+ chars).
+
+Returns:
+    ISO 639-1 language code string: one of "tr", "en", "ar", "ru",
+    or FALLBACK_LANG ("en") if detection fails.
+      * _is_arabic_script(cls, text)
+        Doc: Return True if text contains Arabic-script characters.
+      * _is_cyrillic_script(cls, text)
+        Doc: Return True if text contains Cyrillic-script characters.
+
+=== FILE: domain\services\language_router.py ===
+Docstring: Language Router for BB-PAXDATA.
+
+Maps ISO 639-1 language codes to the appropriate NLP configuration:
+- SpaCy model name
+- Sentiment lexicon name
+- Negation word set name
+- Stopword set name
+
+This router is the single source of truth for which resources
+to load for a given language. Adding a new language requires
+only adding an entry to ROUTES.
+Classes:
+  - Class: LanguageConfig
+    Doc: NLP configuration bundle for a specific language.
+
+Attributes:
+    spacy_model: Name of the SpaCy model to load.
+    sentiment_lexicon: Key of the sentiment lexicon to use.
+    negation_words: Key of the negation word set.
+    stopwords: Key of the stopword set.
+  - Class: LanguageRouter
+    Doc: Route a language code to the appropriate NLP resource configuration.
+
+Usage::
+
+    config = LanguageRouter.get_config("tr")
+    # config.spacy_model → "tr_core_news_trf"
+    # config.sentiment_lexicon → "DIPLO_LEXICON_TR"
+
+    # Unknown / unsupported language falls back to English:
+    config = LanguageRouter.get_config("zh")
+    # config.spacy_model → "en_core_web_trf"
+    Methods:
+      * get_config(cls, lang)
+        Doc: Return the NLP configuration for the given language code.
+
+Args:
+    lang: ISO 639-1 language code (e.g. "tr", "en", "ar").
+
+Returns:
+    LanguageConfig for the language, or the English fallback
+    if the language is unsupported.
+      * supported_languages(cls)
+        Doc: Return list of language codes with dedicated SpaCy models.
+      * has_spacy_model(cls, lang)
+        Doc: Return True if the language has a dedicated SpaCy model configured.
+
+=== FILE: domain\services\negation_detector_protocol.py ===
+Classes:
+  - Class: NegationDetectorProtocol
+    Doc: Domain katmanı negasyon detection servis arayüzü.
+    Methods:
+      * detect(self, text, sentence_id)
+        Doc: Verilen metindeki tüm negasyon cue'larını tespit et.
+
+Args:
+    text: Analiz edilecek cümle metni.
+    sentence_id: Cümle UUID (NegationCue.sentence_id için).
+
+Returns:
+    Sıralı NegationCue sequence'i (cue_start'a göre artan).
+      * detect_scope(self, cue, doc)
+        Doc: spaCy Doc objesi üzerinde cue'nun scope ve focus'unu belirle.
+
+Args:
+    cue: Scope'u belirlenecek cue (scope_token_indices henüz boş olabilir).
+    doc: spaCy Doc objesi (infrastructure katmanında import edilir).
+
+Returns:
+    Scope ve focus bilgisi güncellenmiş NegationCue.
+
+=== FILE: domain\services\ner_service.py ===
+Classes:
+  - Class: SpacyNERService
+    Doc: Gerçek NER servisi — spaCy tabanlı, çok dilli.
+Diplomatik gazetteer ile spaCy'nin kaçırdığı terimleri yakalar.
+Model yoksa otomatik indirir.
+    Methods:
+      * __init__(self, model_map, language_detector)
+      * _ensure_models(self)
+      * extract(self, text, language)
+
+=== FILE: domain\services\power_calculator_protocol.py ===
+Classes:
+  - Class: PowerCalculatorProtocol
+    Doc: Protocol for calculating speaker power indices based on Van Dijk CDA.
+    Methods:
+      * calculate(self, text, speaker_id, segment_id)
+        Doc: Calculate power index for a given speaker and text.
+
+=== FILE: domain\services\prompt_registry.py ===
+Classes:
+  - Class: PromptVersion
+    Doc: Tek bir prompt versiyonunun tanımı ve yaşam döngüsü bilgisi.
+    Methods:
+      * __post_init__(self)
+        Doc: Şablon metninin SHA-256 hash'ini otomatik üretir.
+      * _compute_hash(text)
+        Doc: SHA-256 hash hesaplar.
+      * verify_integrity(self, provided_hash)
+        Doc: Dışarıdan gelen hash'in bu şablonla eşleşip eşleşmediğini kontrol eder.
+      * hash(self)
+        Doc: Geriye uyumluluk için alias.
+      * full_version_id(self)
+        Doc: prompt_id@version formatı — Analysis modeline damgalanır.
+  - Class: PromptRegistry
+    Doc: Prompt versiyon yaşam döngüsü yöneticisi.
+
+Özellikler:
+- Prompt ekleme ve çakışma denetimi
+- Aktif versiyon sorgulama (dil bazlı)
+- Versiyon geçmişi izleme
+- A/B testi için çoklu aktif versiyon desteği
+- Rollback mekanizması
+    Methods:
+      * __init__(self)
+      * register(self, prompt)
+        Doc: Yeni prompt versiyonunu kaydeder. Aynı id+version çakışmasını engeller.
+      * get_active(self, prompt_id, language)
+        Doc: Belirtilen dil için aktif prompt versiyonunu döner.
+Dil eşleşmesi yoksa "any" ile etiketlenmiş aktif versiyona düşer.
+      * get_version_string(self, prompt_id, language)
+        Doc: Aktif versiyonun version string'ini (vX.Y) döner.
+      * get_version(self, prompt_id, version)
+        Doc: Belirli bir versiyonu döner.
+      * get(self, name, version)
+        Doc: Infrastructure katmanı uyumluluğu için async wrapper.
+version verilmezse aktifi döner.
+      * get_history(self, prompt_id)
+        Doc: Bir prompt'un tüm versiyon geçmişini döner (en yeniden en eskiye).
+      * activate(self, prompt_id, version)
+        Doc: Rollback: belirli bir versiyonu aktif eder, diğerlerini deaktif eder.
+      * list_prompts(self)
+        Doc: Tüm kayıtlı prompt ID'lerini ve versiyonlarını listeler.
+Functions:
+  - build_default_registry()
+    Doc: Production prompt kayıt defterini oluşturur.
+v1.0 (İngilizce temel) → v2.0 (Türkçe yapılandırılmış) → v2.1 (Aktif, gelişmiş)
+
+=== FILE: domain\services\protocols.py ===
+Classes:
+  - Class: SemanticShiftCalculator
+    Methods:
+      * calculate_shift(self, current, historical, idf_reference)
+        Doc: Compute semantic shift between discourse contexts (Azarbonyad 2017).
+  - Class: DynamicPositionTracker
+    Methods:
+      * compute_velocity(self, trajectory, smoothing_window)
+        Doc: Compute Δθ/Δt and acceleration for speaker position time-series.
+  - Class: LLMPositionEstimator
+    Methods:
+      * estimate_position(self, text, policy_dimension, schema_enforce)
+        Doc: Deterministic LLM-based position estimation (Cambridge Core 2026).
+      * calibrate_against_wordfish(self, llm_estimates, wordfish_thetas)
+        Doc: Compute calibration drift between LLM and Wordfish positions.
+  - Class: AnomalyResult
+    Doc: CrossAnomalyService.detect() metodunun dönüş tipi.
+  - Class: NERServiceProtocol
+    Methods:
+      * extract(self, text, language)
+        Doc: {"entities": [...], "language": str} döner.
+  - Class: TokenizerProtocol
+    Methods:
+      * tokenize(self, text, language)
+        Doc: {"tokens": [...], "sentences": [...], "sentence_count": int, "language": str} döner.
+  - Class: AIAnalystProtocol
+    Methods:
+      * analyze(self, text, prompt_id, forced_version, language)
+  - Class: AnomalyServiceProtocol
+    Methods:
+      * detect(self, analysis)
+
+=== FILE: domain\services\risk_detector_protocol.py ===
+Classes:
+  - Class: RiskSignalDetectorProtocol
+    Doc: Protocol for detecting risk signals in diplomatic discourse.
+    Methods:
+      * detect(self, text, sentence_id)
+        Doc: Detect risk signals in the given text.
+
+=== FILE: domain\services\risk_service.py ===
+Docstring: Risk assessment service with SBI and DKI calculations.
+
+This service implements risk assessment using the Söylemsel Baskı İndeksi (SBI)
+and Diplomatik Konum İndeksi (DKI) formulas. It provides comprehensive risk
+analysis for diplomatic discourse segments.
+
+Formula alignment with DatabaseBuilder_v5_8.py:
+- risk_detect(): weighted signal scoring — CRITICAL=3pts, HIGH=2pts, BASE=1pt
+- contextual_risk(): dynamic NER multiplier (GPE/ORG=1.5×, PERSON=1.2×)
+  Academic: Baldwin (1985); Kıyılar (2020) Coercive Diplomacy
+Classes:
+  - Class: RiskService
+    Doc: Service for risk assessment with SBI and DKI calculations.
+    Methods:
+      * __init__(self, ner_service)
+        Doc: Initialize the risk service.
+
+Args:
+    ner_service: Optional NER service for contextual risk analysis
+      * analyze(self, segment)
+        Doc: Assess risk in a segment.
+
+Args:
+    segment: The segment to analyze
+    **kwargs: Additional analysis parameters
+
+Returns:
+    RiskAssessment containing risk analysis
+      * compute_sbi(self, power_level, demand_weight, risk_score)
+        Doc: Calculate Söylemsel Baskı İndeksi (SBI).
+
+Formula: (power_level * demand_weight) / 2.0 + risk_score
+
+Args:
+    power_level: Speaker's power level (0-10)
+    demand_weight: Weight of the demand (0-1)
+    risk_score: Base risk score (0-10)
+
+Returns:
+    SBI score
+      * compute_dki(self, norm_diplo, norm_risk, norm_demand, norm_manip)
+        Doc: Calculate Diplomatik Konum İndeksi (DKI).
+
+Formula: norm_diplo*0.4 + (1-norm_risk)*0.3 + norm_demand*0.2
+Formula (cont): + (1-norm_manip)*0.1
+Then: *2 - 1
+
+Args:
+    norm_diplo: Normalized diplomatic score (0-1)
+    norm_risk: Normalized risk score (0-1)
+    norm_demand: Normalized demand score (0-1)
+    norm_manip: Normalized manipulation score (0-1)
+
+Returns:
+    DKI score (-1 to 1)
+      * contextual_risk(self, text, entities)
+        Doc: Calculate contextual risk based on NER entities and text content.
+
+Mirrors DatabaseBuilder_v5_8.py contextual_risk():
+- Base score from weighted risk_detect()
+- GPE or ORG entity present → multiplier 1.5×
+- PERSON entity present → multiplier 1.2×
+- No entity → multiplier 1.0× (no change)
+Academic: Baldwin (1985); Kıyılar (2020)
+
+Args:
+    text: Text to analyze
+    entities: Optional pre-extracted NER entities
+
+Returns:
+    Contextual risk score clamped to (0, 10)
+      * risk_detect(self, text)
+        Doc: Detect risk signals and calculate weighted base risk score.
+
+Mirrors DatabaseBuilder_v5_8.py risk_detect():
+- CRITICAL signals (red line, ultimatum, unacceptable, military option,
+  unprovoked war) = 3 pts
+- HIGH signals (escalate, retaliate, serious consequences, decisive actions,
+  deep strikes, cannot tolerate, will not accept, reject outright) = 2 pts
+- All other detected signals = 1 pt
+- Total capped at 10
+
+Args:
+    text: Text to analyze
+
+Returns:
+    Tuple of (risk_score, detected_signals)
+      * _normalize_value(self, value, min_val, max_val)
+        Doc: Normalize a value to 0-1 range.
+
+Args:
+    value: Value to normalize
+    min_val: Minimum possible value
+    max_val: Maximum possible value
+
+Returns:
+    Normalized value (0-1)
+      * _classify_risk_severity(self, risk_score)
+        Doc: Classify risk severity based on score.
+
+Args:
+    risk_score: Risk score (0-10)
+
+Returns:
+    Risk level
+      * assess_risk(self, segment, sentences)
+        Doc: Assess risk level of a segment.
+
+Args:
+    segment: The segment to assess
+    sentences: Optional list of sentences (to avoid re-fetching)
+
+Returns:
+    RiskAssessment containing risk scores and severity
+
+=== FILE: domain\services\sbi_protocols.py ===
+Classes:
+  - Class: WordfishProtocol
+    Doc: Protocol for latent position scaling via Wordfish EM.
+    Methods:
+      * fit_transform(self, doc_term_matrix, document_ids, params)
+        Doc: Return mapping of document_id → θᵢ (latent position).
+  - Class: WordscoresProtocol
+    Doc: Protocol for a-priori calibrated text scaling.
+    Methods:
+      * calibrate(self, doc_term_matrix, reference_scores, target_ids, all_document_ids)
+        Doc: Return mapping of target_id → T_k (calibrated position).
+  - Class: StanceDensityProtocol
+    Doc: Protocol for Biber-style stance marker density.
+    Methods:
+      * calculate(self, tokens, speaker_id)
+        Doc: Return stance density score ∈ [0, ∞).
+  - Class: EngagementScorerProtocol
+    Doc: Protocol for Martin & White Appraisal Theory engagement analysis.
+    Methods:
+      * score(self, sentences, speaker_id)
+        Doc: Return engagement score ∈ [0, 1].
+  - Class: SBICalculatorProtocol
+    Doc: Protocol for composite SBI calculation.
+    Methods:
+      * compute(self, speaker_data, weights)
+        Doc: Compute the composite Speaker-Based Index.
+
+=== FILE: domain\services\segment_service.py ===
+Docstring: Segment analysis service for aggregating sentence results.
+
+This service coordinates the aggregation of sentence-level analysis results
+into segment-level metrics, including SBI, DKI, trajectory, and mode logic.
+Mirrors DatabaseBuilder_v5_8.py segment enrichment logic.
+Classes:
+  - Class: SegmentService
+    Doc: Service for segment-level analysis and aggregation.
+    Methods:
+      * __init__(self, risk_service)
+        Doc: Initialize segment service.
+
+Args:
+    risk_service: Risk assessment service
+      * analyze(self, segment)
+        Doc: Satisfy BaseService requirement.
+      * enrich_segment(self, segment, sentences)
+        Doc: Enrich segment with aggregated sentence metrics.
+
+Args:
+    segment: Segment to enrich
+    sentences: List of sentences belonging to the segment
+
+Returns:
+    Enriched segment
+      * _get_mode(self, items)
+        Doc: Calculate the mode (most frequent item) of a list.
+      * _calculate_risk_trajectory(self, sentences)
+        Doc: Calculate risk trajectory across sentences.
+
+Logic:
+- Compare first 25% avg risk vs last 25% avg risk.
+- Difference > 1.5 -> ESCALATING
+- Difference < -1.5 -> DE-ESCALATING
+- Else -> STABLE
+      * _calculate_demand_concentration(self, sentences)
+        Doc: Calculate demand distribution across segment sections.
+
+Sections:
+- Intro: First 20%
+- Develop: Middle 60%
+- Conclusion: Last 20%
+
+=== FILE: domain\services\sentiment_service.py ===
+Docstring: Sentiment analysis service using DIPLO lexicon with negation awareness.
+
+This service implements sentiment analysis using the DIPLO (Diplomatic Discourse)
+lexicon with negation-aware scoring. It provides both standard sentiment analysis
+and negation-aware sentiment analysis for diplomatic discourse analysis.
+
+Formula alignment with DatabaseBuilder_v5_8.py:
+- diplo_sentiment(): phrase-first sort + re.search word-boundary + sum*0.05 + VADER
+- negation_aware_diplo(): left-only window [i-N:i], 0.8 attenuation + VADER blend
+  Academic: Jia & Liang (2017); Socher et al. (2013)
+Classes:
+  - Class: SentimentService
+    Doc: Service for sentiment analysis using DIPLO lexicon with negation awareness.
+    Methods:
+      * __init__(self)
+        Doc: Initialize the sentiment service with VADER analyzer.
+      * tokenize_words(self, text)
+        Doc: Tokenize text into words with contraction handling.
+
+Mirrors DatabaseBuilder_v5_8.py tokenize_words():
+- Encode contractions: won't → won_t (preserves negation structure)
+- Decode back after split: won_t → won't (keeps negation word recognizable)
+- Regex includes Turkish characters: [a-zA-ZğüşıöçĞÜŞİÖÇ'_-]+
+
+Args:
+    text: Input text to tokenize
+
+Returns:
+    List of lowercase word tokens
+      * diplo_sentiment(self, text)
+        Doc: Calculate DIPLO sentiment score for text.
+
+Mirrors DatabaseBuilder_v5_8.py diplo_sentiment():
+- Phrase-first sorting (longest phrase matched first)
+- Word-boundary regex matching (re.search \b...\b)
+- Adjustment = sum(matched_scores) * 0.05, clamped [-2, 2]
+- Final = VADER compound + adj, clamped [-1, 1]
+
+Args:
+    text: Input text to analyze
+
+Returns:
+    Sentiment score from -1 to 1
+      * negation_aware_diplo(self, text)
+        Doc: Calculate negation-aware DIPLO sentiment score.
+
+Mirrors DatabaseBuilder_v5_8.py negation_aware_diplo():
+- Phrase-first matching on DIPLO_LEXICON (longest phrase first)
+- LEFT-ONLY negation window: tokens[max(0, i-N):i] (Jia & Liang 2017)
+- Negated score = -val * 0.8 (polarity reversal + 0.8 attenuation)
+- Final = VADER compound + sum(scores)*0.05, clamped [-1, 1]
+
+Args:
+    text: Input text to analyze
+
+Returns:
+    Negation-aware sentiment score from -1 to 1
+      * _classify_emotion(self, sentiment_score)
+        Doc: Classify emotion category based on sentiment score.
+
+Mirrors DatabaseBuilder_v5_8.py emotion category thresholds:
+  confrontational  : diplo <= -0.40
+  concerned        : -0.40 < diplo <= -0.10
+  neutral_cautious : -0.10 < diplo < 0.10
+  constructive     : 0.10 <= diplo < 0.35
+  cooperative      : diplo >= 0.35
+
+Args:
+    sentiment_score: Sentiment score from -1 to 1
+
+Returns:
+    Emotion category
+      * analyze(self, sentence)
+        Doc: Analyze sentiment of a sentence.
+
+Args:
+    sentence: The sentence to analyze
+
+Returns:
+    SentimentResult containing sentiment scores and categories
+
+=== FILE: domain\services\service_container.py ===
+Docstring: Service container for dependency injection.
+
+This module provides a centralized container for managing domain services
+and their dependencies. It implements the Service Locator pattern for
+clean dependency injection and service lifecycle management.
+Classes:
+  - Class: NERStub
+    Doc: Stub implementation of NER service for testing and development.
+    Methods:
+      * extract_entities(self, text)
+        Doc: Extract basic entities using simple patterns.
+
+Args:
+    text: Text to analyze
+
+Returns:
+    Dictionary of entity types to entity lists
+  - Class: TokenizerStub
+    Doc: Stub implementation of tokenizer service.
+    Methods:
+      * tokenize_words(self, text)
+        Doc: Simple word tokenization.
+
+Args:
+    text: Text to tokenize
+
+Returns:
+    List of word tokens
+  - Class: ServiceContainer
+    Doc: Container for managing domain services and dependencies.
+    Methods:
+      * __init__(self, ner_service, tokenizer_service)
+        Doc: Initialize the service container.
+
+Args:
+    ner_service: Optional NER service implementation
+    tokenizer_service: Optional tokenizer service implementation
+      * sentiment(self)
+        Doc: Get the sentiment analysis service.
+      * risk(self)
+        Doc: Get the risk assessment service.
+      * hedging(self)
+        Doc: Get the hedging analysis service.
+      * framing(self)
+        Doc: Get the framing analysis service.
+      * topic(self)
+        Doc: Get the topic analysis service.
+      * segment(self)
+        Doc: Get the segment analysis service.
+      * anomaly(self)
+        Doc: Get the cross-anomaly detection service.
+      * ner(self)
+        Doc: Get the NER service.
+      * tokenizer(self)
+        Doc: Get the tokenizer service.
+      * configure_service(self, service_name)
+        Doc: Configure a service with custom parameters.
+
+Args:
+    service_name: Name of the service to configure
+    **kwargs: Configuration parameters
+      * get_service_config(self, service_name)
+        Doc: Get configuration for a service.
+
+Args:
+    service_name: Name of the service
+
+Returns:
+    Service configuration dictionary
+      * reset_service(self, service_name)
+        Doc: Reset a service, forcing reinitialization.
+
+Args:
+    service_name: Name of the service to reset
+      * reset_all_services(self)
+        Doc: Reset all services, forcing reinitialization.
+      * get_service_status(self)
+        Doc: Get initialization status of all services.
+
+Returns:
+    Dictionary mapping service names to initialization status
+      * create_analysis_pipeline(self)
+        Doc: Create a configured analysis pipeline.
+
+Returns:
+    AnalysisPipeline instance with all services
+  - Class: AnalysisPipeline
+    Doc: Pipeline for coordinated analysis using multiple services.
+    Methods:
+      * __init__(self, sentiment_service, risk_service, hedging_service, framing_service, topic_service, anomaly_service, segment_service)
+        Doc: Initialize the analysis pipeline.
+
+Args:
+    sentiment_service: Sentiment analysis service
+    risk_service: Risk assessment service
+    hedging_service: Hedging analysis service
+    framing_service: Framing analysis service
+    topic_service: Topic analysis service
+    anomaly_service: Anomaly detection service
+      * analyze_sentence(self, sentence)
+        Doc: Perform comprehensive analysis on a sentence.
+
+Args:
+    sentence: Sentence to analyze
+
+Returns:
+    Dictionary containing all analysis results
+      * analyze_segment(self, segment)
+        Doc: Perform comprehensive analysis on a segment.
+
+Args:
+    segment: Segment to analyze
+
+Returns:
+    Dictionary containing all analysis results
+      * detect_anomalies(self, analysis)
+        Doc: Detect anomalies in analysis results.
+
+Args:
+    analysis: Analysis results to check
+
+Returns:
+    Detected anomaly result
+Functions:
+  - get_default_container()
+    Doc: Get the default service container instance.
+
+Returns:
+    Default ServiceContainer instance
+  - get_sentiment_service()
+    Doc: Get the default sentiment service.
+  - get_risk_service()
+    Doc: Get the default risk service.
+  - get_hedging_service()
+    Doc: Get the default hedging service.
+  - get_framing_service()
+    Doc: Get the default framing service.
+  - get_topic_service()
+    Doc: Get the default topic service.
+  - get_anomaly_service()
+    Doc: Get the default anomaly service.
+  - get_segment_service()
+    Doc: Get the default segment service.
+
+=== FILE: domain\services\spacy_pipeline.py ===
+Docstring: SpaCy Pipeline Service for BB-PAXDATA.
+
+Provides high-level wrappers for processing text and batches using SpaCy.
+Classes:
+  - Class: SpacyPipeline
+    Doc: Service wrapper for SpaCy processing.
+    Methods:
+      * process_text(text, lang)
+        Doc: Process a single text string.
+
+Args:
+    text: The text to process.
+    lang: Language code for model selection.
+
+Returns:
+    A SpaCy Doc object.
+      * process_batch(texts, lang, batch_size)
+        Doc: Process a batch of texts efficiently using nlp.pipe().
+
+Args:
+    texts: An iterable of text strings.
+    lang: Language code for model selection.
+    batch_size: Number of texts to process per batch.
+
+Returns:
+    A list of SpaCy Doc objects.
+
+=== FILE: domain\services\temporal.py ===
+Docstring: Temporal analyzer for speaker language drift detection.
+Classes:
+  - Class: DriftEvent
+    Doc: Represents a detected drift event.
+  - Class: TemporalAnalyzer
+    Doc: Analyzes temporal patterns and detects speaker language drift.
+    Methods:
+      * __init__(self)
+      * analyze_panel_drift(self, panel_data, speaker_data, sentence_data)
+        Doc: Analyze a complete panel for drift events.
+
+Args:
+    panel_data: Panel metadata
+    speaker_data: Speaker information
+    sentence_data: List of sentence analyses with temporal order
+
+Returns:
+    List of detected drift events
+      * _analyze_speaker_drift(self, speaker_id, panel_id, sentences)
+        Doc: Analyze drift for a single speaker across a panel.
+      * _detect_sentiment_drift(self, speaker_id, panel_id, positions, sentiment_series)
+        Doc: Detect sentiment drift using CUSUM algorithm.
+      * _detect_topic_drift(self, speaker_id, panel_id, positions, topic_distributions)
+        Doc: Detect topic drift using Jensen-Shannon divergence.
+      * _detect_lexical_drift(self, speaker_id, panel_id, positions, lexical_diversity)
+        Doc: Detect lexical drift using MATTR.
+      * _detect_tone_drift(self, speaker_id, panel_id, positions, tone_series)
+        Doc: Detect tone drift using Markov transition matrix.
+      * _detect_risk_drift(self, speaker_id, panel_id, positions, risk_trajectory)
+        Doc: Detect risk trajectory drift using slope change detection.
+      * _sentiment_to_state(self, sentiment)
+        Doc: Convert sentiment score to descriptive state.
+      * _get_dominant_topic(self, topics)
+        Doc: Get most frequent topic from list.
+      * _get_dominant_tone(self, tones)
+        Doc: Get most frequent tone from list.
+      * _calculate_drift_severity(self, magnitude, drift_type)
+        Doc: Calculate drift severity based on magnitude and type.
+
+=== FILE: domain\services\token_attribution.py ===
+Docstring: Token-level attribution for explainability in BB-PAXDATA.
+Functions:
+  - token_level_attribution(text, service)
+    Doc: Calculate the contribution of each token to the overall sentiment score.
+
+Args:
+    text: The text to analyze.
+    service: An instance of SentimentService to access its lexicon and logic.
+
+Returns:
+    A list of TokenContribution objects.
+
+=== FILE: domain\services\tokenizer_service.py ===
+Classes:
+  - Class: SpacyTokenizerService
+    Doc: Gerçek tokenizer servisi — spaCy tabanlı, çok dilli.
+spaCy yüklenemezse basit boşluk tokenizasyonu fallback'i devreye girer.
+    Methods:
+      * __init__(self, model_map, language_detector)
+      * _ensure_models(self)
+      * tokenize(self, text, language)
+
+=== FILE: domain\services\topic_modeling_protocol.py ===
+Classes:
+  - Class: TopicModelingProtocol
+    Methods:
+      * extract_topics(self, segments, language, min_topic_size, nr_topics)
+        Doc: Grootendorst (2022) BERTopic pipeline'ını çalıştırır.
+
+Returns:
+    TopicResult: Konu atamaları, olasılıklar ve c-TF-IDF skorları.
+      * embed_segments(self, segments)
+        Doc: Segment listesi için embedding vektörleri döner.
+      * get_frame_reference_embeddings(self)
+        Doc: Referans frame embedding'lerini döner.
+
+=== FILE: domain\services\topic_service.py ===
+Docstring: Topic analysis service with TF-IDF enhancement.
+
+This service analyzes topics in diplomatic discourse using keyword matching
+and optional TF-IDF enhancement. It calculates topic scores, identifies the
+dominant topic, and measures topic specificity using Shannon entropy.
+Classes:
+  - Class: TopicService
+    Doc: Service for topic analysis with TF-IDF enhancement.
+    Methods:
+      * __init__(self)
+        Doc: Initialize the topic service and calculate keyword weights.
+      * analyze(self, text)
+        Doc: Analyze topics in text.
+
+Args:
+    text: The text to analyze
+    **kwargs: Additional analysis parameters
+
+Returns:
+    TopicAnalysis containing topic scores and dominant topic
+      * _calculate_keyword_weights(self)
+        Doc: Calculate keyword weights using smoothed IDF.
+      * weighted_topic_score(self, text, tfidf_keywords)
+        Doc: Calculate weighted topic scores for text.
+
+Args:
+    text: Text to analyze
+    tfidf_keywords: Optional TF-IDF keywords for enhancement
+
+Returns:
+    Dictionary mapping topic names to scores
+      * topic_specificity(self, topic_scores)
+        Doc: Calculate topic specificity using Shannon entropy.
+
+Args:
+    topic_scores: Dictionary of topic scores
+
+Returns:
+    Specificity score (0-1, higher = more specific)
+      * get_dominant_topic(self, topic_scores)
+        Doc: Get the dominant topic from scores.
+
+Args:
+    topic_scores: Dictionary of topic scores
+
+Returns:
+    Dominant topic category
+      * tfidf_batch(self, texts)
+        Doc: Perform TF-IDF analysis on a batch of texts.
+
+Args:
+    texts: List of texts to analyze
+
+Returns:
+    List of TF-IDF keywords for each text
+      * analyze_topics(self, text, tfidf_keywords)
+        Doc: Analyze topics in text.
+
+Args:
+    text: The text to analyze
+    tfidf_keywords: Optional TF-IDF keywords for enhanced analysis
+
+Returns:
+    TopicAnalysis containing topic scores and dominant topic
+
+=== FILE: domain\utils\hash.py ===
+Functions:
+  - compute_audit_hash()
+    Doc: Audit trail için deterministik SHA256 hash hesaplar.
+
+Args:
+    *data: Hash hesaplanacak string veriler.
+
+Returns:
+    SHA256 hash hex string.
+
+=== FILE: infrastructure\ai\analyst.py ===
+Docstring: AI Analyst service for diplomatic discourse analysis.
+
+This service provides AI-powered analysis capabilities by interfacing with
+various AI backends (Ollama, Anthropic, Gemini, Groq). It implements
+structured output generation, batch processing, and robust error recovery.
+Classes:
+  - Class: BackendType
+    Doc: Supported AI backend types.
+  - Class: AIRequest
+    Doc: AI request configuration.
+  - Class: AIResponse
+    Doc: AI response data.
+  - Class: JSONRecoveryEngine
+    Doc: Engine for recovering JSON from malformed AI responses.
+    Methods:
+      * recover_json(text)
+        Doc: Attempt to recover JSON from potentially malformed text.
+
+Args:
+    text: Text that should contain JSON
+
+Returns:
+    Parsed JSON dictionary or None if recovery fails
+      * _salvage_kv_pairs(text)
+        Doc: Salvage key-value pairs from malformed JSON.
+
+Args:
+    text: Text containing key-value pairs
+
+Returns:
+    Dictionary with salvaged pairs
+  - Class: BaseAIBackend
+    Doc: Abstract base class for AI backends.
+    Methods:
+      * __init__(self, api_key, base_url)
+        Doc: Initialize the backend.
+
+Args:
+    api_key: API key for authentication
+    base_url: Base URL for the API
+      * generate_response(self, request)
+        Doc: Generate AI response for the given request.
+
+Args:
+    request: AI request configuration
+
+Returns:
+    AI response
+      * get_available_models(self)
+        Doc: Get list of available models.
+
+Returns:
+    List of model names
+  - Class: OllamaBackend
+    Doc: Ollama backend for local AI models.
+    Methods:
+      * __init__(self, base_url)
+        Doc: Initialize Ollama backend.
+
+Args:
+    base_url: Ollama API base URL
+      * generate_response(self, request)
+        Doc: Generate response using Ollama API.
+      * get_available_models(self)
+        Doc: Get available Ollama models.
+      * _build_prompt(self, request)
+        Doc: Build prompt for Ollama.
+  - Class: AnthropicBackend
+    Doc: Anthropic Claude backend.
+    Methods:
+      * __init__(self, api_key)
+        Doc: Initialize Anthropic backend.
+
+Args:
+    api_key: Anthropic API key
+      * generate_response(self, request)
+        Doc: Generate response using Anthropic API.
+      * get_available_models(self)
+        Doc: Get available Anthropic models.
+      * _build_prompt(self, request)
+        Doc: Build prompt for Anthropic.
+  - Class: AIAnalyst
+    Doc: Main AI analyst service that coordinates multiple backends.
+    Methods:
+      * __init__(self, default_backend, api_key, base_url)
+        Doc: Initialize AI analyst.
+
+Args:
+    default_backend: Default backend to use
+    api_key: API key for cloud backends
+    base_url: Base URL for local backends
+      * _initialize_backends(self, api_key, base_url)
+        Doc: Initialize available backends.
+      * analyze_text(self, text, context, backend, model)
+        Doc: Analyze text using AI.
+
+Args:
+    text: Text to analyze
+    context: Optional context
+    backend: Backend to use (uses default if None)
+    model: Model to use (uses backend default if None)
+
+Returns:
+    AI analysis response
+      * analyze_batch(self, texts, context, backend, model)
+        Doc: Analyze multiple texts in batch.
+
+Args:
+    texts: List of texts to analyze
+    context: Optional context for all texts
+    backend: Backend to use
+    model: Model to use
+
+Returns:
+    List of AI responses
+      * get_available_backends(self)
+        Doc: Get list of available backends.
+      * get_available_models(self, backend)
+        Doc: Get available models for a backend.
+
+Args:
+    backend: Backend type
+
+Returns:
+    List of model names
+      * clear_cache(self)
+        Doc: Clear the response cache.
+      * _get_cache_key(self, text, context, backend, model)
+        Doc: Generate cache key for request.
+      * health_check(self)
+        Doc: Check health of all backends.
+
+Returns:
+    Dictionary mapping backend names to health status
+
+=== FILE: infrastructure\ai\anthropic.py ===
+Classes:
+  - Class: AnthropicClient
+    Doc: Anthropic client with JSON prefill technique.
+    Methods:
+      * __init__(self, api_key, model, timeout)
+      * backend_name(self)
+      * model_name(self)
+      * complete(self, user_message, options)
+        Doc: Complete a message using Anthropic with JSON prefill technique.
+      * health_check(self)
+        Doc: Check if Anthropic API is available.
+      * __aenter__(self)
+      * __aexit__(self, exc_type, exc_val, exc_tb)
+
+=== FILE: infrastructure\ai\base.py ===
+Classes:
+  - Class: CompletionOptions
+    Doc: Options for AI completion requests.
+  - Class: CompletionResult
+    Doc: Result of an AI completion request.
+  - Class: AIClient
+    Doc: Abstract base class for AI backend clients.
+    Methods:
+      * backend_name(self)
+      * model_name(self)
+      * complete(self, user_message, options)
+        Doc: Complete a user message.
+Does not throw exceptions on error.
+Always returns CompletionResult; success=False on failure.
+      * health_check(self)
+      * complete_batch(self, messages, options)
+        Doc: Default: sequential individual calls.
+Subclasses can override for batching.
+
+=== FILE: infrastructure\ai\batch.py ===
+Classes:
+  - Class: BatchItem
+    Doc: Single item in a batch processing request.
+  - Class: BatchResult
+    Doc: Result for a single batch item.
+  - Class: BatchStats
+    Doc: Statistics for batch processing.
+  - Class: BatchProcessor
+    Doc: Processor for batch AI requests with smart fallback and retry logic.
+    Methods:
+      * __init__(self, client, batch_size, max_workers, max_retries, use_cache, options, cache_backend, recovery_engine)
+      * process(self, items, build_prompt)
+        Doc: Process a batch of items with smart fallback.
+
+Args:
+    items: List of items to process
+    build_prompt: Function to build batch prompt from items
+
+Returns:
+    Tuple of (results, stats)
+      * _process_chunk(self, items, build_prompt, stats)
+        Doc: Process a single chunk of items.
+      * _check_cache(self, items)
+        Doc: Check cache for items.
+      * _try_batch(self, items, build_prompt, stats)
+        Doc: Try to process items as a batch.
+      * _fallback_individual(self, items, stats)
+        Doc: Fallback to individual processing for failed batch.
+      * _complete_with_retry(self, message)
+        Doc: Complete with exponential backoff retry.
+      * _map_batch_response(self, items, completion)
+        Doc: Map batch response to individual items.
+
+=== FILE: infrastructure\ai\factory.py ===
+Classes:
+  - Class: AIClientFactory
+    Doc: Factory for creating AI client instances.
+    Methods:
+      * create(backend)
+        Doc: Create an AI client instance.
+
+Args:
+    backend: Backend type ("local", "api", "gemini", "groq")
+    api_key: API key for remote backends (required for api, gemini, groq)
+    model: Model name (uses default if None)
+    base_url: Base URL for local backend
+
+Returns:
+    AIClient instance
+
+Raises:
+    ValueError: If backend is unknown or api_key is missing for remote backends
+      * from_settings(settings)
+        Doc: Create AI client from settings object.
+
+Expected settings attributes:
+    ai_backend: str
+    ai_model: str (optional)
+    anthropic_api_key: str (for api backend)
+    gemini_api_key: str (for gemini backend)
+    groq_api_key: str (for groq backend)
+    ollama_base_url: str (for local backend)
+
+=== FILE: infrastructure\ai\fail_check.py ===
+Docstring: AI Fail Check service for validation and quality control.
+
+This service provides comprehensive validation and quality control for AI analysis
+results. It implements multiple validation checks, consistency verification,
+and failure detection mechanisms to ensure high-quality AI outputs.
+Classes:
+  - Class: ValidationStatus
+    Doc: Validation check status.
+  - Class: ValidationResult
+    Doc: Result of a validation check.
+  - Class: FailCheckResult
+    Doc: Result of fail check analysis.
+  - Class: AIFailCheck
+    Doc: AI fail check and validation service.
+    Methods:
+      * __init__(self)
+        Doc: Initialize the fail check service.
+      * validate_ai_response(self, ai_response, formula_response, context)
+        Doc: Perform comprehensive validation of AI response.
+
+Args:
+    ai_response: AI analysis results
+    formula_response: Formula-based analysis results
+    context: Optional context information
+
+Returns:
+    Comprehensive fail check result
+      * _check_sentiment_consistency(self, ai_response, formula_response)
+        Doc: Check sentiment analysis consistency.
+      * _check_risk_consistency(self, ai_response, formula_response)
+        Doc: Check risk assessment consistency.
+      * _check_hedging_consistency(self, ai_response, formula_response)
+        Doc: Check hedging analysis consistency.
+      * _check_manipulation_consistency(self, ai_response, formula_response)
+        Doc: Check manipulation analysis consistency.
+      * _check_politeness_consistency(self, ai_response, formula_response)
+        Doc: Check politeness analysis consistency.
+      * _check_topic_consistency(self, ai_response, formula_response)
+        Doc: Check topic analysis consistency.
+      * _check_frame_consistency(self, ai_response, formula_response)
+        Doc: Check frame analysis consistency.
+      * _check_appraisal_consistency(self, ai_response, formula_response)
+        Doc: Check appraisal attitude consistency.
+      * _check_audience_consistency(self, ai_response, formula_response)
+        Doc: Check audience type consistency.
+      * _check_response_quality(self, ai_response)
+        Doc: Check overall response quality.
+      * _check_data_completeness(self, ai_response)
+        Doc: Check data completeness.
+      * _check_logical_consistency(self, ai_response)
+        Doc: Check logical consistency within AI response.
+      * _calculate_overall_result(self, validation_results)
+        Doc: Calculate overall validation result.
+
+Args:
+    validation_results: List of individual validation results
+
+Returns:
+    Overall fail check result
+      * _generate_recommendations(self, validation_results)
+        Doc: Generate recommendations based on validation results.
+
+Args:
+    validation_results: Validation results
+
+Returns:
+    List of recommendations
+
+=== FILE: infrastructure\ai\frame_detection\concept_extractor.py ===
+Docstring: LLM-based target concept extraction following Hamborg (2023).
+
+[Academic Reference: Hamborg, F. (2023). NLP Techniques for Automated Frame Analysis.
+Universität Göttingen. Target Concept Extraction stage.]
+Classes:
+  - Class: ConceptExtractionSchema
+    Doc: Schema for AI concept extraction output validation.
+  - Class: LLMConceptExtractor
+    Doc: LLM tabanlı hedef kavram çıkarımı.
+
+Hamborg (2023): 'Hedef kavram çıkarımı' — metindeki ana konu ve kavramların
+tespiti. Diplomatik metinlerde bu genellikle anlaşmazlık konusu olan varlıklardır.
+    Methods:
+      * __init__(self, llm_client, recovery)
+      * extract_concepts(self, segment)
+        Doc: Segment'teki hedef kavramları çıkar.
+
+Prompt Registry: concept_extraction@6.1.0
+Academic Ref: Hamborg (2023) — Target Concept Extraction
+      * _build_prompt(self, segment)
+        Doc: Concept extraction prompt'u oluştur.
+
+SHA256 Audit: Bu prompt'un versiyonu ve hash'i PromptRegistry'de saklanır.
+
+=== FILE: infrastructure\ai\frame_detection\coreference_resolver.py ===
+Docstring: spaCy + coreferee based coreference resolution.
+
+[Academic Reference: Hamborg, F. (2023). NLP Techniques for Automated Frame Analysis.
+Universität Göttingen. Coreference Resolution stage.]
+Classes:
+  - Class: SpacyCoreferenceResolver
+    Doc: spaCy + coreferee tabanlı coreference çözümleme.
+
+Hamborg (2023): Coreference resolution — zamirlerin (he, she, it, they) ve
+possessive'lerin metindeki gerçek referanslarına bağlanması. Diplomatik metinde
+"they" bir ülkeyi, "it" bir anlaşmayı referans edebilir.
+    Methods:
+      * __init__(self, nlp)
+      * resolve(self, segment)
+        Doc: Zamirleri ve referansları çözümle.
+
+Not: spaCy coreferee senkron çalışır, ancak async context'te
+asyncio.to_thread() kullanılmalıdır.
+      * _infer_actor(self, span)
+        Doc: Span'dan aktör (ülke/kurum) çıkarımı yap.
+
+Diplomatik metinde GPE (Geopolitical Entity), ORG (Organization) ve
+NORP (Nationalities or religious or political groups) label'ları aktör adayıdır.
+
+=== FILE: infrastructure\ai\frame_detection\embedding_matcher.py ===
+Docstring: SBERT embedding + cosine similarity based frame matching.
+
+[Academic Reference: Hamborg, F. (2023). NLP Techniques for Automated Frame Analysis.
+Universität Göttingen. Word embedding frame matching.]
+Classes:
+  - Class: SBERTFrameMatcher
+    Doc: SBERT embedding + cosine similarity tabanlı çerçeve eşleme.
+
+Hamborg (2023): 'Word embedding üzerinden çerçeve kategorisi eşleme'.
+Entman (1993) 4 fonksiyonu (problem, cause, moral, remedy) için referans
+embedding vektörleri ile segment embedding'lerinin karşılaştırılması.
+    Methods:
+      * __init__(self, topic_service)
+      * match_frames(self, segment, concepts, frame_embeddings)
+        Doc: Segment embedding'lerini referans frame embedding'leriyle eşleştir.
+
+Formül: similarity = cosine_similarity(segment_vec, frame_vec)
+Eşik: 0.72 (Hamborg 2023)
+
+=== FILE: infrastructure\ai\frame_detection\five_w_one_h_extractor.py ===
+Docstring: LLM-based 5W1H extraction following Hamborg (2023).
+
+[Academic Reference: Hamborg, F. (2023). NLP Techniques for Automated Frame Analysis.
+Universität Göttingen. 5W1H extraction stage.]
+Classes:
+  - Class: FiveWOneHSchema
+    Doc: Schema for AI 5W1H extraction output validation.
+  - Class: LLMFiveWOneHExtractor
+    Doc: LLM tabanlı 5W1H çıkarımı.
+
+Hamborg (2023): '5W1H çıkarımı' — metindeki temel gazetecilik sorularının
+cevaplarının tespiti: Who, What, When, Where, Why, How.
+    Methods:
+      * __init__(self, llm_client, recovery)
+      * extract(self, segment)
+        Doc: Segment'teki 5W1H bilgilerini çıkar.
+
+Prompt Registry: 5w1h_extraction@6.1.0
+Academic Ref: Hamborg (2023) — 5W1H Extraction
+      * _build_prompt(self, segment)
+        Doc: 5W1H extraction prompt'u oluştur.
+
+=== FILE: infrastructure\ai\frame_detection\frame_detection_pipeline.py ===
+Docstring: Hamborg (2023) PFA pipeline implementation.
+
+[Academic Reference: Hamborg, F. (2023). NLP Techniques for Automated Frame Analysis.
+Universität Göttingen. PFA pipeline: target concept + coreference + embedding matching
++ perspective clustering + 5W1H + bias detection.]
+Classes:
+  - Class: FrameDetectionConfig
+    Doc: PFA pipeline konfigürasyonu. Immutable.
+  - Class: FrameDetectionPipeline
+    Doc: Hamborg (2023) PFA pipeline'ının tam implementasyonu.
+
+Pipeline akışı:
+1. extract_concepts() → hedef kavramlar
+2. resolve_coreferences() → zamir çözümleme
+3. match_embedding_frames() → embedding tabanlı çerçeve eşleme
+4. cluster_perspectives() → aktör perspektif kümeleme
+5. extract_5w1h() → 5W1H çıkarımı
+6. detect_bias() → cosine similarity thresholding ile bias tespiti
+    Methods:
+      * __init__(self, concept_extractor, coreference_resolver, embedding_matcher, five_w_one_h_extractor, llm_client, topic_service, recovery_engine, config)
+      * analyze(self, segment)
+        Doc: Tam PFA pipeline'ını çalıştır.
+
+[Hamborg (2023): PFA pipeline — target concept extraction, coreference resolution,
+word embedding frame matching, perspective clustering, 5W1H extraction,
+cosine similarity bias detection.]
+      * _load_frame_embeddings(self)
+        Doc: Entman (1993) 4 fonksiyonu için önceden hesaplanmış frame embedding vektörleri.
+      * _detect_bias(self, annotations, frame_embeddings)
+        Doc: Hamborg (2023) cosine similarity thresholding ile bias tespiti.
+      * _cluster_perspectives(self, segment, entities)
+        Doc: Aktör bazlı perspektif kümeleme.
+      * _compute_centroid(self, entities)
+        Doc: Perspektif kümesinin embedding centroid'ini hesapla.
+      * _compute_prompt_hash(self)
+        Doc: PromptRegistry audit trail için SHA256 hash placeholder.
+
+=== FILE: infrastructure\ai\frame_detection\frame_lexicon_service.py ===
+Docstring: El-Assady (2023) frame lexicon and cue detection service.
+
+[Academic Reference: El-Assady, M. et al. (2023). Towards a More In-Depth Detection 
+of Political Framing. ACL Anthology. Discourse connectives, modal particles, 
+POS/dependency feature set for fine-grained frame detection.]
+Classes:
+  - Class: FrameLexiconService
+    Doc: El-Assady (2023) discourse connective ve framing cue detection servisi.
+
+Hybrid yaklaşım:
+1. Rule-based: Önceden tanımlı cue listesi + POS/dependency pattern matching
+2. Neural: spaCy dependency parse üzerinden yapısal pattern tespiti
+    Methods:
+      * __init__(self, nlp)
+      * detect_cues(self, segment_text)
+        Doc: Metindeki discourse connective ve framing cue'larını tespit et.
+      * _map_connective_to_frame(self, category)
+        Doc: Discourse connective kategorisini Entman frame'ine eşle.
+      * _map_modal_to_frame(self, category)
+        Doc: Modal particle kategorisini Entman frame'ine eşle.
+      * _compute_connective_weight(self, token, category)
+      * _compute_modal_weight(self, token, category)
+      * _compute_framing_weight(self, token, frame_type)
+      * _check_syntactic_pattern(self, token)
+        Doc: Dependency parse üzerinden El-Assady (2023) pattern matching.
+
+=== FILE: infrastructure\ai\gemini.py ===
+Classes:
+  - Class: GeminiClient
+    Doc: Gemini client with responseMimeType JSON support.
+    Methods:
+      * __init__(self, api_key, model, timeout)
+      * backend_name(self)
+      * model_name(self)
+      * complete(self, user_message, options)
+        Doc: Complete a message using Gemini with responseMimeType JSON.
+      * health_check(self)
+        Doc: Check if Gemini API is available.
+      * __aenter__(self)
+      * __aexit__(self, exc_type, exc_val, exc_tb)
+
+=== FILE: infrastructure\ai\groq.py ===
+Classes:
+  - Class: GroqClient
+    Doc: Groq client with json_object response format.
+    Methods:
+      * __init__(self, api_key, model, timeout)
+      * backend_name(self)
+      * model_name(self)
+      * complete(self, user_message, options)
+        Doc: Complete a message using Groq with json_object response format.
+      * health_check(self)
+        Doc: Check if Groq API is available.
+      * __aenter__(self)
+      * __aexit__(self, exc_type, exc_val, exc_tb)
+
+=== FILE: infrastructure\ai\llm_position_estimator.py ===
+Classes:
+  - Class: AIClient
+    Doc: Protocol for LLM clients (Anthropic, Gemini, etc.).
+    Methods:
+      * generate(self, prompt, temperature)
+  - Class: CambridgeCoreLLMPositionEstimator
+    Doc: Cambridge Core (2026) LLM positioning implementation.
+
+Methodology:
+- Split text into sentences (using a simple split or external tokenizer).
+- Rate each sentence on 0-100 scale via LLM.
+- Average sentence scores for text-level position.
+    Methods:
+      * __init__(self, client, prompt_registry, recovery_engine, max_concurrent)
+      * estimate_position(self, text, policy_dimension, schema_enforce)
+        Doc: Deterministic LLM-based position estimation.
+      * _score_sentence(self, sentence, dimension, template)
+        Doc: Score a single sentence with retry and recovery.
+      * calibrate_against_wordfish(self, llm_estimates, wordfish_thetas)
+        Doc: Compute calibration drift between LLM and Wordfish positions.
+      * _get_default_template(self)
+
+=== FILE: infrastructure\ai\ollama.py ===
+Classes:
+  - Class: OllamaClient
+    Doc: Ollama client with native JSON mode support.
+    Methods:
+      * __init__(self, model, base_url, timeout)
+      * backend_name(self)
+      * model_name(self)
+      * complete(self, user_message, options)
+        Doc: Complete a message using Ollama's native JSON mode.
+      * health_check(self)
+        Doc: Check if Ollama is available.
+      * __aenter__(self)
+      * __aexit__(self, exc_type, exc_val, exc_tb)
+
+=== FILE: infrastructure\ai\prompt_registry.py ===
+Classes:
+  - Class: PromptVersion
+    Doc: Versiyonlanmış prompt kaydı.
+
+Her promptun SHA256 hash'i ve akademik referansı audit trail
+içinde saklanır. `frozen=True` ile immutable garantisi verir.
+
+Reference:
+    - CONTEXT.md Bölüm 4.C: Prompt Registry & Audit Trail
+    - ACADEMIC_FOUNDATIONS.md Bölüm 11: Master Map
+    Methods:
+      * compute_hash(cls, content)
+        Doc: Deterministic SHA256 hash üretimi.
+  - Class: AcademicRefTrace
+    Doc: Bir analizde kullanılan promptların akademik soy ağacı (lineage).
+
+Faz 0'da bu model tanımlanır; pipeline entegrasyonu Faz 1+'da
+`AnalysisPipeline` finalize aşamasında otomatik doldurulur.
+  - Class: PromptRegistry
+    Doc: Prompt versiyonlama ve akademik referans izleme arayüzü.
+
+Somut implementasyonlar (örn. `SQLitePromptRegistry`) Faz 1'de
+`infrastructure/repositories/` altında yazılacaktır.
+    Methods:
+      * register(self, name, content, academic_ref)
+        Doc: Yeni bir prompt kaydeder.
+      * get(self, name, version)
+        Doc: Prompt'u döndürür. version=None ise en sonuncuyu döner.
+      * list_versions(self, name)
+        Doc: Bir promptun tüm versiyonlarını listeler.
+      * get_academic_lineage(self, analysis_id)
+        Doc: Bir analizde kullanılan tüm promptların akademik referanslarını döner.
+      * get_version_string(self, name, version)
+        Doc: Prompt'un versiyon string'ini (vX.Y) döner.
+  - Class: InMemoryPromptRegistry
+    Doc: Bellek içi PromptRegistry implementasyonu.
+    Methods:
+      * __init__(self)
+      * register(self, name, content, academic_ref)
+      * get(self, name, version)
+      * list_versions(self, name)
+      * get_academic_lineage(self, analysis_id)
+      * get_version_string(self, name, version)
+Functions:
+  - get_prompt_registry()
+    Doc: PromptRegistry singleton'ını döndürür.
+  - register_defaults(registry)
+    Doc: BB-PAXDATA varsayılan promptlarını kaydeder.
+
+=== FILE: infrastructure\ai\recovery.py ===
+Docstring: RecoveryEngine — 6 seviyeli JSON kurtarma motoru.
+
+AI backend'lerinden dönen ham metin yanıtlarını geçerli JSON'e dönüştürmek
+için kullanılan 6 aşamalı boru hattı.
+Classes:
+  - Class: RecoveryLevel
+    Doc: JSON kurtarma seviyeleri.
+  - Class: RecoveryResult
+    Doc: JSON kurtarma işlemi sonucu.
+  - Class: RecoveryEngine
+    Doc: Ham AI metin yanıtından JSON kurtarmayı dener.
+
+Kullanım:
+    engine = RecoveryEngine()
+    result = engine.recover(raw_text)
+    result = engine.recover(raw_text, default_schema={"sentiment": 0.0, ...})
+    Methods:
+      * __init__(self, logger)
+      * recover(self, text, default_schema)
+        Doc: 6 seviyeyi sırayla dener.
+Her seviye deneme loglanır. Başarılı seviye info ile loglanır.
+      * _level_direct(self, text)
+        Doc: Seviye 1: Direct JSON parse.
+      * _level_stripped(self, text)
+        Doc: Seviye 2: Markdown bloklarını temizle ve parse et.
+      * _level_first_block(self, text)
+        Doc: Seviye 3: İlk JSON bloğunu bul ve parse et.
+      * _level_partial(self, text)
+        Doc: Seviye 4: Kırpılmış JSON'dan anahtar-değer çiftlerini çıkar.
+      * _level_key_value(self, text)
+        Doc: Seviye 5: Geniş anahtar-değer örüntüleri.
+      * _level_schema_default(self, default_schema)
+        Doc: Seviye 6: Varsayılan şema.
+
+=== FILE: infrastructure\cache\base.py ===
+Docstring: CacheBackend — Backend-agnostik async cache arayüzü.
+
+Tüm cache implementasyonları bu soyut sınıfı uygular.
+Classes:
+  - Class: CacheBackend
+    Doc: Backend-agnostik async cache arayüzü.
+Tüm implementasyonlar bu sınıfı uygular.
+    Methods:
+      * get(self, key)
+        Doc: Key bulunamazsa None döner.
+      * set(self, key, value, ttl)
+      * delete(self, key)
+      * exists(self, key)
+      * clear(self, prefix)
+        Doc: Silinen key sayısını döner.
+      * stats(self)
+        Doc: hit/miss oranı, toplam key sayısı, boyut vb.
+      * make_key(self)
+        Doc: Deterministik cache anahtarı üretir.
+sha256(:join(parts))[:16]
+Monolitik get_cache_key() mantığının karşılığı.
+
+=== FILE: infrastructure\cache\disk.py ===
+Classes:
+  - Class: DiskCacheBackend
+    Methods:
+      * __init__(self, cache_dir, max_size_mb)
+      * _read_file(self, path)
+        Doc: aiofiles varsa async, yoksa asyncio.to_thread ile oku.
+      * _write_file(self, path, content)
+        Doc: aiofiles varsa async, yoksa asyncio.to_thread ile yaz.
+      * get(self, key)
+      * set(self, key, value, ttl)
+      * delete(self, key)
+      * exists(self, key)
+      * clear(self, prefix)
+      * stats(self)
+
+=== FILE: infrastructure\cache\redis.py ===
+Classes:
+  - Class: RedisCacheBackend
+    Doc: Redis tabanlı cache backend.
+Kullanmak için: poetry add "redis[asyncio]"
+    Methods:
+      * __init__(self, url, key_prefix, default_ttl)
+      * _get_client(self)
+        Doc: Redis client'ı lazy olarak başlat.
+      * get(self, key)
+      * set(self, key, value, ttl)
+      * delete(self, key)
+      * exists(self, key)
+      * clear(self, prefix)
+        Doc: SCAN kullan, KEYS kullanma — production'da KEYS bloke eder.
+      * stats(self)
+      * health_check(self)
+
+=== FILE: infrastructure\container\service_container.py ===
+Classes:
+  - Class: ServiceContainer
+    Doc: Uygulama genelindeki servis bağımlılıklarını yöneten IoC container.
+Singleton pattern: get_instance() ile erişilir.
+ARTIK STUB YOK — tüm servisler gerçek implementasyonlarla donatılmıştır.
+    Methods:
+      * __init__(self)
+      * get_instance(cls)
+        Doc: Thread-unsafe singleton (production'da threading.Lock ekle).
+
+=== FILE: infrastructure\db\base.py ===
+Docstring: SQLAlchemy declarative base for BB-PAXDATA.
+Classes:
+  - Class: Base
+    Doc: Application-wide ORM base.
+
+=== FILE: infrastructure\db\country_models.py ===
+Docstring: SQLAlchemy 2.0 ORM table tanımları — country/network entity'leri için.
+
+Kurallar:
+- Tüm sütunlar Mapped[T] ile tip güvenli tanımlanır.
+- mapped_column() kullanılır, eski Column() yasak.
+- JSON sütunlar için SQLAlchemy JSON tipi kullanılır.
+- Bu modeller domain entity'lerine dönüştürücü metotlar içerir (to_domain / from_domain).
+Classes:
+  - Class: Base
+  - Class: CountryReferenceTable
+    Methods:
+      * to_domain(self)
+      * from_domain(cls, entity)
+  - Class: BilateralSentimentTable
+    Methods:
+      * to_domain(self)
+      * from_domain(cls, entity)
+  - Class: DiscourseFlowTable
+    Methods:
+      * to_domain(self)
+      * from_domain(cls, entity)
+  - Class: TopicMatrixTable
+    Methods:
+      * to_domain(self)
+      * from_domain(cls, entity)
+
+=== FILE: infrastructure\db\discourse_network_table.py ===
+Classes:
+  - Class: DiscourseNetworkEdgeTable
+    Doc: Fischer DNA: Sparse bipartite edge storage (Actor ↔ Concept).
+
+=== FILE: infrastructure\db\dki_table.py ===
+Classes:
+  - Class: DKIResultModel
+    Doc: SQLAlchemy table for DKI (Discourse-Kinetic Index) results.
+
+Stores the composite score and its three primary components for longitudinal analysis.
+    Methods:
+      * __repr__(self)
+
+=== FILE: infrastructure\db\drift_events.py ===
+Docstring: Drift events model for temporal analysis.
+Classes:
+  - Class: DriftEvent
+    Doc: Tracks temporal drift events in speaker language.
+
+=== FILE: infrastructure\db\human_review_queue.py ===
+Docstring: Human review queue model for HIGH/CRITICAL risk sentences.
+Classes:
+  - Class: HumanReviewQueue
+    Doc: Tracks sentences requiring human review.
+
+=== FILE: infrastructure\db\migrations.py ===
+Docstring: Alembic migration helpers.
+Functions:
+  - migrate()
+    Doc: Son migration'ı uygula.
+  - make_migration(message)
+    Doc: Yeni autogenerate migration oluştur.
+  - downgrade_one()
+    Doc: Bir revision geri al.
+  - current()
+    Doc: Mevcut revision'ı göster.
+  - history()
+    Doc: Revision geçmişini göster.
+  - main()
+
+=== FILE: infrastructure\db\models.py ===
+Docstring: SQLAlchemy 2.0 ORM models mirroring BB-PAXDATA legacy SQLite schemas.
+Classes:
+  - Class: Panel
+    Methods:
+      * to_domain(self)
+      * from_domain(cls, model)
+  - Class: Speaker
+    Methods:
+      * to_domain(self)
+      * from_domain(cls, model)
+  - Class: SpeakerProfile
+    Methods:
+      * to_domain(self)
+      * from_domain(cls, model)
+  - Class: Segment
+    Methods:
+      * id(self)
+      * to_domain(self)
+      * from_domain(cls, model)
+  - Class: Sentence
+    Methods:
+      * id(self)
+      * segment_id(self)
+      * to_domain(self)
+      * from_domain(cls, model)
+  - Class: Word
+    Methods:
+      * to_domain(self)
+      * from_domain(cls, model)
+  - Class: CountryReference
+    Methods:
+      * to_domain(self)
+      * from_domain(cls, model)
+  - Class: CountryStat
+    Methods:
+      * to_domain(self)
+      * from_domain(cls, model)
+  - Class: TopicMatrix
+    Methods:
+      * to_domain(self)
+      * from_domain(cls, model)
+  - Class: CountryPairSentiment
+    Methods:
+      * to_domain(self)
+      * from_domain(cls, model)
+  - Class: DemandRecord
+    Methods:
+      * to_domain(self)
+      * from_domain(cls, model)
+  - Class: PatternRecord
+    Methods:
+      * to_domain(self)
+      * from_domain(cls, model)
+  - Class: PanelDynamics
+    Methods:
+      * to_domain(self)
+      * from_domain(cls, model)
+  - Class: DiscourseNetworkEdge
+    Methods:
+      * to_domain(self)
+      * from_domain(cls, model)
+  - Class: AISentenceAnalysis
+    Methods:
+      * to_domain(self)
+      * from_domain(cls, model)
+  - Class: AIValidationLog
+    Methods:
+      * to_domain(self)
+      * from_domain(cls, model)
+  - Class: AISegmentInsight
+    Methods:
+      * to_domain(self)
+      * from_domain(cls, model)
+  - Class: AICache
+    Methods:
+      * to_domain(self)
+      * from_domain(cls, model)
+  - Class: AIContextualFlag
+    Methods:
+      * to_domain(self)
+      * from_domain(cls, model)
+  - Class: AIDemandAnalysis
+    Methods:
+      * to_domain(self)
+      * from_domain(cls, model)
+  - Class: AIPanelSynthesis
+    Methods:
+      * to_domain(self)
+      * from_domain(cls, model)
+  - Class: AIFailAnalysis
+    Methods:
+      * to_domain(self)
+      * from_domain(cls, model)
+  - Class: AIFailPattern
+    Methods:
+      * to_domain(self)
+      * from_domain(cls, model)
+  - Class: AIFailAnomalyCross
+    Methods:
+      * to_domain(self)
+      * from_domain(cls, model)
+  - Class: AIFailCache
+    Methods:
+      * to_domain(self)
+      * from_domain(cls, model)
+  - Class: DependencyTripleORM
+  - Class: ActorActionMatrixORM
+  - Class: AIExplanationsORM
+Functions:
+  - _parse_dt(value)
+  - _try_enum(enum_cls, raw)
+  - _evidence_list(val)
+
+=== FILE: infrastructure\db\processed_files.py ===
+Docstring: Processed files tracking model for duplicate protection.
+Classes:
+  - Class: ProcessedFile
+    Doc: Tracks processed files to prevent duplicate processing.
+
+=== FILE: infrastructure\db\repositories\analysis.py ===
+Classes:
+  - Class: AnalysisRepository
+    Doc: Async repository for AISentenceAnalysis ORM model.
+    Methods:
+      * get_failures(self, panel_id)
+        Doc: Get analysis failures.
+      * insert_sentence_analysis(self, analysis, prompt_name)
+        Doc: Cümle analizini DB'ye yazar.
+prompt_version otomatik olarak PromptRegistry'den alınır.
+      * save_sentence_analysis(self, analysis)
+        Doc: Save sentence analysis (supports domain model or ORM model).
+      * get_sentence_analysis(self, sent_id)
+        Doc: Get analysis for a sentence.
+      * save_validation_log(self, validation)
+        Doc: Save validation log.
+      * get_validation_log(self, sent_id)
+        Doc: Get validation logs for a sentence.
+      * get_cache(self, cache_hash)
+        Doc: Get cached AI response.
+      * set_cache(self, cache_hash, result_json, model_used, backend_used)
+        Doc: Set cached AI response.
+      * upsert(self, record)
+        Doc: Insert or replace a record (INSERT OR REPLACE semantics).
+      * bulk_upsert(self, records)
+        Doc: Bulk upsert records and return count of inserted records.
+      * get_latest_by_sentence(self, sent_id)
+        Doc: Get the latest analysis for a sentence by prompt_version.
+      * get_fail_analyses(self, panel_id, check_type)
+        Doc: Get analyses that failed logic checks.
+      * get_backend_stats(self)
+        Doc: Get backend statistics: total requests, avg latency, error rate.
+      * save_fail_analysis(self, fail_analysis)
+        Doc: Save AI failure analysis and update patterns.
+      * update_fail_patterns(self, fail_analysis)
+        Doc: Update or create a failure pattern in the registry.
+
+Logic:
+- Match on (fail_category, check_type, negation_type, speaker_name)
+- If exists: update recurrence_count, averages, and last_seen_at
+- If not: create new pattern
+
+=== FILE: infrastructure\db\repositories\base.py ===
+Classes:
+  - Class: BaseRepository
+    Doc: Generic async base repository for ORM models.
+    Methods:
+      * __init__(self, session)
+      * get_by_id(self, record_id)
+        Doc: Get a single record by primary key.
+      * get_all(self, limit)
+        Doc: Get all records, optionally limited.
+      * add(self, entity)
+        Doc: Add a new entity and return it.
+      * add_many(self, entities)
+        Doc: Add multiple entities in bulk.
+      * delete_by_id(self, record_id)
+        Doc: Delete a record by primary key.
+      * exists(self, record_id)
+        Doc: Check if a record exists by primary key.
+
+=== FILE: infrastructure\db\repositories\dependency.py ===
+Docstring: Repository for Dependency Triples and Actor-Action Matrix.
+Classes:
+  - Class: DependencyRepository
+    Doc: Handles database operations for dependency triples and actor-action matrices.
+    Methods:
+      * __init__(self, session)
+      * insert_triple(self, triple)
+        Doc: Insert a dependency triple into the database.
+      * upsert_actor_action_matrix(self, matrix)
+        Doc: Upsert an actor-action matrix entry.
+      * get_triples_by_panel(self, panel_id)
+        Doc: Get all triples for a specific panel.
+
+=== FILE: infrastructure\db\repositories\dki_repository.py ===
+Classes:
+  - Class: DKIRepository
+    Doc: Repository for DKI result persistence.
+    Methods:
+      * save_dki(self, result, analysis_id)
+        Doc: Persist a DKI result to the database.
+      * get_history(self, speaker_id, before)
+        Doc: Retrieve DKI history for a speaker, ordered chronologically.
+
+=== FILE: infrastructure\db\repositories\explanation.py ===
+Docstring: Repository for Explainability data.
+Classes:
+  - Class: ExplanationRepository
+    Doc: Handles database operations for AI explanations.
+    Methods:
+      * __init__(self, session)
+      * insert_explanation(self, explanation)
+        Doc: Insert a sentence explanation into the database.
+      * get_by_sentence(self, sent_id)
+        Doc: Get explanation for a specific sentence.
+
+=== FILE: infrastructure\db\repositories\segment.py ===
+Classes:
+  - Class: SegmentRepository
+    Doc: Async repository for Segment ORM model.
+    Methods:
+      * get(self, seg_id)
+        Doc: Get a segment by ID.
+      * add(self, entity)
+        Doc: Add a segment (supports domain model or ORM model).
+      * insert_segment_insight(self, seg_id, insight, prompt_name)
+        Doc: Segment analizini DB'ye yazar.
+prompt_version otomatik olarak PromptRegistry'den alınır.
+      * get_without_insights(self, panel_id)
+        Doc: Get segments that don't have AI insights yet.
+      * update_insight(self, seg_id, insight, version)
+        Doc: Update or create AI insight for a segment.
+      * get_by_panel(self, panel_id)
+        Doc: Get all segments for a specific panel.
+      * get_speaker_segments(self, speaker_name, panel_id)
+        Doc: Get segments for a specific speaker.
+      * get_with_insights(self, panel_id)
+        Doc: Get segments that have AI insights.
+      * get_with_sentences_eager(self, seg_id)
+        Doc: Get segment with all its sentences loaded.
+      * get_with_sentences(self, seg_id)
+        Doc: Alias for get_with_sentences_eager.
+      * get_temporal_analysis(self, seg_id)
+        Doc: Get temporal analysis for a segment.
+
+=== FILE: infrastructure\db\repositories\sentence.py ===
+Classes:
+  - Class: SentenceRepository
+    Doc: Async repository for Sentence ORM model.
+    Methods:
+      * get(self, sent_id)
+        Doc: Get a sentence by ID.
+      * add(self, entity)
+        Doc: Add a sentence (supports domain model or ORM model).
+      * get_unanalyzed(self, panel_id, limit)
+        Doc: Get sentences that haven't been analyzed yet, ordered by risk_score DESC.
+      * get_by_panel(self, panel_id)
+        Doc: Get all sentences for a specific panel.
+      * get_by_segment(self, seg_id)
+        Doc: Get all sentences for a specific segment.
+      * get_fail_sentences(self, panel_id, check_type)
+        Doc: Get sentences that failed logic checks.
+      * mark_analyzed(self, sent_id)
+        Doc: Mark a sentence as analyzed.
+      * bulk_mark_analyzed(self, sent_ids)
+        Doc: Mark multiple sentences as analyzed in bulk.
+      * get_priority_queue(self, top_n, panel_id)
+        Doc: Get top N sentences ordered by risk_score DESC, power_level DESC.
+      * update_analysis(self, sent_id, sentiment_score, risk_score, hedging_score, politeness_ratio)
+        Doc: Update sentence analysis results.
+      * get_high_risk(self, min_risk_score)
+        Doc: Get high risk sentences.
+
+=== FILE: infrastructure\db\repositories\unit_of_work.py ===
+Docstring: Unit of Work: one session, coordinated repositories, explicit transaction.
+Classes:
+  - Class: AbstractUnitOfWork
+    Doc: Application transaction boundary.
+    Methods:
+      * __aenter__(self)
+      * __aexit__(self, exc_type, exc_val, exc_tb)
+      * commit(self)
+        Doc: Persist pending changes.
+      * rollback(self)
+        Doc: Discard pending changes.
+  - Class: SqlAlchemyUnitOfWork
+    Doc: Coordinates repositories over a single SQLAlchemy ``AsyncSession``.
+    Methods:
+      * __init__(self, session_factory)
+      * session(self)
+      * __aenter__(self)
+      * __aexit__(self, exc_type, exc_val, exc_tb)
+      * commit(self)
+      * rollback(self)
+
+=== FILE: infrastructure\db\sbi_table.py ===
+Classes:
+  - Class: SpeakerPositionTable
+    Doc: SQLAlchemy model for persisting speaker positions (Phase 7 SBI).
+
+=== FILE: infrastructure\db\session.py ===
+Docstring: Database engine, session factory, and lifecycle helpers.
+Functions:
+  - get_db()
+  - get_db_session()
+    Doc: Synchronous database session context manager.
+  - init_db()
+
+=== FILE: infrastructure\db\topic_models.py ===
+Classes:
+  - Class: TopicAssignmentORM
+
+=== FILE: infrastructure\nlp\cross_anomaly_service_impl.py ===
+Classes:
+  - Class: CrossAnomalyServiceImpl
+    Doc: Tsytsarau (2017) contradiction measure implementasyonu.
+
+Reference:
+    - Tsytsarau, M. et al. (2017). Identifying Sentiment-based
+      Contradictions.
+      C = (n·M₂ − M₁²) / ((ϑ·n² + M₁²)·W)
+    Methods:
+      * detect_sentiment_risk_divergence(self, segment, polarity_values, theta, window, threshold)
+        Doc: Contradiction measure C hesaplar.
+
+Args:
+    segment: Analiz edilen metin segmenti.
+    polarity_values: Her cümlenin polarity skoru (örn. VADER compound).
+                     Değer aralığı: [-1.0, 1.0]
+    theta: Hassasiyet parametresi (ϑ). Varsayılan 0.1.
+    window: Pencere boyutu (W). None ise n kullanılır.
+    threshold: Anomali eşiği. C > threshold ise anomali.
+
+Returns:
+    ContradictionResult: Hesaplanan C değeri ve metadata.
+
+Raises:
+    ValueError: polarity_values boş ise.
+      * _compute_negation_adjustment(self, sentences)
+        Doc: Negasyon kaynaklı false positive'leri hesapla ve düzeltme katsayısı üret.
+      * _evaluate_cue_false_positive_risk(self, cue, sentence)
+        Doc: Tek bir negasyon cue'yu için false positive risk skoru.
+      * detect_power_asymmetry_anomaly(self, asymmetry_score, sentiment_delta, threshold_asymmetry, threshold_delta)
+        Doc: Güç asimetrisi ve sentiment farkı üzerinden anomali tespiti.
+
+asymmetry_score > 0.5 + sentiment_delta < -0.3 -> POWER_ASYMMETRY_ANOMALY
+      * detect_cheap_talk_anomaly(self, power_weighted_score, signal_credibility, threshold_power, threshold_credibility)
+        Doc: Cheap talk anomalisi tespiti.
+
+power_weighted_score > threshold + signal_credibility < 0.4 -> CHEAP_TALK_ANOMALY
+
+=== FILE: infrastructure\nlp\dynamic_position.py ===
+Classes:
+  - Class: PooleRosenthalPositionTracker
+    Doc: Dynamic ideal point tracker using DW-NOMINATE inspired velocity metrics.
+
+Critical Constraints:
+- Input trajectory MUST be pre-sorted chronologically.
+- Missing θᵢ values are interpolated linearly.
+- Velocity unit: position units per day.
+- Smoothing: simple moving average (SMA).
+    Methods:
+      * __init__(self, smoothing_method)
+      * compute_velocity(self, trajectory, smoothing_window)
+        Doc: Compute Δθ/Δt and acceleration for speaker position time-series.
+      * _apply_sma(self, data, window)
+        Doc: Apply Simple Moving Average.
+      * _empty_result(self, speaker_id)
+
+=== FILE: infrastructure\nlp\engagement_analyzer.py ===
+Classes:
+  - Class: EngagementAnalyzer
+    Doc: Implements Martin & White (2005) Appraisal Theory Engagement analysis.
+
+Academic Source:
+Martin, J. R., & White, P. R. (2005). The language of evaluation:
+Appraisal in English. Palgrave Macmillan.
+    Methods:
+      * __init__(self)
+      * score(self, sentences, speaker_id)
+        Doc: Return engagement score ∈ [0, 1].
+Formula: (polygloss_count / total_engagement_markers) × avg(graduation_force)
+
+=== FILE: infrastructure\nlp\ensemble_sentiment_service.py ===
+Classes:
+  - Class: EnsembleSentimentService
+    Doc: Bonacchi (2024) multi-method ensemble sentiment analizi.
+
+VADER (rule-based) + BERT (transformer) + Flair (sequence)
+modellerinin majority voting ile birleştirilmesi.
+
+Reference:
+    - Bonacchi, C. et al. (2024). Political Uses of the Ancient Past
+      on Social Media are Predominantly Negative and Extreme. PLOS ONE.
+    - Hutto, C.J. & Gilbert, E.E. (2014). VADER (Faz 1 aktif).
+    Methods:
+      * __init__(self, vader_weight, bert_weight, flair_weight, agreement_threshold)
+        Doc: Initialize ensemble servisi.
+
+Args:
+    vader_weight: VADER model ağırlığı.
+    bert_weight: BERT model ağırlığı.
+    flair_weight: Flair model ağırlığı.
+    agreement_threshold: Majority voting eşiği.
+      * _get_vader_score(self, text)
+        Doc: VADER compound skoru üretir.
+      * _get_bert_score(self, text)
+        Doc: BERT sentiment skoru üretir (Mock Faz 1).
+      * _get_flair_score(self, text)
+        Doc: Flair sentiment skoru üretir (Mock Faz 1).
+      * _score_to_polarity(score)
+        Doc: Compound skoru polariteye çevirir.
+      * analyze(self, text)
+        Doc: Ensemble sentiment analizi yapar.
+
+Args:
+    text: Analiz edilecek metin.
+
+Returns:
+    EnsembleSentiment: Majority voting sonucu.
+
+=== FILE: infrastructure\nlp\fischer_dna_service.py ===
+Classes:
+  - Class: ActorConceptProfile
+    Doc: Intermediate aggregation per actor.
+  - Class: FischerDNAService
+    Doc: Fischer et al. (2012) Discourse Network Analysis implementation.
+Computes bipartite actor-concept edges with tf-idf weighting.
+    Methods:
+      * __init__(self, epsilon)
+      * build_network(self, session_id, profiles)
+        Doc: Build DiscourseFlow from actor-concept co-occurrence profiles.
+
+Formula: weight(A→C) = tf(A,C) × idf(C)
+      * get_actor_vector(self, flow, actor_id)
+        Doc: Return concept-weight vector for a given actor (sparse representation).
+
+=== FILE: infrastructure\nlp\liwc_proxy.py ===
+Classes:
+  - Class: LIWCProxyResult
+    Doc: Internal helper to hold matches before mapping to domain model.
+    Methods:
+      * __init__(self, clout, analytic, authenticity, tone, word_count, category_hits)
+  - Class: LIWCProxyService
+    Doc: LIWC2015 kategorilerinin lexicon-tabanlı proxy implementasyonu.
+
+Faz 1'de basit keyword matching; Faz 5'te BERT embedding tabanlı
+semantic matching ile değiştirilecektir.
+
+Reference:
+    - Pennebaker, J.W. et al. (2015). LIWC2015.
+    - ACADEMIC_FOUNDATIONS.md F5: clout, analytic skorları.
+    Methods:
+      * __init__(self, lexicon)
+      * analyze(self, text)
+        Doc: Metni LIWC kategorilerine göre analiz eder.
+
+Args:
+    text: Analiz edilecek metin.
+
+Returns:
+    LIWCScores: Kategori skorları (domain modeli).
+
+=== FILE: infrastructure\nlp\lodp_service.py ===
+Classes:
+  - Class: LODPService
+    Doc: Monroe (2009) Log Odds Ratio with Informative Dirichlet Prior.
+
+İki korpus arasındaki ayırt edici kelimeleri z-skoruyla çıkarır.
+Rare word overfitting'i Dirichlet prior (α) ile engeller.
+
+Reference:
+    - Monroe, B.L., Colaresi, M.P. & Quinn, K.M. (2009).
+      Fightin' Words: Lexical Feature Selection and Evaluation
+      for Identifying the Content of Political Conflict.
+    Methods:
+      * __init__(self, alpha)
+      * _count_words(self, texts)
+        Doc: Metin listesinden kelime frekansları çıkarır.
+      * _compute_odds(self, count, total, alpha)
+        Doc: Dirichlet prior ile düzeltilmiş odds hesaplar.
+      * analyze(self, corpus1_texts, corpus2_texts, top_k)
+        Doc: İki korpus arasındaki ayırt edici kelimeleri LODP ile çıkarır.
+
+Args:
+    corpus1_texts: Birinci korpus metinleri.
+    corpus2_texts: İkinci korpus metinleri.
+    top_k: Döndürülecek en yüksek z-skorlu kelime sayısı.
+
+Returns:
+    list[LODPResult]: z_skor'a göre sıralanmış ayırt edici kelimeler.
+      * analyze_segment_pair(self, segment1, segment2)
+        Doc: İki segment arasındaki ayırt edici kelimeleri çıkarır.
+
+Bu metod, `AnalysisAssembler` tarafından `key_phrases`
+alanını zenginleştirmek için kullanılır.
+
+Args:
+    segment1: Birinci segment.
+    segment2: İkinci segment.
+
+Returns:
+    list[LODPResult]: Ayırt edici kelimeler (z_skor sıralı).
+
+=== FILE: infrastructure\nlp\maoz_dyadic_service.py ===
+Classes:
+  - Class: MaozDyadicService
+    Doc: Maoz (2005) Dyadic Metrics implementation.
+Computes diplomatic_distance and affinity_score for actor pairs.
+    Methods:
+      * calculate_dyadic_pair(self, actor_a_id, actor_b_id, session_id)
+        Doc: Maoz formulas:
+- diplomatic_distance = 1 − (vote_affinity × alliance_score)
+- affinity_score = discourse_sentiment_delta × (1 / structural_distance)
+      * calculate_all_pairs(self, session_id, actor_ids, pairwise_inputs)
+        Doc: Batch computation for all actor pairs in a session.
+
+=== FILE: infrastructure\nlp\negation_detector.py ===
+Classes:
+  - Class: SpacyNegationDetector
+    Doc: spaCy dependency parse tabanlı negasyon detection (Morante & Blanco 2012).
+
+Not: spaCy Doc objesi dışarıdan inject edilir (test edilebilirlik için).
+    Methods:
+      * __init__(self, nlp)
+      * detect(self, text, sentence_id)
+      * detect_with_doc(self, text, sentence_id, doc)
+        Doc: Existing Doc objesi ile detection yap (performans için).
+      * _detect_cue(self, token, sentence_id)
+      * detect_scope(self, cue, doc)
+
+=== FILE: infrastructure\nlp\power_index_calculator.py ===
+Classes:
+  - Class: PowerIndexCalculator
+    Doc: Van Dijk (1993) CDA kaynaklı güç indeksi hesaplama servisi.
+
+Authority Markers + Dominance Patterns + Legitimation Strategies
+    Methods:
+      * __init__(self, nlp)
+      * calculate(self, text, speaker_id, segment_id)
+        Doc: Metin üzerinde Van Dijk CDA güç indeksi hesapla.
+      * _count_cues(self, text, tokens, cue_set)
+        Doc: Phrase ve single-word cue sayımı.
+
+=== FILE: infrastructure\nlp\risk_signal_detector.py ===
+Classes:
+  - Class: RiskSignalDetector
+    Doc: Diplomatik metindeki risk sinyallerini tespit eden servis.
+
+Zagare (2004) escalation multipliers + Trager (2010) costly/cheap signal
+ayrımı üzerine kuruludur.
+    Methods:
+      * __init__(self, nlp)
+      * detect(self, text, sentence_id)
+        Doc: Metindeki tüm risk sinyallerini tespit et.
+
+Phrase-match öncelikli (multi-word cues), sonra single-word.
+      * _detect_phrases(self, text, sentence_id)
+        Doc: Multi-word phrase detection (case-insensitive substring match).
+      * _detect_single_token(self, token, sentence_id)
+        Doc: Tek token risk sinyali tespiti.
+
+=== FILE: infrastructure\nlp\semantic_shift.py ===
+Classes:
+  - Class: AzarbonyadSemanticShiftCalculator
+    Doc: Implementation of Azarbonyad et al. (2017) semantic shift detection.
+
+Strict Requirements:
+- ALL embedding operations are batched.
+- Handle OOV words gracefully (shift = 0.0, log warning).
+- Async wrapper around CPU-bound numpy operations.
+    Methods:
+      * __init__(self, model_name)
+      * calculate_shift(self, current, historical, idf_reference)
+        Doc: Compute semantic shift between discourse contexts.
+      * _compute_per_word_shifts(self, current_text, historical_text, vocabulary)
+        Doc: Compute shift per word based on context-averaging.
+      * _compute_idf(self, documents, vocabulary)
+        Doc: Compute Inverse Document Frequency from the provided documents.
+
+=== FILE: infrastructure\nlp\spacy_adapter.py ===
+Classes:
+  - Class: SpacyAdapter
+    Doc: Adapter for orchestrating spaCy NLP tasks including negation detection.
+    Methods:
+      * __init__(self, nlp)
+      * analyze_sentence(self, text, sentence_id)
+        Doc: Analyze a sentence and return a Sentence model with negation cues.
+
+=== FILE: infrastructure\nlp\spacy_config.py ===
+Docstring: Configuration for SpaCy models and pipelines in BB-PAXDATA.
+Classes:
+  - Class: PipelineConfig
+
+=== FILE: infrastructure\nlp\spacy_manager.py ===
+Docstring: SpaCy Model Manager for BB-PAXDATA.
+
+Handles lazy loading, caching, and unloading of SpaCy models to manage memory
+efficiently. Implemented as a singleton-like class manager.
+Classes:
+  - Class: SpacyModelManager
+    Doc: Manager for SpaCy language models.
+
+Provides a central point to access pre-loaded models and handles
+unloading models when they are no longer needed.
+    Methods:
+      * get_model(cls, lang)
+        Doc: Get a SpaCy model for the specified language.
+
+If the model is not already loaded, it will be loaded using the
+configuration from SPACY_PIPELINES.
+
+Args:
+    lang: ISO 639-1 language code (e.g., 'tr', 'en').
+
+Returns:
+    The loaded spacy.Language model.
+      * unload(cls, lang)
+        Doc: Unload a model from memory.
+
+Args:
+    lang: ISO 639-1 language code to unload.
+      * unload_all(cls)
+        Doc: Unload all loaded models to free up memory.
+
+=== FILE: infrastructure\nlp\stance_density.py ===
+Classes:
+  - Class: StanceDensityCalculator
+    Doc: Implements Biber-style stance marker density (Biber 1988).
+
+Academic Source:
+Biber, D. (1988). Variation across speech and writing. Cambridge University Press.
+    Methods:
+      * __init__(self, lexicon, weights)
+      * calculate(self, tokens, speaker_id)
+        Doc: Return stance density score: sum(counts * weights) / total_tokens * 1000.
+
+=== FILE: infrastructure\nlp\topic_modeling.py ===
+Classes:
+  - Class: TopicModelingService
+    Doc: Grootendorst (2022) BERTopic implementasyonu.
+
+c-TF-IDF formülü: c-TF-IDF(w, c) = tf(w, c) × log(1 + A / tf(w))
+A = ortalama kelime sayısı tüm konularda.
+    Methods:
+      * __init__(self, embedding_model, umap_n_neighbors, umap_n_components, umap_min_dist, umap_metric, hdbscan_min_cluster_size, hdbscan_min_samples, hdbscan_metric, prompt_registry)
+      * extract_topics(self, segments, language, min_topic_size, nr_topics)
+        Doc: Diplomatik segment listesinden BERTopic konularını çıkarır.
+      * embed_segments(self, segments)
+        Doc: Segment listesi için embedding vektörleri döner.
+      * get_frame_reference_embeddings(self)
+        Doc: Entman (1993) 4 fonksiyonu için referans embedding'ler.
+      * _embed_documents(self, docs)
+        Doc: SBERT embedding. Async thread pool.
+      * _fit_bertopic(self, docs, embeddings, min_topic_size, nr_topics)
+        Doc: UMAP + HDBSCAN + c-TF-IDF pipeline.
+      * _calculate_custom_ctfidf(self, topic_model, docs, topics)
+        Doc: Custom c-TF-IDF: tf(w,c) × log(1 + A / tf(w))
+
+A = ortalama kelime sayısı tüm konularda.
+tf(w) = kelimenin tüm konulardaki toplam frekansı.
+      * _normalize_probabilities(self, doc_ids, topics, probs, ctfidf_scores)
+        Doc: P(topic_k | doc) olasılıksal dağılımı normalize et.
+      * _extract_topic_labels(self, topic_model, ctfidf_scores)
+        Doc: Her konu için top-N c-TF-IDF kelime skorlarını döner.
+
+=== FILE: infrastructure\nlp\wordfish_scaler.py ===
+Classes:
+  - Class: WordfishScaler
+    Doc: Implements Poisson Wordfish scaling (Slapin & Proksch 2008).
+
+Academic Source:
+Slapin, J. B., & Proksch, S. O. (2008). A scaling model for estimating
+political positions from texts. American Journal of Political Science, 52(3), 705-722.
+    Methods:
+      * __init__(self, params)
+      * fit_transform(self, doc_term_matrix, document_ids, params)
+        Doc: Estimate latent positions θᵢ using Poisson MLE.
+
+Identification strategy: θ is normalized to mean 0 and std 1.
+      * is_fitted(self)
+
+=== FILE: infrastructure\nlp\wordscores_calibrator.py ===
+Classes:
+  - Class: WordscoresCalibrator
+    Doc: Implements Wordscores calibration (Laver et al. 2003).
+
+Academic Source:
+Laver, M., Benoit, K., & Garry, J. (2003). Extracting policy positions
+from political texts using words as data. American Political Science Review, 97(2), 311-331.
+    Methods:
+      * __init__(self, smoothing)
+      * calibrate(self, doc_term_matrix, reference_scores, target_ids, all_document_ids)
+        Doc: Calibrate word scores using reference documents and score target documents.
+
+=== FILE: infrastructure\observability\metrics.py ===
+Docstring: MetricsCollector module for Prometheus integration.
+Provides thread-safe prometheus metric collection and a singleton interface.
+Classes:
+  - Class: MetricsCollector
+    Doc: Thread-safe Prometheus metrics toplayıcı — BB-PAXDATA.
+    Methods:
+      * __init__(self)
+      * record_ai_request(self, backend, model, duration_seconds, status)
+        Doc: Record the duration and status of an AI backend request.
+      * record_cache_operation(self, cache_type, operation, result)
+        Doc: Record a cache operation (hit/miss).
+      * record_batch_fallback(self, backend, reason)
+        Doc: Record when batch processing falls back to single mode.
+      * set_active_tasks(self, task_type, count)
+        Doc: Set the number of currently active tasks.
+      * record_processed(self, task_type, panel_id, status)
+        Doc: Record a processed record with its status.
+      * record_json_recovery(self, level, result)
+        Doc: Record a JSON recovery attempt.
+      * start_http_server(self, port)
+        Doc: Prometheus scrape endpoint'ini başlat (opsiyonel, sadece local dev).
+      * registry(self)
+        Doc: Get the underlying Prometheus registry.
+Functions:
+  - track_ai_request(collector, backend, model)
+    Doc: Context manager to track the duration of an AI backend request.
+
+Kullanım:
+    with track_ai_request(metrics, "anthropic", "claude-haiku-4-5-20251001"):
+        result = call_anthropic(...)
+  - get_metrics()
+    Doc: Global MetricsCollector singleton döndür.
+
+=== FILE: infrastructure\persistence\legacy\sqlite_reader.py ===
+Classes:
+  - Class: LegacySQLiteReader
+    Doc: Reads data from legacy monolithic SQLite database.
+    Methods:
+      * __init__(self, db_path)
+      * count_transcripts(self)
+      * fetch_transcripts(self, batch_size, offset)
+      * fetch_analytics(self, transcript_ids)
+      * close(self)
+
+=== FILE: infrastructure\persistence\models.py ===
+Classes:
+  - Class: Base
+  - Class: TranscriptModel
+  - Class: AnalyticModel
+
+=== FILE: infrastructure\persistence\modern\sqlalchemy_writer.py ===
+Classes:
+  - Class: ModernSQLAlchemyWriter
+    Doc: Yeni DB'ye veri yazar (Upsert destekli).
+    Methods:
+      * __init__(self, dry_run)
+      * upsert_transcripts(self, session, items)
+      * upsert_analytics(self, session, items)
+
+=== FILE: infrastructure\persistence\session.py ===
+Functions:
+  - get_session_factory(database_url)
+    Doc: Async session factory oluşturur.
+  - get_session(session_factory)
+    Doc: FastAPI veya diğer dependency injection'lar için session generator.
+
+=== FILE: infrastructure\persistence\validators\data_validator.py ===
+Classes:
+  - Class: SQLDataValidator
+    Doc: Checks data integrity using SQL queries.
+    Methods:
+      * check_orphan_transcripts(self, session)
+      * check_analytic_completeness(self, session)
+      * check_score_ranges(self, session)
+      * check_null_mandatory_fields(self, session)
+      * check_duplicate_transcripts(self, session)
+
+=== FILE: infrastructure\persistence\validators\schema_validator.py ===
+Classes:
+  - Class: AlembicSchemaValidator
+    Doc: Checks Alembic migration status and schema compatibility.
+    Methods:
+      * __init__(self, alembic_ini)
+      * check_alembic_head(self, session)
+      * check_foreign_keys(self, session)
+      * check_column_types(self, session)
+
+=== FILE: infrastructure\repositories\analysis_repository.py ===
+Classes:
+  - Class: IntegrityError
+    Doc: Veri bütünlüğü bozulduğunda fırlatılır.
+  - Class: AnalysisRepository
+    Doc: Analiz sonuçlarını veritabanına (veya simülasyonuna) kaydeden sınıf.
+Kaydetmeden önce prompt hash bütünlüğünü doğrular.
+    Methods:
+      * __init__(self, prompt_registry)
+      * save(self, analysis)
+        Doc: Analizi kaydeder.
+Kritik: prompt_hash'in registry'deki versiyonla eşleştiğini doğrular.
+      * get_by_id(self, analysis_id)
+
+=== FILE: infrastructure\repositories\country_repository.py ===
+Docstring: Concrete repository implementasyonları.
+
+Her class, domain/services/country_repositories.py'daki Protocol'ü implemente eder.
+SQLAlchemy 2.0 async session kullanılır.
+Classes:
+  - Class: CountryReferenceRepository
+    Doc: ICountryReferenceRepository Protocol'ünün SQLAlchemy implementasyonu.
+    Methods:
+      * __init__(self, session)
+      * save(self, reference)
+      * save_batch(self, references)
+      * get_by_panel(self, panel_id)
+      * get_by_pair(self, speaker, referenced, panel_id)
+  - Class: BilateralSentimentRepository
+    Doc: IBilateralSentimentRepository Protocol'ünün SQLAlchemy implementasyonu.
+    Methods:
+      * __init__(self, session)
+      * upsert(self, sentiment)
+        Doc: Upsert: (panel_id, from_country, to_country) unique constraint'e göre
+kayıt varsa günceller, yoksa ekler.
+      * save_dyadic(self, session, metrics)
+        Doc: Persist Maoz dyadic metrics into bilateral_sentiments table.
+      * get_by_pair(self, from_country, to_country, panel_id)
+      * get_all_for_panel(self, panel_id)
+  - Class: DiscourseFlowRepository
+    Doc: IDiscourseFlowRepository Protocol'ünün SQLAlchemy implementasyonu.
+    Methods:
+      * __init__(self, session)
+      * save(self, flow)
+      * save_batch(self, flows)
+      * get_edges_for_panel(self, panel_id)
+  - Class: TopicSynthesisRepository
+    Doc: ITopicSynthesisRepository Protocol'ünün SQLAlchemy implementasyonu.
+    Methods:
+      * __init__(self, session)
+      * upsert(self, synthesis)
+      * get_by_country(self, panel_id, country)
+      * get_all_for_panel(self, panel_id)
+
+=== FILE: infrastructure\repositories\discourse_network_repository.py ===
+Classes:
+  - Class: DiscourseNetworkRepository
+    Doc: Persistence for Fischer DNA bipartite edges.
+    Methods:
+      * save_flow(self, session, flow)
+        Doc: Persist all edges from a DiscourseFlow (upsert semantics).
+      * get_flow_by_session(self, session, session_id)
+        Doc: Reconstruct DiscourseFlow from persisted edges.
+      * get_top_edges_for_actor(self, session, session_id, actor_id, limit)
+        Doc: Retrieve highest-weight edges for a specific actor.
+
+=== FILE: infrastructure\text\encoding_normalizer.py ===
+Docstring: Encoding Normalizer for BB-PAXDATA.
+
+Implements a 4-stage text normalization pipeline designed for multilingual
+diplomatic transcripts that may contain encoding artifacts, mojibake,
+and language-specific character inconsistencies.
+
+Pipeline stages:
+    1. BOM & Binary cleanup (UTF-8 BOM, NULL bytes)
+    2. Mojibake correction (via ftfy)
+    3. Unicode NFKC normalization
+    4. Language-specific normalization (Arabic / Cyrillic / Turkish)
+Classes:
+  - Class: EncodingNormalizer
+    Doc: 4-stage text encoding normalization pipeline.
+
+Designed to clean diplomatic transcripts before NLP processing.
+All stages are applied in order; each stage receives the output
+of the previous stage.
+
+Usage::
+
+    normalizer = EncodingNormalizer()
+    clean = normalizer.normalize(raw_text, detected_lang="tr")
+    Methods:
+      * normalize(self, text, detected_lang)
+        Doc: Run the full 4-stage normalization pipeline.
+
+Args:
+    text: Raw input text (may contain encoding artifacts).
+    detected_lang: ISO 639-1 language code (e.g. "tr", "en",
+        "ar", "ru"). If None, language-specific stage is skipped.
+
+Returns:
+    Fully normalized Unicode text.
+      * _remove_bom(text, _lang)
+        Doc: Remove UTF-8 BOM (U+FEFF) and NULL bytes.
+      * _fix_mojibake(text, _lang)
+        Doc: Fix encoding corruption (mojibake) using ftfy.
+
+ftfy.fix_text() is idempotent for clean text, so calling it
+multiple times until convergence handles nested mojibake safely.
+
+Example: "TÃ¼rkiye" → "Türkiye"
+      * _unicode_normalize(text, _lang)
+        Doc: Apply Unicode NFKC normalization.
+
+NFKC:
+- Decomposes ligatures (ﬁ → fi, ﬀ → ff)
+- Converts full-width characters to half-width (ａ → a)
+- Normalizes combining characters
+- Preserves dotted/dotless-I (İ, ı) for Turkish
+      * _language_specific(text, lang)
+        Doc: Apply language-specific character normalization.
+
+Args:
+    text: Text after NFKC normalization.
+    lang: ISO 639-1 language code.
+
+Returns:
+    Text with language-specific corrections applied.
+      * _final_cleanup(text, _lang)
+        Doc: Remove residual control characters and normalize whitespace.
+
+Strips C0/C1 control characters (except standard whitespace)
+and collapses multiple consecutive spaces/tabs to a single space.
+
+=== FILE: infrastructure\text\normalizers\arabic.py ===
+Docstring: Arabic character normalization utilities.
+
+Standardizes Arabic letter variants to their canonical forms,
+removes diacritical marks (tashkeel), and handles Persian/Arabic
+character mapping for consistent NLP processing.
+Functions:
+  - normalize_arabic(text)
+    Doc: Standardize Arabic letter variants to their canonical forms.
+
+Transformations applied:
+- Alef variants (أ إ آ) → canonical Alef (ا)
+- Te marbuta (ة) → He (ه)
+- Persian Kaf (ک) → Arabic Kaf (ك)
+- Yeh variants (ی ى) → standard Yeh (ي)
+- Remove tashkeel (diacritical marks / harakat)
+
+Args:
+    text: Input text containing Arabic characters.
+
+Returns:
+    Normalized Arabic text with canonical character forms.
+
+Example:
+    >>> normalize_arabic("الرئيسُ")
+    'الرئيس'
+
+=== FILE: infrastructure\text\normalizers\cyrillic.py ===
+Docstring: Cyrillic character normalization utilities.
+
+Handles character standardization for Russian, Kazakh, Ukrainian,
+Serbian, and other Cyrillic-script languages used in diplomatic
+transcripts.
+Functions:
+  - normalize_cyrillic(text)
+    Doc: Standardize Cyrillic character variants.
+
+Transformations applied:
+- Yo (ё/Ё) → Ye (е/Е) — simplification for lexicon matching
+- Preserves Kazakh-specific characters (ғ қ ң ө ү һ ә)
+  which are already canonical in Unicode.
+
+Note:
+    The Yery (й) variant issue is already handled by NFKC
+    normalization at the Unicode level. This function handles
+    the cases where fonts/encodings produce non-standard code
+    points that NFKC does not cover.
+
+Args:
+    text: Input text containing Cyrillic characters.
+
+Returns:
+    Normalized Cyrillic text.
+
+Example:
+    >>> normalize_cyrillic("Всё хорошо")
+    'Все хорошо'
+
+=== FILE: infrastructure\text\normalizers\turkish.py ===
+Docstring: Turkish character normalization utilities.
+
+Handles Turkish-specific character consistency issues:
+- Apostrophe variant standardization (curly/backtick → straight)
+- Dotted/dotless-I handling notes
+
+Note on dotted/dotless I:
+    Unicode NFKC preserves İ (U+0130) and ı (U+0131) correctly.
+    In the rare case where a system replaces İ with Latin I (U+0049),
+    automated correction is risky without word-level context.
+    Such cases require manual review in diplomatic transcripts.
+Functions:
+  - normalize_turkish(text)
+    Doc: Standardize Turkish-specific character variants.
+
+Transformations applied:
+- Right single quotation mark (') → straight apostrophe (')
+- Backtick (`) → straight apostrophe (')
+- Left single quotation mark (') → straight apostrophe (')
+
+These apostrophe variants appear in Turkish proper-noun suffixes:
+"Türkiye'nin", "NATO'ya", "BM'de" etc.
+
+Args:
+    text: Input text containing Turkish characters.
+
+Returns:
+    Normalized Turkish text with consistent apostrophes.
+
+Example:
+    >>> normalize_turkish("Türkiye’nin")
+    "Türkiye'nin"
+
+=== FILE: interfaces\cli\commands\analyze.py ===
+Docstring: bbdbda analyze alt komutları.
+Functions:
+  - cmd_country_refs(panel_id, verbose)
+    Doc: Bir paneldeki tüm CountryReference'lardan BilateralSentiment aggregate'lerini üretir.
+Ülke çiftleri arasındaki diplomatik söylem dinamiğini hesaplar.
+  - _run_country_refs(panel_id, verbose)
+  - cmd_network(panel_id, weight_threshold, show_centrality)
+    Doc: BilateralSentiment kayıtlarından DiscourseFlow (söylem ağı) kenarlarını üretir.
+Opsiyonel olarak betweenness centrality hesaplar.
+  - _run_network(panel_id, weight_threshold, show_centrality)
+  - cmd_full(panel_id, weight_threshold, show_centrality)
+    Doc: Tüm pipeline'ı sırayla çalıştırır:
+1. Bilateral sentiment aggregation
+2. Söylem ağı kurulumu
+3. Topic matrix aggregation
+  - _run_full(panel_id, weight_threshold, show_centrality)
+
+=== FILE: interfaces\cli\commands\migrate.py ===
+Functions:
+  - _build_result_table(result)
+  - migrate_run(legacy_db, dry_run, batch_size, stop_on_error)
+    Doc: Start migration. Partial success returns exit code 2.
+
+=== FILE: interfaces\cli\commands\validate.py ===
+Functions:
+  - _render_table(result)
+  - validate_db(strict, json_output, output_file)
+    Doc: Validate database in five dimensions.
+  - validate_legacy_compare(legacy_db)
+    Doc: Source/target row count and hash comparison after migration.
+Should be run immediately after migration for data integrity guarantee.
+
+=== FILE: interfaces\cli\completions.py ===
+Functions:
+  - _shell_rc_path(shell)
+    Doc: Returns the path to the shell configuration file.
+  - _completion_script(shell)
+    Doc: Generates script using Typer/Click's natural completion mechanism.
+`_BB_PAXDATA_COMPLETE` env variable is Click's source protocol.
+  - install_completion(shell, force)
+    Doc: Adds shell completion script to RC file.
+Idempotent: safe to run the same command twice.
+  - show_completion(shell)
+    Doc: Writes completion script to stdout (for manual installation).
+  - uninstall_completion(shell)
+    Doc: Removes installed completion script from RC file.
+
+=== FILE: interfaces\cli\dependencies.py ===
+Docstring: CLI komutları için bağımlılık (DI) wiring.
+Functions:
+  - _get_database_url()
+    Doc: Veritabanı URL'ini proje config/env'den okur.
+  - get_session()
+  - make_aggregate_bilateral_use_case(session)
+  - make_build_network_use_case(session)
+  - make_aggregate_topics_use_case(session)
+
+=== FILE: interfaces\cli\main.py ===
+Functions:
+  - _lazy_import_commands()
+    Doc: Lazy import commands to prevent circular imports and slow startup.
+This function runs once during `entrypoint()` call.
+  - main(version, config, verbose)
+    Doc: Global CLI callback. Runs before every subcommand.
+  - entrypoint()
+    Doc: pyproject.toml entry point'i.
+[tool.poetry.scripts]
+bbpaxdata = "bb_paxdata.interfaces.cli.main:entrypoint"
+
+=== FILE: interfaces\cli\review.py ===
+Docstring: CLI commands for human review queue management.
+Functions:
+  - list_reviews(status, limit, panel_id)
+    Doc: List reviews in the queue.
+  - inspect_review(review_id, show_raw)
+    Doc: Inspect a specific review in detail.
+  - assign_review(review_id, reviewer)
+    Doc: Assign a review to a person.
+  - start_review(review_id)
+    Doc: Mark a review as in progress.
+  - complete_review(review_id, action, notes, corrected_file)
+    Doc: Complete a review with final action.
+  - approve_panel(panel_id, dry_run)
+    Doc: Approve all pending reviews for a panel.
+  - escalate_stale()
+    Doc: Escalate stale reviews (older than 72 hours).
+  - export_reviews(output_file, status, panel_id)
+    Doc: Export reviews to JSON file.
+  - _show_statistics(stats)
+    Doc: Display queue statistics.
+  - _show_review_details(review, show_raw)
+    Doc: Show detailed review information.
+
+=== FILE: quality\consistency.py ===
+Docstring: Consistency calculation utilities for uncertainty scoring.
+Classes:
+  - Class: ConsistencyCalculator
+    Doc: Calculates various consistency metrics for AI outputs.
+    Methods:
+      * __init__(self)
+      * numeric_consistency(self, values)
+        Doc: Calculate consistency for numeric values using coefficient of variation.
+
+Args:
+    values: List of numeric values
+
+Returns:
+    Consistency score (0.0 - 1.0)
+      * categorical_consensus(self, values)
+        Doc: Calculate consensus ratio for categorical values.
+
+Args:
+    values: List of categorical values
+
+Returns:
+    Consensus score (0.0 - 1.0)
+      * textual_consistency(self, values)
+        Doc: Calculate consistency for textual values using Jaccard similarity.
+
+Args:
+    values: List of textual values
+
+Returns:
+    Consistency score (0.0 - 1.0)
+      * embedding_consistency(self, values)
+        Doc: Calculate consistency using embedding similarity (placeholder for future
+implementation).
+
+Args:
+    values: List of textual values
+
+Returns:
+    Consistency score (0.0 - 1.0)
+      * mixed_field_consistency(self, values, field_type)
+        Doc: Calculate consistency for mixed field types.
+
+Args:
+    values: List of values of any type
+    field_type: Type hint ("numeric", "categorical", "textual", "auto")
+
+Returns:
+    Consistency score (0.0 - 1.0)
+      * _detect_field_type(self, values)
+        Doc: Detect the type of field based on values.
+      * _is_numeric(self, value)
+        Doc: Check if value can be converted to numeric.
+      * calculate_batch_consistency(self, batch_values)
+        Doc: Calculate consistency for multiple fields in a batch.
+
+Args:
+    batch_values: List of value lists, one per field
+
+Returns:
+    List of consistency scores
+      * get_consensus_value(self, values)
+        Doc: Get the consensus value from a list of values.
+
+Args:
+    values: List of values
+
+Returns:
+    Most common or representative value
+Functions:
+  - check_dki_sbi_consistency(analysis)
+    Doc: DKI and SBI should not diverge wildly for the same speaker.
+
+If SBI shows stable position but DKI shows extreme velocity,
+this indicates either:
+a) Genuine strategic pivot (legitimate)
+b) Measurement error (anomaly — flag for review)
+
+=== FILE: quality\data_contract.py ===
+Docstring: Data contract validation using Pandera for input/output validation.
+Classes:
+  - Class: _AISentenceConfig
+  - Class: AISentenceOutputSchema
+    Doc: AI analizi sonrası DataFrame validasyonu.
+  - Class: ValidationResult
+    Doc: Validation result container.
+    Methods:
+      * __init__(self, passed, message, details)
+      * __bool__(self)
+  - Class: TranscriptInputContract
+    Doc: Pre-parse validation for transcript files.
+    Methods:
+      * validate(raw_text, file_path)
+        Doc: Validate transcript input before parsing.
+
+Args:
+    raw_text: Raw transcript content
+    file_path: Path to transcript file
+
+Returns:
+    ValidationResult with pass/fail status and details
+  - Class: DataContractValidator
+    Doc: Main data contract validator for both input and output validation.
+    Methods:
+      * __init__(self)
+      * validate_transcript_input(self, raw_text, file_path)
+        Doc: Validate transcript input before parsing.
+      * validate_ai_output(self, df)
+        Doc: Validate AI analysis output using Pandera schema.
+
+Args:
+    df: DataFrame containing AI analysis results
+
+Returns:
+    ValidationResult with pass/fail status and details
+
+=== FILE: quality\evaluator.py ===
+Docstring: Quality evaluator for AI analysis outputs using Deepeval and custom metrics.
+Classes:
+  - Class: DeepEvalMetric
+    Doc: Protocol for DeepEval metrics to satisfy Mypy.
+    Methods:
+      * measure(self, test_case)
+      * is_successful(self)
+  - Class: AISentenceOutput
+    Doc: Schema for AI analysis output validation.
+  - Class: EvaluationResult
+    Doc: Single metric evaluation result.
+  - Class: QualityReport
+    Doc: Complete quality evaluation report.
+  - Class: QualityEvaluator
+    Doc: Evaluates AI analysis quality using multiple metrics.
+    Methods:
+      * __init__(self, model_name, backend_used)
+      * validate(self, output, criteria)
+        Doc: AI çıktısını belirli kriterlere göre doğrular (ground-truth olmadan).
+
+Şu an için şema uyumluluğu ve doluluk kontrolü yapar.
+      * _init_deepeval_metrics(self)
+        Doc: Initialize Deepeval metrics.
+      * evaluate_single_fixture(self, ai_output, ground_truth, source_text, fixture_id)
+        Doc: Evaluate a single AI output against ground truth.
+
+Args:
+    ai_output: AI analysis output
+    ground_truth: Ground truth annotations
+    source_text: Original sentence text
+    fixture_id: Fixture identifier
+
+Returns:
+    QualityReport with evaluation results
+      * _calculate_overall_score(self, results)
+        Doc: Calculate weighted overall score.
+      * evaluate_batch(self, ai_results, source_texts, fixture_ids)
+        Doc: Evaluate batch of AI results.
+
+Args:
+    ai_results: List of AI analysis outputs
+    source_texts: List of original sentence texts
+    fixture_ids: List of fixture IDs
+
+Returns:
+    List of QualityReport objects
+      * evaluate_golden_dataset(self, ai_results, limit)
+        Doc: Evaluate against entire golden dataset.
+
+Args:
+    ai_results: AI results matching golden dataset order
+    limit: Optional limit on number of fixtures to evaluate
+
+Returns:
+    Summary statistics and reports
+      * _calculate_summary_statistics(self, reports)
+        Doc: Calculate summary statistics from evaluation reports.
+
+=== FILE: quality\evaluators\dki_evaluator.py ===
+Classes:
+  - Class: DKIEvaluator
+    Doc: LLM-as-a-Judge for DKI (Discourse-Kinetic Index) output quality.
+
+Criteria:
+1. Semantic shift values must be in [0.0, 2.0].
+2. Velocity must be consistent with chronological θᵢ ordering.
+3. DKI components must not contain NaN or Inf.
+4. LLM position estimates must correlate with Wordfish (r > 0.5).
+    Methods:
+      * __init__(self, model_name)
+      * _init_metrics(self)
+        Doc: Initialize G-Eval metrics for DKI components.
+      * evaluate_semantic_shift(self, result, context)
+        Doc: Judge semantic shift validity via DeepEval.
+      * evaluate_velocity_consistency(self, result, trajectory_str)
+        Doc: Judge velocity consistency via DeepEval.
+      * validate_calibration(self, calibration)
+        Doc: Check if LLM vs Wordfish calibration drift is within acceptable bounds.
+
+=== FILE: quality\frame_evaluator.py ===
+Docstring: Frame analysis quality evaluation gates.
+
+[Academic Reference: Grimmer, J. & Stewart, B.M. (2013). Text as Data: The Promise 
+and Pitfalls of Automatic Content Analysis Methods for Political Texts. 
+Validation of automated framing via consistency and salience checks.]
+Classes:
+  - Class: FrameEvaluator
+    Doc: Framing sonuçlarının akademik tutarlılığını denetleyen kalite kapısı.
+    Methods:
+      * __init__(self)
+      * evaluate_consistency(self, analysis)
+        Doc: Entman vs Iyengar tutarlılığını denetle.
+
+Kural: EPISODIC bir frame genellikle PROBLEM_DEFINITION veya
+CAUSE_INTERPRETATION ile ilişkilidir. THEMATIC ise MORAL_EVALUATION veya
+REMEDY_SUGGESTION ile daha sık eşleşir.
+      * evaluate_salience_distribution(self, analysis)
+        Doc: Entman salience dağılımının ayırt ediciliğini denetle.
+
+=== FILE: quality\human_review.py ===
+Classes:
+  - Class: MetricOverride
+    Doc: İnsan tarafından düzeltilen metrik değeri.
+  - Class: HumanReviewRequest
+    Doc: İnsan doğrulama (HITL) talebi.
+
+Reference:
+    - Grimmer & Stewart (2013) - İlke 2: İnsan doğrulaması zorunludur.
+  - Class: HumanReviewResult
+    Doc: İnsan doğrulama sonucu.
+  - Class: HumanReviewService
+    Doc: İnsan doğrulama servisi arayüzü.
+
+Somut implementasyonlar infrastructure katmanında tanımlanacaktır.
+    Methods:
+      * submit_request(self, request)
+        Doc: Yeni bir inceleme talebi gönderir.
+      * get_pending_reviews(self, priority)
+        Doc: Bekleyen inceleme taleplerini listeler.
+      * submit_result(self, result)
+        Doc: İnceleme sonucunu kaydeder.
+      * get_review_history(self, analysis_id)
+        Doc: Bir analize ait inceleme geçmişini döndürür.
+
+=== FILE: quality\metrics\custom\risk_calibration.py ===
+Docstring: Risk calibration metric for evaluating AI risk scoring against ground truth.
+Classes:
+  - Class: MetricResult
+    Doc: Result of a single metric evaluation.
+  - Class: RiskCalibrationMetric
+    Doc: Measures calibration of AI risk scores against ground truth.
+    Methods:
+      * __init__(self, threshold, min_samples)
+      * measure(self, ai_output, ground_truth)
+        Doc: Measure risk calibration for a single sentence.
+
+For single sentence, we check if risk level categorization matches.
+
+Args:
+    ai_output: AI analysis output containing risk scores
+    ground_truth: Ground truth annotations
+
+Returns:
+    MetricResult with calibration score
+      * measure_batch(self, ai_outputs, ground_truths)
+        Doc: Measure risk calibration for a batch using Spearman rank correlation.
+
+Args:
+    ai_outputs: List of AI analysis outputs
+    ground_truths: List of ground truth annotations
+
+Returns:
+    MetricResult with batch calibration score
+      * _risk_level_distance(self, level1, level2)
+        Doc: Calculate distance between risk levels.
+
+=== FILE: quality\metrics\custom\sentiment_agreement.py ===
+Docstring: Sentiment agreement metric for evaluating AI sentiment analysis.
+Classes:
+  - Class: MetricResult
+    Doc: Result of a single metric evaluation.
+  - Class: SentimentAgreementMetric
+    Doc: Measures agreement between AI sentiment score and ground truth.
+    Methods:
+      * __init__(self, threshold, tolerance)
+      * measure(self, ai_output, ground_truth)
+        Doc: Measure sentiment agreement between AI output and ground truth.
+
+Args:
+    ai_output: AI analysis output containing AI_Duygu_Skoru
+    ground_truth: Ground truth annotations containing AI_Duygu_Skoru
+
+Returns:
+    MetricResult with agreement score and pass/fail status
+      * measure_batch(self, ai_outputs, ground_truths)
+        Doc: Measure sentiment agreement for a batch of outputs.
+
+Args:
+    ai_outputs: List of AI analysis outputs
+    ground_truths: List of ground truth annotations
+
+Returns:
+    List of MetricResult objects
+
+=== FILE: quality\metrics\custom\topic_accuracy.py ===
+Docstring: Topic accuracy metric for evaluating AI topic classification against ground truth.
+Classes:
+  - Class: MetricResult
+    Doc: Result of a single metric evaluation.
+  - Class: TopicAccuracyMetric
+    Doc: Measures accuracy of AI topic classification against ground truth.
+    Methods:
+      * __init__(self, threshold)
+      * measure(self, ai_output, ground_truth)
+        Doc: Measure topic accuracy between AI output and ground truth.
+
+Args:
+    ai_output: AI analysis output containing AI_Birincil_Konu
+    ground_truth: Ground truth annotations containing AI_Birincil_Konu
+
+Returns:
+    MetricResult with accuracy score and pass/fail status
+      * _normalize_topic(self, topic)
+        Doc: Normalize topic string for comparison.
+      * _calculate_partial_match_score(self, ai_topic, gt_topic)
+        Doc: Calculate partial match score based on topic groups.
+      * measure_batch(self, ai_outputs, ground_truths)
+        Doc: Measure topic accuracy for a batch of outputs.
+
+Args:
+    ai_outputs: List of AI analysis outputs
+    ground_truths: List of ground truth annotations
+
+Returns:
+    List of MetricResult objects
+      * get_topic_statistics(self, results)
+        Doc: Calculate topic-specific statistics from batch results.
+
+Args:
+    results: List of MetricResult objects
+
+Returns:
+    Dictionary with topic statistics
+
+=== FILE: quality\metrics\custom\topic_coherence.py ===
+Classes:
+  - Class: MetricResult
+  - Class: TopicCoherenceEvaluator
+    Doc: NPMI (Normalized Pointwise Mutual Information) tabanlı konu tutarlılığı ölçer.
+
+Referans: Bouma, G. (2009). Normalized Word Co-occurrence and Complementary Measures.
+    Methods:
+      * __init__(self, threshold)
+      * measure(self, topic_keywords, corpus)
+        Doc: Konu kelimeleri arasındaki NPMI skorunu hesaplar.
+
+Args:
+    topic_keywords: {word: c-tfidf_score}
+    corpus: Tokenize edilmiş doküman listesi
+
+=== FILE: quality\pipeline.py ===
+Docstring: Main quality assurance pipeline integration.
+Classes:
+  - Class: QualitySummary
+  - Class: HealthReport
+  - Class: QualityPipeline
+    Doc: Main quality assurance pipeline for AI analysis.
+    Methods:
+      * __init__(self, db_session, ai_backend)
+      * process_transcript(self, file_path, file_content, ai_results)
+        Doc: Process transcript through complete quality pipeline.
+
+Args:
+    file_path: Path to transcript file
+    file_content: Raw transcript content
+    ai_results: List of AI analysis results
+
+Returns:
+    Quality processing summary
+      * get_pipeline_statistics(self)
+        Doc: Get comprehensive pipeline statistics.
+      * run_quality_health_check(self)
+        Doc: Run comprehensive quality health check.
+
+=== FILE: quality\review_queue.py ===
+Docstring: Human review queue management for HIGH/CRITICAL risk sentences.
+Classes:
+  - Class: ReviewFlagger
+    Doc: Flags sentences for human review based on quality criteria.
+    Methods:
+      * __init__(self, db_session)
+      * should_flag_for_review(self, ai_output, uncertainty_score, quality_result)
+        Doc: Determine if a sentence should be flagged for human review.
+
+Args:
+    ai_output: AI analysis output
+    uncertainty_score: Uncertainty score from UncertaintyScorer
+    quality_result: Quality evaluation result
+
+Returns:
+    Tuple of (should_flag, trigger_type, trigger_details)
+      * flag_sentence(self, sent_id, ai_output, trigger_type, trigger_details, context)
+        Doc: Flag a sentence for human review.
+
+Args:
+    sent_id: Sentence ID
+    ai_output: AI analysis output
+    trigger_type: Type of trigger
+    trigger_details: Details about the trigger
+    context: Additional context (speaker, panel, etc.)
+
+Returns:
+    HumanReviewQueue object or None if failed
+  - Class: ReviewQueueManager
+    Doc: Manages the human review queue workflow.
+    Methods:
+      * __init__(self, db_session)
+      * get_pending_reviews(self, limit, panel_id)
+        Doc: Get pending reviews for human processing.
+      * get_review_by_id(self, review_id)
+        Doc: Get review entry by ID.
+      * assign_review(self, review_id, assigned_to)
+        Doc: Assign a review to a human reviewer.
+      * start_review(self, review_id)
+        Doc: Mark review as in progress.
+      * complete_review(self, review_id, action, reviewer_notes, corrected_json)
+        Doc: Complete a review with final action.
+      * _update_ai_analysis(self, review, action)
+        Doc: Update AI analysis based on review outcome.
+      * get_queue_statistics(self)
+        Doc: Get statistics about the review queue.
+      * escalate_stale_reviews(self)
+        Doc: Escalate reviews older than 72 hours.
+
+=== FILE: quality\topic_validator.py ===
+Classes:
+  - Class: TopicDistributionSchema
+    Methods:
+      * probabilities_sum_to_one(cls, grouped)
+  - Class: TopicResultValidator
+    Doc: Validates the output of TopicModelingService.
+    Methods:
+      * validate_distributions(topic_result)
+        Doc: Validates that topic probabilities for each segment sum to ~1.0.
+
+=== FILE: quality\uncertainty.py ===
+Docstring: Uncertainty scorer for AI analysis outputs using Monte Carlo consistency method.
+Classes:
+  - Class: UncertaintyScore
+    Doc: Uncertainty score for a single sentence.
+  - Class: UncertaintyScorer
+    Doc: Measures AI output confidence using consistency-based approach.
+    Methods:
+      * __init__(self, ai_backend, weights)
+      * score_sentence(self, sent_id, source_text, context)
+        Doc: Score uncertainty for a single sentence using 3 AI calls.
+
+Args:
+    sent_id: Sentence identifier
+    source_text: Original sentence text
+    context: Additional context (speaker, panel, etc.)
+
+Returns:
+    UncertaintyScore with confidence metrics
+      * _call_ai_with_temperature(self, text, temperature, context)
+        Doc: Make AI call with specified temperature.
+      * _parse_ai_output(self, raw_output)
+        Doc: Parse AI output string to dictionary.
+      * _calculate_field_scores(self, outputs)
+        Doc: Calculate consistency scores for each field.
+      * _calculate_overall_confidence(self, field_scores)
+        Doc: Calculate weighted overall confidence score.
+      * _get_consensus_values(self, outputs)
+        Doc: Get most frequent values for each field.
+      * _make_recommendation(self, overall_confidence, field_scores)
+        Doc: Make recommendation based on confidence scores.
+      * _is_numeric_field(self, field)
+        Doc: Check if field contains numeric values.
+      * _is_categorical_field(self, field)
+        Doc: Check if field contains categorical values.
+      * _get_field_weight(self, field)
+        Doc: Get weight for field based on predefined weights.
+      * score_batch(self, sentences)
+        Doc: Score uncertainty for a batch of sentences.
+
+Args:
+    sentences: List of sentence dictionaries with sent_id and text
+
+Returns:
+    List of UncertaintyScore objects
+
+=== FILE: quality\violations.py ===
+Docstring: Violation logging and reporting for data contract violations.
+Classes:
+  - Class: ViolationLogger
+    Doc: Logs data contract violations to database and files.
+    Methods:
+      * __init__(self, log_dir)
+      * log_violation(self, violation_type, severity, message, details, file_path)
+        Doc: Log a data contract violation.
+
+Args:
+    violation_type: Type of violation (e.g., "SCHEMA_ERROR", "INPUT_VALIDATION")
+    severity: Severity level (e.g., "LOW", "MEDIUM", "HIGH", "CRITICAL")
+    message: Human-readable violation message
+    details: Additional violation details
+    file_path: Related file path if applicable
+      * log_schema_violation(self, schema_name, validation_error, failure_cases, row_count)
+        Doc: Log a schema validation violation.
+      * log_input_violation(self, file_path, failed_checks)
+        Doc: Log an input validation violation.
+      * get_violation_summary(self, days)
+        Doc: Get summary of violations in the last N days.
+
+Args:
+    days: Number of days to look back
+
+Returns:
+    Summary statistics
+

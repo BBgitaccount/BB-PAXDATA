@@ -1,5 +1,6 @@
 from collections.abc import Sequence
 from datetime import datetime, timezone
+from typing import Any
 
 from pydantic import BaseModel, Field
 
@@ -118,6 +119,9 @@ class Sentence(BaseModel):
     )
     is_demand: bool = Field(
         default=False, description="Whether the sentence contains a demand"
+    )
+    consensus_result: Any | None = Field(
+        default=None, description="DualGateConsensusLayer sonucu"
     )
 
     # Metadata

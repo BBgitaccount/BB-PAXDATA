@@ -11,6 +11,7 @@ from typing import TYPE_CHECKING, Any
 if TYPE_CHECKING:
     from sqlalchemy.ext.asyncio import AsyncSession
 
+from bb_paxdata.application.consensus.dual_gate import DualGateConsensusLayer
 from bb_paxdata.application.pipeline.dki_assembler import DKIAssembler
 from bb_paxdata.application.pipeline.frame.episodic_themetic_classifier import (
     EpisodicThematicClassifier,
@@ -18,7 +19,10 @@ from bb_paxdata.application.pipeline.frame.episodic_themetic_classifier import (
 from bb_paxdata.application.pipeline.frame.frame_assembler import FrameAssembler
 from bb_paxdata.application.pipeline.models.pipeline_result import PipelineResult
 from bb_paxdata.application.pipeline.sbi_calculator import SBICalculator
+from bb_paxdata.domain.models.anomaly import AnomalyResult, RuleIndicator
 from bb_paxdata.domain.models.dki import SegmentWindow
+from bb_paxdata.domain.models.sentence import Sentence
+from bb_paxdata.infrastructure.ai.anomaly_controller import AIAnomalyController
 from bb_paxdata.infrastructure.ai.frame_detection.frame_detection_pipeline import (
     FrameDetectionPipeline,
 )
@@ -90,6 +94,8 @@ class AnalysisPipeline:
         collect_stage: CollectStage | None = None,
         finalize_stage: FinalizeStage | None = None,
         dki_assembler: DKIAssembler | None = None,
+        dual_gate_layer: DualGateConsensusLayer | None = None,
+        anomaly_controller: AIAnomalyController | None = None,
         fail_fast_on_missing_ai: bool = False,
     ):
         self.ner_service = ner_service
@@ -122,9 +128,8 @@ class AnalysisPipeline:
             stance_calculator,
             engagement_scorer,
         )
-        # FinalizeStage needs a repository, which we'll assume is injected if finalize_stage is None
-        # This is a bit tricky if we don't have the repo here.
-        # For now, let's assume FinalizeStage is injected.
+        self.dual_gate_layer = dual_gate_layer
+        self.anomaly_controller = anomaly_controller
         self.finalize_stage = finalize_stage
         self.fail_fast_on_missing_ai = fail_fast_on_missing_ai
 
@@ -262,6 +267,74 @@ class AnalysisPipeline:
         except Exception as e:
             errors.append(f"[DETECT] {e}")
             logger.error(f"Anomali servisi başarısız: {e}")
+
+        # ─────────────────────────────────────────
+        # AŞAMA 3.5: DUAL GATE CONSENSUS
+        # ─────────────────────────────────────────
+        if self.dual_gate_layer and self.anomaly_controller:
+            try:
+                # 1. Deterministik sonucu hazırla (AIAnomalyController beklediği format)
+                has_anomaly = (analysis.anomaly_score or 0) > 0.0 or len(
+                    analysis.anomaly_flags
+                ) > 0
+                det_result = AnomalyResult(
+                    has_anomaly=has_anomaly,
+                    triggered_rules=[
+                        RuleIndicator(value=flag) for flag in analysis.anomaly_flags
+                    ],
+                    anomaly_score=analysis.anomaly_score or 0.0,
+                    confidence=analysis.anomaly_confidence or 0.0,
+                )
+
+                # 2. Sentence nesnesi oluştur
+                sentence = Sentence(
+                    id=analysis.sentence_id or analysis.id,
+                    text=analysis.source_text,
+                    speaker_id=analysis.speaker_id,
+                    segment_id=analysis.segment_id,
+                )
+
+                # 3. AI ile Doğrula
+                context_window: list[Sentence] = []
+                if historical_analyses:
+                    for hist in historical_analyses[-5:]:
+                        context_window.append(
+                            Sentence(
+                                id=hist.sentence_id or hist.id,
+                                text=hist.source_text,
+                                speaker_id=hist.speaker_id,
+                                segment_id=hist.segment_id,
+                            )
+                        )
+
+                ai_validation = await self.anomaly_controller.validate(
+                    sentence=sentence,
+                    deterministic_result=det_result,
+                    context_sentences=context_window,
+                )
+
+                # 4. Consensus Kararını Al
+                consensus = self.dual_gate_layer.decide(
+                    deterministic=det_result,
+                    ai_validation=ai_validation,
+                )
+
+                # 5. HITL Yönlendirme (mevcut mekanizmayı log ile simüle et)
+                if consensus.send_to_hitl:
+                    logger.warning(
+                        f"[HITL QUEUE] Sentence {sentence.id} queued. Trigger: CONSENSUS_ANOMALY. Level: {consensus.level.value}. Reason: {consensus.final_reasoning}"
+                    )
+
+                # 6. Sonucu Analysis'e yaz (immutable copy)
+                analysis = analysis.model_copy(
+                    update={
+                        "coherence_score": consensus.coherence_score,
+                        "consensus_result": consensus,
+                    }
+                )
+            except Exception as e:
+                errors.append(f"[DUAL_GATE] {e}")
+                logger.error(f"DualGateConsensusLayer başarısız: {e}")
 
         # ─────────────────────────────────────────
         # AŞAMA 4: FINALIZE

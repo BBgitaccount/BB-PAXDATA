@@ -23,7 +23,7 @@ def _lazy_import_commands() -> None:
     """
     try:
         from bb_paxdata.application.commands import build
-        from bb_paxdata.interfaces.cli import completions
+        from bb_paxdata.interfaces.cli import completions, review_commands
         from bb_paxdata.interfaces.cli.commands import (
             analyze,
             migrate,
@@ -44,6 +44,11 @@ def _lazy_import_commands() -> None:
         )
         app.add_typer(
             completions.app, name="completions", help="Shell autocomplete management"
+        )
+        app.add_typer(
+            review_commands.app,
+            name="review",
+            help="Human Review ve Kalibrasyon komutları",
         )
     except ImportError:
         # Commands might not be created yet

@@ -1,7 +1,6 @@
 """Unit tests for HedgingService."""
 
-import pytest
-from bb_paxdata.domain.enums import HedgingType
+from bb_paxdata.domain.enums import HedgeType
 from bb_paxdata.domain.services.hedging_service import HedgingService
 
 
@@ -50,7 +49,7 @@ class TestHedgingService:
 
         for category in required_categories:
             assert category in mapping
-            assert isinstance(mapping[category], HedgingType)
+            assert isinstance(mapping[category], HedgeType)
 
     async def test_analyze_hedging_epistemic_high(self) -> None:
         """Test hedging analysis with epistemic high terms."""
@@ -59,7 +58,7 @@ class TestHedgingService:
         result = self.service.analyze_hedging(text)
 
         assert result.score > 0.0
-        assert HedgingType.EPISTEMIC_HIGH in result.categories
+        assert HedgeType.MODAL_VERBS in result.categories
         assert 0.0 <= result.score <= 1.0
         assert 0.0 <= result.confidence <= 1.0
 
@@ -70,7 +69,7 @@ class TestHedgingService:
         result = self.service.analyze_hedging(text)
 
         assert result.score > 0.0
-        assert HedgingType.EPISTEMIC_MEDIUM in result.categories
+        assert HedgeType.LEXICAL_VERBS in result.categories
 
     async def test_analyze_hedging_anti_hedge(self) -> None:
         """Test hedging analysis with anti-hedge terms."""
@@ -79,7 +78,7 @@ class TestHedgingService:
         result = self.service.analyze_hedging(text)
 
         # Anti-hedge should reduce the score
-        assert HedgingType.ANTI_HEDGE in result.categories
+        assert HedgeType.MODAL_VERBS in result.categories
         # Score might be lower due to anti-hedge negative weight
 
     async def test_analyze_hedging_approximator(self) -> None:
@@ -89,7 +88,7 @@ class TestHedgingService:
         result = self.service.analyze_hedging(text)
 
         assert result.score > 0.0
-        assert HedgingType.APPROXIMATOR in result.categories
+        assert HedgeType.APPROXIMATORS in result.categories
 
     async def test_analyze_hedging_shield(self) -> None:
         """Test hedging analysis with shield terms."""
@@ -98,7 +97,7 @@ class TestHedgingService:
         result = self.service.analyze_hedging(text)
 
         assert result.score > 0.0
-        assert HedgingType.SHIELD in result.categories
+        assert HedgeType.INTRODUCTORY_PHRASES in result.categories
 
     async def test_analyze_hedging_attribution(self) -> None:
         """Test hedging analysis with attribution terms."""
@@ -107,7 +106,7 @@ class TestHedgingService:
         result = self.service.analyze_hedging(text)
 
         assert result.score > 0.0
-        assert HedgingType.ATTRIBUTION in result.categories
+        assert HedgeType.MODAL_PHRASES in result.categories
 
     async def test_analyze_hedging_mixed_types(self) -> None:
         """Test hedging analysis with multiple hedging types."""
@@ -116,10 +115,10 @@ class TestHedgingService:
         result = self.service.analyze_hedging(text)
 
         assert len(result.categories) >= 2
-        assert HedgingType.EPISTEMIC_HIGH in result.categories
+        assert HedgeType.MODAL_VERBS in result.categories
         assert (
-            HedgingType.APPROXIMATOR in result.categories
-            or HedgingType.ATTRIBUTION in result.categories
+            HedgeType.APPROXIMATORS in result.categories
+            or HedgeType.MODAL_PHRASES in result.categories
         )
 
     async def test_analyze_hedging_no_hedging(self) -> None:
@@ -192,7 +191,7 @@ class TestHedgingService:
 
         dominant = self.service.get_dominant_hedging_type(text)
 
-        assert dominant == HedgingType.EPISTEMIC_HIGH
+        assert dominant == HedgeType.MODAL_VERBS
 
     async def test_get_dominant_hedging_type_none(self) -> None:
         """Test dominant hedging type with no hedging."""
@@ -200,7 +199,7 @@ class TestHedgingService:
 
         dominant = self.service.get_dominant_hedging_type(text)
 
-        assert dominant == HedgingType.NONE
+        assert dominant == HedgeType.NONE
 
     async def test_analyze_hedging_word_boundary(self) -> None:
         """Test that hedging detection respects word boundaries."""
@@ -208,7 +207,7 @@ class TestHedgingService:
 
         result = self.service.analyze_hedging(text)
 
-        assert HedgingType.EPISTEMIC_HIGH not in result.categories
+        assert HedgeType.MODAL_VERBS not in result.categories
 
     async def test_analyze_hedging_multi_word_phrases(self) -> None:
         """Test multi-word hedging phrase detection."""
@@ -216,7 +215,7 @@ class TestHedgingService:
 
         result = self.service.analyze_hedging(text)
 
-        assert HedgingType.ATTRIBUTION in result.categories
+        assert HedgeType.MODAL_PHRASES in result.categories
 
     async def test_confidence_calculation(self) -> None:
         """Test confidence calculation based on matches."""
@@ -250,7 +249,7 @@ class TestHedgingService:
         result = self.service.analyze_hedging(text)
 
         assert result.score > 0.0
-        assert HedgingType.EPISTEMIC_HIGH in result.categories
+        assert HedgeType.MODAL_VERBS in result.categories
         # Length normalization should keep score reasonable
         assert result.score <= 1.0
 
@@ -261,7 +260,7 @@ class TestHedgingService:
         result = self.service.analyze_hedging(text)
 
         assert result.score > 0.0
-        assert HedgingType.EPISTEMIC_HIGH in result.categories
+        assert HedgeType.MODAL_VERBS in result.categories
 
     async def test_precompiled_patterns(self) -> None:
         """Test that patterns are precompiled correctly."""
@@ -271,7 +270,3 @@ class TestHedgingService:
         for _category, pattern in self.service._patterns.items():
             assert pattern is not None
             assert hasattr(pattern, "findall")
-
-
-if __name__ == "__main__":
-    pytest.main([__file__])

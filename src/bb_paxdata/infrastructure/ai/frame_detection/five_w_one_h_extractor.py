@@ -9,7 +9,7 @@ import structlog
 from bb_paxdata.domain.models.frame_annotation import FiveWOneH
 from bb_paxdata.domain.models.segment import Segment
 from bb_paxdata.infrastructure.ai.clients.llm_client_protocol import LLMClientProtocol
-from bb_paxdata.infrastructure.ai.recovery_engine import RecoveryEngine
+from bb_paxdata.infrastructure.ai.recovery import RecoveryEngine
 from pydantic import BaseModel, Field
 
 logger = structlog.get_logger(__name__)
@@ -55,10 +55,18 @@ class LLMFiveWOneHExtractor:
             )
 
             # Recovery Engine: 6-seviyeli JSON kurtarma
-            parsed = await self._recovery.recover(raw_response, FiveWOneHSchema)
+            recovery_result = self._recovery.recover(raw_response)
 
-            if parsed is None or not isinstance(parsed, FiveWOneHSchema):
+            if not recovery_result.success or not recovery_result.data:
                 self._log.warning("5w1h_recovery_failed", segment_id=segment.id)
+                return FiveWOneH()
+
+            try:
+                parsed = FiveWOneHSchema.model_validate(recovery_result.data)
+            except Exception as e:
+                self._log.warning(
+                    "5w1h_validation_failed", segment_id=segment.id, error=str(e)
+                )
                 return FiveWOneH()
 
             return FiveWOneH(

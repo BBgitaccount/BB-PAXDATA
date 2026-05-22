@@ -230,6 +230,7 @@ class Analysis(BaseModel):
     )
 
     # Phase 6 Computational Framing
+    framing: str | None = Field(default=None, description="Dominant framing category")
     frame_detection: FrameDetectionResult | None = Field(
         default=None, description="Hamborg (2023) PFA pipeline results"
     )
@@ -245,6 +246,11 @@ class Analysis(BaseModel):
     # Phase 8 Discourse-Kinetic Index
     dki_result: DKIResult | None = Field(
         default=None, description="Discourse-Kinetic Index results (Faz 8)"
+    )
+
+    # Phase 2 Dual-Gate Consensus
+    consensus_result: Any | None = Field(
+        default=None, description="DualGateConsensusLayer sonucu"
     )
 
     # ── None-Safety Hesaplama Property'leri ───────────────────────

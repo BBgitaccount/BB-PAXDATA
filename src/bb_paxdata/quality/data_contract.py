@@ -2,7 +2,7 @@
 
 from collections.abc import Sized
 from pathlib import Path
-from typing import Any, cast
+from typing import Any, Optional, cast
 
 import pandas as pd
 import pandera as pa
@@ -36,13 +36,34 @@ class AISentenceOutputSchema(pa.DataFrameModel):
             "neutral",
             "persuasive",
             "defensive",
+            "analytical",
+            "concerned",
+            "urgent",
         ],
         nullable=True,
     )
     AI_Manipulasyon_Skor: Series[float] = pa.Field(ge=0.0, le=1.0, nullable=True)
     AI_Talep_Var: Series[int] = pa.Field(isin=[0, 1], nullable=True)
-    AI_Birincil_Konu: Series[str] = pa.Field(nullable=True)
-    AI_Cerceveleme: Series[str] = pa.Field(nullable=True)
+    AI_Duygu_Kategorisi: Optional[Series[str]] = pa.Field(default=None, nullable=True)
+    AI_Birincil_Konu: Optional[Series[str]] = pa.Field(default=None, nullable=True)
+    AI_Cerceveleme: Optional[Series[str]] = pa.Field(default=None, nullable=True)
+    coherence_score: Optional[Series[float]] = pa.Field(
+        default=None,
+        nullable=True,
+        ge=0.0,
+        le=1.0,
+        description="Consensus coherence score",
+    )
+    anomaly_consensus_level: Optional[Series[str]] = pa.Field(
+        default=None,
+        nullable=True,
+        isin=["CLEAN", "SOFT_ANOMALY", "HARD_ANOMALY", "CRITICAL_ANOMALY"],
+    )
+    anomaly_ai_decision: Optional[Series[str]] = pa.Field(
+        default=None,
+        nullable=True,
+        isin=["CONFIRMED", "DISMISSED", "ESCALATED", "AI_ONLY", "INCONCLUSIVE"],
+    )
 
     Config = _AISentenceConfig  # type: ignore[assignment]
 

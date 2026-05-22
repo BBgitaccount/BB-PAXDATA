@@ -319,11 +319,30 @@ class TestServiceContainer:
         analysis.sbi_score = 8.5
         analysis.dki_score = 0.3
 
-        anomalies = pipeline.detect_anomalies(analysis)
+        analysis.has_ai_output = True
+        analysis.anomaly_score = 0.0
+        analysis.sentences = []
+        analysis.negation_cues = []
+        analysis.effective_risk = 8.0
+        analysis.effective_sentiment = -0.8
+        analysis.power_indices = {}
+        analysis.risk_signals = []
+        analysis.speaker_id = "speaker1"
 
-        assert isinstance(anomalies, list)
-        # Should detect some anomalies given the conflicting values
-        assert len(anomalies) >= 0
+        def mock_model_copy(update=None):
+            if update:
+                for k, v in update.items():
+                    setattr(analysis, k, v)
+            return analysis
+
+        analysis.model_copy = mock_model_copy
+
+        anomalies = await pipeline.detect_anomalies(analysis)
+
+        from bb_paxdata.domain.services.protocols import AnomalyResult
+
+        assert isinstance(anomalies, AnomalyResult)
+        assert isinstance(anomalies.flags, list)
 
     async def test_get_default_container(self) -> None:
         """Test global default container function."""

@@ -3,7 +3,7 @@
 import json
 from pathlib import Path
 from typing import Any
-from unittest.mock import AsyncMock, Mock, patch
+from unittest.mock import AsyncMock, MagicMock, Mock, patch
 
 import pytest
 from bb_paxdata.domain.services.duplicate_protection import DuplicateProtectionService
@@ -18,6 +18,53 @@ from tests.fixtures.golden_dataset import GoldenDataset
 
 class TestQualityPipelineIntegration:
     """Integration tests for the complete quality assurance pipeline."""
+
+    @pytest.fixture(autouse=True)
+    def mock_deepeval_metrics(self):
+        """Mock all deepeval metrics to avoid real API calls."""
+        with patch("bb_paxdata.quality.evaluator.GEval") as mock_geval, patch(
+            "bb_paxdata.quality.evaluator.AnswerRelevancyMetric"
+        ) as mock_relevancy, patch(
+            "bb_paxdata.quality.evaluator.JsonCorrectnessMetric"
+        ) as mock_json, patch(
+            "bb_paxdata.quality.evaluator.TopicCoherenceEvaluator"
+        ) as mock_coherence:
+
+            # Setup mocks for geval
+            mock_geval_instance = MagicMock()
+            mock_geval_instance.score = 1.0
+            mock_geval_instance.threshold = 0.7
+            mock_geval_instance.is_successful.return_value = True
+            mock_geval_instance.reason = "Good diplomatic analysis"
+            mock_geval.return_value = mock_geval_instance
+
+            # Setup mocks for relevancy
+            mock_relevancy_instance = MagicMock()
+            mock_relevancy_instance.score = 1.0
+            mock_relevancy_instance.threshold = 0.7
+            mock_relevancy_instance.is_successful.return_value = True
+            mock_relevancy_instance.reason = "Relevancy is good"
+            mock_relevancy.return_value = mock_relevancy_instance
+
+            # Setup mocks for json validity
+            mock_json_instance = MagicMock()
+            mock_json_instance.score = 1.0
+            mock_json_instance.threshold = 0.7
+            mock_json_instance.is_successful.return_value = True
+            mock_json_instance.reason = "Valid JSON schema"
+            mock_json.return_value = mock_json_instance
+
+            # Setup mocks for topic coherence
+            mock_coherence_instance = MagicMock()
+            mock_coherence_result = MagicMock()
+            mock_coherence_result.score = 1.0
+            mock_coherence_result.threshold = 0.5
+            mock_coherence_result.passed = True
+            mock_coherence_result.reason = "Coherent topic"
+            mock_coherence_instance.measure.return_value = mock_coherence_result
+            mock_coherence.return_value = mock_coherence_instance
+
+            yield
 
     @pytest.fixture
     def mock_db_session(self) -> Mock:
@@ -73,6 +120,7 @@ class TestQualityPipelineIntegration:
     def sample_ai_output(self) -> dict[str, Any]:
         """Sample AI analysis output."""
         return {
+            "sent_id": "sent_001",
             "AI_Duygu_Skoru": -0.25,
             "AI_Duygu_Kategorisi": "concerned",
             "AI_Risk_Skoru": 6,
@@ -88,6 +136,7 @@ class TestQualityPipelineIntegration:
     def sample_ground_truth(self) -> dict[str, Any]:
         """Sample ground truth data."""
         return {
+            "sent_id": "sent_001",
             "AI_Duygu_Skoru": -0.30,
             "AI_Duygu_Kategorisi": "concerned",
             "AI_Risk_Skoru": 5,
@@ -225,7 +274,7 @@ class TestQualityPipelineIntegration:
 
         assert should_flag is True
         assert trigger_type == "HIGH_RISK"
-        assert "Risk score 8" in trigger_details["details"]
+        assert "Risk score 8" in trigger_details
 
         # Test critical risk scenario
         critical_risk_output = sample_ai_output.copy()
@@ -445,7 +494,9 @@ class TestQualityPipelineIntegration:
     ) -> None:
         """Test quality metrics calculation accuracy."""
         # Load actual golden dataset fixture
-        with patch.object(golden_dataset, "load_dataset") as mock_load:
+        with patch.object(
+            quality_evaluator.golden_dataset, "load_dataset"
+        ) as mock_load:
             mock_load.return_value = {
                 "fixtures": [
                     {

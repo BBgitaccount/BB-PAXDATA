@@ -155,7 +155,7 @@ class UncertaintyScorer:
                     temp_map = {0.3: 0, 0.5: 1, 0.7: 2}
                     idx = temp_map.get(temperature, 0)
                     if idx < len(mock_list):
-                        return mock_list[idx]
+                        return cast(str, mock_list[idx])
                     else:
                         # Return empty to simulate failure/insufficient output
                         return ""

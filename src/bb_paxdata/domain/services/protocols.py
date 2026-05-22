@@ -9,6 +9,7 @@ from typing import Any, Protocol, runtime_checkable
 from ..enums import RiskLevel
 from ..models.ai_analysis import AIAnalysisResult
 from ..models.analysis import Analysis
+from ..models.calibration import CalibrationReport
 from ..models.dki import (
     DynamicPositionResult,
     LLMPositionEstimate,
@@ -17,6 +18,7 @@ from ..models.dki import (
     SemanticShiftResult,
     SpeakerTrajectory,
 )
+from ..models.human_review import HumanReview
 
 
 @dataclass(frozen=True)
@@ -101,3 +103,24 @@ class AIAnalystProtocol(Protocol):
 @runtime_checkable
 class AnomalyServiceProtocol(Protocol):
     async def detect(self, analysis: Analysis) -> AnomalyResult: ...
+
+
+@runtime_checkable
+class HumanReviewRepositoryProtocol(Protocol):
+    async def save(self, review: HumanReview) -> None: ...
+    async def get_by_analysis_id(self, analysis_id: str) -> list[HumanReview]: ...
+    async def get_disagreements_for_prompt(
+        self, prompt_version: str, limit: int = 50
+    ) -> list[HumanReview]: ...
+    async def get_reviews_for_prompt(
+        self, prompt_version: str, limit: int = 100
+    ) -> list[HumanReview]: ...
+    async def get_gold_standard_examples(
+        self, frame_type: str | None = None, limit: int = 5
+    ) -> list[HumanReview]: ...
+
+
+@runtime_checkable
+class CalibrationReportRepositoryProtocol(Protocol):
+    async def save(self, report: CalibrationReport) -> None: ...
+    async def get_latest(self, prompt_version: str) -> CalibrationReport | None: ...

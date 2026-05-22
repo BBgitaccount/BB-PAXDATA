@@ -6,10 +6,11 @@
 from __future__ import annotations
 
 import logging
-from typing import Protocol, runtime_checkable
+from typing import Any, Protocol, runtime_checkable
 
+from ...application.protocols import AnomalyResult as LegacyAnomalyResult
 from ...core.config import settings
-from ..enums import NegationType, RiskLevel
+from ..enums import AnomalySeverity, AnomalyType, NegationType, RiskLevel
 from ..models.analysis import Analysis
 from ..models.negation_cue import NegationCue
 from .protocols import AnomalyResult
@@ -239,6 +240,18 @@ class CrossAnomalyService:
     IMMUTABLE: Analysis nesnesini mutate etmez; AnomalyResult döner.
     """
 
+    # Anomaly detection thresholds (from AIanalyst_v5_8.py)
+    ANOMALY_RISK_HIGH = 7
+    ANOMALY_HEDGE_HIGH = 0.6
+    ANOMALY_HEDGE_LOW = 0.2
+    ANOMALY_MANIP_HIGH = 0.7
+    ANOMALY_MANIP_MED = 0.5
+    ANOMALY_SENT_NEG = -0.5
+    ANOMALY_SENT_POS = 0.3
+    ANOMALY_POWER_HIGH = 8
+    ANOMALY_RISK_MED = 6
+    ANOMALY_HEDGE_MED = 0.55
+
     def __init__(self, rules: list[AnomalyRule] | None = None):
         self.rules: list[AnomalyRule] = rules or [
             SentimentRiskDivergenceRule(),
@@ -247,6 +260,406 @@ class CrossAnomalyService:
             PowerAsymmetryAnomalyRule(),
             CheapTalkAnomalyRule(),
         ]
+        self.confidence = 1.0
+
+    def analyze(self, analysis: Analysis, **kwargs: Any) -> Any:
+        """Detect cross-anomalies in analysis results.
+
+        Args:
+            analysis: The analysis results to check for anomalies
+            **kwargs: Additional analysis parameters
+
+        Returns:
+            List of detected anomalies
+        """
+        return self.detect_anomalies(analysis)
+
+    def detect_anomalies(self, analysis: Analysis) -> list[LegacyAnomalyResult]:
+        """Detect cross-anomalies in analysis results.
+
+        Args:
+            analysis: The analysis results to check for anomalies
+
+        Returns:
+            List of detected anomalies
+        """
+        anomalies = []
+
+        # Extract values from analysis
+        ai_values = self._extract_ai_values(analysis)
+        formula_values = self._extract_formula_values(analysis)
+
+        # Detect each type of anomaly
+        anomalies.extend(self._detect_risk_hedging_conflict(ai_values, formula_values))
+        anomalies.extend(
+            self._detect_negative_confrontational_amplification(
+                ai_values, formula_values
+            )
+        )
+        anomalies.extend(
+            self._detect_velvet_glove_confrontation(ai_values, formula_values)
+        )
+        anomalies.extend(
+            self._detect_high_risk_conciliatory_mask(ai_values, formula_values)
+        )
+        anomalies.extend(
+            self._detect_direct_manipulation_low_hedge(ai_values, formula_values)
+        )
+        anomalies.extend(
+            self._detect_dominant_actor_pressure(ai_values, formula_values)
+        )
+        anomalies.extend(
+            self._detect_vague_demand_plausible_deniability(ai_values, formula_values)
+        )
+        anomalies.extend(
+            self._detect_conflict_frame_positive_wrap(ai_values, formula_values)
+        )
+        anomalies.extend(
+            self._detect_inconsistency_plus_manipulation(ai_values, formula_values)
+        )
+        anomalies.extend(
+            self._detect_negative_appraisal_persuasive_tone(ai_values, formula_values)
+        )
+
+        return anomalies
+
+    def _extract_ai_values(self, analysis: Analysis) -> dict[str, Any]:
+        """Extract AI-derived values from analysis."""
+        return {
+            "ai_sentiment": getattr(analysis, "ai_sentiment_score", 0.0),
+            "ai_risk": getattr(analysis, "ai_risk_score", 0.0),
+            "ai_hedging": getattr(analysis, "ai_hedging_score", 0.0),
+            "ai_manipulation": getattr(analysis, "ai_manipulation_score", 0.0),
+            "ai_politeness": getattr(analysis, "ai_politeness_score", 0.0),
+            "ai_diplomatic_tone": getattr(analysis, "ai_diplomatic_tone", "neutral"),
+            "ai_frame": getattr(analysis, "ai_frame_type", "neutral"),
+            "ai_appraisal": getattr(analysis, "ai_appraisal_attitude", "neutral"),
+        }
+
+    def _extract_formula_values(self, analysis: Analysis) -> dict[str, Any]:
+        """Extract formula-derived values from analysis."""
+        return {
+            "formula_sentiment": getattr(analysis, "sentiment_score", 0.0),
+            "formula_risk": getattr(analysis, "risk_score", 0.0),
+            "formula_hedging": getattr(analysis, "hedging_score", 0.0),
+            "formula_manipulation": getattr(analysis, "manipulation_score", 0.0),
+            "power_level": getattr(analysis, "speaker_power", 5.0),
+            "sbi_score": getattr(analysis, "sbi_score", 0.0),
+            "dki_score": getattr(analysis, "dki_score", 0.0),
+        }
+
+    def _detect_risk_hedging_conflict(
+        self, ai_values: dict[str, Any], formula_values: dict[str, Any]
+    ) -> list[LegacyAnomalyResult]:
+        """Detect risk-hedging conflict anomalies."""
+        anomalies = []
+        ai_risk = ai_values.get("ai_risk", 0.0)
+        formula_hedging = formula_values.get("formula_hedging", 0.0)
+
+        if (
+            ai_risk >= self.ANOMALY_RISK_HIGH
+            and formula_hedging >= self.ANOMALY_HEDGE_HIGH
+        ):
+            severity = AnomalySeverity.HIGH if ai_risk >= 8 else AnomalySeverity.MEDIUM
+            anomalies.append(
+                LegacyAnomalyResult(
+                    type=AnomalyType.RISK_HEDGING_CONFLICT,
+                    severity=severity,
+                    category="Deception Pattern",
+                    description=(
+                        "High risk language combined with strong hedging suggests "
+                        "potential deception or uncertainty masking"
+                    ),
+                    ai_values={"ai_risk": ai_risk},
+                    formula_values={"formula_hedging": formula_hedging},
+                    confidence=0.8,
+                )
+            )
+        return anomalies
+
+    def _detect_negative_confrontational_amplification(
+        self, ai_values: dict[str, Any], formula_values: dict[str, Any]
+    ) -> list[LegacyAnomalyResult]:
+        """Detect negative confrontational amplification anomalies."""
+        anomalies = []
+        ai_sentiment = ai_values.get("ai_sentiment", 0.0)
+        ai_tone = ai_values.get("ai_diplomatic_tone", "neutral")
+
+        if ai_sentiment <= self.ANOMALY_SENT_NEG and ai_tone == "confrontational":
+            anomalies.append(
+                LegacyAnomalyResult(
+                    type=AnomalyType.NEGATIVE_CONFRONTATIONAL_AMPLIFICATION,
+                    severity=AnomalySeverity.HIGH,
+                    category="agresif_söylem",
+                    description=(
+                        f"Güçlü negatif duygu ({ai_sentiment:+.3f}) ve yüzleşmeci ton "
+                        "birlikte saptandı. Bu kombinasyon açık düşmanca söylemin "
+                        "göstergesidir. Diplomatik forumlarda bu düzeyde bir "
+                        "kızgınlık-yüzleşme eşzamanlılığı, konuşmacının normları "
+                        "kasıtlı olarak zorladığını ve güç projeksiyonu "
+                        "yaptığını işaret edebilir."
+                    ),
+                    ai_values={
+                        "ai_sentiment": ai_sentiment,
+                        "ai_diplomatic_tone": ai_tone,
+                    },
+                    formula_values={},
+                    confidence=0.9,
+                )
+            )
+        return anomalies
+
+    def _detect_velvet_glove_confrontation(
+        self, ai_values: dict[str, Any], formula_values: dict[str, Any]
+    ) -> list[LegacyAnomalyResult]:
+        """Detect velvet glove confrontation anomalies."""
+        anomalies = []
+        ai_sentiment = ai_values.get("ai_sentiment", 0.0)
+        ai_tone = ai_values.get("ai_diplomatic_tone", "neutral")
+        ai_manip = ai_values.get("ai_manipulation", 0.0)
+
+        if ai_sentiment >= self.ANOMALY_SENT_POS and ai_tone == "confrontational":
+            manip_note = "güçlendiriyor" if ai_manip >= 0.4 else "henüz desteklemiyor"
+            anomalies.append(
+                LegacyAnomalyResult(
+                    type=AnomalyType.VELVET_GLOVE_CONFRONTATION,
+                    severity=AnomalySeverity.MEDIUM,
+                    category="örtülü_baskı",
+                    description=(
+                        f"Pozitif duygu ({ai_sentiment:+.3f}) ile yüzleşmeci ton aynı "
+                        "anda geliyor. Bu paradoks 'velvet glove' stratejisini işaret "
+                        "edebilir: nazik, dostane sözcüklerle kaplı bir baskı mesajı. "
+                        f"Manipülasyon skoru ({ai_manip:.2f}) bu yorumu {manip_note}."
+                    ),
+                    ai_values={
+                        "ai_sentiment": ai_sentiment,
+                        "ai_diplomatic_tone": ai_tone,
+                        "ai_manipulation": ai_manip,
+                    },
+                    formula_values={},
+                    confidence=0.7,
+                )
+            )
+        return anomalies
+
+    def _detect_high_risk_conciliatory_mask(
+        self, ai_values: dict[str, Any], formula_values: dict[str, Any]
+    ) -> list[LegacyAnomalyResult]:
+        """Detect high risk conciliatory mask anomalies."""
+        anomalies = []
+        ai_risk = ai_values.get("ai_risk", 0.0)
+        ai_tone = ai_values.get("ai_diplomatic_tone", "neutral")
+
+        if ai_risk >= self.ANOMALY_RISK_HIGH and ai_tone in [
+            "conciliatory",
+            "cooperative",
+            "peaceful",
+        ]:
+            anomalies.append(
+                LegacyAnomalyResult(
+                    type=AnomalyType.HIGH_RISK_CONCILIATORY_MASK,
+                    severity=AnomalySeverity.HIGH,
+                    category="Deception Pattern",
+                    description=(
+                        "High-risk content masked with conciliatory tone "
+                        "suggests strategic positioning"
+                    ),
+                    ai_values={"ai_risk": ai_risk, "ai_diplomatic_tone": ai_tone},
+                    formula_values={},
+                    confidence=0.8,
+                )
+            )
+        return anomalies
+
+    def _detect_direct_manipulation_low_hedge(
+        self, ai_values: dict[str, Any], formula_values: dict[str, Any]
+    ) -> list[LegacyAnomalyResult]:
+        """Detect direct manipulation with low hedging."""
+        anomalies = []
+        ai_manipulation = ai_values.get("ai_manipulation", 0.0)
+        formula_hedging = formula_values.get("formula_hedging", 0.0)
+
+        if (
+            ai_manipulation >= self.ANOMALY_MANIP_HIGH
+            and formula_hedging <= self.ANOMALY_HEDGE_LOW
+        ):
+            severity = (
+                AnomalySeverity.CRITICAL
+                if ai_manipulation >= 0.8
+                else AnomalySeverity.HIGH
+            )
+            anomalies.append(
+                LegacyAnomalyResult(
+                    type=AnomalyType.DIRECT_MANIPULATION_LOW_HEDGE,
+                    severity=severity,
+                    category="Manipulation",
+                    description=(
+                        "High manipulation score with low hedging indicates "
+                        "overt manipulation attempts"
+                    ),
+                    ai_values={"ai_manipulation": ai_manipulation},
+                    formula_values={"formula_hedging": formula_hedging},
+                    confidence=0.9,
+                )
+            )
+        return anomalies
+
+    def _detect_dominant_actor_pressure(
+        self, ai_values: dict[str, Any], formula_values: dict[str, Any]
+    ) -> list[LegacyAnomalyResult]:
+        """Detect dominant actor pressure anomalies."""
+        anomalies = []
+        power_level = formula_values.get("power_level", 5.0)
+        sbi_score = formula_values.get("sbi_score", 0.0)
+        ai_risk = ai_values.get("ai_risk", 0.0)
+
+        if (
+            power_level >= self.ANOMALY_POWER_HIGH
+            and sbi_score >= 7.0
+            and ai_risk >= self.ANOMALY_RISK_MED
+        ):
+            anomalies.append(
+                LegacyAnomalyResult(
+                    type=AnomalyType.DOMINANT_ACTOR_PRESSURE,
+                    severity=AnomalySeverity.HIGH,
+                    category="Power Dynamics",
+                    description=(
+                        "High-power actor applying significant pressure "
+                        "through elevated SBI scores"
+                    ),
+                    ai_values={"ai_risk": ai_risk},
+                    formula_values={"power_level": power_level, "sbi_score": sbi_score},
+                    confidence=0.8,
+                )
+            )
+        return anomalies
+
+    def _detect_vague_demand_plausible_deniability(
+        self, ai_values: dict[str, Any], formula_values: dict[str, Any]
+    ) -> list[LegacyAnomalyResult]:
+        """Detect vague demands with plausible deniability."""
+        anomalies = []
+        formula_hedging = formula_values.get("formula_hedging", 0.0)
+        ai_risk = ai_values.get("ai_risk", 0.0)
+        has_demand_indicators = ai_risk >= 4.0
+
+        if formula_hedging >= self.ANOMALY_HEDGE_HIGH and has_demand_indicators:
+            anomalies.append(
+                LegacyAnomalyResult(
+                    type=AnomalyType.VAGUE_DEMAND_PLAUSIBLE_DENIABILITY,
+                    severity=AnomalySeverity.MEDIUM,
+                    category="Strategic Ambiguity",
+                    description=(
+                        "High hedging combined with demand indicators "
+                        "suggests strategic ambiguity"
+                    ),
+                    ai_values={"ai_risk": ai_risk},
+                    formula_values={"formula_hedging": formula_hedging},
+                    confidence=0.6,
+                )
+            )
+        return anomalies
+
+    def _detect_conflict_frame_positive_wrap(
+        self, ai_values: dict[str, Any], formula_values: dict[str, Any]
+    ) -> list[LegacyAnomalyResult]:
+        """Detect conflict frame with positive wrapping."""
+        anomalies = []
+        ai_frame = ai_values.get("ai_frame", "neutral")
+        ai_sentiment = ai_values.get("ai_sentiment", 0.0)
+        ai_risk = ai_values.get("ai_risk", 0.0)
+
+        if (
+            ai_frame in ["conflict", "security", "threat"]
+            and ai_sentiment >= self.ANOMALY_SENT_POS
+            and ai_risk >= self.ANOMALY_RISK_MED
+        ):
+            anomalies.append(
+                LegacyAnomalyResult(
+                    type=AnomalyType.CONFLICT_FRAME_POSITIVE_WRAP,
+                    severity=AnomalySeverity.MEDIUM,
+                    category="Framing Strategy",
+                    description=(
+                        "Conflict-related content framed in positive terms "
+                        "indicates strategic positioning"
+                    ),
+                    ai_values={
+                        "ai_frame": ai_frame,
+                        "ai_sentiment": ai_sentiment,
+                        "ai_risk": ai_risk,
+                    },
+                    formula_values={},
+                    confidence=0.7,
+                )
+            )
+        return anomalies
+
+    def _detect_inconsistency_plus_manipulation(
+        self, ai_values: dict[str, Any], formula_values: dict[str, Any]
+    ) -> list[LegacyAnomalyResult]:
+        """Detect inconsistency combined with manipulation."""
+        anomalies = []
+        ai_manipulation = ai_values.get("ai_manipulation", 0.0)
+        inconsistency_score = abs(
+            ai_values.get("ai_sentiment", 0.0)
+            - formula_values.get("formula_sentiment", 0.0)
+        )
+
+        if ai_manipulation >= self.ANOMALY_MANIP_MED and inconsistency_score >= 0.5:
+            severity = (
+                AnomalySeverity.HIGH
+                if ai_manipulation >= self.ANOMALY_MANIP_HIGH
+                else AnomalySeverity.MEDIUM
+            )
+            anomalies.append(
+                LegacyAnomalyResult(
+                    type=AnomalyType.INCONSISTENCY_PLUS_MANIPULATION,
+                    severity=severity,
+                    category="Deception Pattern",
+                    description=(
+                        "High manipulation combined with inconsistent sentiment "
+                        "indicates deceptive communication"
+                    ),
+                    ai_values={"ai_manipulation": ai_manipulation},
+                    formula_values={"inconsistency_score": inconsistency_score},
+                    confidence=0.8,
+                )
+            )
+        return anomalies
+
+    def _detect_negative_appraisal_persuasive_tone(
+        self, ai_values: dict[str, Any], formula_values: dict[str, Any]
+    ) -> list[LegacyAnomalyResult]:
+        """Detect negative appraisal with persuasive tone."""
+        anomalies = []
+        ai_appraisal = ai_values.get("ai_appraisal", "neutral")
+        ai_sentiment = ai_values.get("ai_sentiment", 0.0)
+        ai_politeness = ai_values.get("ai_politeness", 0.0)
+
+        if (
+            ai_appraisal in ["negative", "critical", "disapproving"]
+            and ai_sentiment <= self.ANOMALY_SENT_NEG
+            and ai_politeness >= 0.6
+        ):
+            anomalies.append(
+                LegacyAnomalyResult(
+                    type=AnomalyType.NEGATIVE_APPRAISAL_PERSUASIVE_TONE,
+                    severity=AnomalySeverity.MEDIUM,
+                    category="Persuasion Strategy",
+                    description=(
+                        "Negative appraisal combined with polite persuasive tone "
+                        "indicates strategic influence attempt"
+                    ),
+                    ai_values={
+                        "ai_appraisal": ai_appraisal,
+                        "ai_sentiment": ai_sentiment,
+                        "ai_politeness": ai_politeness,
+                    },
+                    formula_values={},
+                    confidence=0.7,
+                )
+            )
+        return anomalies
 
     async def detect(self, analysis: Analysis) -> AnomalyResult:
         """

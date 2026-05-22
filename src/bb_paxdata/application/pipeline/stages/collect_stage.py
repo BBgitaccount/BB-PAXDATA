@@ -112,6 +112,8 @@ class CollectStage:
         """
         logger.info("collect_stage.started", panel_id=panel_id, language=language)
 
+        from bb_paxdata.domain.models.sentence import Sentence
+
         async def _wrap_none(coro_or_none: Coroutine[Any, Any, Any] | None) -> Any:
             if coro_or_none is None:
                 return None
@@ -132,9 +134,17 @@ class CollectStage:
             self._power_calculator.calculate(
                 text, speaker_id=speaker_country, segment_id=panel_id
             ),
-            self._frame_pipeline.analyze(Segment(id=panel_id, text=text)),
+            self._frame_pipeline.analyze(
+                Segment(
+                    id=panel_id, sentences=[Sentence(id=f"{panel_id}-s0", text=text)]
+                )
+            ),
             self._lexicon_service.detect_cues(text),
-            self._episodic_classifier.classify(Segment(id=panel_id, text=text)),
+            self._episodic_classifier.classify(
+                Segment(
+                    id=panel_id, sentences=[Sentence(id=f"{panel_id}-s0", text=text)]
+                )
+            ),
             self._stance_calculator.calculate(
                 text.split(), speaker_country
             ),  # Simple split for now

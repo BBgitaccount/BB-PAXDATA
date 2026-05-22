@@ -7,6 +7,7 @@ import structlog
 from sqlalchemy import delete, func, select
 
 if TYPE_CHECKING:
+    from bb_paxdata.application.consensus.dual_gate import ConsensusResult
     from bb_paxdata.infrastructure.ai.prompt_registry import PromptRegistry
 
 from bb_paxdata.domain.models.analysis import Analysis as AnalysisDomain
@@ -73,16 +74,30 @@ class AnalysisRepository(BaseRepository[AISentenceAnalysis]):
 
         await self.save_sentence_analysis(analysis)
 
-    async def save_sentence_analysis(self, analysis: Any) -> None:
+    async def save_sentence_analysis(
+        self,
+        analysis: Any,
+        consensus: ConsensusResult | None = None,
+    ) -> None:
         """Save sentence analysis (supports domain model or ORM model)."""
         from bb_paxdata.domain.models.analysis import Analysis as AnalysisDomain
 
         if isinstance(analysis, AnalysisDomain):
-            if analysis.sentence_id is None:
+            sent_id = analysis.sentence_id
+            if sent_id is None:
                 raise ValueError("sentence_id cannot be None")
-            orm = AISentenceAnalysis.from_domain(analysis, sent_id=analysis.sentence_id)
+            # If consensus was passed, we assign it to the domain model temporarily
+            if consensus:
+                analysis = analysis.model_copy(update={"consensus_result": consensus})
+            orm = AISentenceAnalysis.from_domain(analysis, sent_id=sent_id)
         else:
             orm = analysis
+            if consensus:
+                orm.coherence_score = consensus.coherence_score
+                orm.anomaly_consensus_level = consensus.level.value
+                orm.anomaly_ai_decision = consensus.ai_result.decision.value
+                orm.anomaly_ai_reasoning = consensus.ai_result.reasoning
+                orm.anomaly_detected_subtype = consensus.ai_result.detected_subtype
         self._session.add(orm)
         await self._session.flush()
 

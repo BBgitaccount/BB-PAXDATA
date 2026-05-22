@@ -116,6 +116,92 @@ LIWC_LEXICON: dict[str, list[str]] = {
         "threat",
         "tension",
     ],
+    # Bilişsel Durum Analizi Kategorileri (A2)
+    "causal": [
+        "because",
+        "therefore",
+        "consequently",
+        "consequence",
+        "thus",
+        "hence",
+        "since",
+        "result",
+        "effect",
+        "cause",
+        "çünkü",
+        "dolayısıyla",
+        "nedenle",
+        "neden",
+        "sonuç",
+        "yüzden",
+    ],
+    "insight": [
+        "think",
+        "thought",
+        "know",
+        "knew",
+        "known",
+        "understand",
+        "understood",
+        "realize",
+        "realized",
+        "believe",
+        "believed",
+        "insight",
+        "feel",
+        "felt",
+        "düşünmek",
+        "düşünüyorum",
+        "düşündü",
+        "düşünce",
+        "anlamak",
+        "anlıyorum",
+        "anladı",
+        "bilmek",
+        "biliyorum",
+        "bildi",
+        "fark etmek",
+        "inanmak",
+        "hissediyorum",
+    ],
+    "certainty": [
+        "always",
+        "never",
+        "certainly",
+        "absolutely",
+        "sure",
+        "definitely",
+        "completely",
+        "totally",
+        "inevitably",
+        "undeniably",
+        "kesinlikle",
+        "asla",
+        "her zaman",
+        "hiçbir zaman",
+        "mutlaka",
+        "şüphesiz",
+        "tamamen",
+    ],
+    "tentative": [
+        "maybe",
+        "perhaps",
+        "possibly",
+        "possible",
+        "guess",
+        "tentative",
+        "likely",
+        "unlikely",
+        "suggests",
+        "claims",
+        "belki",
+        "herhalde",
+        "sanırım",
+        "muhtemelen",
+        "olabilir",
+        "iddia",
+        "şüpheli",
+    ],
 }
 
 
@@ -174,7 +260,14 @@ class LIWCProxyService:
 
         if word_count == 0:
             return LIWCScores(
-                clout=0.0, analytic=0.0, authenticity=0.0, tone=0.0, word_count=0
+                clout=0.0,
+                analytic=0.0,
+                authenticity=0.0,
+                tone=0.0,
+                word_count=0,
+                cognitive_processing_score=0.0,
+                causal_word_ratio=0.0,
+                certainty_vs_tentative_ratio=0.0,
             )
 
         hits: dict[str, int] = {}
@@ -193,10 +286,23 @@ class LIWCProxyService:
         total_tone = pos + neg
         tone_score = (pos - neg) / total_tone if total_tone > 0 else 0.0
 
+        # Bilişsel Durum Analizi skorları (A2)
+        causal_hits = hits.get("causal", 0)
+        insight_hits = hits.get("insight", 0)
+        certainty_hits = hits.get("certainty", 0)
+        tentative_hits = hits.get("tentative", 0)
+
+        cognitive_processing_score = (causal_hits + insight_hits) / word_count
+        causal_word_ratio = causal_hits / word_count
+        certainty_vs_tentative_ratio = certainty_hits / (tentative_hits + 1e-6)
+
         return LIWCScores(
             clout=round(min(clout_score, 1.0), 6),
             analytic=round(min(analytic_score, 1.0), 6),
             authenticity=round(min(authenticity_score, 1.0), 6),
             tone=round(max(-1.0, min(tone_score, 1.0)), 6),
             word_count=word_count,
+            cognitive_processing_score=round(cognitive_processing_score, 6),
+            causal_word_ratio=round(causal_word_ratio, 6),
+            certainty_vs_tentative_ratio=round(certainty_vs_tentative_ratio, 6),
         )

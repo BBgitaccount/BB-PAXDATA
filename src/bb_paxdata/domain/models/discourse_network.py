@@ -76,6 +76,9 @@ class DyadicMetrics(BaseModel):
         default=None, ge=Decimal("0"), le=Decimal("1")
     )
     affinity_score: Decimal | None = Field(default=None, ge=Decimal("0"))
+    citation_asymmetry_ratio: float | None = Field(default=None, ge=0.0)
+    obsession_flag: bool = Field(default=False)
+    ignore_flag: bool = Field(default=False)
 
     @property
     def effective_structural_distance(self) -> Decimal:

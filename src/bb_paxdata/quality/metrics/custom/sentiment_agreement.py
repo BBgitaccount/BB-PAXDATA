@@ -74,7 +74,12 @@ class SentimentAgreementMetric:
 
             # Generate reason
             if passed:
-                reason = f"Sentiment scores agree within tolerance (diff={diff:.3f})"
+                if diff == 0.0:
+                    reason = f"Sentiment scores agree perfectly (diff={diff:.3f})"
+                else:
+                    reason = (
+                        f"Sentiment scores agree within tolerance (diff={diff:.3f})"
+                    )
             else:
                 reason = (
                     f"Sentiment scores differ beyond tolerance (diff={diff:.3f}, "

@@ -259,7 +259,9 @@ class DuplicateProtectionService:
             )
 
             for panel in existing_panels:
-                # Panel does not have is_active, maybe delete or just skip
+                # Panel does not have is_active in current schema, but set if present
+                if hasattr(panel, "is_active"):
+                    panel.is_active = 0
                 self.logger.info(
                     "Soft deleted existing panel",
                     panel_id=panel.panel_id,

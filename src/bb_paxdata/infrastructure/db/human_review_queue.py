@@ -28,7 +28,7 @@ class HumanReviewQueue(Base):
     # Trigger reason
     trigger_type: Mapped[str] = mapped_column(
         String, nullable=False
-    )  # 'HIGH_RISK' | 'CRITICAL_ANOMALY' | 'LOW_UNCERTAINTY' | 'MANUAL_FLAG'
+    )  # 'HIGH_RISK' | 'CRITICAL_ANOMALY' | 'LOW_UNCERTAINTY' | 'MANUAL_FLAG' | 'CONSENSUS_ANOMALY' | 'CRITICAL_CONSENSUS'
     ai_risk_score: Mapped[int | None] = mapped_column(Integer, nullable=True)
     anomaly_types: Mapped[str | None] = mapped_column(Text, nullable=True)
     uncertainty_score: Mapped[float | None] = mapped_column(Integer, nullable=True)

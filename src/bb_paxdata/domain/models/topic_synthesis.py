@@ -55,6 +55,14 @@ class TopicSynthesis(BaseModel):
         return max(scores, key=lambda k: scores[k])
 
     @property
+    def dominant_topic(self) -> str | None:
+        """En yüksek olasılıklı konu ID'si veya None."""
+        scores = self.topic_scores
+        if not scores or all(v == 0.0 for v in scores.values()):
+            return None
+        return max(scores, key=lambda k: scores[k])
+
+    @property
     def topic_diversity(self) -> float:
         """Konu dağılımının entropisi (ne kadar odaklı/karışık)."""
         import math

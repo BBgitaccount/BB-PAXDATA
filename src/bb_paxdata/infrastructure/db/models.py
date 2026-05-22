@@ -26,6 +26,9 @@ from bb_paxdata.domain.enums.demand_category import DemandCategory
 from bb_paxdata.domain.enums.relationship_type import RelationshipType
 from bb_paxdata.domain.enums.risk_level import RiskLevel
 from bb_paxdata.infrastructure.db.base import Base
+from bb_paxdata.infrastructure.db.discourse_network_table import (
+    DiscourseNetworkEdgeTable,
+)
 
 if TYPE_CHECKING:
     from bb_paxdata.domain.enums import (
@@ -42,9 +45,6 @@ if TYPE_CHECKING:
     from bb_paxdata.domain.models.topic import Topic
     from bb_paxdata.domain.models.transcript import Transcript
     from bb_paxdata.domain.models.validation_result import ValidationResult
-    from bb_paxdata.infrastructure.db.discourse_network_table import (
-        DiscourseNetworkEdgeTable,
-    )
 
 E = TypeVar("E", bound=Enum)
 
@@ -1318,7 +1318,7 @@ class PanelDynamics(Base):
 
 
 class DiscourseNetworkEdge(Base):
-    __tablename__ = "discourse_network_edges"
+    __tablename__ = "discourse_network_edges_legacy"
     __table_args__ = (Index("idx_net_from", "from_country"),)
 
     edge_id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
@@ -1381,6 +1381,8 @@ class AISentenceAnalysis(Base):
         Index("idx_ai_logic", "overall_logic_check"),
         Index("idx_ai_risk", "risk_level"),
         Index("idx_ai_tone", "diplomatic_tone"),
+        Index("idx_ai_prompt_processed", "prompt_version", "processed_at"),
+        Index("idx_ai_processed_at", "processed_at"),
     )
 
     ai_id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
@@ -1416,6 +1418,27 @@ class AISentenceAnalysis(Base):
     intent_analysis: Mapped[str | None] = mapped_column(Text, nullable=True)
     manipulation_score: Mapped[float | None] = mapped_column(Float, nullable=True)
     has_inconsistency: Mapped[bool] = mapped_column(Boolean, default=False)
+    coherence_score: Mapped[float | None] = mapped_column(
+        Float, nullable=True, comment="DualGate consensus coherence score (0.0-1.0)"
+    )
+    anomaly_consensus_level: Mapped[str | None] = mapped_column(
+        String(30),
+        nullable=True,
+        comment="CLEAN|SOFT_ANOMALY|HARD_ANOMALY|CRITICAL_ANOMALY",
+    )
+    anomaly_ai_decision: Mapped[str | None] = mapped_column(
+        String(20),
+        nullable=True,
+        comment="CONFIRMED|DISMISSED|ESCALATED|AI_ONLY|INCONCLUSIVE",
+    )
+    anomaly_ai_reasoning: Mapped[str | None] = mapped_column(
+        String(1000), nullable=True, comment="AI Anomaly Controller reasoning"
+    )
+    anomaly_detected_subtype: Mapped[str | None] = mapped_column(
+        String(50),
+        nullable=True,
+        comment="irony|rhetorical_strategy|coercive_signal|tone_drift",
+    )
     contextual_importance: Mapped[str | None] = mapped_column(Text, nullable=True)
     rhetorical_strategy: Mapped[str | None] = mapped_column(Text, nullable=True)
     target_audience: Mapped[str | None] = mapped_column(Text, nullable=True)
@@ -1515,10 +1538,12 @@ class AISentenceAnalysis(Base):
             sumcomplexity_score=None,
             detailed_findings=None,
             recommendations=[],
+            framing=self.framing or self.ai_frame_type,
         )
 
     @classmethod
     def from_domain(cls, model: Analysis, *, sent_id: str) -> AISentenceAnalysis:
+        consensus = getattr(model, "consensus_result", None)
         return cls(
             sent_id=sent_id,
             prompt_version="v1",
@@ -1526,6 +1551,20 @@ class AISentenceAnalysis(Base):
             risk_level=model.risk_level.value,
             sentiment_score=model.sentiment_score,
             manipulation_score=model.manipulation_score,
+            framing=model.framing,
+            coherence_score=(
+                consensus.coherence_score
+                if consensus
+                else getattr(model, "coherence_score", None)
+            ),
+            anomaly_consensus_level=consensus.level.value if consensus else None,
+            anomaly_ai_decision=(
+                consensus.ai_result.decision.value if consensus else None
+            ),
+            anomaly_ai_reasoning=consensus.ai_result.reasoning if consensus else None,
+            anomaly_detected_subtype=(
+                consensus.ai_result.detected_subtype if consensus else None
+            ),
         )
 
 

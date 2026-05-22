@@ -82,6 +82,14 @@ async def test_topic_modeling_service_basic():
         assert len(keywords) <= 10  # Top-10 limit
         assert all(isinstance(v, float) and v >= 0 for v in keywords.values())
 
+    # Coherence skorları var mı?
+    assert "topic_coherence" in result.model_metadata
+    for topic_id, coherence_scores in result.model_metadata["topic_coherence"].items():
+        assert "umass" in coherence_scores
+        assert "uci" in coherence_scores
+        assert isinstance(coherence_scores["umass"], float)
+        assert isinstance(coherence_scores["uci"], float)
+
 
 @pytest.mark.asyncio
 async def test_custom_ctfidf_formula():

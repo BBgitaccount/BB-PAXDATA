@@ -8,6 +8,12 @@ from collections.abc import Callable
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from bb_paxdata.infrastructure.db.repositories.analysis import AnalysisRepository
+from bb_paxdata.infrastructure.db.repositories.calibration_repository import (
+    CalibrationRepository,
+)
+from bb_paxdata.infrastructure.db.repositories.human_review_repository import (
+    HumanReviewRepository,
+)
 from bb_paxdata.infrastructure.db.repositories.segment import SegmentRepository
 from bb_paxdata.infrastructure.db.repositories.sentence import SentenceRepository
 
@@ -18,6 +24,8 @@ class AbstractUnitOfWork(ABC):
     sentences: SentenceRepository
     segments: SegmentRepository
     analysis: AnalysisRepository
+    human_reviews: HumanReviewRepository
+    calibration: CalibrationRepository
 
     async def __aenter__(self) -> AbstractUnitOfWork:
         return self
@@ -61,6 +69,8 @@ class SqlAlchemyUnitOfWork(AbstractUnitOfWork):
         self.sentences = SentenceRepository(self.session)
         self.segments = SegmentRepository(self.session)
         self.analysis = AnalysisRepository(self.session)
+        self.human_reviews = HumanReviewRepository(self.session)
+        self.calibration = CalibrationRepository(self.session)
         return self
 
     async def __aexit__(

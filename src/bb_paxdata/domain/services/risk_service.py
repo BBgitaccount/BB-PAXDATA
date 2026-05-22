@@ -18,7 +18,8 @@ from ...application.protocols import (
     RiskAssessment,
     RiskServiceProtocol,
 )
-from ...domain.enums import RiskLevel
+from ...domain.enums import RiskLevel, SignalType
+from ..models.risk_signal import RiskSignal
 from ..models.segment import Segment
 from ..models.sentence import Sentence
 
@@ -325,7 +326,38 @@ class RiskService(BaseService, RiskServiceProtocol):
             # Base risk detection
             risk_score, signals = self.risk_detect(sentence.text)
             total_risk_score += risk_score
-            all_risk_signals.extend(signals)
+            for sig in signals:
+                start_idx = sentence.text.lower().find(sig.lower())
+                end_idx = start_idx + len(sig) if start_idx != -1 else 0
+                start_idx = max(0, start_idx)
+
+                weight = self.RISK_SIGNAL_WEIGHTS.get(sig, 1)
+                if weight == 3:
+                    sig_type = SignalType.RED_LINE
+                    mult = 1.5
+                    cred = 0.75
+                elif weight == 2:
+                    sig_type = SignalType.RETALIATION
+                    mult = 2.0
+                    cred = 0.7
+                else:
+                    sig_type = SignalType.CHEAP_TALK
+                    mult = 1.0
+                    cred = 0.3
+
+                all_risk_signals.append(
+                    RiskSignal(
+                        signal_text=(
+                            sentence.text[start_idx:end_idx] if start_idx != -1 else sig
+                        ),
+                        signal_start=start_idx,
+                        signal_end=end_idx,
+                        signal_type=sig_type,
+                        escalation_multiplier=mult,
+                        credibility_score=cred,
+                        sentence_id=sentence.id or "temp",
+                    )
+                )
 
             # Extract power level (from speaker metadata if available)
             power_level = 5.0  # Default medium power

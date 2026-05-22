@@ -35,10 +35,12 @@ class AIAnalyst:
         registry: PromptRegistry | None = None,
         language_detector: LanguageDetector | None = None,
         default_prompt_id: str = "diplomatic_analysis",
+        few_shot_injector: Any | None = None,
     ):
         self.registry = registry or build_default_registry()
         self.language_detector = language_detector or LanguageDetector()
         self.default_prompt_id = default_prompt_id
+        self.few_shot_injector = few_shot_injector
 
     async def analyze(
         self,
@@ -75,6 +77,10 @@ class AIAnalyst:
 
         # Şablonu metinle doldur ve AI'a gönder
         rendered = active_prompt.template.format(text=text)
+        if self.few_shot_injector:
+            rendered = await self.few_shot_injector.inject(
+                base_prompt=rendered, frame_hint=None
+            )
         raw_response = self._call_ai_model(rendered, active_prompt.model_name)
         parsed = self._parse_response(raw_response)
 

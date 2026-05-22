@@ -1,6 +1,7 @@
 # src/bb_paxdata/infrastructure/nlp/topic_modeling.py
 import asyncio
 import logging
+import math
 
 import numpy as np
 from bertopic import BERTopic
@@ -47,10 +48,12 @@ class TopicModelingService(TopicModelingProtocol):
             "min_cluster_size": hdbscan_min_cluster_size,
             "min_samples": hdbscan_min_samples,
             "metric": hdbscan_metric,
+            "prediction_data": True,
         }
         self._prompt_registry = prompt_registry
         self._embedding_model: SentenceTransformer | None = None
         self._topic_model: BERTopic | None = None
+        self._embedding_cache: dict[str, np.ndarray] = {}
 
     async def extract_topics(
         self,
@@ -62,6 +65,24 @@ class TopicModelingService(TopicModelingProtocol):
         """Diplomatik segment listesinden BERTopic konularını çıkarır."""
         if not segments:
             return TopicResult(assignments=[], topic_keywords={}, model_metadata={})
+
+        if len(segments) < 2:
+            # Fallback for single segment case
+            assignments = [
+                TopicAssignment(
+                    segment_id=seg.id,
+                    primary_topic="-1",
+                    topic_scores={"-1": 1.0},
+                )
+                for seg in segments
+            ]
+            return TopicResult(
+                assignments=assignments,
+                topic_keywords={},
+                model_metadata={
+                    "warning": "Insufficient documents for BERTopic fitting"
+                },
+            )
 
         # 1. Akademik referans kaydı
         academic_ref = None
@@ -103,6 +124,17 @@ class TopicModelingService(TopicModelingProtocol):
         # 7. Konu etiketleri
         topic_keywords = self._extract_topic_labels(topic_model, ctfidf_scores)
 
+        # Compute UMass and UCI topic coherence (A8)
+        topic_coherence = {}
+        for topic_id, keywords_dict in topic_keywords.items():
+            words = list(keywords_dict.keys())
+            umass_score = self.calculate_umass_coherence(words, docs)
+            uci_score = self.calculate_uci_coherence(words, docs)
+            topic_coherence[topic_id] = {
+                "umass": round(umass_score, 4),
+                "uci": round(uci_score, 4),
+            }
+
         metadata = {
             "academic_ref": academic_ref,
             "embedding_model": self._embedding_model_name,
@@ -111,6 +143,7 @@ class TopicModelingService(TopicModelingProtocol):
             "language": language,
             "document_count": len(docs),
             "outlier_count": sum(1 for t in topics if t == -1),
+            "topic_coherence": topic_coherence,
         }
 
         return TopicResult(
@@ -148,12 +181,27 @@ class TopicModelingService(TopicModelingProtocol):
         return results
 
     async def _embed_documents(self, docs: list[str]) -> np.ndarray:
-        """SBERT embedding. Async thread pool."""
+        """SBERT embedding with in-memory caching. Async thread pool."""
+        if not docs:
+            return np.empty((0, 0))
+
         if self._embedding_model is None:
             self._embedding_model = SentenceTransformer(self._embedding_model_name)
-        return await asyncio.to_thread(
-            self._embedding_model.encode, docs, show_progress_bar=False
-        )
+
+        # Identify unique documents and which ones need to be encoded
+        unique_docs = list(set(docs))
+        missing_docs = [d for d in unique_docs if d not in self._embedding_cache]
+
+        if missing_docs:
+            embeddings = await asyncio.to_thread(
+                self._embedding_model.encode, missing_docs, show_progress_bar=False
+            )
+            for doc, emb in zip(missing_docs, embeddings):
+                self._embedding_cache[doc] = emb
+
+        # Construct final embeddings array in the order of input 'docs'
+        result = [self._embedding_cache[d] for d in docs]
+        return np.array(result)
 
     async def _fit_bertopic(
         self,
@@ -288,3 +336,54 @@ class TopicModelingService(TopicModelingProtocol):
             )
             labels[str(topic_id)] = sorted_scores
         return labels
+
+    def calculate_umass_coherence(
+        self, topic_words: list[str], docs: list[str], epsilon: float = 1.0
+    ) -> float:
+        """Calculates UMass coherence for a list of topic words given a document corpus."""
+        if len(topic_words) < 2 or not docs:
+            return 0.0
+
+        # Convert docs to lists of lowercase words
+        doc_words = [set(doc.lower().split()) for doc in docs]
+
+        coherence = 0.0
+        for i in range(1, len(topic_words)):
+            w_i = topic_words[i].lower()
+            # Count docs with w_i
+            sum(1 for d in doc_words if w_i in d)
+            for j in range(i):
+                w_j = topic_words[j].lower()
+                d_wj = sum(1 for d in doc_words if w_j in d)
+                # Joint docs with both w_i and w_j
+                d_wi_wj = sum(1 for d in doc_words if w_i in d and w_j in d)
+
+                coherence += math.log((d_wi_wj + epsilon) / (d_wj + 1e-6))
+
+        return coherence
+
+    def calculate_uci_coherence(
+        self, topic_words: list[str], docs: list[str], epsilon: float = 1.0
+    ) -> float:
+        """Calculates UCI coherence for a list of topic words given a document corpus (pointwise mutual info)."""
+        if len(topic_words) < 2 or not docs:
+            return 0.0
+
+        doc_words = [set(doc.lower().split()) for doc in docs]
+        n_docs = len(doc_words)
+
+        coherence = 0.0
+        for i in range(1, len(topic_words)):
+            w_i = topic_words[i].lower()
+            p_wi = sum(1 for d in doc_words if w_i in d) / n_docs
+            for j in range(i):
+                w_j = topic_words[j].lower()
+                p_wj = sum(1 for d in doc_words if w_j in d) / n_docs
+                p_wi_wj = sum(1 for d in doc_words if w_i in d and w_j in d) / n_docs
+
+                # Pointwise Mutual Information (PMI)
+                numerator = p_wi_wj + epsilon / n_docs
+                denominator = p_wi * p_wj + 1e-6
+                coherence += math.log(numerator / denominator)
+
+        return coherence

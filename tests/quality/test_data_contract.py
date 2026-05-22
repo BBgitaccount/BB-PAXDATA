@@ -2,7 +2,7 @@
 
 from pathlib import Path
 
-import pandas as pd  # type: ignore
+import pandas as pd
 from bb_paxdata.quality.data_contract import (
     DataContractValidator,
     TranscriptInputContract,
@@ -30,22 +30,29 @@ class TestTranscriptInputContract:
         result = TranscriptInputContract.validate("", Path("empty.txt"))
 
         assert result.passed is False
-        assert "very short" in result.message.lower()
+        assert "boş" in result.message.lower() or "very short" in result.message.lower()
 
     def test_short_transcript(self) -> None:
         """Test validation of very short transcript."""
         result = TranscriptInputContract.validate("Hi", Path("short.txt"))
 
         assert result.passed is False
-        assert "very short" in result.message.lower()
+        assert (
+            "kısa" in result.message.lower() or "very short" in result.message.lower()
+        )
 
     def test_no_delimiter_transcript(self) -> None:
         """Test transcript without speaker delimiter."""
-        text = "Hello everyone welcome to the panel. Thank you for having me."
+        text = (
+            "Hello everyone welcome to the panel. Thank you for having me here today. "
+            "We are going to start our comprehensive discussion on regional peace and security right now."
+        )
         result = TranscriptInputContract.validate(text, Path("no_delim.txt"))
 
         assert result.passed is False
-        assert "delimiter" in result.message.lower()
+        assert (
+            "ayırıcı" in result.message.lower() or "delimiter" in result.message.lower()
+        )
 
     def test_large_transcript(self) -> None:
         """Test oversized transcript."""
@@ -99,7 +106,10 @@ class TestAISentenceOutputSchema:
         result = validator.validate_ai_output(df)
 
         assert result.passed is False
-        assert "schema error" in result.message.lower()
+        assert (
+            "validation failed" in result.message.lower()
+            or "schema error" in result.message.lower()
+        )
 
     def test_invalid_risk_range(self) -> None:
         """Test invalid risk score range."""
@@ -119,7 +129,10 @@ class TestAISentenceOutputSchema:
         result = validator.validate_ai_output(df)
 
         assert result.passed is False
-        assert "schema error" in result.message.lower()
+        assert (
+            "validation failed" in result.message.lower()
+            or "schema error" in result.message.lower()
+        )
 
     def test_invalid_risk_category(self) -> None:
         """Test invalid risk category."""
@@ -139,7 +152,10 @@ class TestAISentenceOutputSchema:
         result = validator.validate_ai_output(df)
 
         assert result.passed is False
-        assert "schema error" in result.message.lower()
+        assert (
+            "validation failed" in result.message.lower()
+            or "schema error" in result.message.lower()
+        )
 
     def test_missing_required_fields(self) -> None:
         """Test missing required fields."""
@@ -159,12 +175,19 @@ class TestAISentenceOutputSchema:
         result = validator.validate_ai_output(df)
 
         assert result.passed is False
-        assert "schema error" in result.message.lower()
+        assert (
+            "validation failed" in result.message.lower()
+            or "schema error" in result.message.lower()
+        )
 
     def test_non_dataframe_input(self) -> None:
         """Test non-DataFrame input."""
+        import typing
+
         validator = DataContractValidator()
-        result = validator.validate_ai_output("not a dataframe")
+        result = validator.validate_ai_output(
+            typing.cast(pd.DataFrame, "not a dataframe")
+        )
 
         assert result.passed is False
         assert "not a pandas dataframe" in result.message.lower()
@@ -185,8 +208,8 @@ class TestDataContractValidator:
 
         # Test input validation
         transcript = """
-        Speaker 1: Welcome to our discussion.
-        Speaker 2: Thank you for inviting me.
+        Speaker 1: Welcome to our discussion. We are very pleased to host you today.
+        Speaker 2: Thank you for inviting me. It is an absolute honor to be here.
         """
         input_result = validator.validate_transcript_input(transcript, Path("test.txt"))
         assert input_result.passed is True

@@ -1,7 +1,8 @@
 from datetime import datetime, timezone
-from typing import Any
+from enum import Enum
+from typing import Any, Optional
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, ConfigDict, Field
 
 from ..enums import AnomalySeverity, AnomalyType, EvidenceType
 
@@ -110,3 +111,37 @@ class Anomaly(BaseModel):
         default_factory=lambda: datetime.now(timezone.utc),
         description="Last update timestamp",
     )
+
+
+class AnomalyValidationDecision(str, Enum):
+    CONFIRMED = "CONFIRMED"
+    DISMISSED = "DISMISSED"
+    ESCALATED = "ESCALATED"
+    AI_ONLY = "AI_ONLY"
+    INCONCLUSIVE = "INCONCLUSIVE"
+
+
+class AnomalyValidationResult(BaseModel):
+    """AIAnomalyController çıktısı — domain modeli."""
+
+    model_config = ConfigDict(frozen=True)
+
+    decision: AnomalyValidationDecision
+    coherence_score: float = Field(ge=0.0, le=1.0)
+    reasoning: str
+    detected_subtype: Optional[str] = None
+    confidence: float = Field(ge=0.0, le=1.0)
+    raw_llm_response: str = ""
+
+
+class RuleIndicator(BaseModel):
+    value: str
+
+
+class AnomalyResult(BaseModel):
+    """Deterministik motorun sonucu (AIAnomalyController girişi)."""
+
+    has_anomaly: bool = False
+    triggered_rules: list[RuleIndicator] = Field(default_factory=list)
+    anomaly_score: float = 0.0
+    confidence: float = 0.0
