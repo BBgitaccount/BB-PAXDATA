@@ -1,7 +1,7 @@
 <div align="center">
 
-# 🏛️ BB-PAXDATA
-**DIPLOMATIC DISCOURSE ANALYSIS ENGINE**
+# BB-PAXDATA
+
 
 <br/>
 

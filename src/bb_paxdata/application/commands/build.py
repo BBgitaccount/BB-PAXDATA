@@ -77,8 +77,8 @@ def build(
             skipped_count = 0
             error_count = 0
 
-            # Find transcript files
-            transcript_files = list(data_path.glob("*.txt"))
+            # Find transcript files recursively in subfolders
+            transcript_files = list(data_path.rglob("*.txt"))
             if panel_filter:
                 transcript_files = [
                     f for f in transcript_files if panel_filter in f.name

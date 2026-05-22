@@ -27,6 +27,7 @@ def _lazy_import_commands() -> None:
         from bb_paxdata.interfaces.cli.commands import (
             analyze,
             migrate,
+            test,
             validate,
         )
 
@@ -41,6 +42,9 @@ def _lazy_import_commands() -> None:
         )
         app.add_typer(
             analyze.app, name="analyze", help="Diplomatic discourse analysis commands"
+        )
+        app.add_typer(
+            test.app, name="test", help="Test ve Değerlendirme (Evaluation) komutları"
         )
         app.add_typer(
             completions.app, name="completions", help="Shell autocomplete management"

@@ -69,3 +69,8 @@ ignore = [
 [tool.pytest.ini_options]
 asyncio_mode = "auto"
 testpaths    = ["tests"]
+markers = [
+    "ai: Tests that require AI API calls",
+    "logic: Tests that do not require AI (logic, NLP rules, unit tests)",
+    "e2e: End-to-end pipeline tests"
+]
