@@ -68,7 +68,7 @@
 
 ---
 
-*Diplomatik transkriplerin yapısal çıkarımı, çok katmanlı anotasyonu ve kantitatif çerçeveleme analizi için geliştirilmiş**açık kaynaklı NLP motoru**.*
+*Diplomatik transkriplerin yapısal çıkarımı, çok katmanlı anotasyonu ve kantitatif çerçeveleme analizi için geliştirilmiş **açık kaynaklı NLP motoru**.*
 
 > **⚠️ Bu döküman v1.0.0'e özeldir.** Sistem geliştikçe API'ler, formüller ve mimariler önemli ölçüde değişebilir. Güncel bilgi için her zaman etiketli sürümün dökümantasyonuna başvurun.
 
@@ -86,7 +86,7 @@
 | 4 | [Domain Servisleri — Teknik Detaylar](#4-domain-servisleri--teknik-detaylar) |
 | 5 | [Altyapı](#5-altyapı) |
 | 6 | [Gözlemlenebilirlik](#6-gözlemlenebilirlik) |
-| 7 | [Kalite Güvencesi](#7-kalite-güvencesi) |
+| 7 | [Kalite Güvencesi ve HITL](#7-kalite-güvencesi-ve-hitl) |
 | 8 | [Hızlı Başlangıç Kılavuzu](#8-hızlı-başlangıç-kılavuzu) |
 | 9 | [CLI Referansı](#9-cli-referansı) |
 | 10 | [Proje Yol Haritası](#10-proje-yol-haritası) |
@@ -356,7 +356,7 @@ Sistem, diplomatik söylemler için özelleştirilmiş **DIPLO leksikonu** ile V
 
 Saf DIPLO skoru şu şekilde hesaplanır:
 
-$$\text{diplo\_compound} = \text{VADER\_compound} + \left(\sum_{p \in \text{matched\_phrases}} v_p\right) \times 0.05$$
+$$\text{diplo}_{\text{compound}} = \text{VADER}_{\text{compound}} + \left(\sum_{p \in \text{matched}_{\text{phrases}}} v_p\right) \times 0.05$$
 
 Burada $v_p \in [-0.9, +0.7]$ aralığında diplomatik değerlik puanlarıdır. Sonuç $[-1, 1]$ aralığına sıkıştırılır.
 
@@ -365,7 +365,7 @@ Burada $v_p \in [-0.9, +0.7]$ aralığında diplomatik değerlik puanlarıdır. 
 Sol-pencere negasyon tespiti *(Jia & Liang, 2017)*:
 
 $$\text{score}_{\text{neg-aware}} = \begin{cases}
--v_p \times 0.8 & \text{eğer } \exists \; n \in \text{NEGATION\_WORDS} \; \text{window}[i-N:i] \\
+-v_p \times 0.8 & \text{eğer } \exists \; n \in \text{NEGATION}_{\text{WORDS}} \; \text{window}[i-N:i] \\
 v_p & \text{aksi hâlde}
 \end{cases}$$
 
@@ -723,21 +723,32 @@ graph LR
 
 ---
 
-## 7. Kalite Güvencesi
+## 7. Kalite Güvencesi ve HITL
+
+Modelin sürekli öğrenmesi ve kalibre edilmesi için sisteme entegre bir **Human-in-the-Loop (HITL)** döngüsü ve kalite güvence altyapısı bulunur.
 
 | Bileşen | Amaç |
 |---------|------|
 | `GoldenDataset` | 100 el-etiketli cümle (ground truth) |
 | `QualityEvaluator` | DeepEval / özel puanlayıcı (altın kümeye karşı) |
-| `UncertaintyScorer` | AI çıktısı başına entropi tabanlı güven |
-| `DataContractValidator` | Pandera giriş şema doğrulaması |
-| Idempotency | Transkript başına SHA-256 anahtarı (tekrar alımı engeller) |
+| `UncertaintyScorer` | AI çıktısı başına entropi tabanlı güven puanlaması |
+| `HumanReview` | Uzmanların AI analizlerini değerlendirdiği salt-okunur (immutable) referans modeli |
+| `CalibrationService` | Uzman ve AI uyumunu (Cohen's Kappa, Macro-F1, SBI MAE) haftalık analiz eden servis |
+| `FewShotInjector` | Uzman onaylı altın standart verileri LLM istemlerine (prompt) otomatik enjekte eden modül |
 
-#### Belirsizlik Puanlama
+### 7.1 Belirsizlik Puanlama (Uncertainty)
 
 $$U = H(p) = -\sum_{c} p_c \log_2 p_c$$
 
-Burada $p_c$ çıktının $c$ kategorisine ait olma olasılığı. Yüksek entropi → yüksek belirsizlik → insan incelemesi önerilir.
+Burada $p_c$ çıktının $c$ kategorisine ait olma olasılığıdır. Yüksek entropi ($U$) yüksek belirsizliği ifade eder ve bu durumda analiz otomatik olarak **Human Review (İnsan İncelemesi)** kuyruğuna düşer.
+
+### 7.2 HITL (Human-in-the-Loop) İş Akışı
+
+1. **İnceleme Arayüzü (`SubmitHumanReviewUseCase`):** Alan uzmanları, belirsizliği yüksek olan AI çıktılarını inceler. Orijinal AI analizleri (`ai_sbi_score`, vb.) korunurken, uzmanın düzeltmeleri (`human_sbi_score`) yeni alanlara yazılır ve bir uyuşmazlık durumu (`AGREED`, `PARTIAL`, `DISAGREED`, `ESCALATED`) belirlenir.
+2. **Haftalık Kalibrasyon (`CalibrationService`):** Düzenli aralıklarla uzman vs. AI uyumu istatistiksel olarak ölçülür:
+   - **Çerçeve/Risk Uyumu:** Cohen's Kappa ($> 0.67$) ve Macro-F1 ($> 0.70$) ile değerlendirilir.
+   - **SBI Sapması:** Ortalama Mutlak Hata (MAE) 10 puanın üzerine çıkarsa parametre ağırlık güncelleme uyarısı (`alert_message`) üretilir.
+3. **Sürekli Öğrenme (`FewShotInjector`):** Uyuşmazlıkların giderildiği ve uzman onayından geçen ("Gold Standard") veriler, dinamik olarak sonraki analizlerde LLM'e *few-shot example* olarak beslenerek modelin zamanla kendi hatalarından öğrenmesi sağlanır.
 
 ---
 
