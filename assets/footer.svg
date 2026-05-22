@@ -9,10 +9,10 @@
   <rect width="100%" height="100%" rx="8" fill="url(#footerGrad)"/>
   <text x="450" y="28" text-anchor="middle" font-family="'Segoe UI', Arial, sans-serif"
         font-size="13" fill="#94a3b8">
-    BB-PAXDATA v1.0.0 · Diplomatic Discourse Analysis Engine
+    BB-PAXDATA v1.0.1 · Diplomatic Discourse Analysis Engine
   </text>
   <text x="450" y="46" text-anchor="middle" font-family="'Segoe UI', Arial, sans-serif"
         font-size="11" fill="#64748b">
-    Bu döküman v1.0.0'e özeldir · Sistem geliştikçe içerik değişecektir
+    Bu döküman v1.0.1'e özeldir · Sistem geliştikçe içerik değişecektir
   </text>
 </svg>

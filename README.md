@@ -5,7 +5,7 @@
 
 <br/>
 
-[![Version](https://img.shields.io/badge/version-1.0.0-a78bfa?style=for-the-badge&logo=semantic-release&logoColor=white)](https://github.com/BBgitaccount/BB-PAXDATA)
+[![Version](https://img.shields.io/badge/version-1.0.1-a78bfa?style=for-the-badge&logo=semantic-release&logoColor=white)](https://github.com/BBgitaccount/BB-PAXDATA)
 [![Python](https://img.shields.io/badge/Python-3.12+-3b82f6?style=for-the-badge&logo=python&logoColor=white)](https://www.python.org/)
 [![License](https://img.shields.io/badge/License-GPL--3.0-34d399?style=for-the-badge&logo=gnu&logoColor=white)](./LICENSE)
 [![Tests](https://img.shields.io/badge/Tests-pytest-f472b6?style=for-the-badge&logo=pytest&logoColor=white)](./tests)
@@ -17,7 +17,7 @@
 *Diplomatik transkriplerin yapısal çıkarımı, çok katmanlı anotasyonu ve kantitatif çerçeveleme analizi için geliştirilmiş **açık kaynaklı NLP motoru**.*
 
 > [!WARNING]
-> **Bu döküman v1.0.0'e özeldir.** Sistem geliştikçe API'ler, formüller ve mimariler önemli ölçüde değişebilir. Güncel bilgi için her zaman etiketli sürümün dökümantasyonuna başvurun.
+> **Bu döküman v1.0.1'e özeldir.** Sistem geliştikçe API'ler, formüller ve mimariler önemli ölçüde değişebilir. Güncel bilgi için her zaman etiketli sürümün dökümantasyonuna başvurun.
 
 </div>
 
@@ -480,7 +480,7 @@ mindmap
       should, must + GPE bağlamı
 ```
 
-**Çerçeve Türleri (v1.0.0):**
+**Çerçeve Türleri (v1.0.1):**
 | Frame Türü | Tanımı |
 |-----------|--------|
 | `CONFLICT_FRAME` | Savaş/çatışma odaklı çerçeve |
@@ -528,7 +528,7 @@ Burada:
 
 Negasyon düzeltmesinden sonra $C_{\text{adj}} > 0.1$ ise `SENTIMENT_RISK_DIVERGENCE` anomalisi tetiklenir.
 
-**Anomali Türleri (v1.0.0):**
+**Anomali Türleri (v1.0.1):**
 | Anomali | Tetikleyici Koşul | Kategori |
 |---------|-------------------|----------|
 | `RISK_HEDGING_CONFLICT` | Risk ≥ 7 AND Hedge ≥ 0.6 | Deception Pattern |
@@ -551,7 +551,7 @@ Negasyon düzeltmesinden sonra $C_{\text{adj}} > 0.1$ ise `SENTIMENT_RISK_DIVERG
 | TF-IDF + Anahtar Kelime | Segment düzeyinde baz konu sıralaması |
 | BERTopic | Tematik drift tespiti için semantik kümeleme |
 
-**Konu Kategorileri (v1.0.0):**
+**Konu Kategorileri (v1.0.1):**
 `Gazze_Filistin_İsrail` · `Ukrayna_Rusya` · `BM_Reformu` · `Ekonomi_Ticaret_Enerji` · `Güvenlik_Çatışma`
 
 ---
@@ -587,7 +587,7 @@ $$\text{CUSUM}^-_t = \min\!\left(0,\; \text{CUSUM}^-_{t-1} + z_t + k\right)$$
 #### Jensen-Shannon Divergence (Konu Drift)
 $$\text{JSD}(P \| Q) = \frac{1}{2} D_{\text{KL}}(P \| M) + \frac{1}{2} D_{\text{KL}}(Q \| M)$$
 
-#### Ek İstatistiksel Metrikler (v1.0.0)
+#### Ek İstatistiksel Metrikler (v1.0.1)
 | Metrik | Formül / Yöntem | Açıklama |
 |--------|----------------|----------|
 | **MTLD** | Type-Token Ratio stabilizasyon noktası | Sözcük çeşitlilik zenginliği |
@@ -715,7 +715,7 @@ class AIClient(ABC):
     async def generate(self, prompt: str, **kwargs) -> str: ...
     async def embed(self, text: str) -> list[float]: ...
 
-# Desteklenen backend'ler (v1.0.0)
+# Desteklenen backend'ler (v1.0.1)
 class OllamaClient(AIClient): ...       # Yerel LLM (Llama3, Mistral vb.)
 class AnthropicClient(AIClient): ...    # Claude (Haiku / Sonnet / Opus)
 class GeminiClient(AIClient): ...       # Google Gemini (Flash / Pro)
@@ -882,7 +882,7 @@ flowchart TB
 
 ## 12. Akademik Kaynaklar
 
-> Aşağıdaki kaynaklar v1.0.0'de doğrudan uygulanan veya referans alınan çalışmalardır.
+> Aşağıdaki kaynaklar v1.0.1'de doğrudan uygulanan veya referans alınan çalışmalardır.
 
 ### Duygu Analizi
 - **Socher, R., Perelygin, A., Wu, J. et al. (2013).** *Recursive Deep Models for Semantic Compositionality Over a Sentiment Treebank.* EMNLP 2013.
