@@ -54,19 +54,54 @@ class RecoveryEngine:
 
     def __init__(self, logger: Any | None = None) -> None:
         self._logger = logger or structlog.get_logger(__name__)
+        import threading
+
+        self._lock = threading.Lock()
+        self._logs: dict[str, dict[str, Any]] = {}
+        self._max_log_size = 1000
+
+    def get_recovery_log(self, data_id: str) -> dict[str, Any]:
+        """data_id için kurtarma logunu döner."""
+        with self._lock:
+            return self._logs.get(
+                data_id, {"success": False, "error": "No log found for this data_id"}
+            )
+
+    def _log_recovery(
+        self,
+        data_id: str | None,
+        levels_attempted: int,
+        result: RecoveryResult,
+        error_trace: list[str],
+    ) -> None:
+        if data_id:
+            with self._lock:
+                if len(self._logs) >= self._max_log_size:
+                    oldest_key = next(iter(self._logs))
+                    self._logs.pop(oldest_key, None)
+                self._logs[data_id] = {
+                    "levels_attempted": levels_attempted,
+                    "final_valid": result.success,
+                    "schema_compliant": result.success,
+                    "error_trace": error_trace,
+                }
 
     def recover(
         self,
         text: str,
         default_schema: dict[str, Any] | None = None,
+        data_id: str | None = None,
     ) -> RecoveryResult:
         """
         6 seviyeyi sırayla dener.
         Her seviye deneme loglanır. Başarılı seviye info ile loglanır.
         """
         result = RecoveryResult(success=False, data=None, raw_input=text)
+        error_trace: list[str] = []
+        levels_attempted = 0
 
         # Seviye 1: Direct parse
+        levels_attempted += 1
         try:
             data = self._level_direct(text)
             if data:
@@ -82,8 +117,14 @@ class RecoveryEngine:
                     )
                 except Exception:
                     pass
+                self._log_recovery(data_id, levels_attempted, result, error_trace)
                 return result
+            else:
+                error_trace.append(
+                    "Level 1: Direct parse returned empty/invalid result"
+                )
         except Exception as exc:
+            error_trace.append(f"Level 1: {exc!s}")
             self._logger.debug(
                 "recovery.attempt", level=RecoveryLevel.DIRECT.value, error=str(exc)
             )
@@ -99,6 +140,7 @@ class RecoveryEngine:
             pass
 
         # Seviye 2: Stripped parse
+        levels_attempted += 1
         try:
             data = self._level_stripped(text)
             if data:
@@ -116,8 +158,14 @@ class RecoveryEngine:
                     )
                 except Exception:
                     pass
+                self._log_recovery(data_id, levels_attempted, result, error_trace)
                 return result
+            else:
+                error_trace.append(
+                    "Level 2: Stripped parse returned empty/invalid result"
+                )
         except Exception as exc:
+            error_trace.append(f"Level 2: {exc!s}")
             self._logger.debug(
                 "recovery.attempt", level=RecoveryLevel.STRIPPED.value, error=str(exc)
             )
@@ -135,6 +183,7 @@ class RecoveryEngine:
             pass
 
         # Seviye 3: First JSON block
+        levels_attempted += 1
         try:
             data = self._level_first_block(text)
             if data:
@@ -152,8 +201,14 @@ class RecoveryEngine:
                     )
                 except Exception:
                     pass
+                self._log_recovery(data_id, levels_attempted, result, error_trace)
                 return result
+            else:
+                error_trace.append(
+                    "Level 3: First JSON block parse returned empty/invalid result"
+                )
         except Exception as exc:
+            error_trace.append(f"Level 3: {exc!s}")
             self._logger.debug(
                 "recovery.attempt",
                 level=RecoveryLevel.FIRST_BLOCK.value,
@@ -173,6 +228,7 @@ class RecoveryEngine:
             pass
 
         # Seviye 4: Partial / truncated JSON
+        levels_attempted += 1
         try:
             data = self._level_partial(text)
             if data:
@@ -188,8 +244,14 @@ class RecoveryEngine:
                     )
                 except Exception:
                     pass
+                self._log_recovery(data_id, levels_attempted, result, error_trace)
                 return result
+            else:
+                error_trace.append(
+                    "Level 4: Partial parse returned empty/invalid result"
+                )
         except Exception as exc:
+            error_trace.append(f"Level 4: {exc!s}")
             self._logger.debug(
                 "recovery.attempt", level=RecoveryLevel.PARTIAL.value, error=str(exc)
             )
@@ -205,6 +267,7 @@ class RecoveryEngine:
             pass
 
         # Seviye 5: Key-value regex
+        levels_attempted += 1
         try:
             data = self._level_key_value(text)
             if data:
@@ -222,8 +285,14 @@ class RecoveryEngine:
                     )
                 except Exception:
                     pass
+                self._log_recovery(data_id, levels_attempted, result, error_trace)
                 return result
+            else:
+                error_trace.append(
+                    "Level 5: Key-value regex returned empty/invalid result"
+                )
         except Exception as exc:
+            error_trace.append(f"Level 5: {exc!s}")
             self._logger.debug(
                 "recovery.attempt", level=RecoveryLevel.KEY_VALUE.value, error=str(exc)
             )
@@ -241,6 +310,7 @@ class RecoveryEngine:
             pass
 
         # Seviye 6: Schema default
+        levels_attempted += 1
         try:
             data = self._level_schema_default(default_schema)
             if data:
@@ -258,8 +328,14 @@ class RecoveryEngine:
                     )
                 except Exception:
                     pass
+                self._log_recovery(data_id, levels_attempted, result, error_trace)
                 return result
+            else:
+                error_trace.append(
+                    "Level 6: Schema default returned empty/invalid result"
+                )
         except Exception as exc:
+            error_trace.append(f"Level 6: {exc!s}")
             self._logger.debug(
                 "recovery.attempt",
                 level=RecoveryLevel.SCHEMA_DEFAULT.value,
@@ -275,6 +351,7 @@ class RecoveryEngine:
         # Tam başarısızlık
         result.error = "All recovery levels failed"
         self._logger.warning("recovery.failed", text_preview=text[:100])
+        self._log_recovery(data_id, levels_attempted, result, error_trace)
 
         return result
 
@@ -310,7 +387,7 @@ class RecoveryEngine:
     def _level_first_block(self, text: str) -> dict[str, Any] | None:
         """Seviye 3: İlk JSON bloğunu bul ve parse et."""
         # En uzun { ... } bloğunu bul
-        blocks = re.findall(r"\{.*?\}", text, re.DOTALL)
+        blocks: list[str] = re.findall(r"\{.*?\}", text, re.DOTALL)
         if not blocks:
             return None
 

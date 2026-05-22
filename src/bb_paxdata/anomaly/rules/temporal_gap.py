@@ -61,9 +61,30 @@ class TemporalGapRule(BaseAnomalyRule):
             for segment in post_segments[: self._config.anaphora_lookahead]:
                 for sentence in segment.sentences:
                     try:
-                        deps = context.dependency_service.extract_dependencies(
-                            sentence.text
-                        )
+                        if hasattr(context.dependency_service, "extract_dependencies"):
+                            deps = context.dependency_service.extract_dependencies(
+                                sentence.text
+                            )
+                        else:
+                            doc = context.spacy_pipeline(sentence.text)
+                            deps = []
+                            for token in doc:
+                                if token.pos_ == "PRON":
+                                    deps.append(
+                                        {
+                                            "rel": "anaphora",
+                                            "dep": token.text,
+                                            "head": token.head.text,
+                                        }
+                                    )
+                                else:
+                                    deps.append(
+                                        {
+                                            "rel": token.dep_,
+                                            "dep": token.text,
+                                            "head": token.head.text,
+                                        }
+                                    )
                     except Exception:
                         continue
 

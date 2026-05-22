@@ -54,8 +54,16 @@ class ToneDriftRule(BaseAnomalyRule):
             if std == 0:
                 continue
 
+            import math
+
+            n = len(scores)
+            max_possible_z = (n - 1) / math.sqrt(n)
+            effective_multiplier = min(
+                self._config.sigma_multiplier, 0.9 * max_possible_z
+            )
+
             mean = sum(scores) / len(scores)
-            threshold = self._config.sigma_multiplier * std
+            threshold = effective_multiplier * std
 
             # Her bir cümlenin ortalamadan sapmasını kontrol et
             max_deviation = max(abs(s - mean) for s in scores)

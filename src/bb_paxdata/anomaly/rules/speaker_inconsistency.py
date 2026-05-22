@@ -68,6 +68,7 @@ class SpeakerInconsistencyRule(BaseAnomalyRule):
 
             if std == 0:
                 if current_sbi != mean:
+                    z = float("inf")
                     confidence = 0.95
                 else:
                     continue

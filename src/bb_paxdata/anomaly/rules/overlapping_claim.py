@@ -65,7 +65,43 @@ class OverlappingClaimRule(BaseAnomalyRule):
             for sentence in segment.sentences:
                 try:
                     # SVOExtractor servisini kullan
-                    svos = context.svo_extractor.extract_svo_triples(sentence.text)
+                    if context.svo_extractor and hasattr(
+                        context.svo_extractor, "extract_svo_triples"
+                    ):
+                        svos = context.svo_extractor.extract_svo_triples(sentence.text)
+                    else:
+                        # Fallback using spacy_pipeline and dependency_service.extract_triples(doc)
+                        doc = context.spacy_pipeline(sentence.text)
+                        triples = context.dependency_service.extract_triples(doc)
+                        svos = []
+                        for t in triples:
+                            subj = getattr(t, "subject_resolved", "") or getattr(
+                                t, "subject_raw", ""
+                            )
+                            verb = getattr(t, "verb_lemma", "")
+                            obj = getattr(t, "object_resolved", "") or getattr(
+                                t, "object_raw", ""
+                            )
+                            if isinstance(t, dict):
+                                subj = (
+                                    t.get("subject_resolved")
+                                    or t.get("subject_raw")
+                                    or t.get("subject", "")
+                                )
+                                verb = t.get("verb_lemma") or t.get("verb", "")
+                                obj = (
+                                    t.get("object_resolved")
+                                    or t.get("object_raw")
+                                    or t.get("object", "")
+                                )
+                            svos.append(
+                                {
+                                    "subject": subj,
+                                    "verb": verb,
+                                    "object": obj,
+                                    "causality_type": "unknown",
+                                }
+                            )
                 except Exception:
                     continue
 

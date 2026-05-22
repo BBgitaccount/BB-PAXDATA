@@ -45,6 +45,7 @@ def detect_sentiment_drift(
         drift_points = []
         in_drift = False
         drift_start = 0
+        peak_sum = 0.0
 
         for i, value in enumerate(sentiment_series):
             # Standardize value
@@ -61,8 +62,12 @@ def detect_sentiment_drift(
                 # Drift detected
                 drift_start = i
                 in_drift = True
+                peak_sum = abs(cusum_pos) + abs(cusum_neg)
 
-            elif (
+            if in_drift:
+                peak_sum = max(peak_sum, abs(cusum_pos) + abs(cusum_neg))
+
+            if (
                 in_drift
                 and abs(cusum_pos) < threshold / 2
                 and abs(cusum_neg) < threshold / 2
@@ -72,9 +77,7 @@ def detect_sentiment_drift(
                     {
                         "start_index": max(0, drift_start - MAX_LAG),  # Include context
                         "end_index": min(len(sentiment_series) - 1, i + MAX_LAG),
-                        "confidence": min(
-                            1.0, (abs(cusum_pos) + abs(cusum_neg)) / drift_threshold
-                        ),
+                        "confidence": min(1.0, peak_sum / drift_threshold),
                         "magnitude": abs(value - sentiment_series[drift_start]),
                     }
                 )
@@ -123,11 +126,17 @@ def detect_topic_drift(
             js_divergence = _jensen_shannon_divergence(dist1, dist2)
 
             if js_divergence > divergence_threshold:
+                confidence = 0.5 + 0.5 * (
+                    1.0
+                    - math.exp(
+                        -(js_divergence - divergence_threshold) / divergence_threshold
+                    )
+                )
                 drift_points.append(
                     {
                         "start_index": max(0, i - window_size),
                         "end_index": min(len(topic_distributions) - 1, i + window_size),
-                        "confidence": min(1.0, js_divergence / divergence_threshold),
+                        "confidence": min(1.0, float(confidence)),
                         "divergence": js_divergence,
                     }
                 )
@@ -177,11 +186,14 @@ def detect_lexical_drift(
             change = abs(mattr_values[i] - mattr_values[i - 1])
 
             if change > mattr_threshold:
+                confidence = 0.5 + 0.5 * (
+                    1.0 - math.exp(-(change - mattr_threshold) / mattr_threshold)
+                )
                 drift_points.append(
                     {
                         "start_index": max(0, i - window_size),
                         "end_index": min(len(word_counts) - 1, i + window_size),
-                        "confidence": min(1.0, change / mattr_threshold),
+                        "confidence": min(1.0, float(confidence)),
                         "mattr_change": change,
                     }
                 )
@@ -231,13 +243,17 @@ def detect_tone_drift(
             matrix_diff = np.linalg.norm(matrix2 - matrix1, "fro")
 
             if matrix_diff > transition_threshold:
+                confidence = 0.5 + 0.5 * (
+                    1.0
+                    - math.exp(
+                        -(matrix_diff - transition_threshold) / transition_threshold
+                    )
+                )
                 drift_points.append(
                     {
                         "start_index": max(0, i - window_size),
                         "end_index": min(len(tone_series) - 1, i + window_size),
-                        "confidence": min(
-                            1.0, float(matrix_diff / transition_threshold)
-                        ),
+                        "confidence": min(1.0, float(confidence)),
                         "transition_change": matrix_diff,
                     }
                 )
@@ -284,11 +300,14 @@ def detect_risk_trajectory_drift(
             slope_change = abs(slope2 - slope1)
 
             if slope_change > slope_threshold:
+                confidence = 0.5 + 0.5 * (
+                    1.0 - math.exp(-(slope_change - slope_threshold) / slope_threshold)
+                )
                 drift_points.append(
                     {
                         "start_index": max(0, i - window_size),
                         "end_index": min(len(risk_scores) - 1, i + window_size),
-                        "confidence": min(1.0, slope_change / slope_threshold),
+                        "confidence": min(1.0, float(confidence)),
                         "slope_change": slope_change,
                     }
                 )
@@ -437,11 +456,14 @@ def detect_action_discourse_gap(
     for idx, comm in enumerate(commitments):
         # We only check repeats when there's no action
         action_taken = has_action[idx] if idx < len(has_action) else False
-        if not action_taken and comm and (comm == last_comm or last_comm is None):
-            repeats += 1
+        if not action_taken and comm:
+            if comm == last_comm:
+                repeats += 1
+            else:
+                repeats = 1
             max_repeats = max(max_repeats, repeats)
         else:
-            repeats = 1 if not action_taken else 0
+            repeats = 0
         last_comm = comm
 
     stalling_flag = max_repeats >= 3

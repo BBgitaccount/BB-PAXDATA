@@ -95,15 +95,36 @@ class TranslationArtifactRule(BaseAnomalyRule):
                 observed_counts = Counter(ngrams)
                 total = sum(observed_counts.values())
 
+                tags_list = (
+                    list(profile.keys())
+                    if profile
+                    else ["NOUN", "VERB", "ADJ", "ADV", "DET", "ADP", "PRON", "OTHER"]
+                )
+                import itertools
+
+                full_vocab: list[str] | list[tuple[str, ...]]
+                if n == 1:
+                    full_vocab = tags_list
+                else:
+                    full_vocab = list(itertools.product(tags_list, repeat=n))
+
+                union_vocab = list(set(observed_counts.keys()) | set(full_vocab))
+
                 # Gözlemlenen ve beklenen dağılımları oluştur
-                observed = [
-                    observed_counts.get(tag, 0) / total for tag in set(observed_counts)
-                ]
-                # Basitleştirilmiş: POS profili üzerinden beklenen değeri tahmin et
-                expected = [
-                    profile.get(tag, 0.05) if isinstance(tag, str) else 0.05
-                    for tag in set(observed_counts)
-                ]
+                observed = []
+                expected = []
+                for tag in union_vocab:
+                    observed.append(observed_counts.get(tag, 0) / total)
+
+                    if isinstance(tag, str):
+                        expected_prob = profile.get(tag, 0.05)
+                    elif isinstance(tag, tuple):
+                        expected_prob = 1.0
+                        for t in tag:
+                            expected_prob *= profile.get(t, 0.05)
+                    else:
+                        expected_prob = 0.05
+                    expected.append(expected_prob)
 
                 if len(observed) == len(expected) and sum(expected) > 0:
                     kl = StatisticalUtils.kl_divergence(observed, expected)

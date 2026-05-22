@@ -51,10 +51,33 @@ class FrameContradictionRule(BaseAnomalyRule):
         self, analysis: Analysis, context: AnalysisContext
     ) -> AnomalyResult | None:
         # Tüm metin için framing sonuçlarını al
-        frames = context.get_cached(
-            f"frames_{analysis.analysis_id}",
-            lambda: context.framing_service.detect_frames(analysis.raw_text),
-        )
+        if hasattr(context.framing_service, "detect_frames"):
+            frames = context.get_cached(
+                f"frames_{analysis.analysis_id}",
+                lambda: context.framing_service.detect_frames(analysis.raw_text),
+            )
+        else:
+
+            def _get_frames():
+                results = []
+                for segment in analysis.transcript.segments:
+                    for sentence in segment.sentences:
+                        frame_res = context.framing_service.detect_frame(sentence)
+                        if isinstance(frame_res, dict):
+                            results.append(frame_res)
+                        elif frame_res is not None:
+                            results.append(
+                                {
+                                    "frame_type": getattr(frame_res, "frame_type", ""),
+                                    "confidence": getattr(frame_res, "confidence", 1.0),
+                                }
+                            )
+                return results
+
+            frames = context.get_cached(
+                f"frames_{analysis.analysis_id}",
+                _get_frames,
+            )
 
         if not frames or len(frames) < 2:
             return None

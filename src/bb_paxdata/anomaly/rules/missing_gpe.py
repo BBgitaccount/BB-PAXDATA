@@ -67,14 +67,36 @@ class MissingGPERule(BaseAnomalyRule):
             for sentence in segment.sentences:
                 try:
                     # Dependency ve NER servislerini kullan
-                    deps = context.dependency_service.extract_dependencies(
-                        sentence.text
-                    )
+                    if hasattr(context.dependency_service, "extract_dependencies"):
+                        deps = context.dependency_service.extract_dependencies(
+                            sentence.text
+                        )
+                    else:
+                        doc = context.spacy_pipeline(sentence.text)
+                        deps = []
+                        for token in doc:
+                            deps.append(
+                                {
+                                    "head": token.head.text,
+                                    "rel": token.dep_,
+                                    "dep": token.text,
+                                }
+                            )
                     entities = context.ner_service.extract_entities(sentence.text)
+                    if isinstance(entities, dict):
+                        temp = []
+                        for ent_type, texts in entities.items():
+                            for text in texts:
+                                temp.append({"type": ent_type, "text": text})
+                        entities = temp
                 except Exception:
                     continue
 
-                gpe_entities = [e for e in entities if e.get("type") == "GPE"]
+                gpe_entities = [
+                    e
+                    for e in entities
+                    if isinstance(e, dict) and e.get("type") == "GPE"
+                ]
 
                 # Politika fiillerini ve nesnelerini bul
                 for dep in deps:

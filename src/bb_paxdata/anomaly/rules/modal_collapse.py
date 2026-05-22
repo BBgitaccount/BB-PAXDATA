@@ -46,8 +46,29 @@ class ModalCollapseRule(BaseAnomalyRule):
             for sentence in segment.sentences:
                 try:
                     # Risk ve Hedging servislerinden skorları al
-                    risk = context.risk_service.calculate_risk(sentence.text)
-                    hedging = context.hedging_service.detect_hedging(sentence.text)
+                    if hasattr(context.risk_service, "calculate_risk"):
+                        risk = context.risk_service.calculate_risk(sentence.text)
+                    else:
+                        risk_res = context.risk_service.assess_risk(segment, [sentence])
+                        if isinstance(risk_res, (int, float)):
+                            risk = float(risk_res) / 10.0
+                        elif isinstance(risk_res, dict):
+                            risk = float(risk_res.get("risk_score", 0.0)) / 10.0
+                        else:
+                            risk = float(getattr(risk_res, "risk_score", 0.0)) / 10.0
+
+                    if hasattr(context.hedging_service, "detect_hedging"):
+                        hedging = context.hedging_service.detect_hedging(sentence.text)
+                    else:
+                        hedging_res = context.hedging_service.analyze_hedging(
+                            sentence.text
+                        )
+                        if isinstance(hedging_res, (int, float)):
+                            hedging = float(hedging_res)
+                        elif isinstance(hedging_res, dict):
+                            hedging = float(hedging_res.get("score", 0.0))
+                        else:
+                            hedging = float(getattr(hedging_res, "score", 0.0))
                 except Exception:
                     continue
 

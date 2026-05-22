@@ -57,8 +57,18 @@ class EntityFlipRule(BaseAnomalyRule):
                     f"ner_{hash(sent.text)}",
                     lambda s=sent: context.ner_service.extract_entities(s.text),
                 )
+                if isinstance(entities, dict):
+                    temp = []
+                    for ent_type, texts in entities.items():
+                        for text in texts:
+                            temp.append({"type": ent_type, "text": text})
+                    entities = temp
+
                 filtered = [
-                    e for e in entities if e.get("type") in self._config.entity_types
+                    e
+                    for e in entities
+                    if isinstance(e, dict)
+                    and e.get("type") in self._config.entity_types
                 ]
                 sentence_entities.append(filtered)
 
