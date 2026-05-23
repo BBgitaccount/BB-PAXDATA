@@ -51,6 +51,7 @@ class Settings(BaseSettings):
     anthropic_api_key: SecretStr = Field(default=SecretStr(""))
     gemini_api_key: SecretStr = Field(default=SecretStr(""))
     groq_api_key: SecretStr = Field(default=SecretStr(""))
+    deepseek_api_key: SecretStr = Field(default=SecretStr(""))
     ollama_base_url: str = Field(default="http://localhost:11434")
     ai_model: str = Field(default="claude-3-5-sonnet-20241022")
     ai_timeout: int = Field(default=120, ge=1, le=600)
@@ -118,6 +119,7 @@ class Settings(BaseSettings):
             AIProvider.ANTHROPIC: self.anthropic_api_key,
             AIProvider.GEMINI: self.gemini_api_key,
             AIProvider.GROQ: self.groq_api_key,
+            AIProvider.DEEPSEEK: self.deepseek_api_key,
         }
         if self.ai_provider in key_map:
             secret = key_map[self.ai_provider]
@@ -149,6 +151,7 @@ class Settings(BaseSettings):
             AIProvider.ANTHROPIC: self.anthropic_api_key,
             AIProvider.GEMINI: self.gemini_api_key,
             AIProvider.GROQ: self.groq_api_key,
+            AIProvider.DEEPSEEK: self.deepseek_api_key,
         }
         secret = key_map.get(self.ai_provider)
         return secret.get_secret_value() if secret else ""

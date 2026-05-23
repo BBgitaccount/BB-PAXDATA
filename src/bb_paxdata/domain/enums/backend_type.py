@@ -6,3 +6,4 @@ class BackendType(str, Enum):
     API = "api"
     GEMINI = "gemini"
     GROQ = "groq"
+    DEEPSEEK = "deepseek"

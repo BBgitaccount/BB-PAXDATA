@@ -21,6 +21,7 @@ class AIProvider(str, enum.Enum):
     GEMINI = "gemini"
     GROQ = "groq"
     OLLAMA = "ollama"
+    DEEPSEEK = "deepseek"
 
 
 class MigrationStatus(str, enum.Enum):

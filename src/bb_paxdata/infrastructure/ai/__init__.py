@@ -1,6 +1,7 @@
 from .anthropic import AnthropicClient
 from .base import AIClient, CompletionOptions, CompletionResult
 from .batch import BatchItem, BatchProcessor, BatchResult, BatchStats
+from .deepseek import DeepSeekClient
 from .factory import AIClientFactory
 from .gemini import GeminiClient
 from .groq import GroqClient
@@ -23,6 +24,7 @@ __all__ = [
     "BatchStats",
     "CompletionOptions",
     "CompletionResult",
+    "DeepSeekClient",
     "GeminiClient",
     "GroqClient",
     "OllamaClient",

@@ -22,4 +22,5 @@ class Settings(BaseSettings):
     anthropic_api_key: str = ""
     gemini_api_key: str = ""
     groq_api_key: str = ""
+    deepseek_api_key: str = ""
     ollama_base_url: str = "http://localhost:11434"

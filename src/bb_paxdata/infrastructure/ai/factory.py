@@ -6,6 +6,7 @@ import structlog
 
 from bb_paxdata.infrastructure.ai.anthropic import AnthropicClient
 from bb_paxdata.infrastructure.ai.base import AIClient
+from bb_paxdata.infrastructure.ai.deepseek import DeepSeekClient
 from bb_paxdata.infrastructure.ai.gemini import GeminiClient
 from bb_paxdata.infrastructure.ai.groq import GroqClient
 from bb_paxdata.infrastructure.ai.ollama import OllamaClient
@@ -47,6 +48,7 @@ class AIClientFactory:
             "api": "claude-haiku-4-5-20251001",
             "gemini": "gemini-2.5-flash",
             "groq": "llama-3.3-70b-versatile",
+            "deepseek": "deepseek-chat",
         }
 
         if model is None:
@@ -84,6 +86,14 @@ class AIClientFactory:
                 model=model,
             )
 
+        elif backend == "deepseek":
+            if not api_key:
+                raise ValueError("API key is required for DeepSeek backend")
+            return DeepSeekClient(
+                api_key=api_key,
+                model=model,
+            )
+
         else:
             raise ValueError(f"Unknown backend: {backend}")
 
@@ -98,6 +108,7 @@ class AIClientFactory:
             anthropic_api_key: str (for api backend)
             gemini_api_key: str (for gemini backend)
             groq_api_key: str (for groq backend)
+            deepseek_api_key: str (for deepseek backend)
             ollama_base_url: str (for local backend)
         """
         backend = getattr(settings, "ai_backend", "local")
@@ -111,6 +122,8 @@ class AIClientFactory:
             api_key = getattr(settings, "gemini_api_key", "")
         elif backend == "groq":
             api_key = getattr(settings, "groq_api_key", "")
+        elif backend == "deepseek":
+            api_key = getattr(settings, "deepseek_api_key", "")
 
         # Get base URL for local backend
         base_url = None

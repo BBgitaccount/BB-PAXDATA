@@ -75,6 +75,7 @@ OLLAMA_BASE_URL=http://localhost:11434   # Yerel LLM için (ücretsiz)
 ANTHROPIC_API_KEY=your_claude_key       # Claude için
 GEMINI_API_KEY=your_gemini_key          # Google Gemini için
 GROQ_API_KEY=your_groq_key              # Hızlı çıkarım için
+DEEPSEEK_API_KEY=your_deepseek_key      # DeepSeek (V3/R1) için
 
 # Veritabanı ve Önbellek
 DATABASE_URL=sqlite:///./data/paxdata.db
@@ -727,6 +728,7 @@ class OllamaClient(AIClient): ...       # Yerel LLM (Llama3, Mistral vb.)
 class AnthropicClient(AIClient): ...    # Claude (Haiku / Sonnet / Opus)
 class GeminiClient(AIClient): ...       # Google Gemini (Flash / Pro)
 class GroqClient(AIClient): ...         # Groq (hızlı çıkarım)
+class DeepSeekClient(AIClient): ...     # DeepSeek (V3 / R1)
 ```
 
 ```mermaid

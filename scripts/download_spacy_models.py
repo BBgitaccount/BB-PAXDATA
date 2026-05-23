@@ -2,8 +2,7 @@ import subprocess
 import sys
 
 MODELS = {
-    "tr_core_news_lg": "https://huggingface.co/turkish-nlp-suite/tr_core_news_lg/resolve/main/tr_core_news_lg-1.0-py3-none-any.whl",
-    "en_core_web_lg": "en_core_web_lg",
+    "en_core_web_sm": "en_core_web_sm",
 }
 
 
