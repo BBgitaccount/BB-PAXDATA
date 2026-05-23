@@ -1,4 +1,5 @@
 from dataclasses import dataclass
+from typing import Any
 
 from ..core.context import AnalysisContext
 from ..core.models import Analysis, AnomalyResult, AnomalySeverity, SegmentRef
@@ -58,7 +59,7 @@ class FrameContradictionRule(BaseAnomalyRule):
             )
         else:
 
-            def _get_frames():
+            def _get_frames() -> list[dict[str, Any]]:
                 results = []
                 for segment in analysis.transcript.segments:
                     for sentence in segment.sentences:

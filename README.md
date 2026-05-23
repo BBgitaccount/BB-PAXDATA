@@ -85,10 +85,14 @@ CACHE_DIR=./data/cache
 ```bash
 # 3. Bağımlılıkları kur ve sanal ortama geç
 poetry install
+
+# NOT: Poetry 2.0+ kullanıyorsanız varsayılan olarak `poetry shell` komutu yüklü gelmez.
+# Eklentiyi kurmak için: poetry self add poetry-plugin-shell
+# Sonrasında 'poetry shell' ile sanal ortama geçebilir veya tüm komutları 'poetry run' önekiyle çalıştırabilirsiniz.
 poetry shell
 
 # 4. Veritabanı tablolarını oluştur
-alembic upgrade head
+poetry run alembic upgrade head
 ```
 
 ### 1.3 İlk Analizi Çalıştırma
@@ -96,14 +100,17 @@ alembic upgrade head
 CLI üzerinden analiz pipeline'ını kolayca tetikleyebilirsiniz:
 
 ```bash
-# Ham transkripti veritabanına al
-bbpaxdata build --transcript data/sample_transcript.json
+# Ham transkriptlerin olduğu dizini veritabanına al
+poetry run bbpaxdata build data/
 
-# Cümle bazlı NLP/AI analizini tetikle
-bbpaxdata analyze --transcript-id <id>
+# Yapay zekasız / mantıksal (logic) ve NLP testlerini çalıştır
+poetry run bbpaxdata test run --type logic
 
-# Anomali ve risk denetimini HTML rapor olarak çıkar
-bbpaxdata failcheck --report-format html
+# Tam analiz pipeline'ını çalıştır (Bilateral Sentiment, Söylem Ağı, Konu Matrisi)
+poetry run bbpaxdata analyze full --panel-id "panel_01" --threshold 0.5 --centrality
+
+# Veritabanı bütünlüğünü doğrula
+poetry run bbpaxdata validate db --strict
 ```
 
 ---
@@ -800,23 +807,102 @@ graph LR
 
 ## 10. CLI Referansı
 
-```
-bbpaxdata [KOMUT] [SEÇENEKLER]
+BB-PAXDATA CLI arayüzü, sistemin tüm işlevlerini yönetmenizi sağlar.
 
-Komutlar:
-  build        Transkriptleri veritabanına al
-  analyze      Analiz pipeline'ını çalıştır
-  failcheck    Anomali ve risk denetimi çalıştır
-  validate     Veritabanı bütünlüğünü doğrula
-  migrate      Legacy veritabanından veri taşı
-  completions  Shell tamamlama kur/kaldır
-  review       İnsan inceleme arayüzü
-
-Ortak Bayraklar:
-  --help       Yardım göster
-  --verbose    Ayrıntılı çıktı
-  --dry-run    Değişiklik yapmadan simüle et
+```bash
+poetry run bbpaxdata [KOMUT] [SEÇENEKLER]
 ```
+
+### 10.1 Veritabanı ve Göç Komutları
+
+* **Legacy Göçü (`migrate`):**
+  Eski monolitik SQLite veritabanından yeni modüler formata verileri taşır:
+  ```bash
+  poetry run bbpaxdata migrate run --legacy-db <eski_db_yolu> [--dry-run] [--batch-size <boyut>]
+  ```
+  *Dosya:* [migrate.py](file:///c:/Users/THINKPAD/Desktop/BB-PAXDATA/src/bb_paxdata/interfaces/cli/commands/migrate.py)
+
+* **Veritabanı Doğrulama (`validate`):**
+  Veritabanının bütünlüğünü, yabancı anahtarları ve şema doğruluğunu kontrol eder:
+  ```bash
+  poetry run bbpaxdata validate db [--strict] [--json] [--output <dosya_yolu>]
+  ```
+  *Dosya:* [validate.py](file:///c:/Users/THINKPAD/Desktop/BB-PAXDATA/src/bb_paxdata/interfaces/cli/commands/validate.py)
+
+* **Veri Yükleme ve Yapılandırma (`build`):**
+  Transkript dosyalarını okuyarak veritabanına yükler:
+  ```bash
+  poetry run bbpaxdata build <veri_dizini_yolu> [--force-rebuild] [--panel <panel_adı>] [--dry-run]
+  ```
+  Dosya durumunu kontrol etmek için:
+  ```bash
+  poetry run bbpaxdata build status <dosya_yolu>
+  ```
+  Panelleri veya eski dosyaları temizlemek için:
+  ```bash
+  poetry run bbpaxdata build clean [--panel <panel_id>] [--older-than <gun_sayisi>] [--force]
+  ```
+  *Dosya:* [build.py](file:///c:/Users/THINKPAD/Desktop/BB-PAXDATA/src/bb_paxdata/application/commands/build.py)
+
+### 10.2 Analiz Komutları (`analyze`)
+
+Diplomatik söylem analizlerini çalıştırmak için kullanılan komutlar:
+* **Bilateral Sentiment Analizi:**
+  ```bash
+  poetry run bbpaxdata analyze country-refs --panel-id <panel_id> [--verbose]
+  ```
+* **Söylem Ağı Kurulumu:**
+  ```bash
+  poetry run bbpaxdata analyze network --panel-id <panel_id> [--threshold <deger>] [--centrality]
+  ```
+* **Tam Analiz Pipeline'ı:**
+  Tüm pipeline adımlarını (Bilateral Sentiment, Söylem Ağı, Konu Matrisi) sırayla çalıştırır:
+  ```bash
+  poetry run bbpaxdata analyze full --panel-id <panel_id> [--threshold <deger>] [--centrality]
+  ```
+  *Dosya:* [analyze.py](file:///c:/Users/THINKPAD/Desktop/BB-PAXDATA/src/bb_paxdata/interfaces/cli/commands/analyze.py)
+
+### 10.3 Test ve Değerlendirme Komutları (`test`)
+
+* **Test Süitini Çalıştırma (`run`):**
+  Belirli kapsamdaki testleri pytest kullanarak çalıştırır:
+  ```bash
+  poetry run bbpaxdata test run --type [logic|ai|e2e|all] [--limit <sayi>] [--verbose]
+  ```
+  * `--type logic`: **AI (LLM) katmanı olmadan**, sadece yerel NLP ve kural tabanlı mantıksal testleri çalıştırır. (Önerilen yerel analiz testi)
+  * `--type ai`: Sadece AI/LLM servislerini test eder.
+  * `--type e2e`: Uçtan uca tüm sistemi test eder.
+  * `--type all`: Tüm test süitini çalıştırır.
+* **Tek Cümle Analizi (`eval-sentence`):**
+  Tek bir cümleyi tüm pipeline üzerinden geçirip sonucunu terminalde görselleştirir:
+  ```bash
+  poetry run bbpaxdata test eval-sentence "<analiz_edilecek_cumle>" [--verbose]
+  ```
+* **Dataset Kalite Ölçümü (`eval-dataset`):**
+  Golden Dataset üzerinden DeepEval kalite değerlendirme pipeline'ını tetikler:
+  ```bash
+  poetry run bbpaxdata test eval-dataset [--limit <sayi>]
+  ```
+  *Dosya:* [test.py](file:///c:/Users/THINKPAD/Desktop/BB-PAXDATA/src/bb_paxdata/interfaces/cli/commands/test.py)
+
+### 10.4 İnsan İncelemesi ve Kalibrasyon (`review`)
+
+* **Uzman İncelemesi Ekleme (`submit`):**
+  AI çıktısıyla uzman kararını karşılaştırıp kaydetmek için:
+  ```bash
+  poetry run bbpaxdata review submit --analysis-id <id> --reviewer-id <uzman_id> [--human-frame <frame>] [--human-risk <risk>] [--human-sbi <sbi>] [--human-sentiment <sentiment>] [--reason <neden>] [--duration <saniye>]
+  ```
+* **Haftalık Kalibrasyon Raporu (`calibrate`):**
+  Prompt sürümleri için Cohen's Kappa, Macro-F1 ve MAE istatistiklerini hesaplar:
+  ```bash
+  poetry run bbpaxdata review calibrate --prompt-version <surum> [--days-back <gun>]
+  ```
+* **Anlaşmazlıkları Listeleme (`show-disagreements`):**
+  Uzman ve AI arasındaki kararsızlık/anlaşmazlık durumlarını listeler:
+  ```bash
+  poetry run bbpaxdata review show-disagreements --prompt-version <surum> [--limit <sayi>]
+  ```
+  *Dosya:* [review_commands.py](file:///c:/Users/THINKPAD/Desktop/BB-PAXDATA/src/bb_paxdata/interfaces/cli/review_commands.py)
 
 ---
 

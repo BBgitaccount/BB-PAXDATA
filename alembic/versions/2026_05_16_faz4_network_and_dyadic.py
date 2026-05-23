@@ -18,6 +18,9 @@ depends_on: str | None = None
 
 
 def upgrade() -> None:
+    # Drop the view since discourse_network_edges is changing schema and doesn't support the view columns anymore
+    op.execute("DROP VIEW IF EXISTS v_f_fail_network_context")
+
     # --- discourse_network_edges (Fischer DNA) ---
     op.execute("DROP TABLE IF EXISTS discourse_network_edges")
     op.create_table(
@@ -66,6 +69,26 @@ def upgrade() -> None:
 def downgrade() -> None:
     op.drop_table("discourse_network_edges")
 
+    # Recreate original discourse_network_edges table
+    op.create_table(
+        "discourse_network_edges",
+        sa.Column("edge_id", sa.Integer(), autoincrement=True, nullable=False),
+        sa.Column("panel_id", sa.String(), nullable=True),
+        sa.Column("from_country", sa.Text(), nullable=False),
+        sa.Column("to_country", sa.Text(), nullable=False),
+        sa.Column("weight", sa.Float(), nullable=False),
+        sa.Column("avg_sentiment", sa.Float(), nullable=False),
+        sa.Column("edge_type", sa.Text(), nullable=True),
+        sa.Column("power_source", sa.Integer(), nullable=False),
+        sa.ForeignKeyConstraint(
+            ["panel_id"],
+            ["panels.panel_id"],
+        ),
+        sa.PrimaryKeyConstraint("edge_id"),
+    )
+    with op.batch_alter_table("discourse_network_edges", schema=None) as batch_op:
+        batch_op.create_index("idx_net_from", ["from_country"], unique=False)
+
     with op.batch_alter_table("bilateral_sentiments", schema=None) as batch_op:
         batch_op.drop_column("vote_affinity")
         batch_op.drop_column("alliance_score")
@@ -73,3 +96,22 @@ def downgrade() -> None:
         batch_op.drop_column("discourse_sentiment_delta")
         batch_op.drop_column("maoz_diplomatic_distance")
         batch_op.drop_column("maoz_affinity_score")
+
+    # Recreate the view as discourse_network_edges is restored to the old schema
+    op.execute(
+        """
+    CREATE VIEW v_f_fail_network_context AS
+    SELECT
+        f.sent_id, f.speaker_name, f.country, f.check_type,
+        dne.from_country, dne.to_country, dne.edge_type,
+        cp.relationship_type, cp.affinity_score,
+        f.fail_reason AS AI_Neden_Fail
+    FROM ai_fail_analysis f
+    LEFT JOIN sentences s ON f.sent_id = s.sent_id
+    LEFT JOIN discourse_network_edges dne
+        ON s.panel_id = dne.panel_id AND s.country = dne.from_country
+    LEFT JOIN country_pair_sentiment cp
+        ON dne.from_country = cp.from_country AND dne.to_country = cp.to_country
+    WHERE f.country NOT IN ('—','Unknown')
+    """
+    )

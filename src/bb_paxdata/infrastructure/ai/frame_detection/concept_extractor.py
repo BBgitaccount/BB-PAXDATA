@@ -5,7 +5,6 @@
 Universität Göttingen. Target Concept Extraction stage.]
 """
 
-from typing import cast
 
 import structlog
 from bb_paxdata.domain.models.segment import Segment
@@ -71,7 +70,7 @@ class LLMConceptExtractor:
                 )
                 return []
 
-            return cast(list[str], parsed.concepts)
+            return parsed.concepts
         except Exception as e:
             self._log.error(
                 "concept_extraction_error", segment_id=segment.id, error=str(e)
