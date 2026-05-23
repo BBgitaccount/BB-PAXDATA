@@ -33,12 +33,23 @@ class ServiceContainer:
     Uygulama genelindeki servis bağımlılıklarını yöneten IoC container.
     Singleton pattern: get_instance() ile erişilir.
     ARTIK STUB YOK — tüm servisler gerçek implementasyonlarla donatılmıştır.
+
+    Args:
+        logic_mode: True ise LLM çağrısı yapılmaz; LogicOnlyAIAnalyst kullanılır.
+        ai_limit:   Pozitif tam sayı ise ilk N cümle AI'a gönderilir,
+                    sonrası otomatik olarak LogicOnly'ye düşer.
+                    None veya 0 ise limit yok (tüm cümleler normal modda işlenir).
     """
 
     _instance: ServiceContainer | None = None
 
-    def __init__(self) -> None:
-        logger.info("ServiceContainer başlatılıyor — tüm servisler yükleniyor...")
+    def __init__(self, logic_mode: bool = False, ai_limit: int | None = None) -> None:
+        self._logic_mode = logic_mode
+        self._ai_limit = ai_limit
+        mode_label = "LOGIC-ONLY (AI-free)" if logic_mode else "FULL (AI enabled)"
+        if ai_limit and ai_limit > 0 and not logic_mode:
+            mode_label += f" [limit={ai_limit} cümle]"
+        logger.info(f"ServiceContainer başlatılıyor — mod={mode_label}")
 
         # ── Ortak Araçlar ──────────────────────────────────────────
         self.language_detector = LanguageDetector()
@@ -50,23 +61,53 @@ class ServiceContainer:
         )
 
         # ── Prompt Registry + AI Analyst ───────────────────────────
-        from bb_paxdata.application.services.few_shot_injector import FewShotInjector
-        from bb_paxdata.infrastructure.db.repositories.unit_of_work import (
-            SqlAlchemyUnitOfWork,
-        )
-        from bb_paxdata.infrastructure.db.session import SessionLocal
+        if logic_mode:
+            # LLM çağrısı yapmayan kural tabanlı analiz servisi
+            from bb_paxdata.infrastructure.nlp.logic_only_analyst import (
+                LogicOnlyAIAnalyst,
+            )
 
-        def uow_factory() -> SqlAlchemyUnitOfWork:
-            return SqlAlchemyUnitOfWork(SessionLocal)
+            self.prompt_registry = build_default_registry()
+            self.few_shot_injector = None
+            self.ai_analyst: Any = LogicOnlyAIAnalyst()
+            logger.info(
+                "AI Analyst: LogicOnlyAIAnalyst aktif (LLM çağrısı yapılmayacak)"
+            )
+        else:
+            from bb_paxdata.application.services.few_shot_injector import (
+                FewShotInjector,
+            )
+            from bb_paxdata.infrastructure.db.repositories.unit_of_work import (
+                SqlAlchemyUnitOfWork,
+            )
+            from bb_paxdata.infrastructure.db.session import SessionLocal
 
-        self.few_shot_injector = FewShotInjector(uow_factory=uow_factory)
+            def uow_factory() -> SqlAlchemyUnitOfWork:
+                return SqlAlchemyUnitOfWork(SessionLocal)
 
-        self.prompt_registry = build_default_registry()
-        self.ai_analyst = AIAnalyst(
-            registry=self.prompt_registry,
-            language_detector=self.language_detector,
-            few_shot_injector=self.few_shot_injector,
-        )
+            self.few_shot_injector = FewShotInjector(uow_factory=uow_factory)
+            self.prompt_registry = build_default_registry()
+            _real_analyst = AIAnalyst(
+                registry=self.prompt_registry,
+                language_detector=self.language_detector,
+                few_shot_injector=self.few_shot_injector,
+            )
+
+            # AI limit varsa wrapper ile sar
+            if ai_limit and ai_limit > 0:
+                from bb_paxdata.infrastructure.nlp.limited_ai_analyst import (
+                    LimitedAIAnalyst,
+                )
+
+                self.ai_analyst = LimitedAIAnalyst(
+                    delegate=_real_analyst, limit=ai_limit
+                )
+                logger.info(
+                    f"AI Analyst: LimitedAIAnalyst aktif — "
+                    f"ilk {ai_limit} cümle AI, sonrası LogicOnly"
+                )
+            else:
+                self.ai_analyst = _real_analyst
 
         # ── Anomali Servisi ─────────────────────────────────────────
         self.anomaly_service = CrossAnomalyService()
@@ -183,8 +224,21 @@ class ServiceContainer:
         logger.info("ServiceContainer hazır — tüm servisler aktif.")
 
     @classmethod
-    def get_instance(cls) -> ServiceContainer:
-        """Thread-unsafe singleton (production'da threading.Lock ekle)."""
+    def get_instance(
+        cls, logic_mode: bool = False, ai_limit: int | None = None
+    ) -> ServiceContainer:
+        """Thread-unsafe singleton (production'da threading.Lock ekle).
+
+        Args:
+            logic_mode: True ise LogicOnlyAIAnalyst kullanılır.
+            ai_limit:   Pozitif tam sayı ise ilk N cümle AI, sonrası LogicOnly.
+                        İlk çağrıda belirlenir; sonraki çağrılarda görmezden gelinir.
+        """
         if cls._instance is None:
-            cls._instance = cls()
+            cls._instance = cls(logic_mode=logic_mode, ai_limit=ai_limit)
         return cls._instance
+
+    @classmethod
+    def reset_instance(cls) -> None:
+        """Singleton'ı sıfırlar (test ve mod değişikliği için)."""
+        cls._instance = None

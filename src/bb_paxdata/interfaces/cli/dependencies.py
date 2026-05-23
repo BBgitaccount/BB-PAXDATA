@@ -30,10 +30,12 @@ def _get_database_url() -> str:
     """
     Veritabanı URL'ini proje config/env'den okur.
     """
-    import os
+    from bb_paxdata.config.settings import get_settings
 
-    # Default to local sqlite for development
-    return os.getenv("DATABASE_URL", "sqlite+aiosqlite:///./bb_paxdata.db")
+    settings = get_settings()
+    if settings.database_url:
+        return str(settings.database_url)
+    return "sqlite+aiosqlite:///./bb-paxdata.db"
 
 
 @asynccontextmanager

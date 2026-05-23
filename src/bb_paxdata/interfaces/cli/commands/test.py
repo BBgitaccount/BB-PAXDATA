@@ -91,21 +91,34 @@ def eval_sentence(
     verbose: bool = typer.Option(
         False, "--verbose", "-v", help="Detaylı NLP ara adımlarını göster"
     ),
+    logic_only: bool = typer.Option(
+        False,
+        "--logic-only",
+        "-L",
+        help="LLM/AI çağrısı yapmadan kural tabanlı analiz yap (AI-free mod)",
+    ),
 ) -> None:
     """
     Tek bir cümleyi AnalysisPipeline üzerinden uçtan uca analiz eder.
     Hata ayıklama ve AI davranışını anlık incelemek için kullanılır.
     """
-    asyncio.run(_run_eval_sentence(text, verbose))
+    asyncio.run(_run_eval_sentence(text, verbose, logic_only))
 
 
-async def _run_eval_sentence(text: str, verbose: bool) -> None:
+async def _run_eval_sentence(
+    text: str, verbose: bool, logic_only: bool = False
+) -> None:
     from bb_paxdata.infrastructure.container.service_container import ServiceContainer
 
     console.print(f"[cyan]Analiz Ediliyor:[/cyan] '{text}'")
+    if logic_only:
+        console.print(
+            "[bold yellow]⚡ LOGIC-ONLY mod — LLM çağrısı yapılmayacak.[/bold yellow]"
+        )
 
     try:
-        container = ServiceContainer()
+        ServiceContainer.reset_instance()
+        container = ServiceContainer(logic_mode=logic_only)
         pipeline = container.pipeline
 
         # Analizi çalıştır

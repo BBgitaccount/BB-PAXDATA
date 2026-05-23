@@ -83,6 +83,9 @@ def test_network_command_shows_centrality() -> None:
 
         result = runner.invoke(app, ["network", "--panel-id", "p001", "--centrality"])
 
+    import re
+
+    cleaned_output = re.sub(r"\x1b\[[0-9;]*[a-zA-Z]", "", result.output)
     assert result.exit_code == 0
-    assert "4 düğüm" in result.output
-    assert "TR" in result.output
+    assert "4 düğüm" in cleaned_output
+    assert "TR" in cleaned_output

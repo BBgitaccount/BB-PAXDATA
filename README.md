@@ -829,19 +829,36 @@ poetry run bbpaxdata [KOMUT] [SEÇENEKLER]
   ```
   *Dosya:* [validate.py](file:///c:/Users/THINKPAD/Desktop/BB-PAXDATA/src/bb_paxdata/interfaces/cli/commands/validate.py)
 
-* **Veri Yükleme ve Yapılandırma (`build`):**
+* **Veri Yükleme, İzleme ve Yapılandırma (`build`):**
   Transkript dosyalarını okuyarak veritabanına yükler:
   ```bash
-  poetry run bbpaxdata build <veri_dizini_yolu> [--force-rebuild] [--panel <panel_adı>] [--dry-run]
+  poetry run bbpaxdata build <veri_dizini_yolu> [--force-rebuild] [--panel <panel_adı>] [--dry-run] [--logic-only] [--ai-limit <sayi>]
   ```
-  Dosya durumunu kontrol etmek için:
-  ```bash
-  poetry run bbpaxdata build status <dosya_yolu>
-  ```
-  Panelleri veya eski dosyaları temizlemek için:
-  ```bash
-  poetry run bbpaxdata build clean [--panel <panel_id>] [--older-than <gun_sayisi>] [--force]
-  ```
+  * Seçenekler:
+    * `--force-rebuild` / `-f`: Daha önce işlenmiş dosyaları zorla yeniden analiz eder.
+    * `--panel <panel_adı>` / `-p <panel_adı>`: Yalnızca dosya adında belirtilen metin geçen paneli işler.
+    * `--dry-run` / `-d`: Veritabanına yazmadan ve dosyaları diske kaydetmeden simülasyon yapar.
+    * `--logic-only` / `-L`: **AI-Free (Logic-only)** modunu çalıştırır. LLM/AI çağrısı yapmadan, tamamen deterministik kural tabanlı NLP algoritmasıyla duygu ve risk skorlarını hesaplar (sıfır maliyet ve yüksek hız).
+    * `--ai-limit <sayi>` / `-n <sayi>`: **Cümle Bazlı AI Limiti** uygular. İlk N cümle gerçek AI (LLM) ile analiz edilir, sınır aşıldığında sonraki tüm cümlelerin analizleri (ve frame, anomali vb. alt modülleri) otomatik olarak `LogicOnly` analistine düşer.
+
+  * **Klasör İzleme (`watch`):**
+    Belirtilen klasörü sürekli izler. Yeni veya güncellenen dosyalar eklendiğinde **otomatik olarak dosyayı standardize eder** ve veritabanına aktarır:
+    ```bash
+    poetry run bbpaxdata build watch <veri_dizini_yolu> [--interval <saniye>] [--logic-only] [--ai-limit <sayi>]
+    ```
+    * `--interval <saniye>` / `-i <saniye>`: Klasör tarama sıklığı (varsayılan: 5s).
+
+  * **Durum Kontrolü (`status`):**
+    Dosya durumunu ve işlenme geçmişini kontrol eder:
+    ```bash
+    poetry run bbpaxdata build status <dosya_yolu>
+    ```
+
+  * **Temizlik (`clean`):**
+    Panelleri veya eski dosyaları temizlemek için:
+    ```bash
+    poetry run bbpaxdata build clean [--panel <panel_id>] [--older-than <gun_sayisi>] [--force]
+    ```
   *Dosya:* [build.py](file:///c:/Users/THINKPAD/Desktop/BB-PAXDATA/src/bb_paxdata/application/commands/build.py)
 
 ### 10.2 Analiz Komutları (`analyze`)
@@ -873,11 +890,14 @@ Diplomatik söylem analizlerini çalıştırmak için kullanılan komutlar:
   * `--type ai`: Sadece AI/LLM servislerini test eder.
   * `--type e2e`: Uçtan uca tüm sistemi test eder.
   * `--type all`: Tüm test süitini çalıştırır.
+
 * **Tek Cümle Analizi (`eval-sentence`):**
   Tek bir cümleyi tüm pipeline üzerinden geçirip sonucunu terminalde görselleştirir:
   ```bash
-  poetry run bbpaxdata test eval-sentence "<analiz_edilecek_cumle>" [--verbose]
+  poetry run bbpaxdata test eval-sentence "<analiz_edilecek_cumle>" [--verbose] [--logic-only]
   ```
+  * `--logic-only` / `-L` bayrağı ile AI çağrısı yapmadan yerel motor üzerinden çalıştırılabilir.
+
 * **Dataset Kalite Ölçümü (`eval-dataset`):**
   Golden Dataset üzerinden DeepEval kalite değerlendirme pipeline'ını tetikler:
   ```bash
@@ -905,6 +925,77 @@ Diplomatik söylem analizlerini çalıştırmak için kullanılan komutlar:
   *Dosya:* [review_commands.py](file:///c:/Users/THINKPAD/Desktop/BB-PAXDATA/src/bb_paxdata/interfaces/cli/review_commands.py)
 
 ---
+
+## 13. Konsol Öğreticisi (Console Tutorial)
+
+Bu bölüm, BB-PAXDATA CLI'ını en verimli şekilde kullanabilmeniz için senaryolara dayalı adım adım komut kılavuzudur.
+
+### Senaryo A: Tamamen AI-Free (Yapay Zekasız) ve Sıfır Maliyetli Hızlı Analiz
+LLM API anahtarınız yoksa veya bütçe harcamadan binlerce satırlık büyük transkript dosyalarını hızlıca yerel makinenizde analiz etmek istiyorsanız bu adımları izleyin.
+
+1. **Test Edin:** Yerel kuralların ve veri tabanının sorunsuz çalıştığını doğrulamak için sadece logic testlerini çalıştırın:
+   ```bash
+   poetry run bbpaxdata test run --type logic
+   ```
+2. **AI-Free Veri Yükleme (`build`):** `data/` dizinindeki transkriptleri LLM çağrısı yapmadan, tamamen deterministik sözlükler ve kural motoruyla işleyip veritabanına kaydedin:
+   ```bash
+   poetry run bbpaxdata build data/ --logic-only --force-rebuild
+   ```
+3. **Tek Cümle Denemesi:** Belirli bir diplomatik ifadenin kural tabanlı motora göre duygu ve risk çıktısını anında görün:
+   ```bash
+   poetry run bbpaxdata test eval-sentence "Savaş ve askeri saldırı durumunda geri adım atmayacağız." --logic-only
+   ```
+4. **Analiz Raporu:** İşlenen veriler üzerinden ülke referans duygu skorlarını hesaplayın:
+   ```bash
+   poetry run bbpaxdata analyze country-refs --panel-id "03_erdogan"
+   ```
+
+---
+
+### Senaryo B: Bütçe/Token Kontrollü AI Analizi (AI-Limit)
+Tüm transkripti yapay zekaya gönderip yüksek faturalarla karşılaşmak yerine, her transkript dosyasının sadece ilk N cümlesini (örneğin ilk 50 cümle) yapay zekayla derinlemesine analiz edip, kalanını otomatik olarak logic-only modla tamamlayabilirsiniz.
+
+1. **Bütçe Sınırlı Build:** Her transkriptin ilk 50 cümlesini yapay zekaya gönderin, 51. cümleden itibaren tüm AI alt servislerini (sentiment, frame, anomali vb.) logic-only moduna düşürün:
+   ```bash
+   poetry run bbpaxdata build data/ --ai-limit 50 --force-rebuild
+   ```
+   *Not:* İşlem tamamlandığında terminalde `📊 AI Kullanım Raporu` başlığı altında kaç cümle için AI çağrısı yapıldığı ve limitin aşıp aşmadığı detaylıca gösterilir.
+
+---
+
+### Senaryo C: Otomatik İzleme ve Canlı Standardizasyon (Folder Watcher)
+Ham transkript dosyalarını bir klasöre kaydettiğiniz anda sistemin bunu yakalamasını, otomatik olarak temizleyip standardize etmesini (konuşmacı adlarına ülke kodları ekleme, metadata başlıkları yerleştirme) ve veritabanına aktarmasını istiyorsanız:
+
+1. **Watcher'ı Başlatın (Logic-Only modda):**
+   ```bash
+   poetry run bbpaxdata build watch "data/Antalya Diplomatic Forum 2026" --logic-only --interval 5
+   ```
+2. **Dosya Ekleyin:** Bu klasöre ham, düzensiz bir transkript dosyası (`03_Erdogan.txt`) atın:
+   ```text
+   Recep Tayyip Erdoğan: Bu yeni bir küresel diplomasi testidir.
+   Sergei Lavrov: Katılıyorum.
+   ```
+3. **Watcher Tarafından Yapılanlar:**
+   * Watcher 5 saniye içinde dosyayı algılar.
+   * `standardize_file_content()` çalışarak konuşmacıları `Recep Tayyip Erdoğan (TR)` ve `Sergei Lavrov (RU)` olarak günceller.
+   * Dosyanın en tepesine `TITLE: Recep Tayyip Erdoğan Address`, `DATE: April 2026`, `THEME: ...` gibi metadata bloklarını idempotent şekilde yazar.
+   * Dosyayı diske kaydedip ardından veritabanına (`bb-paxdata.db`) kaydeder.
+
+---
+
+### Senaryo D: Veritabanı Durum Kontrolü ve Temizleme
+
+1. **Dosya Durumu Sorgulama:** Belirli bir dosyanın veritabanına işlenip işlenmediğini, son işlenme tarihini ve kullanılan parser sürümünü sorgulayın:
+   ```bash
+   poetry run bbpaxdata build status data/03_Erdoğan.txt
+   ```
+2. **Kısmi Veri Temizleme:** İşlemlerinizde bir hata yaptıysanız ve belirli bir panel verilerini veritabanından tamamen silip yeniden başlatmak istiyorsanız:
+   ```bash
+   poetry run bbpaxdata build clean --panel "03_erdogan" --force
+   ```
+
+---
+
 
 ## 11. Bilimsel Metodoloji
 
