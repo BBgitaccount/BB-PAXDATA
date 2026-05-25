@@ -192,8 +192,8 @@ class Panel(Base):
         )
 
 
-class Speaker(Base):
-    __tablename__ = "speakers"
+class SpeakerProfile(Base):
+    __tablename__ = "speaker_profiles"
 
     speaker_id: Mapped[str] = mapped_column(String, primary_key=True)
     full_name: Mapped[str] = mapped_column(Text, nullable=False)
@@ -209,95 +209,6 @@ class Speaker(Base):
     n_sentences: Mapped[int] = mapped_column(Integer, default=0)
     total_words: Mapped[int] = mapped_column(Integer, default=0)
     total_duration_sec: Mapped[int] = mapped_column(Integer, default=0)
-    avg_sentiment: Mapped[float] = mapped_column(Float, default=0)
-    dominant_emotion: Mapped[str | None] = mapped_column(Text, nullable=True)
-    dominant_topic: Mapped[str | None] = mapped_column(Text, nullable=True)
-    cooperative_pct: Mapped[float] = mapped_column(Float, default=0)
-    confrontational_pct: Mapped[float] = mapped_column(Float, default=0)
-    risk_event_count: Mapped[int] = mapped_column(Integer, default=0)
-
-    segments: Mapped[list[Segment]] = relationship(back_populates="speaker")
-    profile: Mapped[SpeakerProfile | None] = relationship(
-        back_populates="speaker", uselist=False
-    )
-
-    def to_domain(self) -> SpeakerDomain:
-        from bb_paxdata.domain.enums import BlocType, InfluenceTier, SpeakerRole
-        from bb_paxdata.domain.models.speaker import Speaker as SpeakerDomainModel
-
-        desc_parts: list[str] = []
-        if self.title:
-            desc_parts.append(self.title)
-        if self.country:
-            desc_parts.append(f"country={self.country}")
-        description = " · ".join(desc_parts) if desc_parts else None
-        return SpeakerDomainModel(
-            id=self.speaker_id,
-            name=self.full_name,
-            role=_try_enum(SpeakerRole, self.role) if self.role else None,
-            influence_tier=(
-                _try_enum(InfluenceTier, self.influence_tier)
-                if self.influence_tier
-                else None
-            ),
-            bloc_type=_try_enum(BlocType, self.bloc) if self.bloc else None,
-            total_sentences=self.n_sentences,
-            total_words=self.total_words,
-            description=description,
-            manipulation_tier=None,
-            pressure_tier=None,
-            audience_type=None,
-            relationship_type=None,
-            avg_sentence_length=None,
-            speaking_percentage=None,
-            first_speech_time=None,
-            last_speech_time=None,
-            total_speaking_time=None,
-            confidence_score=None,
-        )
-
-    @classmethod
-    def from_domain(cls, model: SpeakerDomain) -> Speaker:
-        country: str | None = None
-        title: str | None = None
-        if model.description:
-            if "country=" in model.description:
-                base, _, rest = model.description.partition(" · country=")
-                title = base or None
-                country = rest or None
-            else:
-                title = model.description
-        return cls(
-            speaker_id=model.id,
-            full_name=model.name,
-            country=country,
-            title=title,
-            role=model.role.value if model.role else None,
-            bloc=model.bloc_type.value if model.bloc_type else None,
-            power_level=0,
-            influence_tier=model.influence_tier.value if model.influence_tier else None,
-            n_sentences=model.total_sentences or 0,
-            total_words=model.total_words or 0,
-        )
-
-
-class SpeakerProfile(Base):
-    __tablename__ = "speaker_profiles"
-
-    speaker_id: Mapped[str] = mapped_column(
-        ForeignKey("speakers.speaker_id"), primary_key=True
-    )
-    full_name: Mapped[str] = mapped_column(Text, nullable=False)
-    country: Mapped[str | None] = mapped_column(Text, nullable=True)
-    title: Mapped[str | None] = mapped_column(Text, nullable=True)
-    role: Mapped[str | None] = mapped_column(Text, nullable=True)
-    bloc: Mapped[str | None] = mapped_column(Text, nullable=True)
-    power_level: Mapped[int] = mapped_column(Integer, default=0)
-    influence_tier: Mapped[str | None] = mapped_column(Text, nullable=True)
-    n_panels: Mapped[int] = mapped_column(Integer, default=0)
-    n_segments: Mapped[int] = mapped_column(Integer, default=0)
-    n_sentences: Mapped[int] = mapped_column(Integer, default=0)
-    total_words: Mapped[int] = mapped_column(Integer, default=0)
     avg_sentiment: Mapped[float] = mapped_column(Float, default=0)
     dominant_emotion: Mapped[str | None] = mapped_column(Text, nullable=True)
     dominant_topic: Mapped[str | None] = mapped_column(Text, nullable=True)
@@ -328,53 +239,83 @@ class SpeakerProfile(Base):
     dominant_frame: Mapped[str | None] = mapped_column(Text, nullable=True)
     dominant_audience: Mapped[str | None] = mapped_column(Text, nullable=True)
 
-    speaker: Mapped[Speaker] = relationship(back_populates="profile")
+    segments: Mapped[list[Segment]] = relationship(back_populates="speaker")
 
-    def to_domain(self) -> Metadata:
-        from bb_paxdata.domain.models.metadata import Metadata
+    def to_domain(self) -> SpeakerDomain:
+        from bb_paxdata.domain.enums import BlocType, InfluenceTier, SpeakerRole
+        from bb_paxdata.domain.models.speaker import Speaker as SpeakerDomainModel
 
-        return Metadata(
-            id=f"speaker_profile:{self.speaker_id}",
-            entity_id=self.speaker_id,
-            entity_type="speaker_profile",
-            title=self.full_name,
-            description=f"Speaker profile for {self.full_name}",
-            category=None,
-            subcategory=None,
-            source=None,
-            source_url=None,
-            source_date=None,
-            quality_score=None,
-            validation_status=None,
-            last_validated=None,
-            processed_by=None,
-            processing_version=None,
-            access_level=None,
-            expires_at=None,
-            custom_fields={
-                "country": self.country,
-                "top_countries_mentioned": self.top_countries_mentioned,
-                "ally_countries": self.ally_countries,
-                "adversary_countries": self.adversary_countries,
-                "dominant_frame": self.dominant_frame,
-                "dominant_audience": self.dominant_audience,
-                "avg_dki_score": self.avg_dki_score,
-            },
+        desc_parts: list[str] = []
+        if self.title:
+            desc_parts.append(self.title)
+        if self.country:
+            desc_parts.append(f"country={self.country}")
+        description = " · ".join(desc_parts) if desc_parts else None
+        return SpeakerDomainModel(
+            id=self.speaker_id,
+            name=self.full_name,
+            role=_try_enum(SpeakerRole, self.role) if self.role else None,
+            influence_tier=(
+                _try_enum(InfluenceTier, self.influence_tier)
+                if self.influence_tier
+                else None
+            ),
+            bloc_type=_try_enum(BlocType, self.bloc) if self.bloc else None,
+            total_sentences=self.n_sentences,
+            total_words=self.total_words,
+            description=description,
+            manipulation_tier=None,
+            pressure_tier=None,
+            audience_type=None,
+            relationship_type=None,
+            avg_sentence_length=self.avg_sentence_length or None,
+            speaking_percentage=None,
+            first_speech_time=None,
+            last_speech_time=None,
+            total_speaking_time=(
+                float(self.total_duration_sec) if self.total_duration_sec else None
+            ),
+            confidence_score=None,
         )
 
     @classmethod
-    def from_domain(cls, model: Metadata) -> SpeakerProfile:
-        cf = model.custom_fields or {}
+    def from_domain(cls, model: Any) -> SpeakerProfile:
+        from bb_paxdata.domain.models.metadata import Metadata
+
+        if isinstance(model, Metadata):
+            cf = model.custom_fields or {}
+            return cls(
+                speaker_id=model.entity_id,
+                full_name=model.title or model.entity_id,
+                country=cf.get("country"),
+                top_countries_mentioned=cf.get("top_countries_mentioned"),
+                ally_countries=cf.get("ally_countries"),
+                adversary_countries=cf.get("adversary_countries"),
+                dominant_frame=cf.get("dominant_frame"),
+                dominant_audience=cf.get("dominant_audience"),
+                avg_dki_score=float(cf.get("avg_dki_score") or 0),
+            )
+
+        country: str | None = None
+        title: str | None = None
+        if model.description:
+            if "country=" in model.description:
+                base, _, rest = model.description.partition(" · country=")
+                title = base or None
+                country = rest or None
+            else:
+                title = model.description
         return cls(
-            speaker_id=model.entity_id,
-            full_name=model.title or model.entity_id,
-            country=cf.get("country"),
-            top_countries_mentioned=cf.get("top_countries_mentioned"),
-            ally_countries=cf.get("ally_countries"),
-            adversary_countries=cf.get("adversary_countries"),
-            dominant_frame=cf.get("dominant_frame"),
-            dominant_audience=cf.get("dominant_audience"),
-            avg_dki_score=float(cf.get("avg_dki_score") or 0),
+            speaker_id=model.id,
+            full_name=model.name,
+            country=country,
+            title=title,
+            role=model.role.value if model.role else None,
+            bloc=model.bloc_type.value if model.bloc_type else None,
+            power_level=0,
+            influence_tier=model.influence_tier.value if model.influence_tier else None,
+            n_sentences=model.total_sentences or 0,
+            total_words=model.total_words or 0,
         )
 
 
@@ -390,7 +331,7 @@ class Segment(Base):
     seg_id: Mapped[str] = mapped_column(String, primary_key=True)
     panel_id: Mapped[str] = mapped_column(ForeignKey("panels.panel_id"), nullable=False)
     speaker_id: Mapped[str | None] = mapped_column(
-        ForeignKey("speakers.speaker_id"), nullable=True
+        ForeignKey("speaker_profiles.speaker_id"), nullable=True
     )
     speaker_name: Mapped[str] = mapped_column(Text, nullable=False)
     country: Mapped[str | None] = mapped_column(Text, nullable=True)
@@ -456,7 +397,7 @@ class Segment(Base):
     dominant_evidence: Mapped[str | None] = mapped_column(Text, nullable=True)
 
     panel: Mapped[Panel] = relationship(back_populates="segments")
-    speaker: Mapped[Speaker | None] = relationship(back_populates="segments")
+    speaker: Mapped[SpeakerProfile | None] = relationship(back_populates="segments")
     sentences: Mapped[list[Sentence]] = relationship(
         back_populates="segment", cascade="all, delete-orphan"
     )

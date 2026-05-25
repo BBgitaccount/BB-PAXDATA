@@ -40,7 +40,7 @@ async def test_hitl_e2e_flow(session_factory):
     async with session_factory() as session:
         # Seed panel, speaker, segment
         session.add(m.Panel(panel_id="p1", file_name="p1.txt"))
-        session.add(m.Speaker(speaker_id="sp1", full_name="Expert speaker"))
+        session.add(m.SpeakerProfile(speaker_id="sp1", full_name="Expert speaker"))
         await session.flush()
 
         session.add(

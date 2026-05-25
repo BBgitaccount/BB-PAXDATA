@@ -40,7 +40,10 @@ def get_db_session() -> Generator[Session, None, None]:
 
 
 async def init_db() -> None:
-    from bb_paxdata.infrastructure.db import models  # noqa: F401
+    from bb_paxdata.infrastructure.db import (
+        country_models,  # noqa: F401
+        models,  # noqa: F401
+    )
 
     async with engine.begin() as conn:
         await conn.run_sync(Base.metadata.create_all)

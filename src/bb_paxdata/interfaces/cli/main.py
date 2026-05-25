@@ -22,10 +22,10 @@ def _lazy_import_commands() -> None:
     This function runs once during `entrypoint()` call.
     """
     try:
-        from bb_paxdata.application.commands import build
         from bb_paxdata.interfaces.cli import completions, review_commands
         from bb_paxdata.interfaces.cli.commands import (
             analyze,
+            build,
             migrate,
             test,
             validate,

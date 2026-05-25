@@ -157,7 +157,7 @@ def validate_legacy_compare(
 
         table_mappings = {
             "panels": "panels",
-            "speakers": "speakers",
+            "speakers": "speaker_profiles",
             "segments": "segments",
             "sentences": "sentences",
             "words": "words",

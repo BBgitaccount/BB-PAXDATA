@@ -32,12 +32,12 @@ from bb_paxdata.infrastructure.db.models import (
     PatternRecord,
     Segment,
     Sentence,
-    Speaker,
+    SpeakerProfile,
     Word,
 )
 from bb_paxdata.infrastructure.db.processed_files import ProcessedFile
 from bb_paxdata.infrastructure.db.repositories.analysis import AnalysisRepository
-from bb_paxdata.infrastructure.db.session import get_db_session
+from bb_paxdata.infrastructure.db.session import get_db_session, init_db
 from bb_paxdata.interfaces.cli.dependencies import get_session
 from bb_paxdata.quality.data_contract import DataContractValidator
 from bb_paxdata.quality.violations import ViolationLogger
@@ -102,6 +102,174 @@ SPEAKER_COUNTRY_MAP = {
     "İsmail": "TR",
     "Əli Vəliyev": "AZ",
 }
+
+SPEAKER_MAP = {
+    # ── TÜRKİYE ────────────────────────────────────────────────────────
+    "Recep Tayyip Erdoğan": ("Turkey", "President", "head_of_state"),
+    "Cevdet Yılmaz": ("Turkey", "Vice President", "vice_president"),
+    "Hakan Fidan": ("Turkey", "Minister of Foreign Affairs", "minister"),
+    "Murat Kurum": (
+        "Turkey",
+        "Minister of Environment, Urbanization and Climate",
+        "minister",
+    ),
+    "Levent Gümrükçü": (
+        "Turkey",
+        "Deputy Minister of Foreign Affairs",
+        "deputy_minister",
+    ),
+    "Mevlüt Çavuşoğlu": ("Turkey", "Member of Parliament for Antalya", "moderator"),
+    "Deniz Kilislioğlu": ("Turkey", "Journalist", "journalist"),
+    "Eda Özdemir": ("Turkey", "Journalist", "journalist"),
+    "Gökhan Çeliker": ("Turkey", "Journalist", "journalist"),
+    "Kemal Cebe": ("Turkey", "Participant", "panelist"),
+    # ── DEVLET / HÜKÜMET BAŞKANLARI ────────────────────────────────────
+    "Ahmed Al Sharaa": ("Syria", "President", "head_of_state"),
+    "Azali Assoumani": ("Comoros", "President", "head_of_state"),
+    "Evariste Ndayishimiye": ("Burundi", "President", "head_of_state"),
+    "Felix Antoine Tshisekedi": ("DRC", "President", "head_of_state"),
+    "Gordana Siljanovska Davkova": ("North Macedonia", "President", "head_of_state"),
+    "Gordana Siljanovska-Davkova": ("North Macedonia", "President", "head_of_state"),
+    "Hasan Şeyh Mahmud": ("Somalia", "President", "head_of_state"),
+    "Hassan Sheikh Mohamud": ("Somalia", "President", "head_of_state"),
+    "Kasım Cömert Tokayev": ("Kazakhstan", "President", "head_of_state"),
+    "Kassym-Jomart Tokayev": ("Kazakhstan", "President", "head_of_state"),
+    "David Moinina Sengeh": ("Sierra Leone", "Chief Minister", "head_of_government"),
+    "İrakli Kobakhidze": ("Georgia", "Prime Minister", "head_of_government"),
+    "Irakli Kobakhidze": ("Georgia", "Prime Minister", "head_of_government"),
+    "Miloş Vuçeviç": ("Serbia", "Prime Minister", "head_of_government"),
+    "Miloş Vučević": ("Serbia", "Prime Minister", "head_of_government"),
+    "Şayi Muhsin ez-Zindani": ("Yemen", "Prime Minister", "head_of_government"),
+    "Shayea Mohsin Al-Zindani": ("Yemen", "Prime Minister", "head_of_government"),
+    "Felix Ulloa": ("El Salvador", "Vice President", "vice_president"),
+    # ── BAKANLAR ───────────────────────────────────────────────────────
+    "Andriy Sibiha": ("Ukraine", "Minister of Foreign Affairs", "minister"),
+    "Andrii Sybiha": ("Ukraine", "Minister of Foreign Affairs", "minister"),
+    "Baiba Braže": ("Latvia", "Minister of Foreign Affairs", "minister"),
+    "Kestutis Budrys": ("Lithuania", "Minister of Foreign Affairs", "minister"),
+    "Muhtar Babayev": (
+        "Azerbaijan",
+        "Minister of Ecology and Natural Resources",
+        "minister",
+    ),
+    "Sergey Lavrov": ("Russia", "Minister of Foreign Affairs", "minister"),
+    "Sergei Lavrov": ("Russia", "Minister of Foreign Affairs", "minister"),
+    "Varsen Aghabekian": (
+        "Palestine",
+        "Minister of State for Foreign Affairs",
+        "minister",
+    ),
+    # ── DİPLOMAT / UZMAN / DİĞER / BASIN ───────────────────────────────
+    "Hikmet Hacıyev": ("Azerbaijan", "Senior Advisor to President", "advisor"),
+    "Hikmet Hajiyev": ("Azerbaijan", "Senior Advisor to President", "advisor"),
+    "Andre Correa do Lago": (
+        "Brazil",
+        "Secretary for Climate / Ambassador",
+        "diplomat",
+    ),
+    "Babatunde Ahonsi": ("UN", "Resident Coordinator in Türkiye", "intl_official"),
+    "Carl Skau": ("UN", "Deputy Exec. Dir. WFP", "intl_official"),
+    "Laurent Fabius": (
+        "France",
+        "Former Prime Minister / President of COP21",
+        "expert",
+    ),
+    "Radmila Šekerinska": ("NATO", "Deputy Secretary General", "intl_official"),
+    "Selwin Hart": ("UN", "Special Adviser on Climate Action", "intl_official"),
+    "Tom Barrack": ("USA", "US Ambassador", "diplomat"),
+    "Thomas Greminger": ("Switzerland", "Director of GCSP", "moderator"),
+    "Abdul Hamid": ("USA", "UN Correspondent", "journalist"),
+    "Abdul Hamid Siyam": ("USA", "UN Correspondent", "journalist"),
+    "Daniel Levy": ("UK", "President of USMEP", "expert"),
+    "Emile Hokayem": ("UK", "Director of Regional Security at IISS", "expert"),
+    "Faisal Dawjee": (
+        "South Africa",
+        "Former Media Director for SA Government",
+        "expert",
+    ),
+    "Keir Simmons": ("UK", "Chief International Correspondent at NBC", "journalist"),
+    "Lizzie Porter": ("UK", "Journalist", "journalist"),
+    "Manolis Kostidis": ("Greece", "Journalist", "journalist"),
+    "Maria Fantappiè": ("Italy", "Expert", "expert"),
+    "Xəyalə Rəis": ("Azerbaijan", "Journalist", "journalist"),
+    # ── GENEL / İSİMSİZ ────────────────────────────────────────────────
+    "Basın Mensubu": ("Unknown", "Press Member", "journalist"),
+    "Dinleyici Bir": ("Unknown", "Audience Member", "panelist"),
+    "Dinleyici İki": ("Unknown", "Audience Member", "panelist"),
+    "Interviewer": ("Unknown", "Interviewer", "moderator"),
+    "Moderator": ("Unknown", "Moderator", "moderator"),
+    "Moderatör": ("Unknown", "Moderator", "moderator"),
+    "Mülakatçı": ("Unknown", "Interviewer", "moderator"),
+    "Marabski [Soyisim]": ("Unknown", "Participant", "panelist"),
+    "Mercy Bamola": ("Unknown", "Participant", "panelist"),
+    "Olga Osacheva": ("Unknown", "Participant", "panelist"),
+    "İsmail": ("Unknown", "Participant", "panelist"),
+    "Əli Vəliyev": ("Azerbaijan", "Participant", "panelist"),
+}
+
+BLOC_MAP = {
+    "Turkey": "Eurasian",
+    "Kazakhstan": "Central Asia",
+    "North Macedonia": "Balkans",
+    "Georgia": "Caucasus",
+    "Somalia": "Africa",
+    "Syria": "MENA",
+    "Russia": "Eurasian",
+    "USA": "West",
+    "Ukraine": "Eurasian",
+    "Azerbaijan": "Caucasus",
+    "Serbia": "Balkans",
+    "Latvia": "Europe",
+    "Lithuania": "Europe",
+    "Palestine": "MENA",
+    "Yemen": "MENA",
+    "Burundi": "Africa",
+    "DRC": "Africa",
+    "Sierra Leone": "Africa",
+    "Comoros": "Africa",
+    "El Salvador": "Central America",
+    "NATO": "West",
+    "UN": "International",
+    "Switzerland": "Europe",
+    "France": "Europe",
+    "Brazil": "Global South",
+    "Iran": "MENA",
+    "Israel": "MENA",
+    "China": "Asia",
+    "EU": "Europe",
+    "Saudi Arabia": "MENA",
+    "Qatar": "MENA",
+    "UAE": "MENA",
+}
+
+POWER_LEVELS = {
+    "head_of_state": 10,
+    "head_of_government": 9,
+    "vice_president": 8,
+    "minister": 7,
+    "deputy_minister": 6,
+    "intl_official": 7,
+    "diplomat": 6,
+    "advisor": 5,
+    "expert": 4,
+    "moderator": 3,
+    "journalist": 2,
+    "panelist": 3,
+}
+
+
+def power_to_tier(power: int) -> str:
+    if power >= 9:
+        return "TIER1_SOVEREIGN"
+    elif power >= 7:
+        return "TIER2_MINISTER"
+    elif power >= 5:
+        return "TIER3_OFFICIAL"
+    elif power >= 3:
+        return "TIER4_EXPERT"
+    else:
+        return "TIER5_MEDIA"
+
 
 # Metadata mapping for the 12 files
 PANELS_METADATA = {
@@ -570,23 +738,55 @@ async def _process_single_file(
         speaker_id = speaker_name.lower().replace(" ", "_")
         unique_speakers_in_file.add(speaker_id)
 
-        # Get or create speaker
-        speaker_stmt = select(Speaker).where(Speaker.speaker_id == speaker_id)
+        # Get or create speaker profile
+        speaker_stmt = select(SpeakerProfile).where(
+            SpeakerProfile.speaker_id == speaker_id
+        )
         res = await session.execute(speaker_stmt)
         db_speaker = res.scalar_one_or_none()
         country = seg["country"]
         unique_countries_in_file.add(country)
 
         if not db_speaker:
-            db_speaker = Speaker(
+            sp_info = SPEAKER_MAP.get(speaker_name)
+            if not sp_info:
+                for name, info in SPEAKER_MAP.items():
+                    if name.lower() == speaker_name.lower():
+                        sp_info = info
+                        break
+
+            if sp_info:
+                sp_country, sp_title, sp_role = sp_info
+                sp_bloc = BLOC_MAP.get(sp_country, "unknown")
+                sp_power = POWER_LEVELS.get(sp_role, 3)
+                sp_tier = power_to_tier(sp_power)
+            else:
+                sp_country = country
+                sp_title = "Participant"
+                sp_role = "panelist"
+                sp_bloc = (
+                    BLOC_MAP.get(sp_country, "unknown")
+                    if sp_country != "unknown"
+                    else "unknown"
+                )
+                sp_power = 3
+                sp_tier = "TIER4_EXPERT"
+
+            db_speaker = SpeakerProfile(
                 speaker_id=speaker_id,
                 full_name=speaker_name,
-                country=country,
+                country=sp_country,
+                title=sp_title,
+                role=sp_role,
+                bloc=sp_bloc,
+                power_level=sp_power,
+                influence_tier=sp_tier,
             )
             session.add(db_speaker)
             await session.flush()
         elif db_speaker.country == "unknown" and country != "unknown":
             db_speaker.country = country
+            db_speaker.bloc = BLOC_MAP.get(country, "unknown")
             await session.flush()
 
         db_segment = Segment(
@@ -1361,6 +1561,177 @@ async def _process_single_file(
     return "processed"
 
 
+async def update_speaker_profiles(session: Any) -> None:
+    # Fetch all speaker profiles
+    speakers_res = await session.execute(select(SpeakerProfile))
+    speakers = speakers_res.scalars().all()
+
+    for sp in speakers:
+        # Get all segments spoken by this speaker
+        seg_stmt = select(Segment).where(Segment.speaker_id == sp.speaker_id)
+        seg_res = await session.execute(seg_stmt)
+        segments = seg_res.scalars().all()
+        seg_ids = [s.seg_id for s in segments]
+
+        # Get all sentences spoken by this speaker
+        sent_stmt = select(Sentence).where(Sentence.speaker_id == sp.speaker_id)
+        sent_res = await session.execute(sent_stmt)
+        sentences = sent_res.scalars().all()
+
+        # Get all words spoken by this speaker
+        word_stmt = select(Word).where(Word.speaker_id == sp.speaker_id)
+        word_res = await session.execute(word_stmt)
+        words = [w.word_norm for w in word_res.scalars().all()]
+
+        # Calculate basic counts
+        sp.n_panels = len(set(s.panel_id for s in sentences))
+        sp.n_segments = len(segments)
+        sp.n_sentences = len(sentences)
+        sp.total_words = len(words)
+
+        # Total duration
+        sp.total_duration_sec = sum(s.duration_sec for s in segments if s.duration_sec)
+
+        if sentences:
+            # Average sentiment
+            sentiments = [
+                s.vader_compound for s in sentences if s.vader_compound is not None
+            ]
+            sp.avg_sentiment = sum(sentiments) / len(sentiments) if sentiments else 0.0
+
+            # Dominant emotion
+            emotions = [s.emotion_category for s in sentences if s.emotion_category]
+            sp.dominant_emotion = (
+                Counter(emotions).most_common(1)[0][0] if emotions else None
+            )
+
+            # Dominant topic
+            topics = [s.dominant_topic for s in sentences if s.dominant_topic]
+            sp.dominant_topic = Counter(topics).most_common(1)[0][0] if topics else None
+
+            # Behavioral percentages
+            cooperative_cnt = sum(
+                1 for s in sentences if s.emotion_category == "cooperative"
+            )
+            constructive_cnt = sum(
+                1 for s in sentences if s.emotion_category == "constructive"
+            )
+            neutral_cnt = sum(
+                1 for s in sentences if s.emotion_category == "neutral_cautious"
+            )
+            concerned_cnt = sum(
+                1 for s in sentences if s.emotion_category == "concerned"
+            )
+            confrontational_cnt = sum(
+                1 for s in sentences if s.emotion_category == "confrontational"
+            )
+
+            total_sents = len(sentences)
+            sp.cooperative_pct = cooperative_cnt / total_sents if total_sents else 0.0
+            sp.constructive_pct = constructive_cnt / total_sents if total_sents else 0.0
+            sp.neutral_pct = neutral_cnt / total_sents if total_sents else 0.0
+            sp.concerned_pct = concerned_cnt / total_sents if total_sents else 0.0
+            sp.confrontational_pct = (
+                confrontational_cnt / total_sents if total_sents else 0.0
+            )
+
+            # Risk event count
+            sp.risk_event_count = sum(
+                1 for s in sentences if s.risk_score and s.risk_score >= 7
+            )
+
+            # Top topics
+            top_topics_list = [t[0] for t in Counter(topics).most_common(3)]
+            sp.top_topics = ", ".join(top_topics_list) if top_topics_list else None
+
+            # Average sentence length
+            word_counts = [s.word_count for s in sentences if s.word_count]
+            sp.avg_sentence_length = (
+                sum(word_counts) / len(word_counts) if word_counts else 0.0
+            )
+
+            # Demand count
+            sp.demand_count = sum(1 for s in sentences if s.demand_type is not None)
+
+            # Rhetoric/pattern diversity
+            rhetoric_types = {s.rhetoric_type for s in sentences if s.rhetoric_type}
+            sp.pattern_diversity = len(rhetoric_types) / 5.0
+
+            # Average hedging and politeness
+            hedgings = [
+                s.hedging_score for s in sentences if s.hedging_score is not None
+            ]
+            sp.avg_hedging_score = sum(hedgings) / len(hedgings) if hedgings else 0.0
+
+            politeness_vals = [
+                s.politeness_ratio for s in sentences if s.politeness_ratio is not None
+            ]
+            sp.avg_politeness_ratio = (
+                sum(politeness_vals) / len(politeness_vals) if politeness_vals else 0.0
+            )
+
+            # Dominant frame and audience
+            frames = [s.dominant_frame for s in sentences if s.dominant_frame]
+            sp.dominant_frame = Counter(frames).most_common(1)[0][0] if frames else None
+
+            audiences = [s.audience_type for s in sentences if s.audience_type]
+            sp.dominant_audience = (
+                Counter(audiences).most_common(1)[0][0] if audiences else None
+            )
+
+        # Average DKI score from segments
+        if segments:
+            dki_scores = [s.dki_score for s in segments if s.dki_score is not None]
+            sp.avg_dki_score = sum(dki_scores) / len(dki_scores) if dki_scores else 0.0
+
+        # Lexical diversity and diplo vocab score
+        if words:
+            sp.lexical_diversity = len(set(words)) / len(words)
+
+            from bb_paxdata.domain.services.sentiment_service import SentimentService
+
+            diplo_words_cnt = sum(
+                1 for w in words if w in SentimentService.DIPLO_LEXICON
+            )
+            sp.diplo_vocab_score = diplo_words_cnt / len(words)
+
+        # Country references
+        if seg_ids:
+            from bb_paxdata.infrastructure.db.models import CountryReference
+
+            ref_stmt = (
+                select(
+                    CountryReference.to_country,
+                    func.sum(CountryReference.mention_count),
+                    func.avg(CountryReference.sentiment_context),
+                )
+                .where(CountryReference.seg_id.in_(seg_ids))
+                .group_by(CountryReference.to_country)
+            )
+            ref_res = await session.execute(ref_stmt)
+            ref_rows = ref_res.all()
+
+            top_countries = {}
+            allies = {}
+            adversaries = {}
+
+            for to_country, mention_sum, avg_sent in ref_rows:
+                if to_country and mention_sum:
+                    top_countries[to_country] = int(mention_sum)
+                    if avg_sent is not None:
+                        if avg_sent > 0.0:
+                            allies[to_country] = int(mention_sum)
+                        elif avg_sent < 0.0:
+                            adversaries[to_country] = int(mention_sum)
+
+            sp.top_countries_mentioned = top_countries if top_countries else None
+            sp.ally_countries = allies if allies else None
+            sp.adversary_countries = adversaries if adversaries else None
+
+        if not sp.first_seen_panel and sentences:
+            sp.first_seen_panel = sentences[0].panel_id
+
+
 async def _async_build(
     data_dir: str,
     force_rebuild: bool,
@@ -1385,6 +1756,9 @@ async def _async_build(
     _SC.reset_instance()
     container = _SC.get_instance(logic_mode=logic_only, ai_limit=ai_limit)
     pipeline = container.pipeline
+
+    # Ensure tables are created
+    await init_db()
 
     if logic_only:
         console.print(
@@ -1436,58 +1810,8 @@ async def _async_build(
 
         # Post-processing: Update Speaker stats
         console.print("Updating speaker statistics...")
-        speakers_res = await session.execute(select(Speaker))
-        speakers = speakers_res.scalars().all()
-        for sp in speakers:
-            # count panels
-            panels_count = (
-                await session.execute(
-                    select(func.count(func.distinct(Sentence.panel_id))).where(
-                        Sentence.speaker_id == sp.speaker_id
-                    )
-                )
-            ).scalar()
-            sp.n_panels = panels_count or 0
-
-            # count segments
-            segs_count = (
-                await session.execute(
-                    select(func.count(Segment.seg_id)).where(
-                        Segment.speaker_id == sp.speaker_id
-                    )
-                )
-            ).scalar()
-            sp.n_segments = segs_count or 0
-
-            # count sentences
-            sents_count = (
-                await session.execute(
-                    select(func.count(Sentence.sent_id)).where(
-                        Sentence.speaker_id == sp.speaker_id
-                    )
-                )
-            ).scalar()
-            sp.n_sentences = sents_count or 0
-
-            # total words
-            words_count = (
-                await session.execute(
-                    select(func.sum(Sentence.word_count)).where(
-                        Sentence.speaker_id == sp.speaker_id
-                    )
-                )
-            ).scalar()
-            sp.total_words = words_count or 0
-
-            # avg sentiment
-            avg_sent = (
-                await session.execute(
-                    select(func.avg(Sentence.vader_compound)).where(
-                        Sentence.speaker_id == sp.speaker_id
-                    )
-                )
-            ).scalar()
-            sp.avg_sentiment = float(avg_sent) if avg_sent is not None else 0.0
+        await update_speaker_profiles(session)
+        await session.commit()
 
         # Summary
         console.print("\n[green]✅ Build completed!")
@@ -1619,54 +1943,7 @@ async def _async_watch(
 
                 # Update speaker stats after changes
                 console.print("Updating speaker statistics...")
-                speakers_res = await session.execute(select(Speaker))
-                speakers = speakers_res.scalars().all()
-                for sp in speakers:
-                    panels_count = (
-                        await session.execute(
-                            select(func.count(func.distinct(Sentence.panel_id))).where(
-                                Sentence.speaker_id == sp.speaker_id
-                            )
-                        )
-                    ).scalar()
-                    sp.n_panels = panels_count or 0
-
-                    segs_count = (
-                        await session.execute(
-                            select(func.count(Segment.seg_id)).where(
-                                Segment.speaker_id == sp.speaker_id
-                            )
-                        )
-                    ).scalar()
-                    sp.n_segments = segs_count or 0
-
-                    sents_count = (
-                        await session.execute(
-                            select(func.count(Sentence.sent_id)).where(
-                                Sentence.speaker_id == sp.speaker_id
-                            )
-                        )
-                    ).scalar()
-                    sp.n_sentences = sents_count or 0
-
-                    words_count = (
-                        await session.execute(
-                            select(func.sum(Sentence.word_count)).where(
-                                Sentence.speaker_id == sp.speaker_id
-                            )
-                        )
-                    ).scalar()
-                    sp.total_words = words_count or 0
-
-                    avg_sent = (
-                        await session.execute(
-                            select(func.avg(Sentence.vader_compound)).where(
-                                Sentence.speaker_id == sp.speaker_id
-                            )
-                        )
-                    ).scalar()
-                    sp.avg_sentiment = float(avg_sent) if avg_sent is not None else 0.0
-
+                await update_speaker_profiles(session)
                 await session.commit()
 
             console.print("[bold green]👀 Monitoring...[/bold green]")

@@ -60,7 +60,7 @@ async def seed_panel_speaker_segment(session: AsyncSession) -> None:
         )
     )
     session.add(
-        m.Speaker(
+        m.SpeakerProfile(
             speaker_id="sp1",
             full_name="Speaker One",
         )
