@@ -5,7 +5,7 @@
 
 <br/>
 
-[![Version](https://img.shields.io/badge/version-1.0.1-a78bfa?style=for-the-badge&logo=semantic-release&logoColor=white)](https://github.com/BBgitaccount/BB-PAXDATA)
+[![Version](https://img.shields.io/badge/version-1.1.0-a78bfa?style=for-the-badge&logo=semantic-release&logoColor=white)](https://github.com/BBgitaccount/BB-PAXDATA)
 [![Python](https://img.shields.io/badge/Python-3.12+-3b82f6?style=for-the-badge&logo=python&logoColor=white)](https://www.python.org/)
 [![License](https://img.shields.io/badge/License-GPL--3.0-34d399?style=for-the-badge&logo=gnu&logoColor=white)](./LICENSE)
 [![Tests](https://img.shields.io/badge/Tests-pytest-f472b6?style=for-the-badge&logo=pytest&logoColor=white)](./tests)
@@ -17,7 +17,7 @@
 *Diplomatik transkriplerin yapısal çıkarımı, çok katmanlı anotasyonu ve kantitatif çerçeveleme analizi için geliştirilmiş **açık kaynaklı NLP motoru**.*
 
 > [!WARNING]
-> **Bu döküman v1.0.1'e özeldir.** Sistem geliştikçe API'ler, formüller ve mimariler önemli ölçüde değişebilir. Güncel bilgi için her zaman etiketli sürümün dökümantasyonuna başvurun.
+> **Bu döküman v1.1.0'e özeldir.** Sistem geliştikçe API'ler, formüller ve mimariler önemli ölçüde değişebilir. Güncel bilgi için her zaman etiketli sürümün dökümantasyonuna başvurun.
 
 </div>
 
@@ -25,20 +25,20 @@
 
 ## 📋 İçindekiler
 
-| # | Bölüm |
-|---|-------|
-| 1 | [Hızlı Başlangıç Kılavuzu](#1-hızlı-başlangıç-kılavuzu) |
-| 2 | [Sistem Genel Bakış](#2-sistem-genel-bakış) |
-| 3 | [Mimari](#3-mimari) |
-| 4 | [Analitik Pipeline](#4-analitik-pipeline) |
-| 5 | [Domain Servisleri — Teknik Detaylar](#5-domain-servisleri--teknik-detaylar) |
-| 6 | [Analiz Çıktıları ve Metrik Hesaplamaları](#6-analiz-çıktıları-ve-metrik-hesaplamaları) |
-| 7 | [Kalite Güvencesi ve HITL](#7-kalite-güvencesi-ve-hitl) |
-| 8 | [Altyapı](#8-altyapı) |
-| 9 | [Gözlemlenebilirlik](#9-gözlemlenebilirlik) |
-| 10 | [CLI Referansı](#10-cli-referansı) |
-| 11 | [Bilimsel Metodoloji](#11-bilimsel-metodoloji) |
-| 12 | [Akademik Kaynaklar](#12-akademik-kaynaklar) |
+| #   | Bölüm                                                                                   |
+| --- | --------------------------------------------------------------------------------------- |
+| 1   | [Hızlı Başlangıç Kılavuzu](#1-hızlı-başlangıç-kılavuzu)                                 |
+| 2   | [Sistem Genel Bakış](#2-sistem-genel-bakış)                                             |
+| 3   | [Mimari](#3-mimari)                                                                     |
+| 4   | [Analitik Pipeline](#4-analitik-pipeline)                                               |
+| 5   | [Domain Servisleri — Teknik Detaylar](#5-domain-servisleri--teknik-detaylar)            |
+| 6   | [Analiz Çıktıları ve Metrik Hesaplamaları](#6-analiz-çıktıları-ve-metrik-hesaplamaları) |
+| 7   | [Kalite Güvencesi ve HITL](#7-kalite-güvencesi-ve-hitl)                                 |
+| 8   | [Altyapı](#8-altyapı)                                                                   |
+| 9   | [Gözlemlenebilirlik](#9-gözlemlenebilirlik)                                             |
+| 10  | [CLI Referansı](#10-cli-referansı)                                                      |
+| 11  | [Bilimsel Metodoloji](#11-bilimsel-metodoloji)                                          |
+| 12  | [Akademik Kaynaklar](#12-akademik-kaynaklar)                                            |
 
 ---
 
@@ -49,12 +49,12 @@
 
 ### 1.1 Gereksinimler
 
-| Gereksinim | Versiyon | Zorunlu? |
-|------------|---------|---------|
-| Python | $\geq$ 3.12 | ✅ |
-| Poetry | $\geq$ 1.8 | ✅ |
-| Docker + Docker Compose | Herhangi | İzleme için (Opsiyonel) |
-| Ollama | Herhangi | Yerel LLM için (Opsiyonel) |
+| Gereksinim              | Versiyon    | Zorunlu?                   |
+| ----------------------- | ----------- | -------------------------- |
+| Python                  | $\geq$ 3.12 | ✅                          |
+| Poetry                  | $\geq$ 1.8  | ✅                          |
+| Docker + Docker Compose | Herhangi    | İzleme için (Opsiyonel)    |
+| Ollama                  | Herhangi    | Yerel LLM için (Opsiyonel) |
 
 ### 1.2 Kurulum
 
@@ -140,14 +140,14 @@ flowchart TB
 
 ### Katman Sorumlulukları
 
-| Katman | Sorumluluk | Çıktı |
-|--------|------------|-------|
-| **Ingestion** | Transkript normalleştirme, konuşmacı ayrıştırma, idempotency | `Segment[]`, `Speaker[]` |
-| **Domain Core** | NLP anotasyonu (duygu, risk, hedge, çerçeve, anomali) | `Analysis` (cümle başına) |
-| **Infrastructure** | Persistans, AI backend soyutlaması, önbellekleme, kurtarma | Alembic-versioned DB, önbellek |
-| **Observability** | Metrikler, izleme, prompt versiyonlama | Prometheus + Grafana |
-| **Quality Assurance** | Altın veri seti değerlendirmesi, belirsizlik puanlama, drift tespiti | `QualityReport`, `UncertaintyScore` |
-| **Interface** | CLI (`typer`) + gelecek REST API (`FastAPI`) | Okunabilir raporlar & yapısal export |
+| Katman                | Sorumluluk                                                           | Çıktı                                |
+| --------------------- | -------------------------------------------------------------------- | ------------------------------------ |
+| **Ingestion**         | Transkript normalleştirme, konuşmacı ayrıştırma, idempotency         | `Segment[]`, `Speaker[]`             |
+| **Domain Core**       | NLP anotasyonu (duygu, risk, hedge, çerçeve, anomali)                | `Analysis` (cümle başına)            |
+| **Infrastructure**    | Persistans, AI backend soyutlaması, önbellekleme, kurtarma           | Alembic-versioned DB, önbellek       |
+| **Observability**     | Metrikler, izleme, prompt versiyonlama                               | Prometheus + Grafana                 |
+| **Quality Assurance** | Altın veri seti değerlendirmesi, belirsizlik puanlama, drift tespiti | `QualityReport`, `UncertaintyScore`  |
+| **Interface**         | CLI (`typer`) + gelecek REST API (`FastAPI`)                         | Okunabilir raporlar & yapısal export |
 
 ---
 
@@ -333,22 +333,22 @@ flowchart LR
     style FEAT fill:#052e16,stroke:#34d399,color:#e2e8f0
 ```
 
-| Adım | Yöntem | Amaç |
-|------|--------|-------|
-| Tokenization | Kelime + cümle düzeyi | Tüm downstream görevler için temel |
-| Encoding Normalization | `ftfy` + `unicodedata` | Türkçe/Arapça/Kiril mojibake düzeltme |
-| Lemmatization | spaCy (`tr_core_news_trf`, `en_core_web_trf`) | Morfolojik varyantları standartlaştırma |
-| POS Tagging | spaCy dependency parser | Sözdizimsel özellik çıkarımı |
-| NER | spaCy + özel GPE modeli | Jeopolitik varlık tespiti |
-| Stopword Filtering | Alan-farkında (negasyon *not*, *never* korunur) | Retorik açıdan yüklü token'ları koruma |
+| Adım                   | Yöntem                                          | Amaç                                    |
+| ---------------------- | ----------------------------------------------- | --------------------------------------- |
+| Tokenization           | Kelime + cümle düzeyi                           | Tüm downstream görevler için temel      |
+| Encoding Normalization | `ftfy` + `unicodedata`                          | Türkçe/Arapça/Kiril mojibake düzeltme   |
+| Lemmatization          | spaCy (`tr_core_news_trf`, `en_core_web_trf`)   | Morfolojik varyantları standartlaştırma |
+| POS Tagging            | spaCy dependency parser                         | Sözdizimsel özellik çıkarımı            |
+| NER                    | spaCy + özel GPE modeli                         | Jeopolitik varlık tespiti               |
+| Stopword Filtering     | Alan-farkında (negasyon *not*, *never* korunur) | Retorik açıdan yüklü token'ları koruma  |
 
 ### 4.2 Özellik Çıkarımı
 
-| Özellik | Teknik | Granülarlik |
-|---------|--------|-------------|
-| TF-IDF | Scikit-learn / özel | Segment düzeyinde anahtar kelime sıralaması |
-| N-gram | Bigram / trigram frekansı | Collocation & retorik örüntü tespiti |
-| Embeddings | Bağlamsal (transformer tabanlı) | Semantik benzerlik & kümeleme |
+| Özellik    | Teknik                          | Granülarlik                                 |
+| ---------- | ------------------------------- | ------------------------------------------- |
+| TF-IDF     | Scikit-learn / özel             | Segment düzeyinde anahtar kelime sıralaması |
+| N-gram     | Bigram / trigram frekansı       | Collocation & retorik örüntü tespiti        |
+| Embeddings | Bağlamsal (transformer tabanlı) | Semantik benzerlik & kümeleme               |
 
 ---
 
@@ -395,13 +395,13 @@ flowchart TD
 ```
 
 **Duygu Eşikleri:**
-| Skor Aralığı | Kategori |
-|-------------|---------|
-| $s \leq -0.40$ | `CONFRONTATIONAL` |
-| $-0.40 < s \leq -0.10$ | `CONCERNED` |
-| $-0.10 < s < 0.10$ | `NEUTRAL_CAUTIOUS` |
-| $0.10 \leq s < 0.35$ | `CONSTRUCTIVE` |
-| $s \geq 0.35$ | `COOPERATIVE` |
+| Skor Aralığı           | Kategori           |
+| ---------------------- | ------------------ |
+| $s \leq -0.40$         | `CONFRONTATIONAL`  |
+| $-0.40 < s \leq -0.10$ | `CONCERNED`        |
+| $-0.10 < s < 0.10$     | `NEUTRAL_CAUTIOUS` |
+| $0.10 \leq s < 0.35$   | `CONSTRUCTIVE`     |
+| $s \geq 0.35$          | `COOPERATIVE`      |
 
 ---
 
@@ -434,11 +434,11 @@ $$R_{\text{ctx}} = \min\!\left(10,\; R_{\text{base}} \times \mu\right)$$
 $$\mu = \begin{cases} 1.5 & \text{GPE veya ORG varlığı tespit edilirse} \\ 1.2 & \text{yalnızca PERSON varlığı tespit edilirse} \\ 1.0 & \text{varlık yok} \end{cases}$$
 
 **Risk Sinyal Ağırlıkları:**
-| Kategori | Örnekler | Puan |
-|----------|---------|------|
-| CRITICAL | *red line*, *ultimatum*, *unacceptable*, *military option* | 3 |
-| HIGH | *escalate*, *retaliate*, *decisive actions*, *deep strikes* | 2 |
-| BASE | Diğer tüm sinyal kelimeleri | 1 |
+| Kategori | Örnekler                                                    | Puan |
+| -------- | ----------------------------------------------------------- | ---- |
+| CRITICAL | *red line*, *ultimatum*, *unacceptable*, *military option*  | 3    |
+| HIGH     | *escalate*, *retaliate*, *decisive actions*, *deep strikes* | 2    |
+| BASE     | Diğer tüm sinyal kelimeleri                                 | 1    |
 
 ---
 
@@ -488,19 +488,19 @@ mindmap
       should, must + GPE bağlamı
 ```
 
-**Çerçeve Türleri (v1.0.1):**
-| Frame Türü | Tanımı |
-|-----------|--------|
-| `CONFLICT_FRAME` | Savaş/çatışma odaklı çerçeve |
-| `HUMANITARIAN_FRAME` | İnsani kriz odaklı çerçeve |
-| `SOVEREIGNTY_FRAME` | Egemenlik ve toprak bütünlüğü |
-| `SECURITY_FRAME` | Güvenlik tehdidi çerçeve |
-| `LEGAL_FRAME` | Uluslararası hukuk ve yaptırım |
-| `DETERRENCE_FRAME` | Caydırıcılık stratejisi |
-| `PEACE_FRAME` | Diyalog ve uzlaşı |
-| `THREAT_FRAME` | Tehdit ve tehlike |
-| `MULTILATERAL_FRAME` | Çok taraflı diplomatik eylem |
-| `NEGOTIATION_FRAME` | Reform / müzakere süreci |
+**Çerçeve Türleri (v1.1.0):**
+| Frame Türü           | Tanımı                         |
+| -------------------- | ------------------------------ |
+| `CONFLICT_FRAME`     | Savaş/çatışma odaklı çerçeve   |
+| `HUMANITARIAN_FRAME` | İnsani kriz odaklı çerçeve     |
+| `SOVEREIGNTY_FRAME`  | Egemenlik ve toprak bütünlüğü  |
+| `SECURITY_FRAME`     | Güvenlik tehdidi çerçeve       |
+| `LEGAL_FRAME`        | Uluslararası hukuk ve yaptırım |
+| `DETERRENCE_FRAME`   | Caydırıcılık stratejisi        |
+| `PEACE_FRAME`        | Diyalog ve uzlaşı              |
+| `THREAT_FRAME`       | Tehdit ve tehlike              |
+| `MULTILATERAL_FRAME` | Çok taraflı diplomatik eylem   |
+| `NEGOTIATION_FRAME`  | Reform / müzakere süreci       |
 
 ---
 
@@ -536,30 +536,30 @@ Burada:
 
 Negasyon düzeltmesinden sonra $C_{\text{adj}} > 0.1$ ise `SENTIMENT_RISK_DIVERGENCE` anomalisi tetiklenir.
 
-**Anomali Türleri (v1.0.1):**
-| Anomali | Tetikleyici Koşul | Kategori |
-|---------|-------------------|----------|
-| `RISK_HEDGING_CONFLICT` | Risk ≥ 7 AND Hedge ≥ 0.6 | Deception Pattern |
-| `NEGATIVE_CONFRONTATIONAL_AMPLIFICATION` | Duygu ≤ -0.5 AND Ton = confrontational | Agresif Söylem |
-| `VELVET_GLOVE_CONFRONTATION` | Duygu ≥ 0.3 AND Ton = confrontational | Örtülü Baskı |
-| `HIGH_RISK_CONCILIATORY_MASK` | Risk ≥ 7 AND Ton = cooperative | Deception Pattern |
-| `DIRECT_MANIPULATION_LOW_HEDGE` | Manip ≥ 0.7 AND Hedge ≤ 0.2 | Manipulation |
-| `DOMINANT_ACTOR_PRESSURE` | Güç ≥ 8 AND SBI ≥ 7 AND Risk ≥ 6 | Power Dynamics |
-| `VAGUE_DEMAND_PLAUSIBLE_DENIABILITY` | Hedge ≥ 0.6 AND Risk ≥ 4 | Strategic Ambiguity |
-| `CONFLICT_FRAME_POSITIVE_WRAP` | Frame=conflict AND Duygu ≥ 0.3 | Framing Strategy |
-| `INCONSISTENCY_PLUS_MANIPULATION` | Manip ≥ 0.5 AND \|AI−Formül\| ≥ 0.5 | Deception Pattern |
-| `NEGATIVE_APPRAISAL_PERSUASIVE_TONE` | Appraisal=neg AND Duygu ≤ -0.5 AND Kibarlık ≥ 0.6 | Persuasion Strategy |
+**Anomali Türleri (v1.1.0):**
+| Anomali                                  | Tetikleyici Koşul                                 | Kategori            |
+| ---------------------------------------- | ------------------------------------------------- | ------------------- |
+| `RISK_HEDGING_CONFLICT`                  | Risk ≥ 7 AND Hedge ≥ 0.6                          | Deception Pattern   |
+| `NEGATIVE_CONFRONTATIONAL_AMPLIFICATION` | Duygu ≤ -0.5 AND Ton = confrontational            | Agresif Söylem      |
+| `VELVET_GLOVE_CONFRONTATION`             | Duygu ≥ 0.3 AND Ton = confrontational             | Örtülü Baskı        |
+| `HIGH_RISK_CONCILIATORY_MASK`            | Risk ≥ 7 AND Ton = cooperative                    | Deception Pattern   |
+| `DIRECT_MANIPULATION_LOW_HEDGE`          | Manip ≥ 0.7 AND Hedge ≤ 0.2                       | Manipulation        |
+| `DOMINANT_ACTOR_PRESSURE`                | Güç ≥ 8 AND SBI ≥ 7 AND Risk ≥ 6                  | Power Dynamics      |
+| `VAGUE_DEMAND_PLAUSIBLE_DENIABILITY`     | Hedge ≥ 0.6 AND Risk ≥ 4                          | Strategic Ambiguity |
+| `CONFLICT_FRAME_POSITIVE_WRAP`           | Frame=conflict AND Duygu ≥ 0.3                    | Framing Strategy    |
+| `INCONSISTENCY_PLUS_MANIPULATION`        | Manip ≥ 0.5 AND \|AI−Formül\| ≥ 0.5               | Deception Pattern   |
+| `NEGATIVE_APPRAISAL_PERSUASIVE_TONE`     | Appraisal=neg AND Duygu ≤ -0.5 AND Kibarlık ≥ 0.6 | Persuasion Strategy |
 
 ---
 
 ### 5.6 Konu Modellemesi (`TopicService`)
 
-| Yöntem | Kullanım Amacı |
-|--------|---------------|
-| TF-IDF + Anahtar Kelime | Segment düzeyinde baz konu sıralaması |
-| BERTopic | Tematik drift tespiti için semantik kümeleme |
+| Yöntem                  | Kullanım Amacı                               |
+| ----------------------- | -------------------------------------------- |
+| TF-IDF + Anahtar Kelime | Segment düzeyinde baz konu sıralaması        |
+| BERTopic                | Tematik drift tespiti için semantik kümeleme |
 
-**Konu Kategorileri (v1.0.1):**
+**Konu Kategorileri (v1.1.0):**
 `Gazze_Filistin_İsrail` · `Ukrayna_Rusya` · `BM_Reformu` · `Ekonomi_Ticaret_Enerji` · `Güvenlik_Çatışma`
 
 ---
@@ -595,14 +595,14 @@ $$\text{CUSUM}^-_t = \min\!\left(0,\; \text{CUSUM}^-_{t-1} + z_t + k\right)$$
 #### Jensen-Shannon Divergence (Konu Drift)
 $$\text{JSD}(P \| Q) = \frac{1}{2} D_{\text{KL}}(P \| M) + \frac{1}{2} D_{\text{KL}}(Q \| M)$$
 
-#### Ek İstatistiksel Metrikler (v1.0.1)
-| Metrik | Formül / Yöntem | Açıklama |
-|--------|----------------|----------|
-| **MTLD** | Type-Token Ratio stabilizasyon noktası | Sözcük çeşitlilik zenginliği |
-| **GARCH(1,1)** | $\sigma^2_t = \omega + \alpha\varepsilon^2_{t-1} + \beta\sigma^2_{t-1}$ | Duygu oynaklık rejimi |
-| **Entity Half-Life** | $f(t) = f_0 \cdot e^{-\lambda t}$ | Varlık saliency bozunumu |
-| **Lexical Entropy** | $H = -\sum p_i \log_2 p_i$ | Shannon entropi (sözcük dağılımı) |
-| **Red Line Flexibility** | Concession Count / Red Line Count | Kırmızı çizgi geri adım indeksi |
+#### Ek İstatistiksel Metrikler (v1.1.0)
+| Metrik                   | Formül / Yöntem                                                         | Açıklama                          |
+| ------------------------ | ----------------------------------------------------------------------- | --------------------------------- |
+| **MTLD**                 | Type-Token Ratio stabilizasyon noktası                                  | Sözcük çeşitlilik zenginliği      |
+| **GARCH(1,1)**           | $\sigma^2_t = \omega + \alpha\varepsilon^2_{t-1} + \beta\sigma^2_{t-1}$ | Duygu oynaklık rejimi             |
+| **Entity Half-Life**     | $f(t) = f_0 \cdot e^{-\lambda t}$                                       | Varlık saliency bozunumu          |
+| **Lexical Entropy**      | $H = -\sum p_i \log_2 p_i$                                              | Shannon entropi (sözcük dağılımı) |
+| **Red Line Flexibility** | Concession Count / Red Line Count                                       | Kırmızı çizgi geri adım indeksi   |
 
 ---
 
@@ -661,14 +661,14 @@ flowchart LR
 
 Modelin sürekli öğrenmesi ve kalibre edilmesi için sisteme entegre bir **Human-in-the-Loop (HITL)** döngüsü ve kalite güvence altyapısı bulunur.
 
-| Bileşen | Amaç |
-|---------|------|
-| `GoldenDataset` | 100 el-etiketli cümle (ground truth) |
-| `QualityEvaluator` | DeepEval / özel puanlayıcı (altın kümeye karşı) |
-| `UncertaintyScorer` | AI çıktısı başına entropi tabanlı güven puanlaması |
-| `HumanReview` | Uzmanların AI analizlerini değerlendirdiği salt-okunur (immutable) referans modeli |
-| `CalibrationService` | Uzman ve AI uyumunu (Cohen's Kappa, Macro-F1, SBI MAE) haftalık analiz eden servis |
-| `FewShotInjector` | Uzman onaylı altın standart verileri LLM istemlerine (prompt) otomatik enjekte eden modül |
+| Bileşen              | Amaç                                                                                      |
+| -------------------- | ----------------------------------------------------------------------------------------- |
+| `GoldenDataset`      | 100 el-etiketli cümle (ground truth)                                                      |
+| `QualityEvaluator`   | DeepEval / özel puanlayıcı (altın kümeye karşı)                                           |
+| `UncertaintyScorer`  | AI çıktısı başına entropi tabanlı güven puanlaması                                        |
+| `HumanReview`        | Uzmanların AI analizlerini değerlendirdiği salt-okunur (immutable) referans modeli        |
+| `CalibrationService` | Uzman ve AI uyumunu (Cohen's Kappa, Macro-F1, SBI MAE) haftalık analiz eden servis        |
+| `FewShotInjector`    | Uzman onaylı altın standart verileri LLM istemlerine (prompt) otomatik enjekte eden modül |
 
 ### 7.1 Belirsizlik Puanlama (Uncertainty)
 
@@ -723,7 +723,7 @@ class AIClient(ABC):
     async def generate(self, prompt: str, **kwargs) -> str: ...
     async def embed(self, text: str) -> list[float]: ...
 
-# Desteklenen backend'ler (v1.0.1)
+# Desteklenen backend'ler (v1.1.0)
 class OllamaClient(AIClient): ...       # Yerel LLM (Llama3, Mistral vb.)
 class AnthropicClient(AIClient): ...    # Claude (Haiku / Sonnet / Opus)
 class GeminiClient(AIClient): ...       # Google Gemini (Flash / Pro)
@@ -755,20 +755,20 @@ flowchart TD
 
 ### 8.2 Önbellekleme Stratejisi
 
-| Backend | Sürücü | TTL Stratejisi |
-|---------|--------|---------------|
-| Disk | `diskcache` | 24 saat (varsayılan) |
-| Redis | `redis-py` | LRU + açık geçersiz kılma |
+| Backend | Sürücü      | TTL Stratejisi            |
+| ------- | ----------- | ------------------------- |
+| Disk    | `diskcache` | 24 saat (varsayılan)      |
+| Redis   | `redis-py`  | LRU + açık geçersiz kılma |
 
 *Önbellek anahtarı: `SHA-256(prompt_text + model_version)` — prompt değişirse otomatik geçersiz.*
 
 ### 8.3 Veritabanı
 
-| Bileşen | Teknoloji |
-|---------|-----------|
-| ORM | SQLAlchemy 2.0 (async) |
-| Migrasyonlar | Alembic |
-| Varsayılan | SQLite (geliştirme ortamı için) |
+| Bileşen      | Teknoloji                       |
+| ------------ | ------------------------------- |
+| ORM          | SQLAlchemy 2.0 (async)          |
+| Migrasyonlar | Alembic                         |
+| Varsayılan   | SQLite (geliştirme ortamı için) |
 
 ---
 
@@ -798,12 +798,12 @@ graph LR
     style OPTIONAL fill:#1c1917,stroke:#a3a3a3,color:#e2e8f0
 ```
 
-| Metrik | Tip | Etiketler |
-|--------|-----|-----------|
-| `ai_backend_latency_seconds` | Histogram | `backend`, `operation` |
-| `cache_hit_rate` | Gauge | `backend` (disk/redis) |
-| `batch_fallback_count` | Counter | `from_backend`, `to_backend` |
-| `json_recovery_total` | Counter | `level`, `result` |
+| Metrik                       | Tip       | Etiketler                    |
+| ---------------------------- | --------- | ---------------------------- |
+| `ai_backend_latency_seconds` | Histogram | `backend`, `operation`       |
+| `cache_hit_rate`             | Gauge     | `backend` (disk/redis)       |
+| `batch_fallback_count`       | Counter   | `from_backend`, `to_backend` |
+| `json_recovery_total`        | Counter   | `level`, `result`            |
 
 ---
 
@@ -1003,18 +1003,18 @@ Ham transkript dosyalarını bir klasöre kaydettiğiniz anda sistemin bunu yaka
 
 ### 11.1 Yöntem Özeti
 
-| Modül | Yöntem | Akademik Temel |
-|-------|--------|----------------|
-| **Sentiment** | Negasyon-farkında DIPLO + VADER | Jia & Liang (2017); Socher et al. (2013) |
-| **Risk** | SBI / DKI bileşik indeks | Baldwin (1985); Kıyılar (2020) |
-| **Hedging** | Hyland (1995) taksonomisi + yoğunluk oranı | Hyland (1995, 2005) |
-| **Framing** | Entman (1993) dört-fonksiyonlu model + salience | Entman (1993) |
-| **Anomaly** | 10 kurallı çapraz-anomali tensörü | Tsytsarau et al. (2017); Trager (2010) |
-| **Topic** | TF-IDF + BERTopic dinamik modelleme | Grootendorst (2022) |
-| **Dependency** | spaCy SVO çıkarımı + diplomatik alan budama | Manning et al. (2014) |
-| **Explainability** | SHAP + LIME hibrit | Lundberg & Lee (2017); Ribeiro et al. (2016) |
-| **Temporal** | CUSUM + JSD lexical drift + embedding centroid kayması | Page (1954); Lin (1991) |
-| **Quality** | Tahmine dayalı entropi + ensemble anlaşmazlığı | Gal & Ghahramani (2016) |
+| Modül              | Yöntem                                                 | Akademik Temel                               |
+| ------------------ | ------------------------------------------------------ | -------------------------------------------- |
+| **Sentiment**      | Negasyon-farkında DIPLO + VADER                        | Jia & Liang (2017); Socher et al. (2013)     |
+| **Risk**           | SBI / DKI bileşik indeks                               | Baldwin (1985); Kıyılar (2020)               |
+| **Hedging**        | Hyland (1995) taksonomisi + yoğunluk oranı             | Hyland (1995, 2005)                          |
+| **Framing**        | Entman (1993) dört-fonksiyonlu model + salience        | Entman (1993)                                |
+| **Anomaly**        | 10 kurallı çapraz-anomali tensörü                      | Tsytsarau et al. (2017); Trager (2010)       |
+| **Topic**          | TF-IDF + BERTopic dinamik modelleme                    | Grootendorst (2022)                          |
+| **Dependency**     | spaCy SVO çıkarımı + diplomatik alan budama            | Manning et al. (2014)                        |
+| **Explainability** | SHAP + LIME hibrit                                     | Lundberg & Lee (2017); Ribeiro et al. (2016) |
+| **Temporal**       | CUSUM + JSD lexical drift + embedding centroid kayması | Page (1954); Lin (1991)                      |
+| **Quality**        | Tahmine dayalı entropi + ensemble anlaşmazlığı         | Gal & Ghahramani (2016)                      |
 
 ### 11.2 Veri Akışı — Bilimsel Katmanlar
 
@@ -1061,7 +1061,7 @@ flowchart TB
 
 ## 12. Akademik Kaynaklar
 
-> Aşağıdaki kaynaklar v1.0.1'de doğrudan uygulanan veya referans alınan çalışmalardır.
+> Aşağıdaki kaynaklar v1.1.0'de doğrudan uygulanan veya referans alınan çalışmalardır.
 
 ### Duygu Analizi
 - **Socher, R., Perelygin, A., Wu, J. et al. (2013).** *Recursive Deep Models for Semantic Compositionality Over a Sentiment Treebank.* EMNLP 2013.
