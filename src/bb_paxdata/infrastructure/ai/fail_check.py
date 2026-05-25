@@ -5,11 +5,19 @@ results. It implements multiple validation checks, consistency verification,
 and failure detection mechanisms to ensure high-quality AI outputs.
 """
 
+import json
+import re
 from dataclasses import dataclass
 from enum import Enum
 from typing import Any
 
-from ...domain.enums import ValidationCheckType
+import requests
+import structlog
+
+from ...config.settings import get_settings
+from ...domain.enums import AIProvider, ValidationCheckType
+
+logger = structlog.get_logger(__name__)
 
 
 class ValidationStatus(Enum):
@@ -666,3 +674,301 @@ class AIFailCheck:
             )
 
         return recommendations
+
+    # ── LLM Linguistic Failure Analysis (Legacy v2.0 adaptation) ──────────
+
+    FAIL_SYSTEM = """You are an expert linguistic analyst specializing in diplomatic discourse, negation handling, and formula-based vs. AI-based sentiment divergence.
+
+CRITICAL OUTPUT RULES:
+1. Return ONLY valid JSON — no markdown, no code blocks, no explanations, no preamble.
+2. Do NOT wrap output in ```json or ``` markers.
+3. Do NOT add any text before or after the JSON.
+4. Ensure all strings are properly quoted with double quotes.
+5. Ensure there are no trailing commas.
+6. If returning an array, ensure it is parseable by Python's json.loads() without preprocessing.
+
+FOCUS AREAS:
+- Negation traps ("We do NOT want war" vs "We want war")
+- Contextual softening (prev/next sentences altering meaning)
+- Diplomatic masks (high risk + conciliatory tone)
+- Polysemy in diplomatic context
+- Temporal shifts (KGI, risk_delta, emotion_shift)
+- Cross-anomaly connections"""
+
+    FAIL_USER_TEMPLATE = """Analyze WHY the following diplomatic sentence produced a LOGIC FAIL between a formula-based system and an AI system.
+
+SPEAKER: {speaker_name} ({country}, power={power_level}/10)
+PANEL: {panel_id}
+CHECK TYPE: {check_type}
+
+ORIGINAL SENTENCE:
+{original_sentence}
+
+TRIPLET CONTEXT:
+PREV: {prev_sentence}
+CURR: {original_sentence}
+NEXT: {next_sentence}
+
+FORMULA VALUE: {formula_value}
+AI VALUE: {ai_value}
+DISCREPANCY SCORE: {discrepancy_score}
+
+TEMPORAL DYNAMICS:
+- KGI Score: {kgi_score:.2f}
+- Risk Delta: {risk_delta:+.2f}
+- Emotion Shift: {emotion_shift:.2f}
+- Topic Shift: {topic_shift:.2f}
+- Formula Inconsistency: {formula_inconsistency:.2f}
+
+AI ANALYST CROSS-REFERENCE:
+- AI Risk Score: {ai_risk_score}/10
+- AI Manipulation: {ai_manipulation_score:.2f}
+- AI Hedging: {ai_hedging_score:.2f}
+- AI Tone: {ai_tone}
+- AI Frame: {ai_frame}
+- Detected Anomalies: {anomaly_types}
+
+VALIDATION EXPLANATION:
+{validation_explanation}
+
+CONTEXT NOTE:
+{context_note}
+
+Return ONLY this JSON:
+{{
+  "AI_Neden_Fail": <string max 300 chars — Turkish>,
+  "AI_Negasyon_Tipi": <"yok"|"yuzey"|"derin"|"yapisal"|"kapsam">,
+  "AI_Negasyon_Kapsami": <string max 150 chars>,
+  "AI_Baglamsal_Faktor": <string max 200 chars>,
+  "AI_Temporal_Faktor": <string max 200 chars>,
+  "AI_Formul_Eksigi": <string max 200 chars>,
+  "AI_AI_Yanilgisi": <string max 200 chars or null>,
+  "AI_Duzeltme_Onerisi": <string max 200 chars>,
+  "AI_Karsilastirmali_Duzeltme": <string max 250 chars>,
+  "AI_Fail_Kategorisi": <"negasyon_tuzagi"|"baglamsal_kayma"|"sozcuk_cift_anlamliligi"|"ton_ayrimi"|"temporal_drift"|"anomali_kaynakli"|"diger">,
+  "AI_Anomali_Baglantisi": <string max 150 chars>,
+  "AI_Dilbilimsel_Marka": <string max 150 chars>,
+  "AI_Guven_Skoru": <float 0.0-1.0>
+}}"""
+
+    async def call_backend(self, system: str, user: str) -> str | None:
+        settings = get_settings()
+        provider = settings.ai_provider
+        api_key = settings.active_ai_api_key
+        model = settings.ai_model
+        payload: Any
+
+        if provider == AIProvider.ANTHROPIC:
+            headers = {
+                "x-api-key": api_key,
+                "anthropic-version": "2023-06-01",
+                "content-type": "application/json",
+            }
+            payload = {
+                "model": model if model else "claude-haiku-4-5-20251001",
+                "max_tokens": 1200,
+                "system": system,
+                "messages": [
+                    {"role": "user", "content": user},
+                    {"role": "assistant", "content": "{"},
+                ],
+            }
+            try:
+                import asyncio
+
+                loop = asyncio.get_event_loop()
+
+                def post() -> requests.Response:
+                    return requests.post(
+                        "https://api.anthropic.com/v1/messages",
+                        headers=headers,
+                        json=payload,
+                        timeout=120,
+                    )
+
+                resp = await loop.run_in_executor(None, post)
+                resp.raise_for_status()
+                content = resp.json()["content"][0]["text"]
+                if isinstance(content, str):
+                    content = content.strip()
+                    if not content.startswith("{"):
+                        content = "{" + content
+                    return content
+                return None
+            except Exception as e:
+                logger.error(f"Anthropic API call failed: {e}")
+                return None
+
+        elif provider == AIProvider.GEMINI:
+            url = f"https://generativelanguage.googleapis.com/v1beta/models/{model if model else 'gemini-2.5-flash'}:generateContent?key={api_key}"
+            payload = {
+                "contents": [{"role": "user", "parts": [{"text": user}]}],
+                "systemInstruction": {"parts": [{"text": system}]},
+                "generationConfig": {
+                    "temperature": 0.1,
+                    "topP": 0.9,
+                    "responseMimeType": "application/json",
+                },
+            }
+            try:
+                import asyncio
+
+                loop = asyncio.get_event_loop()
+
+                def post() -> requests.Response:
+                    return requests.post(
+                        url,
+                        headers={"Content-Type": "application/json"},
+                        json=payload,
+                        timeout=120,
+                    )
+
+                resp = await loop.run_in_executor(None, post)
+                resp.raise_for_status()
+                text = resp.json()["candidates"][0]["content"]["parts"][0]["text"]
+                if isinstance(text, str):
+                    return text.strip()
+                return None
+            except Exception as e:
+                logger.error(f"Gemini API call failed: {e}")
+                return None
+
+        elif provider == AIProvider.GROQ:
+            headers = {
+                "Authorization": f"Bearer {api_key}",
+                "Content-Type": "application/json",
+            }
+            payload = {
+                "model": model if model else "llama-3.3-70b-versatile",
+                "messages": [
+                    {"role": "system", "content": system},
+                    {"role": "user", "content": user},
+                ],
+                "temperature": 0.1,
+                "max_tokens": 1200,
+                "response_format": {"type": "json_object"},
+            }
+            try:
+                import asyncio
+
+                loop = asyncio.get_event_loop()
+
+                def post() -> requests.Response:
+                    return requests.post(
+                        "https://api.groq.com/openai/v1/chat/completions",
+                        headers=headers,
+                        json=payload,
+                        timeout=120,
+                    )
+
+                resp = await loop.run_in_executor(None, post)
+                resp.raise_for_status()
+                content = resp.json()["choices"][0]["message"]["content"]
+                if isinstance(content, str):
+                    return content.strip()
+                return None
+            except Exception as e:
+                logger.error(f"Groq API call failed: {e}")
+                return None
+
+        else:  # OLLAMA
+            payload = {
+                "model": model if model else "gemma3:4b",
+                "messages": [
+                    {"role": "system", "content": system},
+                    {"role": "user", "content": user},
+                ],
+                "stream": False,
+                "format": "json",
+                "options": {
+                    "temperature": 0.1,
+                    "num_ctx": 4096,
+                    "num_predict": 1200,
+                },
+            }
+            url = f"{settings.ollama_base_url}/api/chat"
+            try:
+                import asyncio
+
+                loop = asyncio.get_event_loop()
+
+                def post() -> requests.Response:
+                    return requests.post(url, json=payload, timeout=120)
+
+                resp = await loop.run_in_executor(None, post)
+                resp.raise_for_status()
+                content = resp.json()["message"]["content"]
+                if isinstance(content, str):
+                    content = content.strip()
+                    content = re.sub(
+                        r"<think>.*?</think>", "", content, flags=re.DOTALL
+                    ).strip()
+                    return content
+                return None
+            except Exception as e:
+                logger.error(f"Ollama API call failed: {e}")
+                return None
+
+    def safe_parse_json_object(self, raw: str) -> dict[str, Any] | None:
+        if not raw:
+            return None
+        cleaned = re.sub(r"```(?:json)?\s*", "", raw).strip().rstrip("`").strip()
+        cleaned = re.sub(r"<think>.*?</think>", "", cleaned, flags=re.DOTALL).strip()
+        cleaned = re.sub(
+            r"<reasoning>.*?</reasoning>", "", cleaned, flags=re.DOTALL
+        ).strip()
+        cleaned = re.sub(r"^---\s*", "", cleaned).strip()
+        cleaned = cleaned.replace("\\n", "\n")
+        cleaned = re.sub(r",\s*}", "}", cleaned)
+        cleaned = re.sub(r",\s*]", "]", cleaned)
+        try:
+            parsed = json.loads(cleaned)
+            if isinstance(parsed, dict):
+                return parsed
+        except json.JSONDecodeError:
+            pass
+        try:
+            parsed = json.loads(raw)
+            if isinstance(parsed, dict):
+                return parsed
+        except json.JSONDecodeError:
+            pass
+        return None
+
+    async def analyze_fail_linguistically(
+        self, row_data: dict[str, Any]
+    ) -> dict[str, Any] | None:
+        """Analyze a logic validation failure using LLM linguistic analysis."""
+        user_prompt = self.FAIL_USER_TEMPLATE.format(
+            speaker_name=row_data.get("speaker_name", "unknown"),
+            country=row_data.get("country", "unknown"),
+            power_level=row_data.get("power_level", 5),
+            panel_id=row_data.get("panel_id", "unknown"),
+            check_type=row_data.get("check_type", "unknown"),
+            original_sentence=row_data.get("original_sentence", ""),
+            prev_sentence=row_data.get("prev_sentence", "[START]"),
+            next_sentence=row_data.get("next_sentence", "[END]"),
+            formula_value=row_data.get("formula_value", "0.0"),
+            ai_value=row_data.get("ai_value", "0.0"),
+            discrepancy_score=row_data.get("discrepancy_score", 0.0),
+            kgi_score=row_data.get("kgi_score", 0.0),
+            risk_delta=row_data.get("risk_delta", 0.0),
+            emotion_shift=row_data.get("emotion_shift", 0.0),
+            topic_shift=row_data.get("topic_shift", 0.0),
+            formula_inconsistency=row_data.get("formula_inconsistency", 0.0),
+            ai_risk_score=row_data.get("ai_risk_score", 0),
+            ai_manipulation_score=row_data.get("ai_manipulation_score", 0.0),
+            ai_hedging_score=row_data.get("ai_hedging_score", 0.0),
+            ai_tone=row_data.get("ai_tone", "neutral"),
+            ai_frame=row_data.get("ai_frame", "neutral"),
+            anomaly_types=row_data.get("anomaly_types", "none"),
+            validation_explanation=row_data.get("validation_explanation", ""),
+            context_note=row_data.get("context_note", ""),
+        )
+
+        raw_resp = await self.call_backend(self.FAIL_SYSTEM, user_prompt)
+        if not raw_resp:
+            return None
+
+        parsed = self.safe_parse_json_object(raw_resp)
+        return parsed

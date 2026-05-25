@@ -1,0 +1,28 @@
+    avg_politeness_ratio REAL DEFAULT 0,
+    avg_politeness_ratio REAL DEFAULT 0,
+    politeness_ratio    REAL DEFAULT 0,
+    face_threat_count   INTEGER DEFAULT 0,
+    ROUND(AVG(politeness_ratio), 3)                        AS avg_politeness
+    ROUND(s.politeness_ratio, 3)                           AS politeness_ratio
+    ROUND(AVG(seg.avg_politeness_ratio), 3)                AS avg_politeness
+    ROUND(sp.avg_politeness_ratio, 3)                      AS avg_politeness_ratio,
+    ROUND(sp.avg_politeness_ratio, 3)                      AS avg_politeness,
+    ROUND(AVG(s.politeness_ratio), 3)                      AS avg_politeness,
+    ROUND(AVG(s.face_threat_count), 2)                     AS avg_face_threat,
+    ROUND((AVG(s.hedging_score) + AVG(s.politeness_ratio)) / 2.0, 3)
+    ROUND(AVG(s.face_threat_count) * (1.0 - AVG(s.hedging_score)), 3)
+    Düşük politeness_ratio = daha doğrudan/tehditkar dil.
+        "face_threat_count": fta_score,
+        "politeness_ratio":  ratio,
+         avg_hedging_score,avg_politeness_ratio,dominant_frame,dominant_audience,dominant_evidence,
+         seg.get("avg_politeness_ratio",0.0),
+         hedging_score,politeness_ratio,face_threat_count,face_save_count,
+         sent.get("politeness_ratio",0.0),
+         sent.get("face_threat_count",0),
+        avg_polit   = c.execute("SELECT AVG(politeness_ratio) FROM sentences WHERE speaker_id=?",(spk_id,)).fetchone()[0] or 0.0
+             avg_hedging_score,avg_politeness_ratio,avg_dki_score,dominant_frame,dominant_audience)
+                "avg_politeness_ratio": polit["politeness_ratio"],
+                    "politeness_ratio":    s_polit["politeness_ratio"],
+                    "face_threat_count":   s_polit["face_threat_count"],
+                seg["avg_politeness_ratio"] = round(
+                    sum(s.get("politeness_ratio",0) for s in sentences_enriched) / len(sentences_enriched), 3)

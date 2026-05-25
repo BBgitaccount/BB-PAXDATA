@@ -28,21 +28,29 @@ from bb_paxdata.infrastructure.db.country_models import (
 class CountryReferenceRepository:
     """ICountryReferenceRepository Protocol'ünün SQLAlchemy implementasyonu."""
 
-    def __init__(self, session: AsyncSession) -> None:
+    def __init__(self, session: AsyncSession | None = None) -> None:
         self._session = session
+
+    @property
+    def session(self) -> AsyncSession:
+        if self._session is None:
+            raise RuntimeError(
+                "Database session is not set on CountryReferenceRepository"
+            )
+        return self._session
 
     async def save(self, reference: CountryReference) -> None:
         row = CountryReferenceTable.from_domain(reference)
-        self._session.add(row)
-        await self._session.flush()
+        self.session.add(row)
+        await self.session.flush()
 
     async def save_batch(self, references: Sequence[CountryReference]) -> None:
         rows = [CountryReferenceTable.from_domain(r) for r in references]
-        self._session.add_all(rows)
-        await self._session.flush()
+        self.session.add_all(rows)
+        await self.session.flush()
 
     async def get_by_panel(self, panel_id: str) -> list[CountryReference]:
-        result = await self._session.execute(
+        result = await self.session.execute(
             select(CountryReferenceTable).where(
                 CountryReferenceTable.panel_id == panel_id
             )
@@ -52,7 +60,7 @@ class CountryReferenceRepository:
     async def get_by_pair(
         self, speaker: str, referenced: str, panel_id: str
     ) -> list[CountryReference]:
-        result = await self._session.execute(
+        result = await self.session.execute(
             select(CountryReferenceTable).where(
                 CountryReferenceTable.panel_id == panel_id,
                 CountryReferenceTable.speaker_country == speaker,

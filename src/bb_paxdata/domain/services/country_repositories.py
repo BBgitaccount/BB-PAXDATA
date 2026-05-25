@@ -8,7 +8,7 @@ Bu dosya sadece sözleşmeyi (contract) tanımlar; hiçbir import dışa bağım
 from __future__ import annotations
 
 from collections.abc import Sequence
-from typing import Protocol
+from typing import Any, Protocol
 
 from bb_paxdata.domain.models.bilateral_sentiment import BilateralSentiment
 from bb_paxdata.domain.models.country_reference import CountryReference
@@ -17,6 +17,8 @@ from bb_paxdata.domain.models.topic_synthesis import TopicSynthesis
 
 
 class ICountryReferenceRepository(Protocol):
+    _session: Any
+
     async def save(self, reference: CountryReference) -> None: ...
     async def save_batch(self, references: Sequence[CountryReference]) -> None: ...
     async def get_by_panel(self, panel_id: str) -> list[CountryReference]: ...

@@ -1,0 +1,94 @@
+=== Matches for all_dynamics_rows ===
+Line 2929: all_dynamics_rows   = []
+  -15:             except Exception as e:
+  -14:                 log(f"✗ HATA [{fp.name}]: {e}",logf)
+  -13: 
+  -12:         conn.commit()
+  -11:         log(f"\nToplam segment: {len(all_segments)}",logf)
+  -10: 
+  -9:         # ── AŞAMA 2: TF-IDF (corpus genelinde) ─────────────────
+  -8:         log("► TF-IDF hesaplanıyor...",logf)
+  -7:         texts      = [s["text"] for s in all_segments]
+  -6:         kw_results = tfidf_batch(texts)
+  -5: 
+  -4:         # ── AŞAMA 3: Segment & Cümle NLP ────────────────────────
+  -3:         log("► NLP zenginleştirme başlıyor (BB-PAXDATA v5.8)...",logf)
+  -2:         all_refs    = []
+  -1:         global_sent_counter = 0
+  +0:         all_dynamics_rows   = []
+  +1:         BATCH = 50
+  +2: 
+  +3:         # Panel bazlı KGI takibi
+  +4:         panel_kgi = defaultdict(float)   # panel_id → son KGI değeri
+  +5:         panel_prev_sent = {}             # panel_id → (diplo, topic) önceki cümle
+  +6:         panel_prev_risk = defaultdict(float)  # HATA 2 DÜZELTME: önceki risk skoru (v5.8.1)
+  +7:         panel_sent_count = defaultdict(int)
+  +8:         panel_topic_scores = defaultdict(lambda: defaultdict(float))
+  +9: 
+  +10:         for i, seg in enumerate(all_segments):
+  +11:             # ── Segment duygu ──────────────────────────────
+  +12:             sent_s      = diplo_sentiment(seg["text"])
+  +13:             ts          = weighted_topic_score(seg["text"], kw_results[i])
+  +14:             ner         = ner_extract(seg["text"])
+Line 3083: all_dynamics_rows.append({
+  -15:                 panel_kgi[pid] = compute_kgi(panel_kgi[pid], s_rscore)
+  -14:                 prev_data = panel_prev_sent.get(pid, (0.0, s_dom))
+  -13:                 emo_shift = abs(s_sent["diplo"] - prev_data[0])
+  -12:                 top_shift = 0 if prev_data[1] == s_dom else 1
+  -11:                 incons    = inconsistency_score(prev_data[0], s_sent["diplo"], prev_data[1], s_dom)
+  -10:                 panel_prev_sent[pid] = (s_sent["diplo"], s_dom)
+  -9: 
+  -8:                 prev_risk = panel_prev_risk[pid]
+  -7:                 if panel_sent_count[pid] == 0:
+  -6:                     risk_delta = 0.0
+  -5:                 else:
+  -4:                     risk_delta = s_rscore - prev_risk
+  -3:                 panel_prev_risk[pid] = s_rscore
+  -2:                 panel_sent_count[pid] += 1
+  -1: 
+  +0:                 all_dynamics_rows.append({
+  +1:                     "panel_id":           pid,
+  +2:                     "position":           global_sent_counter - 1,
+  +3:                     "speaker_name":       seg["speaker_name"],
+  +4:                     "country":            seg["country"],
+  +5:                     "kgi_score":          panel_kgi[pid],
+  +6:                     "risk_delta":         risk_delta,
+  +7:                     "emotion_shift":      emo_shift,
+  +8:                     "topic_shift":        top_shift,
+  +9:                     "inconsistency_score": incons,
+  +10:                     "sent_id":            sent_id,
+  +11:                 })
+  +12:                 # FIX 1.3: incons'u sent dict'ine de yaz;
+  +13:                 # segment ortalama hesabı sentences_enriched üzerinden okunur.
+  +14:                 sent["inconsistency_score"] = incons
+Line 3194: insert_panel_dynamics(conn, all_dynamics_rows)
+  -15: 
+  -14:             all_refs.extend(extract_corefs(seg))
+  -13: 
+  -12:             if (i+1) % BATCH == 0:
+  -11:                 conn.commit()
+  -10:                 log(f"  … {i+1}/{len(all_segments)} Paragraf işlendi", logf)
+  -9: 
+  -8:         # ── AŞAMA 4-7: Özet tablolar ─────────────────────────────
+  -7:         log("► Özet tablolar...",logf)
+  -6:         upsert_country_stats(conn, all_segments)
+  -5:         insert_corefs(conn, all_refs)
+  -4:         upsert_country_pair_sentiment(conn)
+  -3:         conn.commit()
+  -2: 
+  -1:         log("► Panel dinamikleri (KGI)...",logf)
+  +0:         insert_panel_dynamics(conn, all_dynamics_rows)
+  +1:         conn.commit()
+  +2: 
+  +3:         log("► Söylemsel ağ kenarları...",logf)
+  +4:         insert_discourse_network_edges(conn, all_refs)
+  +5:         conn.commit()
+  +6: 
+  +7:         log("► Konuşmacı profilleri...",logf)
+  +8:         rebuild_speaker_profiles(conn)
+  +9:         conn.commit()
+  +10: 
+  +11:         log("► Panel temaları güncelleniyor...",logf)
+  +12:         for pid, t_scores in panel_topic_scores.items():
+  +13:             if t_scores:
+  +14:                 dom_theme = max(t_scores, key=t_scores.get)

@@ -1,0 +1,26 @@
+def politeness_score(text: str) -> dict:
+    """
+    FTA (Yüz Tehdidi) ve FTS (Yüz Koruma) sayım ve oranı.
+    Düşük politeness_ratio = daha doğrudan/tehditkar dil.
+    Akademik: Brown & Levinson (1987)
+    """
+    tl = text.lower()
+    fta_score = sum(1 for cat in POLITENESS_SIGNALS["face_threat"].values()
+                    for w in cat if re.search(r'\b' + re.escape(w) + r'\b', tl))
+    fts_score = sum(1 for cat in POLITENESS_SIGNALS["face_save"].values()
+                    for w in cat if re.search(r'\b' + re.escape(w) + r'\b', tl))
+    
+    # DÜZELTME: Eğer cümle tamamen nötr ise (hiçbir sinyal yoksa) 0.5 (nötr merkez) döndür
+    if fta_score == 0 and fts_score == 0:
+        ratio = 0.5
+    else:
+        ratio = round(fts_score / (fta_score + fts_score), 3)
+        
+    return {
+        "face_threat_count": fta_score,
+        "face_save_count":   fts_score,
+        "politeness_ratio":  ratio,
+    }
+
+# ── 7.10 Framing Analizi (YENİ — Entman 1993) ──────────────────────────
+

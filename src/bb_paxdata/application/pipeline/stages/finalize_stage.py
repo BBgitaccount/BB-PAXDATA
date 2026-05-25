@@ -69,8 +69,7 @@ class FinalizeStage:
 
         try:
             # Note: The repository should use the provided session.
-            # In DI, the repository might already have a session,
-            # but here we follow the pattern of injecting the session if needed.
+            self._country_ref_repo._session = session
             await self._country_ref_repo.save_batch(list(references))
             logger.info(
                 "finalize_stage.country_references_persisted",

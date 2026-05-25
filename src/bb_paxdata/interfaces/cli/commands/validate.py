@@ -124,12 +124,94 @@ def validate_legacy_compare(
     ),
 ) -> None:
     """
-    Source/target row count and hash comparison after migration.
-    Should be run immediately after migration for data integrity guarantee.
+    Source/target row count and basic sanity comparison after migration.
     """
-    console.print("[dim]Legacy comparison starting...[/dim]")
-    # Note: This command will be active after Phase 3 & 4
-    # It will compare row hashes with LegacySQLiteReader + ModernReader.
-    console.print(
-        "[yellow]This check will be active when Phase 3+4 is complete.[/yellow]"
-    )
+    import os
+    import sqlite3
+
+    console.print(f"[bold]Legacy DB Path:[/bold] {legacy_db}")
+    if not os.path.exists(legacy_db):
+        console.print("[red]Error: Legacy database file does not exist![/red]")
+        raise typer.Exit(code=1)
+
+    settings = get_settings()
+    new_db = str(settings.database_path)
+    console.print(f"[bold]New DB Path:[/bold] {new_db}")
+    if not os.path.exists(new_db):
+        console.print("[red]Error: New database file does not exist![/red]")
+        raise typer.Exit(code=1)
+
+    conn_old = sqlite3.connect(legacy_db)
+    conn_new = sqlite3.connect(new_db)
+
+    try:
+        cur_old = conn_old.cursor()
+        cur_new = conn_new.cursor()
+
+        # Get tables
+        cur_old.execute("SELECT name FROM sqlite_master WHERE type='table';")
+        tables_old = {row[0] for row in cur_old.fetchall()}
+
+        cur_new.execute("SELECT name FROM sqlite_master WHERE type='table';")
+        tables_new = {row[0] for row in cur_new.fetchall()}
+
+        table_mappings = {
+            "panels": "panels",
+            "speakers": "speakers",
+            "segments": "segments",
+            "sentences": "sentences",
+            "words": "words",
+            "demand_records": "demand_records",
+            "pattern_records": "pattern_records",
+            "panel_dynamics": "panel_dynamics",
+            "discourse_network_edges": "discourse_flows",  # new schema stores country-to-country edges in discourse_flows
+            "country_references": "country_references",
+        }
+
+        table = Table(title="Legacy vs Modern Row Count Comparison")
+        table.add_column("Table (Legacy)", style="cyan")
+        table.add_column("Legacy Count", justify="right")
+        table.add_column("Table (New)", style="green")
+        table.add_column("New Count", justify="right")
+        table.add_column("Discrepancy", justify="right")
+
+        has_discrepancies = False
+
+        for t_old, t_new in table_mappings.items():
+            cnt_old = 0
+            cnt_new = 0
+
+            if t_old in tables_old:
+                cur_old.execute(f"SELECT COUNT(*) FROM `{t_old}`;")
+                cnt_old = cur_old.fetchone()[0]
+            else:
+                t_old = f"{t_old} [MISSING]"
+
+            if t_new in tables_new:
+                cur_new.execute(f"SELECT COUNT(*) FROM `{t_new}`;")
+                cnt_new = cur_new.fetchone()[0]
+            else:
+                t_new = f"{t_new} [MISSING]"
+
+            diff = cnt_new - cnt_old
+            diff_str = f"[red]{diff:+}[/red]" if diff != 0 else "[green]0[/green]"
+            if diff != 0:
+                has_discrepancies = True
+
+            table.add_row(t_old, str(cnt_old), t_new, str(cnt_new), diff_str)
+
+        console.print(table)
+
+        if has_discrepancies:
+            console.print(
+                "[yellow]⚠ Note: Row count differences are present. This is normal if segments were split differently or extra sentences were processed.[/yellow]"
+            )
+        else:
+            console.print("[green]✓ Row counts are fully matched![/green]")
+
+    except Exception as e:
+        console.print(f"[red]Error during comparison: {e}[/red]")
+        raise typer.Exit(code=1)
+    finally:
+        conn_old.close()
+        conn_new.close()

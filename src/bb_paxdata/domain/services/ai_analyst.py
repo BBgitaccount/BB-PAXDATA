@@ -36,11 +36,13 @@ class AIAnalyst:
         language_detector: LanguageDetector | None = None,
         default_prompt_id: str = "diplomatic_analysis",
         few_shot_injector: Any | None = None,
+        infra_analyst: Any | None = None,
     ):
         self.registry = registry or build_default_registry()
         self.language_detector = language_detector or LanguageDetector()
         self.default_prompt_id = default_prompt_id
         self.few_shot_injector = few_shot_injector
+        self.infra_analyst = infra_analyst
 
     async def analyze(
         self,
@@ -101,9 +103,24 @@ class AIAnalyst:
     def _call_ai_model(self, rendered_prompt: str, model_name: str) -> str:
         """
         AI modeli çağrısı.
-        Üretimde bu metod OpenAI/Anthropic SDK ile değiştirilir.
-        Şu an mock yanıt döner — gerçek implementasyon için aşağıdaki yorumlu bloğu aç.
         """
+        if self.infra_analyst is not None:
+            from bb_paxdata.infrastructure.ai.analyst import BackendType
+
+            backend = BackendType.OLLAMA
+            model_name_lower = model_name.lower()
+            if "claude" in model_name_lower:
+                backend = BackendType.ANTHROPIC
+            elif "gemini" in model_name_lower:
+                backend = BackendType.GEMINI
+            elif "groq" in model_name_lower:
+                backend = BackendType.GROQ
+
+            res = self.infra_analyst.analyze_text(
+                text=rendered_prompt, backend=backend, model=model_name
+            )
+            return json.dumps(res.content)
+
         logger.warning(
             "AIAnalyst: MOCK yanıt kullanılıyor — gerçek AI provider bağlayın!"
         )

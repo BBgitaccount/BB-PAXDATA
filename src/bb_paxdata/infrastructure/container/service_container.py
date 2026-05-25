@@ -14,16 +14,22 @@ from ...application.pipeline.sbi_calculator import SBICalculator
 from ...application.pipeline.stages.country_reference_collector import (
     CountryReferenceCollector,
 )
+from ...application.pipeline.stages.finalize_stage import FinalizeStage
+from ...config.settings import get_settings
+from ...domain.enums import AIProvider
 from ...domain.services.ai_analyst import AIAnalyst
 from ...domain.services.cross_anomaly_service import CrossAnomalyService
 from ...domain.services.language_detector import LanguageDetector
 from ...domain.services.ner_service import SpacyNERService
 from ...domain.services.prompt_registry import build_default_registry
 from ...domain.services.tokenizer_service import SpacyTokenizerService
+from ..ai.analyst import AIAnalyst as InfraAIAnalyst
+from ..ai.analyst import BackendType
 from ..nlp.negation_detector import SpacyNegationDetector
 from ..nlp.power_index_calculator import PowerIndexCalculator
 from ..nlp.risk_signal_detector import RiskSignalDetector
 from ..nlp.topic_modeling import TopicModelingService
+from ..repositories.country_repository import CountryReferenceRepository
 
 logger = logging.getLogger(__name__)
 
@@ -87,10 +93,30 @@ class ServiceContainer:
 
             self.few_shot_injector = FewShotInjector(uow_factory=uow_factory)
             self.prompt_registry = build_default_registry()
+
+            # Initialize infra analyst
+            settings = get_settings()
+            provider_map = {
+                AIProvider.OLLAMA: BackendType.OLLAMA,
+                AIProvider.ANTHROPIC: BackendType.ANTHROPIC,
+                AIProvider.GEMINI: BackendType.GEMINI,
+                AIProvider.GROQ: BackendType.GROQ,
+            }
+            backend_type = provider_map.get(settings.ai_provider, BackendType.OLLAMA)
+            api_key = settings.active_ai_api_key
+            base_url = settings.ollama_base_url
+
+            self.infra_analyst = InfraAIAnalyst(
+                default_backend=backend_type,
+                api_key=api_key if api_key else None,
+                base_url=base_url,
+            )
+
             _real_analyst = AIAnalyst(
                 registry=self.prompt_registry,
                 language_detector=self.language_detector,
                 few_shot_injector=self.few_shot_injector,
+                infra_analyst=self.infra_analyst,
             )
 
             # AI limit varsa wrapper ile sar
@@ -128,11 +154,82 @@ class ServiceContainer:
         # ── Pipeline Stages ────────────────────────────────────────
         # Note: CountryReferenceCollector needs a spacy model.
         # For the container, we use the default 'en' model from NER service.
+        from bb_paxdata.domain.services.actor_resolver import NER_GPE as resolver_gpe
+
+        extended_gpe = set(resolver_gpe) | {
+            "Turkey",
+            "Türkiye",
+            "Kazakhstan",
+            "Georgia",
+            "North Macedonia",
+            "Somalia",
+            "Syria",
+            "Russia",
+            "USA",
+            "Ukraine",
+            "Azerbaijan",
+            "Serbia",
+            "Latvia",
+            "Lithuania",
+            "Palestine",
+            "Yemen",
+            "Burundi",
+            "Congo",
+            "Sierra Leone",
+            "Comoros",
+            "El Salvador",
+            "Iran",
+            "Israel",
+            "China",
+            "Saudi Arabia",
+            "Qatar",
+            "UAE",
+            "Iraq",
+            "Lebanon",
+            "Libya",
+            "Egypt",
+            "Sudan",
+            "Afghanistan",
+            "Pakistan",
+            "India",
+            "Japan",
+            "Germany",
+            "France",
+            "UK",
+            "Italy",
+            "Europe",
+            "EU",
+            "Balkans",
+            "Caucasus",
+            "Middle East",
+            "Africa",
+            "Central Asia",
+            "Persian Gulf",
+            "Black Sea",
+            "Red Sea",
+            "Mediterranean",
+            "Ankara",
+            "Moscow",
+            "Washington",
+            "Brussels",
+            "Kyiv",
+            "Damascus",
+            "Mogadishu",
+            "Riyadh",
+            "Beijing",
+            "Western Balkans",
+            "South Caucasus",
+            "Global South",
+            "Indo-Pacific",
+        }
         self.country_collector = CountryReferenceCollector(
             nlp=common_nlp,
-            country_vocabulary=set(),  # Vocabulary will be injected or loaded
+            country_vocabulary=extended_gpe,
             llm_client=self.ai_analyst,
             # recovery_engine and prompt_registry could be injected here if needed
+        )
+        self.finalize_stage = FinalizeStage(
+            country_ref_repo=CountryReferenceRepository(None)
         )
 
         # ── SBI Servisleri (Faz 7) ───────────────────────────────
@@ -184,7 +281,6 @@ class ServiceContainer:
 
         # ── Dual-Gate Consensus (Faz 4) ───────────────────────────
         from ...application.consensus.dual_gate import DualGateConsensusLayer
-        from ...config.settings import get_settings
         from ..ai.anomaly_controller import AIAnomalyController
 
         settings = get_settings()
@@ -219,6 +315,7 @@ class ServiceContainer:
             assembler=self.assembler,
             dual_gate_layer=self.consensus_layer,
             anomaly_controller=self.anomaly_controller,
+            finalize_stage=self.finalize_stage,
         )
 
         logger.info("ServiceContainer hazır — tüm servisler aktif.")

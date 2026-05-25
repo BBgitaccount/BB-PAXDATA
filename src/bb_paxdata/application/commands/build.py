@@ -17,15 +17,26 @@ from sqlalchemy import delete, func, select
 # Add src to path for imports
 sys.path.insert(0, str(Path(__file__).parent.parent.parent.parent / "src"))
 
+from bb_paxdata.domain.services.risk_service import RiskService
+from bb_paxdata.infrastructure.ai.fail_check import (
+    AIFailCheck,
+    ValidationStatus,
+)
+from bb_paxdata.infrastructure.db.human_review_queue import HumanReviewQueue
 from bb_paxdata.infrastructure.db.models import (
+    AIFailAnalysis,
     AISentenceAnalysis,
+    DemandRecord,
     Panel,
+    PanelDynamics,
+    PatternRecord,
     Segment,
     Sentence,
     Speaker,
     Word,
 )
 from bb_paxdata.infrastructure.db.processed_files import ProcessedFile
+from bb_paxdata.infrastructure.db.repositories.analysis import AnalysisRepository
 from bb_paxdata.infrastructure.db.session import get_db_session
 from bb_paxdata.interfaces.cli.dependencies import get_session
 from bb_paxdata.quality.data_contract import DataContractValidator
@@ -417,6 +428,19 @@ async def _process_single_file(
 
     # Clean existing data for this panel to support clean re-runs
     await session.execute(
+        delete(AIFailAnalysis).where(AIFailAnalysis.panel_id == panel_id)
+    )
+    await session.execute(
+        delete(HumanReviewQueue).where(HumanReviewQueue.panel_id == panel_id)
+    )
+    await session.execute(delete(DemandRecord).where(DemandRecord.panel_id == panel_id))
+    await session.execute(
+        delete(PatternRecord).where(PatternRecord.panel_id == panel_id)
+    )
+    await session.execute(
+        delete(PanelDynamics).where(PanelDynamics.panel_id == panel_id)
+    )
+    await session.execute(
         delete(AISentenceAnalysis).where(AISentenceAnalysis.panel_id == panel_id)
     )
     await session.execute(delete(Word).where(Word.panel_id == panel_id))
@@ -534,6 +558,12 @@ async def _process_single_file(
     total_words_in_file = 0
     unique_speakers_in_file = set()
     unique_countries_in_file = set()
+    all_processed_sentences: list[Sentence] = []
+
+    last_risk = 0
+    last_sentiment = 0.0
+    last_topic = None
+    last_kgi = 0.0
 
     for seg_idx, seg in enumerate(segments_data, 1):
         speaker_name = seg["speaker"]
@@ -597,12 +627,92 @@ async def _process_single_file(
                     "speaker_id": speaker_id,
                     "speaker_country": country,
                 },
+                session=session,
             )
 
             words_count = (
                 len(pipeline_res.analysis.tokens) if pipeline_res.analysis.tokens else 0
             )
             total_words_in_file += words_count
+
+            # ── NLP Metrikleri: negation_aware_diplo, hedging_score, politeness_ratio ──
+            _negation_cues = pipeline_res.analysis.negation_cues or ()
+            _neg_count = len(list(_negation_cues))
+            _ai_sent = pipeline_res.analysis.ai_sentiment_score or 0.0
+            # negation_aware_diplo: negasyon cue sayısına göre duygu skorunu atenüe et
+            if _neg_count > 0:
+                _negation_aware_diplo = _ai_sent * (0.8**_neg_count)
+            else:
+                _negation_aware_diplo = _ai_sent
+
+            # hedging_score: AI hedging yoksa risk_signals'dan tahmin et
+            _risk_sigs = pipeline_res.analysis.risk_signals or ()
+            _hedging_keywords = sum(
+                1
+                for rs in _risk_sigs
+                if hasattr(rs, "keyword")
+                and rs.keyword
+                in (
+                    "perhaps",
+                    "maybe",
+                    "might",
+                    "could",
+                    "possibly",
+                    "belki",
+                    "muhtemelen",
+                    "olabilir",
+                    "sanırım",
+                )
+            )
+            _hedging_score = (
+                min(1.0, _hedging_keywords * 0.25) if _hedging_keywords else 0.0
+            )
+
+            # politeness_ratio: face_save / (face_save + face_threat + 1)
+            _face_save = 0
+            _face_threat = 0
+            for rs in _risk_sigs:
+                sig_name = getattr(rs, "keyword", "") or ""
+                if any(
+                    k in sig_name.lower()
+                    for k in [
+                        "please",
+                        "lütfen",
+                        "thank",
+                        "teşekkür",
+                        "respectfully",
+                        "saygıyla",
+                    ]
+                ):
+                    _face_save += 1
+                if any(
+                    k in sig_name.lower()
+                    for k in [
+                        "demand",
+                        "threat",
+                        "ultimatum",
+                        "warn",
+                        "tehdit",
+                        "talep",
+                    ]
+                ):
+                    _face_threat += 1
+            _politeness_ratio = _face_save / (_face_save + _face_threat + 1)
+
+            # ── Risk score normalizasyonu: float 0-1 -> int 0-10 ──
+            _raw_risk = pipeline_res.analysis.ai_risk_score or 0.0
+            _normalized_risk = round(_raw_risk * 10)
+            _normalized_risk = max(0, min(10, _normalized_risk))
+
+            # ── Logic result ──
+            _logic_result = (
+                "FAIL"
+                if (
+                    pipeline_res.analysis.anomaly_flags
+                    and len(pipeline_res.analysis.anomaly_flags) > 0
+                )
+                else "PASS"
+            )
 
             db_sentence = Sentence(
                 sent_id=sent_id,
@@ -616,7 +726,7 @@ async def _process_single_file(
                 text=sentence_text,
                 word_count=words_count,
                 char_count=len(sentence_text),
-                vader_compound=pipeline_res.analysis.ai_sentiment_score or 0.0,
+                vader_compound=_ai_sent,
                 emotion_category=pipeline_res.analysis.ai_sentiment_label,
                 dominant_topic=(
                     pipeline_res.analysis.topic_synthesis.topic_label
@@ -626,24 +736,23 @@ async def _process_single_file(
                     )
                     else None
                 ),
-                risk_score=int(pipeline_res.analysis.ai_risk_score or 0),
+                risk_score=_normalized_risk,
                 dominant_frame=(
                     str(pipeline_res.analysis.framing)
                     if pipeline_res.analysis.framing
                     else None
                 ),
+                negation_aware_diplo=_negation_aware_diplo,
+                hedging_score=_hedging_score,
+                politeness_ratio=_politeness_ratio,
+                face_threat_count=_face_threat,
+                face_save_count=_face_save,
                 ai_analyzed=1,
-                logic_result=(
-                    "FAIL"
-                    if (
-                        pipeline_res.analysis.anomaly_flags
-                        and len(pipeline_res.analysis.anomaly_flags) > 0
-                    )
-                    else "PASS"
-                ),
+                logic_result=_logic_result,
             )
             session.add(db_sentence)
             db_sentences_in_seg.append(db_sentence)
+            all_processed_sentences.append(db_sentence)
 
             # Save AISentenceAnalysis
             ai_analysis = AISentenceAnalysis.from_domain(
@@ -654,25 +763,417 @@ async def _process_single_file(
             ai_analysis.country = country
             ai_analysis.power_level = 0
             ai_analysis.global_sent_order = total_sentences_count
-            ai_analysis.sentiment_score = pipeline_res.analysis.ai_sentiment_score
+            ai_analysis.sentiment_score = _ai_sent
             ai_analysis.sentiment_category = pipeline_res.analysis.ai_sentiment_label
-            ai_analysis.risk_score = int(pipeline_res.analysis.ai_risk_score or 0)
+            ai_analysis.risk_score = _normalized_risk
             ai_analysis.ai_sentiment = pipeline_res.analysis.ai_sentiment_label
-            ai_analysis.ai_risk_score = int(pipeline_res.analysis.ai_risk_score or 0)
+            ai_analysis.ai_risk_score = _normalized_risk
             ai_analysis.ai_frame_type = (
                 str(pipeline_res.analysis.framing)
                 if pipeline_res.analysis.framing
                 else None
             )
-            ai_analysis.logic_result = (
-                "FAIL"
-                if (
-                    pipeline_res.analysis.anomaly_flags
-                    and len(pipeline_res.analysis.anomaly_flags) > 0
-                )
-                else "PASS"
-            )
+            ai_analysis.hedging_score = _hedging_score
+            ai_analysis.politeness_score = _politeness_ratio
+            ai_analysis.logic_result = _logic_result
             session.add(ai_analysis)
+
+            # ── AI Fail Check & Human Review Flagging Entegrasyonu ──
+            # Calculate temporal values BEFORE updating last variables
+            risk_d = _normalized_risk - last_risk
+            emotion_s = _ai_sent - last_sentiment
+            topic_c = (
+                1
+                if (
+                    pipeline_res.analysis.topic_synthesis
+                    and pipeline_res.analysis.topic_synthesis.topic_label != last_topic
+                )
+                else 0
+            )
+            kgi_score_sent = round(
+                min(10.0, max(0.0, last_kgi * 0.85 + _normalized_risk * 0.15)), 4
+            )
+            formula_incons = round(abs(emotion_s) * 0.6 + topic_c * 0.4, 4)
+
+            # Update temporal state for next sentence
+            last_risk = _normalized_risk
+            last_sentiment = _ai_sent
+            last_topic = (
+                pipeline_res.analysis.topic_synthesis.topic_label
+                if (
+                    pipeline_res.analysis.topic_synthesis
+                    and pipeline_res.analysis.topic_synthesis.topic_label
+                )
+                else None
+            )
+            last_kgi = kgi_score_sent
+
+            if _logic_result == "FAIL":
+                # Compute formula risk score
+                detected_signals = [
+                    sig
+                    for sig in RiskService.RISK_SIGNALS
+                    if sig in sentence_text.lower()
+                ]
+                formula_risk_score = min(
+                    10.0,
+                    sum(
+                        RiskService.RISK_SIGNAL_WEIGHTS.get(sig, 1)
+                        for sig in detected_signals
+                    ),
+                )
+
+                # AI response dictionary for fail check
+                ai_resp_dict = {
+                    "sentiment_score": float(
+                        pipeline_res.analysis.ai_sentiment_score or 0.0
+                    ),
+                    "risk_score": float(pipeline_res.analysis.ai_risk_score or 0.0)
+                    * 10.0,
+                    "hedging_score": _hedging_score,
+                    "manipulation_score": float(
+                        pipeline_res.analysis.manipulation_score or 0.0
+                    ),
+                    "politeness_score": _politeness_ratio,
+                    "dominant_topic": (
+                        pipeline_res.analysis.topic_synthesis.topic_label
+                        if (
+                            pipeline_res.analysis.topic_synthesis
+                            and pipeline_res.analysis.topic_synthesis.topic_label
+                        )
+                        else ""
+                    ),
+                    "frame_type": (
+                        str(pipeline_res.analysis.framing)
+                        if pipeline_res.analysis.framing
+                        else ""
+                    ),
+                    "appraisal_attitude": getattr(
+                        pipeline_res.analysis, "ai_appraisal_attitude", None
+                    )
+                    or "",
+                    "audience_type": getattr(
+                        pipeline_res.analysis, "ai_audience_type", None
+                    )
+                    or "",
+                }
+
+                # Formula response dictionary for fail check
+                formula_resp_dict = {
+                    "sentiment_score": float(
+                        pipeline_res.analysis.sentiment_score or 0.0
+                    ),
+                    "risk_score": formula_risk_score,
+                    "hedging_score": _hedging_score,
+                    "manipulation_score": _negation_aware_diplo,
+                    "politeness_score": _politeness_ratio,
+                    "dominant_topic": (
+                        pipeline_res.analysis.topic_synthesis.topic_label
+                        if (
+                            pipeline_res.analysis.topic_synthesis
+                            and pipeline_res.analysis.topic_synthesis.topic_label
+                        )
+                        else ""
+                    ),
+                    "frame_type": (
+                        str(pipeline_res.analysis.framing)
+                        if pipeline_res.analysis.framing
+                        else ""
+                    ),
+                    "appraisal_attitude": "",
+                    "audience_type": "",
+                }
+
+                # Run fail check validation
+                fail_checker = AIFailCheck()
+                fail_check_res = fail_checker.validate_ai_response(
+                    ai_resp_dict, formula_resp_dict
+                )
+
+                analysis_repo = AnalysisRepository(session)
+                for val_res in fail_check_res.validation_results:
+                    if val_res.status == ValidationStatus.FAIL:
+                        # Build row data for LLM linguistic analysis
+                        row_data = {
+                            "speaker_name": speaker_name,
+                            "country": country,
+                            "power_level": 0,
+                            "panel_id": panel_id,
+                            "check_type": (
+                                val_res.check_type.value
+                                if hasattr(val_res.check_type, "value")
+                                else str(val_res.check_type)
+                            ),
+                            "original_sentence": sentence_text,
+                            "prev_sentence": (
+                                seg["sentences"][sent_idx - 2]
+                                if sent_idx >= 2
+                                else "[START]"
+                            ),
+                            "next_sentence": (
+                                seg["sentences"][sent_idx]
+                                if sent_idx < len(seg["sentences"])
+                                else "[END]"
+                            ),
+                            "formula_value": str(
+                                formula_resp_dict.get(val_res.check_type.name.lower())
+                                if hasattr(val_res.check_type, "name")
+                                else ""
+                            ),
+                            "ai_value": str(
+                                ai_resp_dict.get(val_res.check_type.name.lower())
+                                if hasattr(val_res.check_type, "name")
+                                else ""
+                            ),
+                            "discrepancy_score": val_res.discrepancy or 0.0,
+                            "kgi_score": kgi_score_sent,
+                            "risk_delta": risk_d,
+                            "emotion_shift": emotion_s,
+                            "topic_shift": topic_c,
+                            "formula_inconsistency": formula_incons,
+                            "ai_risk_score": _normalized_risk,
+                            "ai_manipulation_score": pipeline_res.analysis.manipulation_score
+                            or 0.0,
+                            "ai_hedging_score": _hedging_score,
+                            "ai_tone": pipeline_res.analysis.ai_sentiment_label
+                            or "neutral",
+                            "ai_frame": (
+                                str(pipeline_res.analysis.framing)
+                                if pipeline_res.analysis.framing
+                                else "neutral"
+                            ),
+                            "anomaly_types": (
+                                ",".join(
+                                    str(x) for x in pipeline_res.analysis.anomaly_flags
+                                )
+                                if pipeline_res.analysis.anomaly_flags
+                                else "none"
+                            ),
+                            "validation_explanation": val_res.explanation,
+                            "context_note": "",
+                        }
+
+                        # Call LLM linguistic analysis
+                        if container._logic_mode:
+                            ling_res = None
+                        else:
+                            ling_res = await fail_checker.analyze_fail_linguistically(
+                                row_data
+                            )
+
+                        # Build AIFailAnalysis database model
+                        db_fail = AIFailAnalysis(
+                            sent_id=sent_id,
+                            seg_id=db_segment.seg_id,
+                            panel_id=panel_id,
+                            speaker_name=speaker_name,
+                            country=country,
+                            power_level=0,
+                            global_sent_order=total_sentences_count,
+                            check_type=(
+                                val_res.check_type.value
+                                if hasattr(val_res.check_type, "value")
+                                else str(val_res.check_type)
+                            ),
+                            formula_value=row_data["formula_value"],
+                            ai_value=row_data["ai_value"],
+                            discrepancy_score=val_res.discrepancy,
+                            original_sentence=sentence_text,
+                            triplet_text=f"PREV: {row_data['prev_sentence']}\nCURR: {sentence_text}\nNEXT: {row_data['next_sentence']}",
+                            prev_sentence=row_data["prev_sentence"],
+                            next_sentence=row_data["next_sentence"],
+                            kgi_score=kgi_score_sent,
+                            risk_delta=risk_d,
+                            emotion_shift=emotion_s,
+                            topic_shift=topic_c,
+                            formula_inconsistency_score=formula_incons,
+                            ai_manipulation_score=row_data["ai_manipulation_score"],
+                            ai_hedging_score=row_data["ai_hedging_score"],
+                            ai_risk_score=_normalized_risk,
+                            ai_sentiment_score=_ai_sent,
+                            ai_tone=row_data["ai_tone"],
+                            ai_frame=row_data["ai_frame"],
+                            anomaly_types=row_data["anomaly_types"],
+                            anomaly_count=(
+                                len(pipeline_res.analysis.anomaly_flags)
+                                if pipeline_res.analysis.anomaly_flags
+                                else 0
+                            ),
+                            processed_at=datetime.now(timezone.utc),
+                        )
+
+                        if ling_res:
+                            db_fail.fail_reason = ling_res.get("AI_Neden_Fail")
+                            db_fail.fail_category = ling_res.get("AI_Fail_Kategorisi")
+                            db_fail.negation_type = ling_res.get("AI_Negasyon_Tipi")
+                            db_fail.negation_scope = ling_res.get("AI_Negasyon_Kapsami")
+                            db_fail.contextual_factor = ling_res.get(
+                                "AI_Baglamsal_Faktor"
+                            )
+                            db_fail.temporal_factor = ling_res.get("AI_Temporal_Faktor")
+                            db_fail.formula_gap = ling_res.get("AI_Formul_Eksigi")
+                            db_fail.ai_misperception = ling_res.get("AI_AI_Yanilgisi")
+                            db_fail.correction_suggestion = ling_res.get(
+                                "AI_Duzeltme_Onerisi"
+                            )
+                            db_fail.comparative_correction = ling_res.get(
+                                "AI_Karsilastirmali_Duzeltme"
+                            )
+                            db_fail.anomaly_link = ling_res.get("AI_Anomali_Baglantisi")
+                            db_fail.linguistic_marker = ling_res.get(
+                                "AI_Dilbilimsel_Marka"
+                            )
+                            db_fail.confidence_score = ling_res.get("AI_Guven_Skoru")
+                        else:
+                            db_fail.fail_reason = val_res.explanation
+                            db_fail.fail_category = "diger"
+
+                        await analysis_repo.save_fail_analysis(db_fail)
+
+            # ── Human Review Queue Flagging ──
+            should_flag = False
+            trigger_type = ""
+
+            if _normalized_risk >= 7:
+                should_flag = True
+                trigger_type = "HIGH_RISK"
+            elif _logic_result == "FAIL":
+                should_flag = True
+                trigger_type = "CRITICAL_ANOMALY"
+
+            if should_flag:
+                _ai_json = "{}"
+                if pipeline_res.raw_ai:
+                    try:
+                        if hasattr(pipeline_res.raw_ai, "model_dump_json"):
+                            _ai_json = pipeline_res.raw_ai.model_dump_json()
+                        elif hasattr(pipeline_res.raw_ai, "json"):
+                            _ai_json = pipeline_res.raw_ai.json()
+                        else:
+                            import json
+
+                            _ai_json = json.dumps(pipeline_res.raw_ai)
+                    except Exception:
+                        _ai_json = "{}"
+                review_entry = HumanReviewQueue(
+                    sent_id=sent_id,
+                    seg_id=db_segment.seg_id,
+                    panel_id=panel_id,
+                    speaker_name=speaker_name,
+                    country=country,
+                    trigger_type=trigger_type,
+                    ai_risk_score=_normalized_risk,
+                    anomaly_types=db_sentence.rhetoric_type,
+                    uncertainty_score=0.0,
+                    status="PENDING",
+                    original_ai_json=_ai_json,
+                    flagged_at=datetime.now(timezone.utc),
+                )
+                session.add(review_entry)
+
+            # ── Demand Records: talep içeren cümleler ──
+            _demand_verbs = [
+                "demand",
+                "request",
+                "require",
+                "insist",
+                "urge",
+                "call for",
+                "talep",
+                "istemek",
+                "çağrı",
+                "gerekli",
+                "zorunlu",
+                "ısrar",
+                "must",
+                "should",
+                "need to",
+                "have to",
+                "shall",
+            ]
+            _sentence_lower = sentence_text.lower()
+            _detected_demand_verb = next(
+                (v for v in _demand_verbs if v in _sentence_lower), None
+            )
+            if _detected_demand_verb:
+                db_demand = DemandRecord(
+                    sent_id=sent_id,
+                    seg_id=db_segment.seg_id,
+                    panel_id=panel_id,
+                    speaker_name=speaker_name,
+                    country=country,
+                    power_level=0,
+                    demand_verb=_detected_demand_verb,
+                    demand_type=(
+                        "explicit"
+                        if _detected_demand_verb
+                        in ("demand", "insist", "talep", "ısrar")
+                        else "implicit"
+                    ),
+                    demand_weight=max(0.3, min(1.0, _normalized_risk / 10.0)),
+                    target_entity=None,
+                    demand_topic=(
+                        pipeline_res.analysis.topic_synthesis.topic_label
+                        if pipeline_res.analysis.topic_synthesis
+                        else None
+                    ),
+                    full_sentence=sentence_text,
+                    diplo_compound=_negation_aware_diplo,
+                )
+                session.add(db_demand)
+                db_sentence.demand_type = db_demand.demand_type
+                db_sentence.demand_weight = db_demand.demand_weight
+
+            # ── Pattern Records: retorik kalıplar ──
+            _rhetoric_patterns = {
+                "conditional": ["if", "provided that", "eğer", "şayet", "koşuluyla"],
+                "commitment": [
+                    "we will",
+                    "biz yapacağız",
+                    "commit",
+                    "taahhüt",
+                    "pledge",
+                ],
+                "threat": ["otherwise", "consequences", "aksi halde", "sonuçları olur"],
+                "concession": [
+                    "however",
+                    "although",
+                    "ancak",
+                    "bununla birlikte",
+                    "rağmen",
+                ],
+                "appeal": [
+                    "we call upon",
+                    "çağrıda bulunuyoruz",
+                    "international community",
+                    "uluslararası toplum",
+                ],
+            }
+            for _ptype, _pkeywords in _rhetoric_patterns.items():
+                if any(kw in _sentence_lower for kw in _pkeywords):
+                    db_pattern = PatternRecord(
+                        sent_id=sent_id,
+                        seg_id=db_segment.seg_id,
+                        panel_id=panel_id,
+                        speaker_name=speaker_name,
+                        country=country,
+                        power_level=0,
+                        pattern_type=_ptype,
+                        pattern_text=next(
+                            (kw for kw in _pkeywords if kw in _sentence_lower), ""
+                        ),
+                        full_sentence=sentence_text,
+                        dominant_topic=(
+                            pipeline_res.analysis.topic_synthesis.topic_label
+                            if pipeline_res.analysis.topic_synthesis
+                            else None
+                        ),
+                        diplo_compound=_negation_aware_diplo,
+                    )
+                    session.add(db_pattern)
+                    if not db_sentence.rhetoric_type:
+                        db_sentence.rhetoric_type = _ptype
+                    break  # İlk eşleşen kalıp yeterli
 
             # Populate words table
             if pipeline_res.analysis.tokens:
@@ -740,7 +1241,7 @@ async def _process_single_file(
 
         risks = [s.risk_score for s in db_sentences_in_seg if s.risk_score is not None]
         db_segment.risk_score = max(risks) if risks else 0
-        db_segment.sbi_score = db_segment.vader_compound
+        db_segment.sbi_score = db_segment.vader_compound or 0.0
         db_segment.dki_score = 0.0
 
         frames = [s.dominant_frame for s in db_sentences_in_seg if s.dominant_frame]
@@ -763,6 +1264,22 @@ async def _process_single_file(
         db_segment.word_count = sum(s.word_count for s in db_sentences_in_seg)
         db_segment.sentence_count = len(db_sentences_in_seg)
 
+        # ── Segment-level NLP aggregation ──
+        hedgings = [s.hedging_score for s in db_sentences_in_seg if s.hedging_score]
+        db_segment.avg_hedging_score = (
+            sum(hedgings) / len(hedgings) if hedgings else 0.0
+        )
+        politeness_vals = [
+            s.politeness_ratio
+            for s in db_sentences_in_seg
+            if s.politeness_ratio is not None
+        ]
+        db_segment.avg_politeness_ratio = (
+            sum(politeness_vals) / len(politeness_vals) if politeness_vals else 0.0
+        )
+        demands_in_seg = [s for s in db_sentences_in_seg if s.demand_type]
+        db_segment.demand_count = len(demands_in_seg)
+
     # Save Panel ORM
     file_hash = hashlib.sha256(file_content.encode("utf-8")).hexdigest()
     db_panel = Panel(
@@ -782,6 +1299,42 @@ async def _process_single_file(
         imported_at=datetime.now(timezone.utc),
     )
     session.add(db_panel)
+
+    # ── Panel Dynamics: cümle bazlı temporal değişim kayıtları ──
+    # Tüm segment döngülerinden toplanan cümleleri sıralı şekilde işle
+    _all_built_sentences = all_processed_sentences
+
+    _prev_risk_dyn: int = 0
+    _prev_sentiment_dyn: float = 0.0
+    _prev_topic_dyn: str | None = None
+    for dyn_pos, dyn_sent in enumerate(_all_built_sentences, 1):
+        _risk_d = (dyn_sent.risk_score or 0) - _prev_risk_dyn
+        _sent_d = (dyn_sent.vader_compound or 0.0) - _prev_sentiment_dyn
+        _topic_changed = (
+            1
+            if (dyn_sent.dominant_topic and dyn_sent.dominant_topic != _prev_topic_dyn)
+            else 0
+        )
+        # KGI = abs(risk_delta) * 0.4 + abs(emotion_shift) * 0.3 + topic_shift * 0.3
+        _kgi = abs(_risk_d / 10.0) * 0.4 + abs(_sent_d) * 0.3 + _topic_changed * 0.3
+
+        db_dyn = PanelDynamics(
+            panel_id=panel_id,
+            position=dyn_pos,
+            speaker_name=dyn_sent.speaker_name,
+            country=dyn_sent.country,
+            kgi_score=round(_kgi, 4),
+            risk_delta=round(_risk_d, 2),
+            emotion_shift=round(_sent_d, 4),
+            topic_shift=_topic_changed,
+            inconsistency_score=0.0,
+            sent_id=dyn_sent.sent_id,
+        )
+        session.add(db_dyn)
+
+        _prev_risk_dyn = dyn_sent.risk_score or 0
+        _prev_sentiment_dyn = dyn_sent.vader_compound or 0.0
+        _prev_topic_dyn = dyn_sent.dominant_topic
 
     # Update processed files tracking
     if existing:

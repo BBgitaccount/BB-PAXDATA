@@ -1,0 +1,18 @@
+POLITENESS_SIGNALS = {
+    "face_threat": {
+        "direct_criticism": ["failed","irresponsible","unacceptable","wrong",
+                              "mistake","error","negligent","incompetent"],
+        "direct_demand":    ["must","have to","are required","demand","insist",
+                              "non-negotiable","immediate action"],
+        "blame":            ["caused by","responsible for","due to their",
+                              "fault of","brought upon","led to","created by"],
+    },
+    "face_save": {
+        "hedging":          ["perhaps","i believe","in my view","with respect",
+                              "with due respect","if i may","allow me to"],
+        "compliment":       ["appreciate","commend","value","recognize the efforts",
+                              "congratulate","thank","acknowledge","excellent"],
+        "indirect_request": ["would be helpful","it would be beneficial","consider",
+                              "might want to","could explore","perhaps worth"],
+    },
+}

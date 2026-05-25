@@ -1,0 +1,84 @@
+Line 3008: s_polit        = politeness_score(stxt)
+  -10:                 s_risks, s_rscore = contextual_risk(stxt)
+  -9:                 s_ner    = ner_extract(stxt)
+  -8:                 s_demands  = detect_demands(stxt, s_dom)
+  -7:                 s_patterns = detect_patterns(stxt, s_dom)
+  -6:                 words_c  = tokenize_words(stxt)
+  -5: 
+  -4:                 # Yeni v4 cümle analizleri
+  -3:                 s_neg_diplo    = negation_aware_diplo(stxt)
+  -2:                 s_specificity  = topic_specificity(s_ts)
+  -1:                 s_hedging      = hedging_score(stxt)
+  +0:                 s_polit        = politeness_score(stxt)
+  +1:                 s_frame        = detect_frame(stxt, s_dom)
+  +2:                 s_evids        = classify_evidence(stxt)
+  +3:                 s_appraisal    = appraisal_score(stxt)
+  +4:                 s_audience     = detect_audience(stxt, s_ner)
+  +5:                 s_manip        = formula_manipulation_score(
+  +6:                     stxt,
+  +7:                     [p["pattern_type"] for p in s_patterns],
+  +8:                     s_risks
+  +9:                 )
+Line 3055: "politeness_ratio":    s_polit["politeness_ratio"],
+  -10:                     "risk_score":          s_rscore,
+  -9:                     "entities_gpe":        s_ner["gpe"],
+  -8:                     "entities_person":     s_ner["person"],
+  -7:                     "demand_type":         primary_demand.get("demand_type"),
+  -6:                     "demand_weight":       primary_demand.get("demand_weight",0),
+  -5:                     "demand_category":     primary_demand.get("demand_category"),
+  -4:                     "rhetoric_type":       primary_pattern.get("pattern_type"),
+  -3:                     "negation_aware_diplo":s_neg_diplo,
+  -2:                     "topic_specificity":   s_specificity,
+  -1:                     "hedging_score":       s_hedging,
+  +0:                     "politeness_ratio":    s_polit["politeness_ratio"],
+  +1:                     "face_threat_count":   s_polit["face_threat_count"],
+  +2:                     "face_save_count":     s_polit["face_save_count"],
+  +3:                     "dominant_frame":      s_frame,
+  +4:                     "evidence_types":      s_evids,
+  +5:                     "appraisal_attitude":  s_appraisal["attitude"],
+  +6:                     "audience_type":       s_audience,
+  +7:                 }
+  +8:                 sentences_enriched.append(sent)
+  +9:                 global_sent_counter += 1
+Line 3056: "face_threat_count":   s_polit["face_threat_count"],
+  -10:                     "entities_gpe":        s_ner["gpe"],
+  -9:                     "entities_person":     s_ner["person"],
+  -8:                     "demand_type":         primary_demand.get("demand_type"),
+  -7:                     "demand_weight":       primary_demand.get("demand_weight",0),
+  -6:                     "demand_category":     primary_demand.get("demand_category"),
+  -5:                     "rhetoric_type":       primary_pattern.get("pattern_type"),
+  -4:                     "negation_aware_diplo":s_neg_diplo,
+  -3:                     "topic_specificity":   s_specificity,
+  -2:                     "hedging_score":       s_hedging,
+  -1:                     "politeness_ratio":    s_polit["politeness_ratio"],
+  +0:                     "face_threat_count":   s_polit["face_threat_count"],
+  +1:                     "face_save_count":     s_polit["face_save_count"],
+  +2:                     "dominant_frame":      s_frame,
+  +3:                     "evidence_types":      s_evids,
+  +4:                     "appraisal_attitude":  s_appraisal["attitude"],
+  +5:                     "audience_type":       s_audience,
+  +6:                 }
+  +7:                 sentences_enriched.append(sent)
+  +8:                 global_sent_counter += 1
+  +9: 
+Line 3057: "face_save_count":     s_polit["face_save_count"],
+  -10:                     "entities_person":     s_ner["person"],
+  -9:                     "demand_type":         primary_demand.get("demand_type"),
+  -8:                     "demand_weight":       primary_demand.get("demand_weight",0),
+  -7:                     "demand_category":     primary_demand.get("demand_category"),
+  -6:                     "rhetoric_type":       primary_pattern.get("pattern_type"),
+  -5:                     "negation_aware_diplo":s_neg_diplo,
+  -4:                     "topic_specificity":   s_specificity,
+  -3:                     "hedging_score":       s_hedging,
+  -2:                     "politeness_ratio":    s_polit["politeness_ratio"],
+  -1:                     "face_threat_count":   s_polit["face_threat_count"],
+  +0:                     "face_save_count":     s_polit["face_save_count"],
+  +1:                     "dominant_frame":      s_frame,
+  +2:                     "evidence_types":      s_evids,
+  +3:                     "appraisal_attitude":  s_appraisal["attitude"],
+  +4:                     "audience_type":       s_audience,
+  +5:                 }
+  +6:                 sentences_enriched.append(sent)
+  +7:                 global_sent_counter += 1
+  +8: 
+  +9:                 # Panel KGI ve dinamik hesabı

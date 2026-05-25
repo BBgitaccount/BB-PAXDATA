@@ -1,0 +1,9 @@
+def hedging_score(text: str) -> float:
+    """
+    0.0 = kesin/asertif dil · 1.0 = yüksek belirsizlik/hedging
+    Diplomatik manevra alanı analizi.
+    """
+    tl = text.lower()
+    score = 0.0
+    # HATA 10 DÜZELTME: Kelime sınırı ile eşleşme (false-positive önleme)
+    

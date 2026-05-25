@@ -1,0 +1,70 @@
+=== Matches for demand_records ===
+Line 16: ║    demand_records · pattern_records                                      ║
+Line 906: CREATE TABLE IF NOT EXISTS demand_records (
+Line 989: CREATE INDEX IF NOT EXISTS idx_demand_country  ON demand_records(country);
+Line 990: CREATE INDEX IF NOT EXISTS idx_demand_type     ON demand_records(demand_type);
+Line 1195: COALESCE((SELECT COUNT(*) FROM demand_records dr
+Line 1330: NULLIF((SELECT COUNT(*) FROM demand_records), 0), 2) AS global_share_pct
+Line 1331: FROM demand_records dr
+Line 1646: NULLIF((SELECT COUNT(*) FROM demand_records dr2
+Line 1648: FROM demand_records dr
+Line 2424: # artık tümüyle demand_records'a yazılır.
+Line 2595: conn.execute("""INSERT INTO demand_records
+Line 2803: demand_cnt  = c.execute("SELECT COUNT(*) FROM demand_records WHERE seg_id IN "
+Line 3241: ("Talep kaydı",      "SELECT COUNT(*) FROM demand_records"),
+=== Matches for pattern_records ===
+Line 16: ║    demand_records · pattern_records                                      ║
+Line 924: CREATE TABLE IF NOT EXISTS pattern_records (
+Line 991: CREATE INDEX IF NOT EXISTS idx_pattern_type    ON pattern_records(pattern_type);
+Line 992: CREATE INDEX IF NOT EXISTS idx_pattern_country ON pattern_records(country);
+Line 1300: (SELECT COUNT(DISTINCT pr2.country) FROM pattern_records pr2
+Line 1304: FROM pattern_records pr
+Line 2605: conn.execute("""INSERT INTO pattern_records
+Line 2805: pat_types   = c.execute("SELECT COUNT(DISTINCT pattern_type) FROM pattern_records WHERE seg_id IN "
+Line 3242: ("Örüntü kaydı",     "SELECT COUNT(*) FROM pattern_records"),
+=== Matches for panel_dynamics ===
+Line 17: ║    panel_dynamics · discourse_network_edges                              ║
+Line 940: CREATE TABLE IF NOT EXISTS panel_dynamics (
+Line 993: CREATE INDEX IF NOT EXISTS idx_dyn_panel       ON panel_dynamics(panel_id);
+Line 994: CREATE UNIQUE INDEX IF NOT EXISTS idx_dyn_sent ON panel_dynamics(sent_id);  -- FIX 1.4: Tekrar çalıştırmada çift satırı önler
+Line 1600: FROM panel_dynamics pd
+Line 2664: def insert_panel_dynamics(conn, dynamics_rows: list):
+Line 2665: """KGI ve söylem dinamiklerini panel_dynamics tablosuna yaz."""
+Line 2667: conn.execute("""INSERT INTO panel_dynamics
+Line 3146: # panel_dynamics'teki cümle düzeyindeki incons değerlerinin segment
+Line 3194: insert_panel_dynamics(conn, all_dynamics_rows)
+Line 3243: ("Panel Dinamiği",   "SELECT COUNT(*) FROM panel_dynamics"),
+=== Matches for discourse_network_edges ===
+Line 17: ║    panel_dynamics · discourse_network_edges                              ║
+Line 955: CREATE TABLE IF NOT EXISTS discourse_network_edges (
+Line 995: CREATE INDEX IF NOT EXISTS idx_net_from        ON discourse_network_edges(from_country);
+Line 2675: def insert_discourse_network_edges(conn, all_refs: list):
+Line 2693: conn.execute("""INSERT INTO discourse_network_edges
+Line 3198: insert_discourse_network_edges(conn, all_refs)
+Line 3244: ("Ağ Kenarları",     "SELECT COUNT(*) FROM discourse_network_edges"),
+=== Matches for country_references ===
+Line 13: ║    sentences · words · country_references                                ║
+Line 844: CREATE TABLE IF NOT EXISTS country_references (
+Line 985: CREATE INDEX IF NOT EXISTS idx_coref_from      ON country_references(from_country);
+Line 986: CREATE INDEX IF NOT EXISTS idx_coref_to        ON country_references(to_country);
+Line 1106: (SELECT SUM(r.mention_count) FROM country_references r WHERE r.from_country = c.to_country AND r.to_country = c.from_country),
+Line 1110: FROM country_references c
+Line 1201: FROM country_references cr
+Line 2646: conn.execute("""INSERT INTO country_references
+Line 2735: # H-6: Tüm tabloyu silmek yerine, tüm country_references'tan
+Line 2744: FROM country_references cr
+Line 2824: SELECT cr.to_country, SUM(cr.mention_count) FROM country_references cr
+Line 2828: SELECT cr.to_country FROM country_references cr
+Line 2835: SELECT cr.to_country FROM country_references cr
+Line 3238: ("Ko-referans",      "SELECT COUNT(*) FROM country_references"),
+=== Matches for negation_aware_diplo ===
+Line 811: negation_aware_diplo REAL DEFAULT 0,
+Line 1037: ROUND(AVG(negation_aware_diplo), 3)                    AS avg_negation_aware_sentiment,
+Line 1073: ROUND(s.negation_aware_diplo, 3)                       AS negation_aware_diplo,
+Line 1075: ROUND(s.power_level * s.negation_aware_diplo, 3)       AS power_weighted_sentiment,
+Line 1737: negation_aware_diplo() ile birebir senkronize çalışır.
+Line 2021: def negation_aware_diplo(text: str) -> float:
+Line 2563: negation_aware_diplo,topic_specificity,
+Line 2582: sent.get("negation_aware_diplo",0.0),
+Line 3005: s_neg_diplo    = negation_aware_diplo(stxt)
+Line 3052: "negation_aware_diplo":s_neg_diplo,

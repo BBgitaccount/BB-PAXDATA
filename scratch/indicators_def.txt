@@ -1,0 +1,41 @@
+def compute_sbi(power_level: int, demand_weight: float, risk_score: int) -> float:
+    """
+    Söylemsel Baskı İndeksi (SBI):
+    SBI = (power_level × demand_weight) / 2.0 + risk_score
+    ≥7.0 → Yüksek baskılı · 4.0–6.9 → Orta · 1.0–3.9 → Düşük · <1.0 → Beyan
+    Akademik: Baldwin (1985); Kıyılar (2020)
+    """
+    sbi = (power_level * demand_weight) / 2.0 + risk_score
+    return round(min(10.0, max(0.0, sbi)), 3)
+
+
+def compute_dki(avg_diplo: float, avg_risk: float, demand_ratio: float,
+                avg_manip: float) -> float:
+    """
+    Diplomatik Konum İndeksi (DKI):
+    DKI = norm_diplo×0.4 + (1-norm_risk)×0.3 + norm_demand×0.2 + (1-norm_manip)×0.1, ardından ×2 - 1
+    Aralık: -1.0 ile +1.0
+    >0.6 → Yapıcı · 0.2–0.6 → Dengeli · -0.2–0.2 → Muğlak · <-0.2 → Baskılayıcı
+    """
+    norm_diplo = 0.5 * (avg_diplo + 1.0)
+    norm_risk = min(avg_risk / 10.0, 1.0)
+    norm_demand = min(demand_ratio, 1.0)
+    norm_manip = min(avg_manip, 1.0)
+    
+    base_score = (norm_diplo * 0.4) + ((1.0 - norm_risk) * 0.3) + (norm_demand * 0.2) + ((1.0 - norm_manip) * 0.1)
+    dki = (base_score * 2.0) - 1.0
+    
+    return round(max(-1.0, min(1.0, dki)), 3)
+
+# ── 7.7 Manipülasyon Skoru (Formül Tabanlı) ────────────────────────────
+
+def compute_kgi(prev_kgi: float, risk_score: float) -> float:
+    """
+    Kümülatif Gerilim İndeksi (üstel hareketli ortalama).
+    KGI[t] = KGI[t-1] × 0.85 + risk_score[t] × 0.15
+    Aralık: [0.0 – 10.0]  (v5.8: üst/alt sınır eklendi)
+    Akademik: Van Dijk (1997); Fairclough (1992)
+    """
+    return round(min(10.0, max(0.0, prev_kgi * 0.85 + risk_score * 0.15)), 4)
+
+

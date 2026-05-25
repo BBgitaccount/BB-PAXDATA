@@ -1,0 +1,13 @@
+def inconsistency_score(diplo_prev: float, diplo_curr: float,
+                        topic_prev: str, topic_curr: str) -> float:
+    """
+    Ardışık cümle/segment tutarsızlık skoru.
+    inconsistency = emotion_shift×0.6 + topic_shift×0.4
+    Yüksek → stratejik muğlaklık veya stres altında konuşma.
+    """
+    emotion_shift = abs(diplo_curr - diplo_prev)
+    topic_shift   = 0.0 if topic_prev == topic_curr else 1.0
+    return round(emotion_shift * 0.6 + topic_shift * 0.4, 4)
+
+# ── 7.16 Ek Yardımcılar ─────────────────────────────────────────────────
+
