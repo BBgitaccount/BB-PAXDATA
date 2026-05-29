@@ -102,6 +102,20 @@ def main(
 
         reset_settings()
 
+    # Initialize logging for all CLI subcommands
+    from pathlib import Path
+
+    from bb_paxdata.config.logging import setup_logging
+    from bb_paxdata.config.settings import get_settings
+
+    s = get_settings()
+    log_level = "DEBUG" if verbose else s.log_level.value
+    setup_logging(
+        level=log_level,
+        pretty=True,
+        log_file=Path("logs/bb-paxdata.log"),
+    )
+
 
 def entrypoint() -> None:
     """

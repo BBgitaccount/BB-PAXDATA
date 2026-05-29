@@ -35,19 +35,6 @@ def setup_logging(
     if _configured:
         return
 
-    if not structlog.is_configured():
-        # Fallback to standard logging
-        logging.basicConfig(
-            level=getattr(logging, level.upper(), logging.INFO),
-            format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
-            stream=sys.stdout,
-        )
-        _configured = True
-        return
-
-    # Log seviyesini belirle
-    log_level = getattr(logging, level.upper(), logging.INFO)
-
     # Ortak processor'lar
     shared_processors: list[Processor] = [
         structlog.contextvars.merge_contextvars,  # contextvars entegrasyonu
@@ -58,46 +45,54 @@ def setup_logging(
         structlog.processors.format_exc_info,
     ]
 
-    # Renderer seçimi
-    renderer: ConsoleRenderer | JSONRenderer
-    if pretty:
-        renderer = ConsoleRenderer(colors=True)
-    else:
-        renderer = JSONRenderer()
-
     # Structlog yapılandırması
-    final_processors: list[Processor] = [*shared_processors, renderer]
     structlog.configure(
-        processors=final_processors,
-        wrapper_class=structlog.make_filtering_bound_logger(log_level),
-        context_class=dict,
-        logger_factory=structlog.PrintLoggerFactory(),
+        processors=[
+            *shared_processors,
+            structlog.stdlib.ProcessorFormatter.wrap_for_formatter,
+        ],
+        logger_factory=structlog.stdlib.LoggerFactory(),
+        wrapper_class=structlog.stdlib.BoundLogger,
         cache_logger_on_first_use=True,
     )
 
-    # stdlib logging'i de structlog'a yönlendir
-    # (httpx, sqlalchemy gibi üçüncü parti logları da yakalanır)
-    logging.basicConfig(
-        format="%(message)s",
-        stream=sys.stdout,
-        level=log_level,
+    # Console Handler (pretty / colored or raw JSON)
+    console_handler = logging.StreamHandler(sys.stdout)
+    console_handler.setFormatter(
+        structlog.stdlib.ProcessorFormatter(
+            processor=ConsoleRenderer(colors=True) if pretty else JSONRenderer(),
+            foreign_pre_chain=shared_processors,
+        )
     )
+
+    handlers: list[logging.Handler] = [console_handler]
+
+    # File Handler (JSON format)
+    if log_file:
+        log_file.parent.mkdir(parents=True, exist_ok=True)
+        file_handler = logging.FileHandler(log_file, encoding="utf-8")
+        file_handler.setFormatter(
+            structlog.stdlib.ProcessorFormatter(
+                processor=JSONRenderer(),
+                foreign_pre_chain=shared_processors,
+            )
+        )
+        handlers.append(file_handler)
+
+    # Configure root logger with handlers
+    root_logger = logging.getLogger()
+    for h in list(root_logger.handlers):
+        root_logger.removeHandler(h)
+    for h in handlers:
+        root_logger.addHandler(h)
+
+    # Set logging level
+    log_level = getattr(logging, level.upper(), logging.INFO)
+    root_logger.setLevel(log_level)
 
     # Session_id context'e ekle
     if session_id:
         structlog.contextvars.bind_contextvars(session_id=session_id)
-
-    # Dosyaya yazma
-    if log_file:
-        log_file.parent.mkdir(parents=True, exist_ok=True)
-        file_handler = logging.FileHandler(log_file, encoding="utf-8")
-        file_handler.setLevel(logging.DEBUG)
-
-        # Dosyaya her zaman JSON yaz (pretty bağımsız)
-        file_formatter = logging.Formatter("%(message)s")
-        file_handler.setFormatter(file_formatter)
-
-        logging.getLogger().addHandler(file_handler)
 
     _configured = True
 

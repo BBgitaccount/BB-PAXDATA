@@ -1,0 +1,4 @@
+{"test_key": "test_value", "event": "Hello World!", "level": "info", "logger": "test_logger", "timestamp": "2026-05-29T22:02:53.353714Z"}
+{"event": "This is a standard library warning log!", "level": "warning", "logger": "stdlib_logger", "timestamp": "2026-05-29T22:02:53.354466Z"}
+{"test_key": "test_value", "event": "Hello World!", "level": "info", "logger": "test_logger", "timestamp": "2026-05-29T22:03:14.372218Z"}
+{"event": "This is a standard library warning log!", "level": "warning", "logger": "stdlib_logger", "timestamp": "2026-05-29T22:03:14.373054Z"}
