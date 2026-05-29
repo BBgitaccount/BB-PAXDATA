@@ -11,18 +11,18 @@ def test_db():
     cursor = conn.cursor()
 
     print("--- Bilateral Sentiments containing 'Türkiye' or similar ---")
-    cursor.execute(
-        "SELECT DISTINCT from_country, to_country FROM bilateral_sentiments WHERE to_country LIKE '%rkiye%' OR to_country LIKE '%rkiye%'"
-    )
+    cursor.execute("SELECT DISTINCT from_country, to_country FROM bilateral_sentiments")
     for row in cursor.fetchall():
-        print(row)
+        if "rkiye" in row[1] or any(ord(c) > 127 for c in row[1]):
+            print(repr(row))
 
     print("\n--- Country Pair Sentiment containing 'Türkiye' or similar ---")
     cursor.execute(
-        "SELECT DISTINCT from_country, to_country FROM country_pair_sentiment WHERE to_country LIKE '%rkiye%' OR to_country LIKE '%rkiye%'"
+        "SELECT DISTINCT from_country, to_country FROM country_pair_sentiment"
     )
     for row in cursor.fetchall():
-        print(row)
+        if "rkiye" in row[1] or any(ord(c) > 127 for c in row[1]):
+            print(repr(row))
 
     conn.close()
 

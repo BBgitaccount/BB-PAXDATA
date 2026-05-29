@@ -18,7 +18,8 @@ for name, table in metadata.tables.items():
         print(f"Table: {name}")
         print("Foreign Keys:")
         for fk in table.foreign_keys:
-            print(f"  FK: {fk} | name: {fk.name} | constraint: {fk.constraint.name}")
+            fk_constraint_name = fk.constraint.name if fk.constraint else "N/A"
+            print(f"  FK: {fk} | name: {fk.name} | constraint: {fk_constraint_name}")
         print("Constraints:")
         for const in table.constraints:
             print(f"  Const: {const} | name: {const.name}")

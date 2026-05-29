@@ -32,11 +32,15 @@ class SentimentService(BaseService, SentimentServiceProtocol):
         # Extreme Negative (-0.7 to -0.9)
         "genocide": -0.8,
         "massacre": -0.8,
+        "war crime": -0.7,
+        "crime against humanity": -0.8,
         "terrorism": -0.7,
         "terrorist": -0.7,
         "terror": -0.7,
         "premeditated starvation": -0.8,
         "imperial collapse": -0.7,
+        "strongly condemn": -0.6,
+        "unacceptable": -0.5,
         # Strong Negative (-0.5 to -0.6)
         "aggression": -0.6,
         "aggressive": -0.6,
@@ -53,12 +57,16 @@ class SentimentService(BaseService, SentimentServiceProtocol):
         "war": -0.6,
         "devastating war": -0.6,
         "senseless war": -0.6,
+        "sovereignty violation": -0.6,
+        "territorial violation": -0.6,
+        "threat of force": -0.6,
+        "illegal annexation": -0.6,
         "coup": -0.5,
         "occupation": -0.5,
         "hegemony": -0.5,
         "siege": -0.5,
         "proxy war": -0.5,
-        "illegal annexation": -0.5,
+        "proxy conflict": -0.5,
         "tragedy": -0.5,
         "casualties": -0.5,
         "martyrs": -0.5,
@@ -68,6 +76,13 @@ class SentimentService(BaseService, SentimentServiceProtocol):
         "impunity": -0.5,
         "blackmail": -0.5,
         "repressive": -0.5,
+        "border violation": -0.5,
+        "cyber warfare": -0.5,
+        "abluka": -0.5,
+        "blockade": -0.5,
+        "hostilities": -0.5,
+        "hostility": -0.5,
+        "provocative acts": -0.5,
         # Mid Negative (-0.3 to -0.4)
         "deadlock": -0.4,
         "impasse": -0.4,
@@ -79,6 +94,13 @@ class SentimentService(BaseService, SentimentServiceProtocol):
         "fragmentation": -0.4,
         "cyberattack": -0.4,
         "polarization": -0.4,
+        "escalation": -0.4,
+        "unilateral actions": -0.4,
+        "economic sanction": -0.4,
+        "military buildup": -0.4,
+        "regional instability": -0.4,
+        "crisis": -0.4,
+        "condemn": -0.4,
         "sanction": -0.3,
         "sanctions": -0.3,
         "tension": -0.3,
@@ -87,6 +109,10 @@ class SentimentService(BaseService, SentimentServiceProtocol):
         "unstable": -0.3,
         "turbulent": -0.3,
         "unpredictable": -0.3,
+        "boycott": -0.3,
+        "injustice": -0.3,
+        "deep concern": -0.3,
+        "territorial claim": -0.3,
         # Low Negative (-0.1 to -0.2)
         "dependence": -0.2,
         "uncertainty": -0.2,
@@ -100,7 +126,10 @@ class SentimentService(BaseService, SentimentServiceProtocol):
         "peace": 0.6,
         "peaceful coexistence": 0.6,
         "non-aggression": 0.6,
+        "global solidarity": 0.6,
+        "peaceful resolution": 0.6,
         # Strong Positive (+0.4 to +0.5)
+        "strategic partnership": 0.5,
         "anticipatory leadership": 0.5,
         "ceasefire": 0.5,
         "consensus": 0.5,
@@ -110,16 +139,24 @@ class SentimentService(BaseService, SentimentServiceProtocol):
         "dialogue": 0.5,
         "negotiations": 0.5,
         "shared responsibility": 0.5,
+        "cooperation": 0.5,
+        "partnership": 0.5,
+        "solidarity": 0.5,
+        "mutual respect": 0.4,
+        "confidence-building measures": 0.4,
+        "confidence-building": 0.4,
+        "security guarantees": 0.4,
+        "constructive dialogue": 0.4,
+        "disarmament": 0.4,
         "accountability": 0.4,
-        "cooperation": 0.4,
-        "partnership": 0.4,
         "integration": 0.4,
         "normalization": 0.4,
         "sovereignty": 0.4,
         "diplomatic": 0.4,
-        "solidarity": 0.4,
         "mediation": 0.4,
+        "mediator": 0.4,
         "de-escalation": 0.4,
+        "de-escalate": 0.4,
         "collective security": 0.4,
         "human rights": 0.4,
         "humanitarian aid": 0.4,
@@ -138,11 +175,24 @@ class SentimentService(BaseService, SentimentServiceProtocol):
         "reform": 0.2,
         "agreement": 0.2,
         "treaty": 0.2,
+        "diplomatic effort": 0.3,
+        "diplomatic relations": 0.3,
+        "bilateral relations": 0.2,
+        "constructive engagement": 0.3,
+        "goodwill": 0.3,
+        "humanitarian corridor": 0.3,
+        "consensus building": 0.3,
+        "stability": 0.3,
+        "stable": 0.3,
+        "stabilization": 0.3,
+        "sovereign equality": 0.3,
+        "sustainable solution": 0.3,
+        "sustainable development": 0.3,
+        "joint declaration": 0.3,
+        "memorandum of understanding": 0.3,
+        "facilitator": 0.3,
         # Low Positive (+0.1)
         "transition": 0.1,
-        "stability": 0.1,
-        "stable": 0.1,
-        "stabilization": 0.1,
     }
 
     # Extended negation words list
@@ -297,7 +347,7 @@ class SentimentService(BaseService, SentimentServiceProtocol):
 
         # Blend with VADER compound
         vader_compound = self._vader_analyzer.polarity_scores(text)["compound"]
-        diplo = float(round(max(-1.0, min(1.0, vader_compound + adj)), 4))
+        diplo = round(max(-1.0, min(1.0, vader_compound + adj)), 4)
         return diplo
 
     def negation_aware_diplo(self, text: str) -> float:
@@ -341,7 +391,7 @@ class SentimentService(BaseService, SentimentServiceProtocol):
 
         # Blend with VADER compound, clamp to [-1, 1]
         vader_score = self._vader_analyzer.polarity_scores(text)["compound"]
-        return float(round(max(-1.0, min(1.0, vader_score + adj)), 4))
+        return round(max(-1.0, min(1.0, vader_score + adj)), 4)
 
     def _classify_emotion(self, sentiment_score: float) -> SentimentCategory:
         """Classify emotion category based on sentiment score.
