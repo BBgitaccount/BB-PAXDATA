@@ -19,7 +19,7 @@ import bb_paxdata.infrastructure.db.models
 import bb_paxdata.infrastructure.db.topic_models  # noqa: F401
 from bb_paxdata.infrastructure.db.base import Base
 from bb_paxdata.infrastructure.db.country_models import Base as CountryBase
-from bb_paxdata.infrastructure.persistence.models import Base as PersistenceBase
+from bb_paxdata.infrastructure.legacy_migration.models import Base as PersistenceBase
 
 # ── ALEMBIC CONFIG ─────────────────────────────────────────
 config = context.config
@@ -34,7 +34,11 @@ def run_migrations_offline() -> None:
     from bb_paxdata.config.settings import get_settings
 
     settings = get_settings()
-    url = settings.database_url or config.get_main_option("sqlalchemy.url")
+    url = (
+        settings.database_url
+        or config.get_main_option("sqlalchemy.url")
+        or "sqlite:///bb-paxdata.db"
+    )
     url_sync = url.replace("sqlite+aiosqlite", "sqlite")
     context.configure(
         url=url_sync,
@@ -63,7 +67,11 @@ def run_migrations_online() -> None:
     from bb_paxdata.config.settings import get_settings
 
     settings = get_settings()
-    url = settings.database_url or config.get_main_option("sqlalchemy.url")
+    url = (
+        settings.database_url
+        or config.get_main_option("sqlalchemy.url")
+        or "sqlite:///bb-paxdata.db"
+    )
     url_sync = url.replace("sqlite+aiosqlite", "sqlite")
 
     alembic_config = config.get_section(config.config_ini_section, {})
