@@ -52,16 +52,25 @@ async def _run_country_refs(panel_id: str, verbose: bool) -> None:
         output = await use_case.execute(
             AggregateBilateralSentimentInput(panel_id=panel_id)
         )
+        if output.succeeded:
+            from bb_paxdata.infrastructure.db.repositories.country_repository import (
+                BilateralSentimentRepository,
+            )
+
+            repo = BilateralSentimentRepository(session)
+            await repo.rebuild_global_country_pair_sentiments()
 
     if output.succeeded:
         console.print(
-            f"[green]✓[/green] Tamamlandı — "
+            f"[green][OK][/green] Tamamlandı — "
             f"Oluşturulan: {output.created_count}, "
             f"Güncellenen: {output.updated_count}, "
             f"Toplam çift: {output.total_pairs}"
         )
     else:
-        console.print(f"[yellow]⚠[/yellow] Kısmi başarı — {len(output.errors)} hata:")
+        console.print(
+            f"[yellow][WARN][/yellow] Kısmi başarı — {len(output.errors)} hata:"
+        )
         for err in output.errors:
             console.print(f"  [red]•[/red] {err}", highlight=False)
         if not output.created_count and not output.updated_count:
@@ -110,13 +119,13 @@ async def _run_network(
         )
 
     if not output.succeeded:
-        console.print("[red]✗[/red] Ağ kurulamadı:")
+        console.print("[red][ERROR][/red] Ağ kurulamadı:")
         for err in output.errors:
             console.print(f"  {err}", highlight=False)
         sys.exit(1)
 
     console.print(
-        f"[green]✓[/green] Ağ kuruldu — "
+        f"[green][OK][/green] Ağ kuruldu — "
         f"{output.node_count} düğüm, {output.edges_created} kenar"
     )
 
@@ -167,11 +176,20 @@ async def _run_full(
         output1 = await make_aggregate_bilateral_use_case(session).execute(
             AggregateBilateralSentimentInput(panel_id=panel_id)
         )
+        if output1.succeeded:
+            from bb_paxdata.infrastructure.db.repositories.country_repository import (
+                BilateralSentimentRepository,
+            )
+
+            repo = BilateralSentimentRepository(session)
+            await repo.rebuild_global_country_pair_sentiments()
 
     if output1.succeeded:
-        console.print(f"  [green]✓[/green] {output1.total_pairs} çift işlendi")
+        console.print(f"  [green][OK][/green] {output1.total_pairs} çift işlendi")
     else:
-        console.print(f"  [yellow]⚠[/yellow] {len(output1.errors)} hata ile tamamlandı")
+        console.print(
+            f"  [yellow][WARN][/yellow] {len(output1.errors)} hata ile tamamlandı"
+        )
         has_error = True
 
     # Adım 2: Network Builder
@@ -183,7 +201,7 @@ async def _run_full(
 
     if output2.succeeded:
         console.print(
-            f"  [green]✓[/green] {output2.node_count} düğüm, {output2.edges_created} kenar"
+            f"  [green][OK][/green] {output2.node_count} düğüm, {output2.edges_created} kenar"
         )
         if show_centrality and output2.centrality:
             top3 = sorted(output2.centrality.items(), key=lambda x: x[1], reverse=True)[
@@ -192,7 +210,7 @@ async def _run_full(
             top3_str = ", ".join(f"{c}({s:.3f})" for c, s in top3)
             console.print(f"  [dim]Top 3 merkezi ülke:[/dim] {top3_str}")
     else:
-        console.print("  [red]✗[/red] Ağ kurulamadı")
+        console.print("  [red][ERROR][/red] Ağ kurulamadı")
         has_error = True
 
     # Adım 3: Topic Aggregation
@@ -204,10 +222,10 @@ async def _run_full(
 
     if output3.succeeded:
         console.print(
-            f"  [green]✓[/green] {output3.synthesized_count} ülke için topic sentezi yapıldı"
+            f"  [green][OK][/green] {output3.synthesized_count} ülke için topic sentezi yapıldı"
         )
     else:
-        console.print(f"  [yellow]⚠[/yellow] {len(output3.errors)} hata")
+        console.print(f"  [yellow][WARN][/yellow] {len(output3.errors)} hata")
         has_error = True
 
     console.rule()

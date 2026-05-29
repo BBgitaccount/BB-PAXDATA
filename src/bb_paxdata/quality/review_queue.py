@@ -160,7 +160,7 @@ class ReviewFlagger:
             review_entry = HumanReviewQueue(
                 sent_id=sent_id,
                 seg_id=context.get("seg_id") if context else None,
-                panel_id=context.get("panel_id") if context else None,
+                file_id=context.get("file_id") if context else None,
                 speaker_name=context.get("speaker_name") if context else None,
                 country=context.get("country") if context else None,
                 trigger_type=trigger_type,
@@ -196,7 +196,7 @@ class ReviewQueueManager:
         self.logger = structlog.get_logger(__name__)
 
     def get_pending_reviews(
-        self, limit: int = 50, panel_id: str | None = None
+        self, limit: int = 50, file_id: str | None = None
     ) -> list[HumanReviewQueue]:
         """Get pending reviews for human processing."""
         query = (
@@ -205,8 +205,8 @@ class ReviewQueueManager:
             .order_by(HumanReviewQueue.flagged_at.desc())
         )
 
-        if panel_id:
-            query = query.filter(HumanReviewQueue.panel_id == panel_id)
+        if file_id:
+            query = query.filter(HumanReviewQueue.file_id == file_id)
 
         return query.limit(limit).all()
 

@@ -3,6 +3,7 @@ import sys
 
 MODELS = {
     "en_core_web_sm": "en_core_web_sm",
+    "tr_core_news_md": "https://huggingface.co/turkish-nlp-suite/tr_core_news_md/resolve/main/tr_core_news_md-1.0-py3-none-any.whl",
 }
 
 

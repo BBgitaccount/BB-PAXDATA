@@ -10,7 +10,7 @@ from sqlalchemy.orm import Mapped, mapped_column, relationship
 from bb_paxdata.infrastructure.db.base import Base
 
 if TYPE_CHECKING:
-    from bb_paxdata.infrastructure.db.models import Panel
+    from bb_paxdata.infrastructure.db.models import File
 
 
 class DiscourseNetworkEdgeTable(Base):
@@ -32,12 +32,12 @@ class DiscourseNetworkEdgeTable(Base):
 
     # Provenance
     segment_id: Mapped[str | None] = mapped_column(String(64), nullable=True)
-    panel_id: Mapped[str | None] = mapped_column(
-        ForeignKey("panels.panel_id", ondelete="CASCADE"), nullable=True
+    file_id: Mapped[str | None] = mapped_column(
+        ForeignKey("files.file_id", ondelete="CASCADE"), nullable=True
     )
 
     # Relationships
-    panel: Mapped[Panel] = relationship(back_populates="network_edges")
+    file: Mapped[File] = relationship(back_populates="network_edges")
 
     __table_args__ = (
         UniqueConstraint(

@@ -29,7 +29,7 @@ app = typer.Typer(help="Human review queue management commands")
 def list_reviews(
     status: str = typer.Option("PENDING", "--status", "-s", help="Filter by status"),
     limit: int = typer.Option(20, "--limit", "-l", help="Maximum number to show"),
-    panel_id: str | None = typer.Option(
+    file_id: str | None = typer.Option(
         None, "--panel", "-p", help="Filter by panel ID"
     ),
 ) -> None:
@@ -45,7 +45,7 @@ def list_reviews(
                 return
 
             # Get reviews
-            reviews = manager.get_pending_reviews(limit=limit, panel_id=panel_id)
+            reviews = manager.get_pending_reviews(limit=limit, file_id=file_id)
 
             if not reviews:
                 console.print(f"[yellow]No reviews found with status '{status}'")
@@ -55,7 +55,7 @@ def list_reviews(
             table = Table(title=f"Review Queue - {status.upper()}")
             table.add_column("ID", style="cyan")
             table.add_column("Sentence ID", style="magenta")
-            table.add_column("Panel", style="green")
+            table.add_column("File", style="green")
             table.add_column("Speaker", style="blue")
             table.add_column("Trigger", style="red")
             table.add_column("Risk Score", style="yellow")
@@ -70,7 +70,7 @@ def list_reviews(
                 table.add_row(
                     str(review.review_id),
                     review.sent_id,
-                    review.panel_id or "N/A",
+                    review.file_id or "N/A",
                     review.speaker_name or "N/A",
                     trigger_display,
                     risk_display,
@@ -118,9 +118,9 @@ def assign_review(
             manager = ReviewQueueManager(session)
 
             if manager.assign_review(review_id, reviewer):
-                console.print(f"[green]✓ Review {review_id} assigned to {reviewer}")
+                console.print(f"[green][OK] Review {review_id} assigned to {reviewer}")
             else:
-                console.print(f"[red]✗ Failed to assign review {review_id}")
+                console.print(f"[red][ERROR] Failed to assign review {review_id}")
                 raise typer.Exit(1)
 
     except Exception as e:
@@ -138,9 +138,9 @@ def start_review(
             manager = ReviewQueueManager(session)
 
             if manager.start_review(review_id):
-                console.print(f"[green]✓ Review {review_id} marked as in progress")
+                console.print(f"[green][OK] Review {review_id} marked as in progress")
             else:
-                console.print(f"[red]✗ Failed to start review {review_id}")
+                console.print(f"[red][ERROR] Failed to start review {review_id}")
                 raise typer.Exit(1)
 
     except Exception as e:
@@ -190,10 +190,10 @@ def complete_review(
                 corrected_json=corrected_json,
             ):
                 console.print(
-                    f"[green]✓ Review {review_id} completed with action: {action}"
+                    f"[green][OK] Review {review_id} completed with action: {action}"
                 )
             else:
-                console.print(f"[red]✗ Failed to complete review {review_id}")
+                console.print(f"[red][ERROR] Failed to complete review {review_id}")
                 raise typer.Exit(1)
 
     except Exception as e:
@@ -203,7 +203,7 @@ def complete_review(
 
 @app.command("approve")
 def approve_panel(
-    panel_id: str = typer.Argument(..., help="Panel ID to approve"),
+    file_id: str = typer.Argument(..., help="File ID to approve"),
     dry_run: bool = typer.Option(
         False, "--dry-run", help="Show what would be approved without doing it"
     ),
@@ -214,14 +214,14 @@ def approve_panel(
             manager = ReviewQueueManager(session)
 
             # Get pending reviews for panel
-            pending_reviews = manager.get_pending_reviews(limit=1000, panel_id=panel_id)
+            pending_reviews = manager.get_pending_reviews(limit=1000, file_id=file_id)
 
             if not pending_reviews:
-                console.print(f"[yellow]No pending reviews for panel {panel_id}")
+                console.print(f"[yellow]No pending reviews for panel {file_id}")
                 return
 
             console.print(
-                f"Found {len(pending_reviews)} pending reviews for panel {panel_id}"
+                f"Found {len(pending_reviews)} pending reviews for panel {file_id}"
             )
 
             if dry_run:
@@ -234,7 +234,7 @@ def approve_panel(
 
             # Confirm approval
             if not Confirm.ask(
-                f"Approve all {len(pending_reviews)} reviews for panel {panel_id}?"
+                f"Approve all {len(pending_reviews)} reviews for panel {file_id}?"
             ):
                 console.print("Approval cancelled")
                 return
@@ -245,12 +245,12 @@ def approve_panel(
                 if manager.complete_review(
                     review_id=review.review_id,
                     action="APPROVED",
-                    reviewer_notes=f"Bulk approved for panel {panel_id}",
+                    reviewer_notes=f"Bulk approved for panel {file_id}",
                 ):
                     approved_count += 1
 
             console.print(
-                f"[green]✓ Approved {approved_count} reviews for panel {panel_id}"
+                f"[green][OK] Approved {approved_count} reviews for panel {file_id}"
             )
 
     except Exception as e:
@@ -268,7 +268,7 @@ def escalate_stale() -> None:
             escalated_count = manager.escalate_stale_reviews()
 
             if escalated_count > 0:
-                console.print(f"[green]✓ Escalated {escalated_count} stale reviews")
+                console.print(f"[green][OK] Escalated {escalated_count} stale reviews")
             else:
                 console.print("[yellow]No stale reviews to escalate")
 
@@ -281,7 +281,7 @@ def escalate_stale() -> None:
 def export_reviews(
     output_file: str = typer.Argument(..., help="Output JSON file path"),
     status: str | None = typer.Option(None, "--status", "-s", help="Filter by status"),
-    panel_id: str | None = typer.Option(
+    file_id: str | None = typer.Option(
         None, "--panel", "-p", help="Filter by panel ID"
     ),
 ) -> None:
@@ -292,7 +292,7 @@ def export_reviews(
             # For now, show placeholder
             console.print("[yellow]Export functionality would be implemented here")
             console.print(f"Would export to: {output_file}")
-            console.print(f"Filters: status={status}, panel={panel_id}")
+            console.print(f"Filters: status={status}, panel={file_id}")
 
     except Exception as e:
         console.print(f"[red]Error exporting reviews: {e}")
@@ -346,7 +346,7 @@ def _show_review_details(review: HumanReviewQueue, show_raw: bool = False) -> No
     info_table.add_column("Value", style="green")
 
     info_table.add_row("Sentence ID", review.sent_id)
-    info_table.add_row("Panel ID", review.panel_id or "N/A")
+    info_table.add_row("File ID", review.file_id or "N/A")
     info_table.add_row("Speaker", review.speaker_name or "N/A")
     info_table.add_row("Country", review.country or "N/A")
     info_table.add_row("Segment ID", review.seg_id or "N/A")

@@ -7,10 +7,13 @@ from sqlalchemy import create_engine
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_async_engine
 from sqlalchemy.orm import Session, sessionmaker
 
+from bb_paxdata.config.settings import get_settings
 from bb_paxdata.infrastructure.db.base import Base
 
-DATABASE_URL = "sqlite+aiosqlite:///bb-paxdata.db"
-DATABASE_URL_SYNC = "sqlite:///bb-paxdata.db"
+_settings = get_settings()
+DATABASE_URL = _settings.database_url or "sqlite+aiosqlite:///bb-paxdata.db"
+DATABASE_URL_SYNC = DATABASE_URL.replace("sqlite+aiosqlite", "sqlite")
+
 
 engine = create_async_engine(DATABASE_URL, echo=False, future=True)
 SessionLocal = async_sessionmaker(
@@ -44,6 +47,12 @@ async def init_db() -> None:
         country_models,  # noqa: F401
         models,  # noqa: F401
     )
+    from bb_paxdata.infrastructure.db.country_models import Base as CountryBase
+    from bb_paxdata.infrastructure.legacy_migration.models import (
+        Base as PersistenceBase,
+    )
 
     async with engine.begin() as conn:
         await conn.run_sync(Base.metadata.create_all)
+        await conn.run_sync(CountryBase.metadata.create_all)
+        await conn.run_sync(PersistenceBase.metadata.create_all)

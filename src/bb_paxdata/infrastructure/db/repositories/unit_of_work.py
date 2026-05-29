@@ -11,6 +11,9 @@ from bb_paxdata.infrastructure.db.repositories.analysis import AnalysisRepositor
 from bb_paxdata.infrastructure.db.repositories.calibration_repository import (
     CalibrationRepository,
 )
+from bb_paxdata.infrastructure.db.repositories.formula_validation import (
+    FormulaValidationRepository,
+)
 from bb_paxdata.infrastructure.db.repositories.human_review_repository import (
     HumanReviewRepository,
 )
@@ -26,6 +29,7 @@ class AbstractUnitOfWork(ABC):
     analysis: AnalysisRepository
     human_reviews: HumanReviewRepository
     calibration: CalibrationRepository
+    formula_validations: FormulaValidationRepository
 
     async def __aenter__(self) -> AbstractUnitOfWork:
         return self
@@ -71,6 +75,7 @@ class SqlAlchemyUnitOfWork(AbstractUnitOfWork):
         self.analysis = AnalysisRepository(self.session)
         self.human_reviews = HumanReviewRepository(self.session)
         self.calibration = CalibrationRepository(self.session)
+        self.formula_validations = FormulaValidationRepository(self.session)
         return self
 
     async def __aexit__(

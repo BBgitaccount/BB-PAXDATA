@@ -60,7 +60,7 @@ def upgrade() -> None:
 
     op.execute("DROP VIEW IF EXISTS v_speaker_power")
     op.execute(
-        """CREATE VIEW v_speaker_power AS SELECT full_name as speaker_name, country, power_level, influence_tier, n_panels, n_sentences FROM speakers"""
+        """CREATE VIEW v_speaker_power AS SELECT full_name as speaker_name, country, power_level, influence_tier, n_panels, n_sentences FROM speaker_profiles"""
     )
 
     op.execute("DROP VIEW IF EXISTS v_pattern_analysis")
@@ -75,7 +75,7 @@ def upgrade() -> None:
 
     op.execute("DROP VIEW IF EXISTS v_country_overview")
     op.execute(
-        """CREATE VIEW v_country_overview AS SELECT country, SUM(n_sentences) as sents, SUM(total_words) as words FROM speakers GROUP BY country"""
+        """CREATE VIEW v_country_overview AS SELECT country, SUM(n_sentences) as sents, SUM(total_words) as words FROM speaker_profiles GROUP BY country"""
     )
 
     op.execute("DROP VIEW IF EXISTS v_sbi_analysis")

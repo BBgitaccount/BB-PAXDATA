@@ -10,6 +10,7 @@ from typing import TYPE_CHECKING, Any, TypeVar, cast
 from sqlalchemy import (
     JSON,
     Boolean,
+    CheckConstraint,
     DateTime,
     Float,
     ForeignKey,
@@ -17,6 +18,7 @@ from sqlalchemy import (
     Integer,
     String,
     Text,
+    UniqueConstraint,
     func,
 )
 from sqlalchemy.orm import Mapped, mapped_column, relationship
@@ -100,10 +102,20 @@ def _evidence_list(
     return None
 
 
-class Panel(Base):
-    __tablename__ = "panels"
+class File(Base):
+    __tablename__ = "files"
 
-    panel_id: Mapped[str] = mapped_column(String, primary_key=True)
+    file_id: Mapped[str] = mapped_column(String, primary_key=True)
+    file_size_bytes: Mapped[int] = mapped_column(Integer, default=0)
+    idempotency_key: Mapped[str] = mapped_column(Text, nullable=False, unique=True)
+    parser_version: Mapped[str | None] = mapped_column(Text, nullable=True)
+    speaker_map_version: Mapped[str | None] = mapped_column(Text, nullable=True)
+    first_processed_at: Mapped[datetime | None] = mapped_column(
+        DateTime, server_default=func.now(), nullable=True
+    )
+    last_processed_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
+    reprocess_count: Mapped[int] = mapped_column(Integer, default=0)
+    force_rebuild: Mapped[int] = mapped_column(Integer, default=0)
     file_name: Mapped[str] = mapped_column(Text, nullable=False)
     panel_number: Mapped[int | None] = mapped_column(Integer, nullable=True)
     title: Mapped[str | None] = mapped_column(Text, nullable=True)
@@ -122,18 +134,18 @@ class Panel(Base):
     )
 
     segments: Mapped[list[Segment]] = relationship(
-        back_populates="panel", cascade="all, delete-orphan"
+        back_populates="file", cascade="all, delete-orphan"
     )
 
     network_edges: Mapped[list[DiscourseNetworkEdgeTable]] = relationship(
-        back_populates="panel", cascade="all, delete-orphan", lazy="selectin"
+        back_populates="file", cascade="all, delete-orphan", lazy="selectin"
     )
 
     def to_domain(self) -> Transcript:
         from bb_paxdata.domain.models.transcript import Transcript
 
         return Transcript(
-            id=self.panel_id,
+            id=self.file_id,
             title=self.title or self.file_name,
             source_file=self.file_name,
             segments=[],
@@ -172,10 +184,10 @@ class Panel(Base):
         )
 
     @classmethod
-    def from_domain(cls, model: Transcript) -> Panel:
+    def from_domain(cls, model: Transcript) -> File:
         meta = model.metadata or {}
         return cls(
-            panel_id=model.id,
+            file_id=model.id,
             file_name=str(meta.get("source_file") or model.title or model.id),
             panel_number=meta.get("panel_number"),
             title=model.title,
@@ -322,14 +334,14 @@ class SpeakerProfile(Base):
 class Segment(Base):
     __tablename__ = "segments"
     __table_args__ = (
-        Index("idx_seg_panel", "panel_id"),
+        Index("idx_seg_file", "file_id"),
         Index("idx_seg_country", "country"),
         Index("idx_seg_emotion", "emotion_category"),
         Index("idx_seg_topic", "dominant_topic"),
     )
 
     seg_id: Mapped[str] = mapped_column(String, primary_key=True)
-    panel_id: Mapped[str] = mapped_column(ForeignKey("panels.panel_id"), nullable=False)
+    file_id: Mapped[str] = mapped_column(ForeignKey("files.file_id"), nullable=False)
     speaker_id: Mapped[str | None] = mapped_column(
         ForeignKey("speaker_profiles.speaker_id"), nullable=True
     )
@@ -396,7 +408,7 @@ class Segment(Base):
     dominant_audience: Mapped[str | None] = mapped_column(Text, nullable=True)
     dominant_evidence: Mapped[str | None] = mapped_column(Text, nullable=True)
 
-    panel: Mapped[Panel] = relationship(back_populates="segments")
+    file: Mapped[File] = relationship(back_populates="segments")
     speaker: Mapped[SpeakerProfile | None] = relationship(back_populates="segments")
     sentences: Mapped[list[Sentence]] = relationship(
         back_populates="segment", cascade="all, delete-orphan"
@@ -420,7 +432,7 @@ class Segment(Base):
 
         return SegmentDomainModel(
             id=self.seg_id,
-            panel_id=self.panel_id,
+            panel_id=self.file_id,
             start_time=float(self.ts_start_sec) if self.ts_start_sec else None,
             end_time=float(self.ts_end_sec) if self.ts_end_sec else None,
             duration=float(self.duration_sec) if self.duration_sec else None,
@@ -477,7 +489,7 @@ class Segment(Base):
             raise ValueError("panel_id is required (argument or Segment.panel_id)")
         return cls(
             seg_id=model.id,
-            panel_id=resolved_panel,
+            file_id=resolved_panel,
             speaker_id=model.primary_speaker_id,
             speaker_name="",
             ts_start_sec=int(model.start_time or 0),
@@ -494,7 +506,7 @@ class Sentence(Base):
     __tablename__ = "sentences"
     __table_args__ = (
         Index("idx_sent_seg", "seg_id"),
-        Index("idx_sent_panel", "panel_id"),
+        Index("idx_sent_file", "file_id"),
         Index("idx_sent_country", "country"),
         Index("idx_sent_speaker", "speaker_id"),
         Index("idx_sent_emotion", "emotion_category"),
@@ -507,7 +519,7 @@ class Sentence(Base):
 
     sent_id: Mapped[str] = mapped_column(String, primary_key=True)
     seg_id: Mapped[str] = mapped_column(ForeignKey("segments.seg_id"), nullable=False)
-    panel_id: Mapped[str] = mapped_column(ForeignKey("panels.panel_id"), nullable=False)
+    file_id: Mapped[str] = mapped_column(ForeignKey("files.file_id"), nullable=False)
     speaker_id: Mapped[str | None] = mapped_column(Text, nullable=True)
     speaker_name: Mapped[str] = mapped_column(Text, nullable=False)
     country: Mapped[str | None] = mapped_column(Text, nullable=True)
@@ -669,7 +681,7 @@ class Sentence(Base):
         return cls(
             sent_id=model.id,
             seg_id=seg_id,
-            panel_id=panel_id,
+            file_id=panel_id,
             speaker_id=model.speaker_id,
             speaker_name="",
             text=model.text,
@@ -710,7 +722,7 @@ class Word(Base):
         ForeignKey("sentences.sent_id"), nullable=False
     )
     seg_id: Mapped[str] = mapped_column(ForeignKey("segments.seg_id"), nullable=False)
-    panel_id: Mapped[str] = mapped_column(ForeignKey("panels.panel_id"), nullable=False)
+    file_id: Mapped[str] = mapped_column(ForeignKey("files.file_id"), nullable=False)
     speaker_id: Mapped[str | None] = mapped_column(Text, nullable=True)
     speaker_name: Mapped[str | None] = mapped_column(Text, nullable=True)
     country: Mapped[str | None] = mapped_column(Text, nullable=True)
@@ -747,7 +759,7 @@ class Word(Base):
             custom_fields={
                 "sent_id": self.sent_id,
                 "seg_id": self.seg_id,
-                "panel_id": self.panel_id,
+                "panel_id": self.file_id,
                 "word_raw": self.word_raw,
                 "word_norm": self.word_norm,
                 "is_stopword": self.is_stopword,
@@ -761,7 +773,7 @@ class Word(Base):
         return cls(
             sent_id=str(cf["sent_id"]),
             seg_id=str(cf["seg_id"]),
-            panel_id=str(cf["panel_id"]),
+            file_id=str(cf["panel_id"]),
             word_raw=str(cf.get("word_raw") or ""),
             word_norm=str(cf.get("word_norm") or ""),
             is_stopword=bool(cf.get("is_stopword")),
@@ -779,8 +791,8 @@ class CountryReference(Base):
     )
 
     ref_id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
-    panel_id: Mapped[str | None] = mapped_column(
-        ForeignKey("panels.panel_id"), nullable=True
+    file_id: Mapped[str | None] = mapped_column(
+        ForeignKey("files.file_id"), nullable=True
     )
     seg_id: Mapped[str | None] = mapped_column(
         ForeignKey("segments.seg_id"), nullable=True
@@ -813,7 +825,7 @@ class CountryReference(Base):
             access_level=None,
             expires_at=None,
             custom_fields={
-                "panel_id": self.panel_id,
+                "panel_id": self.file_id,
                 "seg_id": self.seg_id,
                 "from_country": self.from_country,
                 "to_country": self.to_country,
@@ -826,7 +838,7 @@ class CountryReference(Base):
     def from_domain(cls, model: Metadata) -> CountryReference:
         cf = model.custom_fields or {}
         return cls(
-            panel_id=cf.get("panel_id"),
+            file_id=cf.get("panel_id"),
             seg_id=cf.get("seg_id"),
             from_country=str(cf.get("from_country") or ""),
             to_country=str(cf.get("to_country") or ""),
@@ -839,9 +851,7 @@ class CountryStat(Base):
     __tablename__ = "country_stats"
 
     country: Mapped[str] = mapped_column(Text, primary_key=True)
-    panel_id: Mapped[str] = mapped_column(
-        ForeignKey("panels.panel_id"), primary_key=True
-    )
+    file_id: Mapped[str] = mapped_column(ForeignKey("files.file_id"), primary_key=True)
     n_segments: Mapped[int] = mapped_column(Integer, default=0)
     n_sentences: Mapped[int] = mapped_column(Integer, default=0)
     total_words: Mapped[int] = mapped_column(Integer, default=0)
@@ -858,8 +868,8 @@ class CountryStat(Base):
         from bb_paxdata.domain.models.metadata import Metadata
 
         return Metadata(
-            id=f"country_stat:{self.country}:{self.panel_id}",
-            entity_id=self.panel_id,
+            id=f"country_stat:{self.country}:{self.file_id}",
+            entity_id=self.file_id,
             entity_type="country_stats",
             title=self.country,
             description=f"Statistics for {self.country}",
@@ -887,7 +897,7 @@ class CountryStat(Base):
         cf = model.custom_fields or {}
         return cls(
             country=model.title or str(cf.get("country") or ""),
-            panel_id=model.entity_id,
+            file_id=model.entity_id,
             n_segments=int(cf.get("n_segments") or 0),
             topic_scores=cf.get("topic_scores"),
             words_per_minute=cf.get("words_per_minute"),
@@ -897,9 +907,7 @@ class CountryStat(Base):
 class TopicMatrix(Base):
     __tablename__ = "topic_matrix"
 
-    panel_id: Mapped[str] = mapped_column(
-        ForeignKey("panels.panel_id"), primary_key=True
-    )
+    file_id: Mapped[str] = mapped_column(ForeignKey("files.file_id"), primary_key=True)
     country: Mapped[str] = mapped_column(Text, primary_key=True)
     topic: Mapped[str] = mapped_column(Text, primary_key=True)
     score: Mapped[float] = mapped_column(Float, default=0.0)
@@ -910,7 +918,7 @@ class TopicMatrix(Base):
 
         cat = _try_enum(TopicCategory, self.topic) or TopicCategory.NONE
         return TopicModel(
-            id=f"{self.panel_id}:{self.country}:{self.topic}",
+            id=f"{self.file_id}:{self.country}:{self.topic}",
             topic_category=cat,
             topic_name=self.topic,
             topic_description=None,
@@ -950,7 +958,7 @@ class TopicMatrix(Base):
     @classmethod
     def from_domain(cls, model: Topic, *, panel_id: str, country: str) -> TopicMatrix:
         return cls(
-            panel_id=panel_id,
+            file_id=panel_id,
             country=country,
             topic=model.topic_name,
             score=float(model.prominence_score or 0),
@@ -1051,8 +1059,8 @@ class DemandRecord(Base):
     seg_id: Mapped[str | None] = mapped_column(
         ForeignKey("segments.seg_id"), nullable=True
     )
-    panel_id: Mapped[str | None] = mapped_column(
-        ForeignKey("panels.panel_id"), nullable=True
+    file_id: Mapped[str | None] = mapped_column(
+        ForeignKey("files.file_id"), nullable=True
     )
     speaker_name: Mapped[str] = mapped_column(Text, nullable=False)
     country: Mapped[str] = mapped_column(Text, nullable=False)
@@ -1112,7 +1120,7 @@ class DemandRecord(Base):
         return cls(
             sent_id=model.sentence_id,
             seg_id=model.segment_id,
-            panel_id=panel_id,
+            file_id=panel_id,
             speaker_name=model.speaker_id,
             country="",
             demand_verb="",
@@ -1128,6 +1136,16 @@ class PatternRecord(Base):
     __table_args__ = (
         Index("idx_pattern_type", "pattern_type"),
         Index("idx_pattern_country", "country"),
+        CheckConstraint(
+            "risk_score >= 0 AND risk_score <= 10", name="check_risk_score_range"
+        ),
+        CheckConstraint(
+            "sentiment_category IN ('cooperative', 'confrontational', 'concerned', 'neutral_cautious', 'constructive', 'neutral', 'unknown')",
+            name="check_sentiment_category",
+        ),
+        UniqueConstraint(
+            "sent_id", "pattern_type", "matched_keyword", name="uq_pattern_per_sentence"
+        ),
     )
 
     pattern_id: Mapped[int] = mapped_column(
@@ -1139,17 +1157,28 @@ class PatternRecord(Base):
     seg_id: Mapped[str | None] = mapped_column(
         ForeignKey("segments.seg_id"), nullable=True
     )
-    panel_id: Mapped[str | None] = mapped_column(
-        ForeignKey("panels.panel_id"), nullable=True
+    file_id: Mapped[str | None] = mapped_column(
+        ForeignKey("files.file_id"), nullable=True
     )
     speaker_name: Mapped[str] = mapped_column(Text, nullable=False)
     country: Mapped[str] = mapped_column(Text, nullable=False)
     power_level: Mapped[int] = mapped_column(Integer, default=0)
     pattern_type: Mapped[str] = mapped_column(Text, nullable=False)
+    pattern_subtype: Mapped[str | None] = mapped_column(Text, nullable=True)
     pattern_text: Mapped[str | None] = mapped_column(Text, nullable=True)
+    matched_keyword: Mapped[str | None] = mapped_column(Text, nullable=True)
     full_sentence: Mapped[str] = mapped_column(Text, nullable=False)
+    prev_sentence: Mapped[str | None] = mapped_column(Text, nullable=True)
+    next_sentence: Mapped[str | None] = mapped_column(Text, nullable=True)
     dominant_topic: Mapped[str | None] = mapped_column(Text, nullable=True)
     diplo_compound: Mapped[float] = mapped_column(Float, default=0)
+    risk_score: Mapped[int] = mapped_column(Integer, default=0, nullable=False)
+    sentiment_category: Mapped[str | None] = mapped_column(
+        Text, default="unknown", nullable=True
+    )
+    created_at: Mapped[datetime | None] = mapped_column(
+        DateTime, server_default=func.now(), nullable=True
+    )
 
     def to_domain(self) -> Metadata:
         from bb_paxdata.domain.models.metadata import Metadata
@@ -1191,16 +1220,16 @@ class PatternRecord(Base):
         )
 
 
-class PanelDynamics(Base):
+class FileDynamics(Base):
     __tablename__ = "panel_dynamics"
     __table_args__ = (
-        Index("idx_dyn_panel", "panel_id"),
+        Index("idx_dyn_panel", "file_id"),
         Index("idx_dyn_sent", "sent_id", unique=True),
     )
 
     dyn_id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
-    panel_id: Mapped[str | None] = mapped_column(
-        ForeignKey("panels.panel_id"), nullable=True
+    file_id: Mapped[str | None] = mapped_column(
+        ForeignKey("files.file_id"), nullable=True
     )
     position: Mapped[int] = mapped_column(Integer, nullable=False)
     speaker_name: Mapped[str | None] = mapped_column(Text, nullable=True)
@@ -1236,18 +1265,22 @@ class PanelDynamics(Base):
             access_level=None,
             expires_at=None,
             custom_fields={
-                "panel_id": self.panel_id,
+                "panel_id": self.file_id,
+                "position": self.position,
                 "kgi_score": self.kgi_score,
                 "risk_delta": self.risk_delta,
+                "emotion_shift": self.emotion_shift,
+                "topic_shift": self.topic_shift,
+                "inconsistency_score": self.inconsistency_score,
                 "sent_id": self.sent_id,
             },
         )
 
     @classmethod
-    def from_domain(cls, model: Metadata) -> PanelDynamics:
+    def from_domain(cls, model: Metadata) -> FileDynamics:
         cf = model.custom_fields or {}
         return cls(
-            panel_id=cf.get("panel_id"),
+            file_id=cf.get("panel_id"),
             position=int(cf.get("position") or 0),
             kgi_score=float(cf.get("kgi_score") or 0),
             risk_delta=float(cf.get("risk_delta") or 0),
@@ -1263,8 +1296,8 @@ class DiscourseNetworkEdge(Base):
     __table_args__ = (Index("idx_net_from", "from_country"),)
 
     edge_id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
-    panel_id: Mapped[str | None] = mapped_column(
-        ForeignKey("panels.panel_id"), nullable=True
+    file_id: Mapped[str | None] = mapped_column(
+        ForeignKey("files.file_id"), nullable=True
     )
     from_country: Mapped[str] = mapped_column(Text, nullable=False)
     to_country: Mapped[str] = mapped_column(Text, nullable=False)
@@ -1317,7 +1350,7 @@ class AISentenceAnalysis(Base):
     __tablename__ = "ai_sentence_analysis"
     __table_args__ = (
         Index("idx_ai_sent_id", "sent_id"),
-        Index("idx_ai_panel", "panel_id"),
+        Index("idx_ai_panel", "file_id"),
         Index("idx_ai_country", "country"),
         Index("idx_ai_logic", "overall_logic_check"),
         Index("idx_ai_risk", "risk_level"),
@@ -1336,7 +1369,7 @@ class AISentenceAnalysis(Base):
         comment="PromptRegistry versiyonu — '{name}:{ver}:{hash}' formatı",
     )
     seg_id: Mapped[str | None] = mapped_column(Text, nullable=True)
-    panel_id: Mapped[str | None] = mapped_column(Text, nullable=True)
+    file_id: Mapped[str | None] = mapped_column(Text, nullable=True)
     speaker_name: Mapped[str | None] = mapped_column(Text, nullable=True)
     country: Mapped[str | None] = mapped_column(Text, nullable=True)
     power_level: Mapped[int] = mapped_column(Integer, default=0)
@@ -1520,7 +1553,7 @@ class AIValidationLog(Base):
     val_id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
     sent_id: Mapped[str] = mapped_column(Text, nullable=False)
     seg_id: Mapped[str | None] = mapped_column(Text, nullable=True)
-    panel_id: Mapped[str | None] = mapped_column(Text, nullable=True)
+    file_id: Mapped[str | None] = mapped_column(Text, nullable=True)
     speaker_name: Mapped[str | None] = mapped_column(Text, nullable=True)
     country: Mapped[str | None] = mapped_column(Text, nullable=True)
     check_type: Mapped[str] = mapped_column(Text, nullable=False)
@@ -1588,7 +1621,7 @@ class AISegmentInsight(Base):
         nullable=True,
         comment="PromptRegistry versiyonu — '{name}:{ver}:{hash}' formatı",
     )
-    panel_id: Mapped[str | None] = mapped_column(Text, nullable=True)
+    file_id: Mapped[str | None] = mapped_column(Text, nullable=True)
     speaker_name: Mapped[str | None] = mapped_column(Text, nullable=True)
     country: Mapped[str | None] = mapped_column(Text, nullable=True)
     power_level: Mapped[int] = mapped_column(Integer, default=0)
@@ -1718,7 +1751,7 @@ class AIContextualFlag(Base):
     flag_id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
     sent_id: Mapped[str] = mapped_column(Text, nullable=False)
     seg_id: Mapped[str | None] = mapped_column(Text, nullable=True)
-    panel_id: Mapped[str | None] = mapped_column(Text, nullable=True)
+    file_id: Mapped[str | None] = mapped_column(Text, nullable=True)
     speaker_name: Mapped[str | None] = mapped_column(Text, nullable=True)
     country: Mapped[str | None] = mapped_column(Text, nullable=True)
     power_level: Mapped[int] = mapped_column(Integer, default=0)
@@ -1792,7 +1825,7 @@ class AIDemandAnalysis(Base):
         comment="PromptRegistry versiyonu — '{name}:{ver}:{hash}' formatı",
     )
     seg_id: Mapped[str | None] = mapped_column(Text, nullable=True)
-    panel_id: Mapped[str | None] = mapped_column(Text, nullable=True)
+    file_id: Mapped[str | None] = mapped_column(Text, nullable=True)
     speaker_name: Mapped[str | None] = mapped_column(Text, nullable=True)
     country: Mapped[str | None] = mapped_column(Text, nullable=True)
     power_level: Mapped[int] = mapped_column(Integer, default=0)
@@ -1858,8 +1891,8 @@ class AIPanelSynthesis(Base):
     synthesis_id: Mapped[int] = mapped_column(
         Integer, primary_key=True, autoincrement=True
     )
-    panel_id: Mapped[str] = mapped_column(
-        ForeignKey("panels.panel_id"), unique=True, nullable=False
+    file_id: Mapped[str] = mapped_column(
+        ForeignKey("files.file_id"), unique=True, nullable=False
     )
     prompt_version: Mapped[str | None] = mapped_column(
         String(80),
@@ -1882,7 +1915,7 @@ class AIPanelSynthesis(Base):
 
         return Metadata(
             id=f"ai_panel_synth:{self.synthesis_id}",
-            entity_id=self.panel_id,
+            entity_id=self.file_id,
             entity_type="ai_panel_synthesis",
             title=f"AI Panel Synthesis {self.synthesis_id}",
             description="AI synthesis of panel",
@@ -1908,7 +1941,7 @@ class AIPanelSynthesis(Base):
     def from_domain(cls, model: Metadata) -> AIPanelSynthesis:
         cf = model.custom_fields or {}
         return cls(
-            panel_id=model.entity_id,
+            file_id=model.entity_id,
             panel_summary=cf.get("panel_summary"),
             power_balance=cf.get("power_balance"),
         )
@@ -1921,7 +1954,7 @@ class AIFailAnalysis(Base):
         Index("idx_fail_check", "check_type"),
         Index("idx_fail_kategori", "fail_category"),
         Index("idx_fail_country", "country"),
-        Index("idx_fail_panel", "panel_id"),
+        Index("idx_fail_panel", "file_id"),
     )
 
     fail_id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
@@ -1932,7 +1965,7 @@ class AIFailAnalysis(Base):
         comment="PromptRegistry versiyonu — '{name}:{ver}:{hash}' formatı",
     )
     seg_id: Mapped[str | None] = mapped_column(Text, nullable=True)
-    panel_id: Mapped[str | None] = mapped_column(Text, nullable=True)
+    file_id: Mapped[str | None] = mapped_column(Text, nullable=True)
     speaker_name: Mapped[str | None] = mapped_column(Text, nullable=True)
     country: Mapped[str | None] = mapped_column(Text, nullable=True)
     power_level: Mapped[int] = mapped_column(Integer, default=0)
@@ -2186,7 +2219,7 @@ class DependencyTripleORM(Base):
     __tablename__ = "dependency_triples"
     __table_args__ = (
         Index("idx_dep_sent", "sent_id"),
-        Index("idx_dep_panel", "panel_id"),
+        Index("idx_dep_panel", "file_id"),
         Index("idx_dep_from", "subject_resolved"),
         Index("idx_dep_to", "object_resolved"),
         Index("idx_dep_verb", "verb_lemma"),
@@ -2197,7 +2230,7 @@ class DependencyTripleORM(Base):
     )
     sent_id: Mapped[str] = mapped_column(String, nullable=False)
     seg_id: Mapped[str | None] = mapped_column(String, nullable=True)
-    panel_id: Mapped[str | None] = mapped_column(String, nullable=True)
+    file_id: Mapped[str | None] = mapped_column(String, nullable=True)
     speaker_name: Mapped[str | None] = mapped_column(Text, nullable=True)
     country: Mapped[str | None] = mapped_column(Text, nullable=True)
 
@@ -2223,7 +2256,7 @@ class DependencyTripleORM(Base):
 class ActorActionMatrixORM(Base):
     __tablename__ = "actor_action_matrix"
     __table_args__ = (
-        Index("idx_matrix_panel", "panel_id"),
+        Index("idx_matrix_panel", "file_id"),
         Index("idx_matrix_from", "from_country"),
         Index("idx_matrix_to", "to_country"),
     )
@@ -2231,7 +2264,7 @@ class ActorActionMatrixORM(Base):
     matrix_id: Mapped[int] = mapped_column(
         Integer, primary_key=True, autoincrement=True
     )
-    panel_id: Mapped[str] = mapped_column(String, nullable=False)
+    file_id: Mapped[str] = mapped_column(String, nullable=False)
     from_country: Mapped[str] = mapped_column(Text, nullable=False)
     to_country: Mapped[str] = mapped_column(Text, nullable=False)
     verb: Mapped[str] = mapped_column(Text, nullable=False)
@@ -2263,3 +2296,72 @@ class AIExplanationsORM(Base):
     generated_at: Mapped[datetime | None] = mapped_column(
         DateTime, server_default=func.now(), nullable=True
     )
+
+
+class FormulaValidationLog(Base):
+    __tablename__ = "formula_validation_logs"
+    __table_args__ = (
+        Index("idx_fval_run", "run_id"),
+        Index("idx_fval_entity", "entity_type", "entity_id"),
+        Index("idx_fval_formula", "formula_name"),
+        Index("idx_fval_status", "status"),
+    )
+
+    log_id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    run_id: Mapped[str] = mapped_column(String, nullable=False)
+    entity_type: Mapped[str] = mapped_column(String, nullable=False)
+    entity_id: Mapped[str] = mapped_column(String, nullable=False)
+    formula_name: Mapped[str] = mapped_column(String, nullable=False)
+    expected_constraint: Mapped[str] = mapped_column(Text, nullable=False)
+    actual_value: Mapped[float] = mapped_column(Float, nullable=False)
+    status: Mapped[str] = mapped_column(String, nullable=False)
+    details: Mapped[dict[str, Any] | list[Any] | None] = mapped_column(
+        JSON, nullable=True
+    )
+    created_at: Mapped[datetime | None] = mapped_column(
+        DateTime, server_default=func.now(), nullable=True
+    )
+
+    def to_domain(self) -> Metadata:
+        from bb_paxdata.domain.models.metadata import Metadata
+
+        return Metadata(
+            id=f"formula_val:{self.log_id}",
+            entity_id=self.entity_id,
+            entity_type="formula_validation_log",
+            title=f"Formula {self.formula_name} validation",
+            description=f"Formula Validation {self.status} for {self.entity_type} {self.entity_id}",
+            category=self.formula_name,
+            subcategory=self.status,
+            source="FormulaAuditor",
+            source_url=None,
+            source_date=None,
+            quality_score=None,
+            validation_status=self.status,
+            last_validated=self.created_at,
+            processed_by="FormulaAuditor",
+            processing_version="1.0",
+            access_level=None,
+            expires_at=None,
+            custom_fields={
+                "run_id": self.run_id,
+                "entity_type": self.entity_type,
+                "expected_constraint": self.expected_constraint,
+                "actual_value": self.actual_value,
+                "details": self.details,
+            },
+        )
+
+    @classmethod
+    def from_domain(cls, model: Metadata) -> FormulaValidationLog:
+        cf = model.custom_fields or {}
+        return cls(
+            run_id=cf.get("run_id", ""),
+            entity_type=cf.get("entity_type", ""),
+            entity_id=model.entity_id,
+            formula_name=model.category or "",
+            expected_constraint=cf.get("expected_constraint", ""),
+            actual_value=float(cf.get("actual_value", 0.0)),
+            status=model.validation_status or "FAIL",
+            details=cf.get("details"),
+        )

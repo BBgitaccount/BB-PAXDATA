@@ -5,7 +5,7 @@ from unittest.mock import Mock, patch
 
 import pytest
 from bb_paxdata.domain.services.duplicate_protection import DuplicateProtectionService
-from bb_paxdata.infrastructure.db.processed_files import ProcessedFile
+from bb_paxdata.infrastructure.db.models import File
 
 
 class TestDuplicateProtectionService:
@@ -75,7 +75,8 @@ class TestDuplicateProtectionService:
     ) -> None:
         """Test checking existing file processing status."""
         # Create mock processed file
-        mock_processed_file = ProcessedFile(
+        mock_processed_file = File(
+            file_id="test",
             file_hash="abc123",
             file_name="test.txt",
             file_size_bytes=100,
@@ -151,7 +152,8 @@ class TestDuplicateProtectionService:
         mock_sha256.return_value = mock_hash
 
         # Create existing processed file
-        existing_file = ProcessedFile(
+        existing_file = File(
+            file_id="test",
             file_hash="abc123",
             file_name="test.txt",
             file_size_bytes=100,
@@ -179,29 +181,22 @@ class TestDuplicateProtectionService:
     ) -> None:
         """Test getting existing panel."""
         # Mock processed file
-        processed_file = ProcessedFile(
+        processed_file = File(
+            file_id="test_panel_id",
             file_hash="abc123",
             file_name="test.txt",
             file_size_bytes=100,
             idempotency_key="test_key",
         )
 
-        # Mock panel
-        mock_panel = Mock()
-        mock_panel.panel_id = "test_panel_id"
-        mock_panel.is_active = 1
-
         # Mock database queries
-        mock_db_session.query.return_value.filter.side_effect = [
-            Mock(
-                first=Mock(return_value=processed_file)
-            ),  # First query for ProcessedFile
-            Mock(first=Mock(return_value=mock_panel)),  # Second query for Panel
-        ]
+        mock_db_session.query.return_value.filter.return_value.first.return_value = (
+            processed_file
+        )
 
         result = service.get_existing_panel(Path("test.txt"), "content", "test_key")
 
-        assert result == mock_panel
+        assert result == processed_file
 
     def test_get_existing_panel_not_found(
         self, service: DuplicateProtectionService, mock_db_session: Mock
@@ -219,7 +214,8 @@ class TestDuplicateProtectionService:
     ) -> None:
         """Test soft deleting existing panels."""
         # Mock processed file
-        processed_file = ProcessedFile(
+        processed_file = File(
+            file_id="test",
             file_hash="abc123",
             file_name="test.txt",
             file_size_bytes=100,
@@ -227,9 +223,9 @@ class TestDuplicateProtectionService:
         )
 
         # Mock panels
-        mock_panel1 = Mock()
+        mock_panel1 = File(file_id="test_panel_id")
         mock_panel1.is_active = 1
-        mock_panel2 = Mock()
+        mock_panel2 = File(file_id="test_panel_id_2")
         mock_panel2.is_active = 1
 
         # Mock database queries
@@ -256,7 +252,8 @@ class TestDuplicateProtectionService:
     ) -> None:
         """Test marking file for force rebuild."""
         # Mock processed file
-        processed_file = ProcessedFile(
+        processed_file = File(
+            file_id="test",
             file_hash="abc123",
             file_name="test.txt",
             file_size_bytes=100,

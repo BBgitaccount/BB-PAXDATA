@@ -1,6 +1,6 @@
 from datetime import datetime, timezone
 from enum import Enum
-from typing import Any, Optional
+from typing import Any
 
 from pydantic import BaseModel, ConfigDict, Field
 
@@ -129,7 +129,7 @@ class AnomalyValidationResult(BaseModel):
     decision: AnomalyValidationDecision
     coherence_score: float = Field(ge=0.0, le=1.0)
     reasoning: str
-    detected_subtype: Optional[str] = None
+    detected_subtype: str | None = None
     confidence: float = Field(ge=0.0, le=1.0)
     raw_llm_response: str = ""
 

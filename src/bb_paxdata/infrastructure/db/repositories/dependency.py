@@ -5,7 +5,7 @@ Repository for Dependency Triples and Actor-Action Matrix.
 from typing import cast
 
 from sqlalchemy import select
-from sqlalchemy.orm import Session
+from sqlalchemy.ext.asyncio import AsyncSession
 
 from bb_paxdata.domain.models.dependency import ActorActionMatrix, DependencyTriple
 from bb_paxdata.infrastructure.db.models import (
@@ -19,15 +19,15 @@ class DependencyRepository:
     Handles database operations for dependency triples and actor-action matrices.
     """
 
-    def __init__(self, session: Session):
+    def __init__(self, session: AsyncSession):
         self.session = session
 
-    def insert_triple(self, triple: DependencyTriple) -> int:
+    async def insert_triple(self, triple: DependencyTriple) -> int:
         """Insert a dependency triple into the database."""
         orm_triple = DependencyTripleORM(
             sent_id=triple.sent_id,
             seg_id=triple.seg_id,
-            panel_id=triple.panel_id,
+            file_id=triple.panel_id,
             speaker_name=triple.speaker_name,
             country=triple.country,
             subject_raw=triple.subject_raw,
@@ -41,19 +41,20 @@ class DependencyRepository:
             risk_score=triple.risk_score,
         )
         self.session.add(orm_triple)
-        self.session.flush()
+        await self.session.flush()
         return cast(int, orm_triple.triple_id)
 
-    def upsert_actor_action_matrix(self, matrix: ActorActionMatrix) -> None:
+    async def upsert_actor_action_matrix(self, matrix: ActorActionMatrix) -> None:
         """Upsert an actor-action matrix entry."""
         # Check if exists
         stmt = select(ActorActionMatrixORM).where(
-            ActorActionMatrixORM.panel_id == matrix.panel_id,
+            ActorActionMatrixORM.file_id == matrix.panel_id,
             ActorActionMatrixORM.from_country == matrix.from_country,
             ActorActionMatrixORM.to_country == matrix.to_country,
             ActorActionMatrixORM.verb == matrix.verb,
         )
-        existing = self.session.execute(stmt).scalar_one_or_none()
+        res = await self.session.execute(stmt)
+        existing = res.scalar_one_or_none()
 
         if existing:
             existing.count = matrix.count
@@ -62,7 +63,7 @@ class DependencyRepository:
             existing.is_negative_pct = matrix.is_negative_pct
         else:
             orm_matrix = ActorActionMatrixORM(
-                panel_id=matrix.panel_id,
+                file_id=matrix.panel_id,
                 from_country=matrix.from_country,
                 to_country=matrix.to_country,
                 verb=matrix.verb,
@@ -72,10 +73,10 @@ class DependencyRepository:
                 is_negative_pct=matrix.is_negative_pct,
             )
             self.session.add(orm_matrix)
+        await self.session.flush()
 
-    def get_triples_by_panel(self, panel_id: str) -> list[DependencyTripleORM]:
+    async def get_triples_by_panel(self, file_id: str) -> list[DependencyTripleORM]:
         """Get all triples for a specific panel."""
-        stmt = select(DependencyTripleORM).where(
-            DependencyTripleORM.panel_id == panel_id
-        )
-        return list(self.session.execute(stmt).scalars().all())
+        stmt = select(DependencyTripleORM).where(DependencyTripleORM.file_id == file_id)
+        res = await self.session.execute(stmt)
+        return list(res.scalars().all())

@@ -23,12 +23,17 @@ def test_country_refs_command_success() -> None:
         "bb_paxdata.interfaces.cli.commands.analyze.get_session"
     ) as mock_session, patch(
         "bb_paxdata.interfaces.cli.commands.analyze.make_aggregate_bilateral_use_case"
-    ) as mock_factory:
+    ) as mock_factory, patch(
+        "bb_paxdata.infrastructure.db.repositories.country_repository.BilateralSentimentRepository"
+    ) as mock_repo_class:
         mock_use_case = AsyncMock()
         mock_use_case.execute.return_value = mock_output
         mock_factory.return_value = mock_use_case
         mock_session.return_value.__aenter__ = AsyncMock(return_value=MagicMock())
         mock_session.return_value.__aexit__ = AsyncMock(return_value=False)
+
+        mock_repo = AsyncMock()
+        mock_repo_class.return_value = mock_repo
 
         result = runner.invoke(app, ["country-refs", "--panel-id", "p001"])
 

@@ -290,7 +290,18 @@ class LogicOnlyAIAnalyst:
         LLM çağrısı YAPILMAZ — tamamen deterministik.
         """
         tokens = _tokenize(text)
-        sentiment_score, sentiment_label = _compute_sentiment(tokens)
+        from bb_paxdata.domain.services.sentiment_service import SentimentService
+
+        sentiment_service = SentimentService()
+        sentiment_score = sentiment_service.negation_aware_diplo(text)
+
+        if sentiment_score > 0.05:
+            sentiment_label = "positive"
+        elif sentiment_score < -0.05:
+            sentiment_label = "negative"
+        else:
+            sentiment_label = "neutral"
+
         risk_score, risk_factors = _compute_risk(tokens)
         summary = _extract_summary(text)
 

@@ -5,7 +5,7 @@ from __future__ import annotations
 
 import asyncio
 import sys
-from typing import Callable
+from collections.abc import Callable
 
 import typer
 from rich.console import Console
@@ -104,7 +104,7 @@ async def _run_submit(
     try:
         review = await use_case.execute(command)
         console.print(
-            f"[green]✓ Human Review başarıyla kaydedildi![/green] ID: {review.id}"
+            f"[green][OK] Human Review başarıyla kaydedildi![/green] ID: {review.id}"
         )
         console.print(
             f"  - Durum: [bold yellow]{review.agreement_status.value}[/bold yellow]"
@@ -118,7 +118,7 @@ async def _run_submit(
                 f"  - Risk Anlaşmazlığı: AI '{review.ai_risk_level}' vs Uzman '{review.human_risk_level}'"
             )
     except Exception as exc:
-        console.print(f"[red]✗ Hata oluştu:[/red] {exc}")
+        console.print(f"[red][ERROR] Hata oluştu:[/red] {exc}")
         sys.exit(1)
 
 
@@ -209,11 +209,11 @@ async def _run_calibrate(prompt_version: str, days_back: int) -> None:
             )
         else:
             console.print(
-                "[bold green]✓ Kalibrasyon testi başarılı, herhangi bir alarm üretilmedi.[/bold green]"
+                "[bold green][OK] Kalibrasyon testi başarılı, herhangi bir alarm üretilmedi.[/bold green]"
             )
 
     except Exception as exc:
-        console.print(f"[red]✗ Hata oluştu:[/red] {exc}")
+        console.print(f"[red][ERROR] Hata oluştu:[/red] {exc}")
         sys.exit(1)
 
 

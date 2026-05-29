@@ -210,9 +210,10 @@ class TopicModelingService(TopicModelingProtocol):
         min_topic_size: int,
         nr_topics: str | int,
     ) -> tuple[BERTopic, list[int], np.ndarray]:
-        """UMAP + HDBSCAN + c-TF-IDF pipeline."""
         umap_model = UMAP(**self._umap_params)
-        hdbscan_model = HDBSCAN(**self._hdbscan_params)
+        hdbscan_params = self._hdbscan_params.copy()
+        hdbscan_params["min_cluster_size"] = min_topic_size
+        hdbscan_model = HDBSCAN(**hdbscan_params)
 
         topic_model = BERTopic(
             embedding_model=None,  # Zaten embed ettik

@@ -52,13 +52,13 @@ class LanguageRouter:
 
     ROUTES: dict[str, LanguageConfig] = {
         "tr": LanguageConfig(
-            spacy_model="tr_core_news_trf",
+            spacy_model="tr_core_news_md",
             sentiment_lexicon="DIPLO_LEXICON_TR",
             negation_words="NEGATION_WORDS_TR",
             stopwords="STOPWORDS_TR",
         ),
         "en": LanguageConfig(
-            spacy_model="en_core_web_trf",
+            spacy_model="en_core_web_sm",
             sentiment_lexicon="DIPLO_LEXICON",
             negation_words="NEGATION_WORDS",
             stopwords="STOPWORDS",

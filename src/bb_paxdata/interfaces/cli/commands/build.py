@@ -17,6 +17,7 @@ from sqlalchemy import delete, func, select
 # Add src to path for imports
 sys.path.insert(0, str(Path(__file__).parent.parent.parent.parent / "src"))
 
+from bb_paxdata.domain.enums.demand_category import DemandCategory
 from bb_paxdata.domain.services.risk_service import RiskService
 from bb_paxdata.infrastructure.ai.fail_check import (
     AIFailCheck,
@@ -27,17 +28,19 @@ from bb_paxdata.infrastructure.db.models import (
     AIFailAnalysis,
     AISentenceAnalysis,
     DemandRecord,
-    Panel,
-    PanelDynamics,
+    DiscourseNetworkEdge,
+    File,
+    FileDynamics,
+    FormulaValidationLog,
     PatternRecord,
     Segment,
     Sentence,
     SpeakerProfile,
     Word,
 )
-from bb_paxdata.infrastructure.db.processed_files import ProcessedFile
 from bb_paxdata.infrastructure.db.repositories.analysis import AnalysisRepository
 from bb_paxdata.infrastructure.db.session import get_db_session, init_db
+from bb_paxdata.infrastructure.logic.formula_auditor import FormulaAuditor
 from bb_paxdata.interfaces.cli.dependencies import get_session
 from bb_paxdata.quality.data_contract import DataContractValidator
 from bb_paxdata.quality.violations import ViolationLogger
@@ -277,75 +280,199 @@ PANELS_METADATA = {
         "title": "Ahmed Al-Sharaa Interview",
         "date": "April 2026",
         "theme": "Syrian Reconstruction & Middle East Relations",
-        "panel_number": 1,
+        "file_number": 1,
     },
     "02_Cevdet Yılmaz.txt": {
         "title": "Cevdet Yılmaz Keynote Address",
         "date": "April 2026",
         "theme": "Turkish Economic Outlook & Regional Trade",
-        "panel_number": 2,
+        "file_number": 2,
     },
     "03_Erdoğan.txt": {
         "title": "Recep Tayyip Erdoğan Address",
         "date": "April 2026",
         "theme": "Global Diplomacy & Multipolar World Order",
-        "panel_number": 3,
+        "file_number": 3,
     },
     "04_Avrupa Başkanları.txt": {
-        "title": "European Leaders Panel",
+        "title": "European Leaders File",
         "date": "April 2026",
         "theme": "Eurasian Security Architecture & Cooperation",
-        "panel_number": 4,
+        "file_number": 4,
     },
     "05_Gazze Konuşması.txt": {
-        "title": "Gaza Crisis & Middle East Peace Panel",
+        "title": "Gaza Crisis & Middle East Peace File",
         "date": "April 2026",
         "theme": "Conflict Resolution & Palestine Crisis",
-        "panel_number": 5,
+        "file_number": 5,
     },
     "06_Mevlüt Çavuşoğlu ve Cumhurbaşkanları.txt": {
         "title": "Regional Presidents Dialogue",
         "date": "April 2026",
-        "theme": "Presidents Panel & Regional Connectivity",
-        "panel_number": 6,
+        "theme": "Presidents File & Regional Connectivity",
+        "file_number": 6,
     },
     "07_Sergei Lavrov.txt": {
         "title": "Sergei Lavrov Interview",
         "date": "April 2026",
         "theme": "Russian Foreign Policy & Global Order Crises",
-        "panel_number": 7,
+        "file_number": 7,
     },
     "08_Somali.txt": {
-        "title": "Somalia & Horn of Africa Security Panel",
+        "title": "Somalia & Horn of Africa Security File",
         "date": "April 2026",
         "theme": "Maritime Security & East Africa Stability",
-        "panel_number": 8,
+        "file_number": 8,
     },
     "09_Tom Barrack.txt": {
         "title": "Tom Barrack Dialogue",
         "date": "April 2026",
         "theme": "US Middle East Policy & Investment",
-        "panel_number": 9,
+        "file_number": 9,
     },
     "10_Ukrayna Dışişleri Bakanı.txt": {
         "title": "Andrii Sybiha Interview",
         "date": "April 2026",
         "theme": "Ukraine Conflict & Security Guarantees",
-        "panel_number": 10,
+        "file_number": 10,
     },
     "11_Hakan Fidan.txt": {
         "title": "Hakan Fidan Foreign Policy Q&A",
         "date": "April 2026",
         "theme": "Turkish Mediation & Strategic Autonomy",
-        "panel_number": 11,
+        "file_number": 11,
     },
     "12_Climate.txt": {
-        "title": "Climate Finance & Future COPs Panel",
+        "title": "Climate Finance & Future COPs File",
         "date": "April 2026",
         "theme": "Climate Change, Energy Transition & Cooperation",
-        "panel_number": 12,
+        "file_number": 12,
     },
 }
+
+
+def turkish_lower(text: str) -> str:
+    """Correctly lowercases Turkish text by mapping I -> ı and İ -> i properly."""
+    mapped = []
+    for char in text:
+        if char == "I":
+            mapped.append("ı")
+        elif char == "İ":
+            mapped.append("i")
+        else:
+            mapped.append(char.lower())
+    return "".join(mapped)
+
+
+def _extract_target_entity(
+    sentence_text: str,
+    entities: list[dict[str, Any]],
+    speaker_name: str,
+    country: str,
+) -> str | None:
+    """Extracts the target geopolitical entity or organization (e.g. GPE, ORG) from a sentence.
+
+    Filters out the speaker's own country and name.
+    """
+    speaker_lower = speaker_name.lower().strip()
+    country_lower = country.lower().strip()
+    exclude_terms = {
+        "we",
+        "us",
+        "our",
+        "me",
+        "my",
+        "i",
+        "biz",
+        "bize",
+        "bizim",
+        "ben",
+        "bana",
+        "benim",
+        "the",
+    }
+
+    targets = []
+    for ent in entities or []:
+        ent_label = (ent.get("label") or ent.get("entity_group") or "").upper()
+        ent_text = ent.get("text", "").strip()
+        if not ent_text or len(ent_text) > 50:
+            continue
+
+        ent_lower = ent_text.lower()
+        if ent_lower in exclude_terms:
+            continue
+        if speaker_lower in ent_lower or ent_lower in speaker_lower:
+            continue
+        if country_lower in ent_lower or ent_lower in country_lower:
+            continue
+
+        if ent_label in ("GPE", "ORG", "ORGANIZATION", "LOC", "LOCATION"):
+            if ent_text not in targets:
+                targets.append(ent_text)
+
+    if targets:
+        return ", ".join(targets)
+    return None
+
+
+def _classify_demand_category(sentence_lower: str) -> DemandCategory:
+    """Classifies a demand sentence into a DemandCategory using keywords."""
+    if any(
+        k in sentence_lower
+        for k in ["reform", "institution", "restructure", "kurumsal", "reformu"]
+    ):
+        return DemandCategory.INSTITUTIONAL_REFORM
+    if any(
+        k in sentence_lower
+        for k in [
+            "security",
+            "military",
+            "force",
+            "defense",
+            "güvenlik",
+            "askeri",
+            "savunma",
+            "operasyon",
+            "saldırı",
+            "terör",
+        ]
+    ):
+        return DemandCategory.SECURITY_ACTION
+    if any(
+        k in sentence_lower
+        for k in [
+            "economic",
+            "trade",
+            "finance",
+            "cooperation",
+            "investment",
+            "ekonomi",
+            "ticaret",
+            "finans",
+            "yatırım",
+        ]
+    ):
+        return DemandCategory.ECONOMIC_COOPERATION
+    if any(
+        k in sentence_lower
+        for k in ["humanitarian", "aid", "refugee", "insani", "yardım", "mülteci"]
+    ):
+        return DemandCategory.HUMANITARIAN_RESPONSE
+    if any(
+        k in sentence_lower
+        for k in [
+            "legal",
+            "court",
+            "accountability",
+            "law",
+            "hukuki",
+            "mahkeme",
+            "adalet",
+        ]
+    ):
+        return DemandCategory.LEGAL_ACCOUNTABILITY
+    return DemandCategory.DIPLOMATIC_ENGAGEMENT
 
 
 def clean_speaker_name_helper(speaker: str) -> tuple[str, str]:
@@ -393,7 +520,7 @@ def standardize_file_content(file_path: Path, file_content: str) -> str:
         elif line.startswith("THEME:"):
             metadata["theme"] = line.split("THEME:", 1)[1].strip()
         elif line.startswith("PANEL_NUMBER:"):
-            metadata["panel_number"] = line.split("PANEL_NUMBER:", 1)[1].strip()
+            metadata["file_number"] = line.split("PANEL_NUMBER:", 1)[1].strip()
         else:
             break
         line_idx += 1
@@ -415,9 +542,9 @@ def standardize_file_content(file_path: Path, file_content: str) -> str:
         or PANELS_METADATA.get(file_path.name, {}).get("theme")
         or "Diplomacy"
     )
-    panel_number = (
-        metadata.get("panel_number")
-        or PANELS_METADATA.get(file_path.name, {}).get("panel_number")
+    file_number = (
+        metadata.get("file_number")
+        or PANELS_METADATA.get(file_path.name, {}).get("file_number")
         or ""
     )
 
@@ -447,7 +574,7 @@ def standardize_file_content(file_path: Path, file_content: str) -> str:
         f"TITLE: {title}",
         f"DATE: {date}",
         f"THEME: {theme}",
-        f"PANEL_NUMBER: {panel_number}",
+        f"PANEL_NUMBER: {file_number}",
         "---",
     ]
 
@@ -525,6 +652,42 @@ def resolve_country(speaker_name: str) -> str:
     return "unknown"
 
 
+def match_keyword_with_boundaries(kw: str, text: str) -> bool:
+    import re
+
+    pattern = r"(?<!\w)" + re.escape(kw) + r"(?!\w)"
+    return bool(re.search(pattern, text))
+
+
+def classify_pattern_subtype(pattern_type: str, matched_kw: str) -> str:
+    _pattern_subtypes = {
+        "if": "hypothesis",
+        "eğer": "hypothesis",
+        "şayet": "hypothesis",
+        "provided that": "precondition",
+        "koşuluyla": "precondition",
+        "we will": "promise",
+        "biz yapacağız": "promise",
+        "commit": "official_pledge",
+        "taahhüt": "official_pledge",
+        "pledge": "official_pledge",
+        "otherwise": "consequence_clause",
+        "aksi halde": "consequence_clause",
+        "consequences": "warning_clause",
+        "sonuçları olur": "warning_clause",
+        "however": "contrast",
+        "ancak": "contrast",
+        "bununla birlikte": "contrast",
+        "although": "concession",
+        "rağmen": "concession",
+        "we call upon": "exhortation",
+        "çağrıda bulunuyoruz": "exhortation",
+        "international community": "audience_appeal",
+        "uluslararası toplum": "audience_appeal",
+    }
+    return _pattern_subtypes.get(matched_kw, "unknown")
+
+
 async def _process_single_file(
     session: Any,
     file_path: Path,
@@ -551,7 +714,7 @@ async def _process_single_file(
             file_content = standardized_content
         except Exception as e:
             console.print(
-                f"[yellow]⚠️ Failed to write standardized content back to {file_path.name}: {e}"
+                f"[yellow][WARN] Failed to write standardized content back to {file_path.name}: {e}"
             )
             file_content = raw_content
     else:
@@ -566,7 +729,7 @@ async def _process_single_file(
     )
 
     # Check if already processed
-    stmt = select(ProcessedFile).where(ProcessedFile.idempotency_key == idempotency_key)
+    stmt = select(File).where(File.idempotency_key == idempotency_key)
     res = await session.execute(stmt)
     existing = res.scalar_one_or_none()
 
@@ -576,7 +739,7 @@ async def _process_single_file(
     # Validate input
     validation_result = validator.validate_transcript_input(file_content, file_path)
     if not validation_result.passed:
-        console.print(f"[red]❌ Input validation failed for {file_path.name}")
+        console.print(f"[red][ERROR] Input validation failed for {file_path.name}")
         violation_logger.log_input_violation(
             str(file_path),
             validation_result.details.get("failed_checks", []),
@@ -591,36 +754,73 @@ async def _process_single_file(
     # Process file
     console.print(f"[green]📝 Processing: {file_path.name}")
 
-    # Panel ID from file stem
-    panel_id = file_path.stem.lower().replace(" ", "_")
+    # File ID from file stem
+    file_id = file_path.stem.lower().replace(" ", "_")
 
     # Clean existing data for this panel to support clean re-runs
+    from bb_paxdata.infrastructure.db.country_models import (
+        BilateralSentimentTable,
+        CountryReferenceTable,
+        DiscourseFlowTable,
+        TopicMatrixTable,
+    )
+    from bb_paxdata.infrastructure.db.discourse_network_table import (
+        DiscourseNetworkEdgeTable,
+    )
+    from bb_paxdata.infrastructure.db.models import TopicMatrix as TopicMatrixORM
+    from bb_paxdata.infrastructure.db.topic_models import TopicAssignmentORM
+
     await session.execute(
-        delete(AIFailAnalysis).where(AIFailAnalysis.panel_id == panel_id)
+        delete(AIFailAnalysis).where(AIFailAnalysis.file_id == file_id)
     )
     await session.execute(
-        delete(HumanReviewQueue).where(HumanReviewQueue.panel_id == panel_id)
+        delete(HumanReviewQueue).where(HumanReviewQueue.file_id == file_id)
     )
-    await session.execute(delete(DemandRecord).where(DemandRecord.panel_id == panel_id))
+    await session.execute(delete(DemandRecord).where(DemandRecord.file_id == file_id))
+    await session.execute(delete(PatternRecord).where(PatternRecord.file_id == file_id))
+    await session.execute(delete(FileDynamics).where(FileDynamics.file_id == file_id))
     await session.execute(
-        delete(PatternRecord).where(PatternRecord.panel_id == panel_id)
+        delete(AISentenceAnalysis).where(AISentenceAnalysis.file_id == file_id)
+    )
+    await session.execute(delete(Word).where(Word.file_id == file_id))
+    await session.execute(delete(Sentence).where(Sentence.file_id == file_id))
+    await session.execute(delete(Segment).where(Segment.file_id == file_id))
+    await session.execute(
+        delete(TopicAssignmentORM).where(
+            TopicAssignmentORM.segment_id.like(f"seg_{file_id}_%")
+        )
     )
     await session.execute(
-        delete(PanelDynamics).where(PanelDynamics.panel_id == panel_id)
+        delete(TopicMatrixTable).where(TopicMatrixTable.file_id == file_id)
     )
     await session.execute(
-        delete(AISentenceAnalysis).where(AISentenceAnalysis.panel_id == panel_id)
+        delete(TopicMatrixORM).where(TopicMatrixORM.file_id == file_id)
     )
-    await session.execute(delete(Word).where(Word.panel_id == panel_id))
-    await session.execute(delete(Sentence).where(Sentence.panel_id == panel_id))
-    await session.execute(delete(Segment).where(Segment.panel_id == panel_id))
-    await session.execute(delete(Panel).where(Panel.panel_id == panel_id))
+    await session.execute(
+        delete(CountryReferenceTable).where(CountryReferenceTable.file_id == file_id)
+    )
+    await session.execute(
+        delete(BilateralSentimentTable).where(
+            BilateralSentimentTable.file_id == file_id
+        )
+    )
+    await session.execute(
+        delete(DiscourseFlowTable).where(DiscourseFlowTable.file_id == file_id)
+    )
+    await session.execute(
+        delete(DiscourseNetworkEdgeTable).where(
+            DiscourseNetworkEdgeTable.file_id == file_id
+        )
+    )
+    await session.execute(
+        delete(DiscourseNetworkEdge).where(DiscourseNetworkEdge.file_id == file_id)
+    )
 
     # Parse metadata headers
-    panel_title = file_path.stem
-    panel_date = "April 2026"
-    panel_theme = "Diplomacy"
-    panel_number = None
+    file_title = file_path.stem
+    file_date = "April 2026"
+    file_theme = "Diplomacy"
+    file_number = None
 
     lines = file_content.splitlines()
     line_idx = 0
@@ -649,7 +849,7 @@ async def _process_single_file(
             metadata_lines["theme"] = line.split("THEME:", 1)[1].strip()
         elif line.startswith("PANEL_NUMBER:"):
             try:
-                metadata_lines["panel_number"] = int(
+                metadata_lines["file_number"] = int(
                     line.split("PANEL_NUMBER:", 1)[1].strip()
                 )
             except ValueError:
@@ -659,10 +859,10 @@ async def _process_single_file(
         line_idx += 1
 
     if has_metadata:
-        panel_title = metadata_lines.get("title", panel_title)
-        panel_date = metadata_lines.get("date", panel_date)
-        panel_theme = metadata_lines.get("theme", panel_theme)
-        panel_number = metadata_lines.get("panel_number", panel_number)
+        file_title = metadata_lines.get("title", file_title)
+        file_date = metadata_lines.get("date", file_date)
+        file_theme = metadata_lines.get("theme", file_theme)
+        file_number = metadata_lines.get("file_number", file_number)
         dialogue_lines = lines[line_idx:]
     else:
         dialogue_lines = lines
@@ -727,11 +927,16 @@ async def _process_single_file(
     unique_speakers_in_file = set()
     unique_countries_in_file = set()
     all_processed_sentences: list[Sentence] = []
+    all_processed_segments: list[Segment] = []
 
     last_risk = 0
     last_sentiment = 0.0
     last_topic = None
     last_kgi = 0.0
+
+    from bb_paxdata.domain.services.sentiment_service import SentimentService
+
+    sentiment_svc = SentimentService()
 
     for seg_idx, seg in enumerate(segments_data, 1):
         speaker_name = seg["speaker"]
@@ -790,22 +995,25 @@ async def _process_single_file(
             await session.flush()
 
         db_segment = Segment(
-            seg_id=f"seg_{panel_id}_{seg_idx}",
-            panel_id=panel_id,
+            seg_id=f"seg_{file_id}_{seg_idx}",
+            file_id=file_id,
             speaker_id=speaker_id,
             speaker_name=speaker_name,
             country=country,
+            power_level=db_speaker.power_level if db_speaker else 5,
             seq_order=seg_idx,
             text=" ".join(seg["sentences"]),
         )
         session.add(db_segment)
         await session.flush()
+        all_processed_segments.append(db_segment)
 
         db_sentences_in_seg = []
+        db_patterns_in_seg = []
 
         for sent_idx, sentence_text in enumerate(seg["sentences"], 1):
             total_sentences_count += 1
-            sent_id = f"sent_{panel_id}_{total_sentences_count}"
+            sent_id = f"sent_{file_id}_{total_sentences_count}"
 
             # Cümle bazlı AI limit takibi (LimitedAIAnalyst aktifse)
             ai_analyst = getattr(pipeline, "ai_analyst", None) or getattr(
@@ -819,11 +1027,11 @@ async def _process_single_file(
             # Run Pipeline
             pipeline_res = await pipeline.run(
                 text=sentence_text,
-                panel_id=panel_id,
+                file_id=file_id,
                 speaker_country=country,
                 speaker_power_level=0.5,
                 metadata={
-                    "panel_id": panel_id,
+                    "file_id": file_id,
                     "speaker_id": speaker_id,
                     "speaker_country": country,
                 },
@@ -836,6 +1044,7 @@ async def _process_single_file(
             total_words_in_file += words_count
 
             # ── NLP Metrikleri: negation_aware_diplo, hedging_score, politeness_ratio ──
+            _diplo_compound = sentiment_svc.diplo_sentiment(sentence_text)
             _negation_cues = pipeline_res.analysis.negation_cues or ()
             _neg_count = len(list(_negation_cues))
             _ai_sent = pipeline_res.analysis.ai_sentiment_score or 0.0
@@ -849,10 +1058,7 @@ async def _process_single_file(
             _risk_sigs = pipeline_res.analysis.risk_signals or ()
             _hedging_keywords = sum(
                 1
-                for rs in _risk_sigs
-                if hasattr(rs, "keyword")
-                and rs.keyword
-                in (
+                for kw in (
                     "perhaps",
                     "maybe",
                     "might",
@@ -863,40 +1069,37 @@ async def _process_single_file(
                     "olabilir",
                     "sanırım",
                 )
+                if kw in sentence_text.lower()
             )
             _hedging_score = (
                 min(1.0, _hedging_keywords * 0.25) if _hedging_keywords else 0.0
             )
 
             # politeness_ratio: face_save / (face_save + face_threat + 1)
-            _face_save = 0
-            _face_threat = 0
-            for rs in _risk_sigs:
-                sig_name = getattr(rs, "keyword", "") or ""
-                if any(
-                    k in sig_name.lower()
-                    for k in [
-                        "please",
-                        "lütfen",
-                        "thank",
-                        "teşekkür",
-                        "respectfully",
-                        "saygıyla",
-                    ]
-                ):
-                    _face_save += 1
-                if any(
-                    k in sig_name.lower()
-                    for k in [
-                        "demand",
-                        "threat",
-                        "ultimatum",
-                        "warn",
-                        "tehdit",
-                        "talep",
-                    ]
-                ):
-                    _face_threat += 1
+            _face_save = sum(
+                1
+                for k in [
+                    "please",
+                    "lütfen",
+                    "thank",
+                    "teşekkür",
+                    "respectfully",
+                    "saygıyla",
+                ]
+                if k in sentence_text.lower()
+            )
+            _face_threat = sum(
+                1
+                for k in [
+                    "demand",
+                    "threat",
+                    "ultimatum",
+                    "warn",
+                    "tehdit",
+                    "talep",
+                ]
+                if k in sentence_text.lower()
+            )
             _politeness_ratio = _face_save / (_face_save + _face_threat + 1)
 
             # ── Risk score normalizasyonu: float 0-1 -> int 0-10 ──
@@ -914,19 +1117,81 @@ async def _process_single_file(
                 else "PASS"
             )
 
+            # ── Extract entities (GPE + Person) from NER results ──
+            _entities_gpe = []
+            _entities_person = []
+            for _ent in pipeline_res.analysis.entities or []:
+                _ent_label = (
+                    _ent.get("label") or _ent.get("entity_group") or ""
+                ).upper()
+                _ent_text = _ent.get("text", "").strip()
+                if _ent_text:
+                    if _ent_label in ("GPE", "LOC", "LOCATION"):
+                        _entities_gpe.append(_ent_text)
+                    elif _ent_label in ("PER", "PERSON"):
+                        _entities_person.append(_ent_text)
+
+            # ── Serialize risk signals to JSON-friendly list ──
+            _risk_signals_json = []
+            for _rs in _risk_sigs:
+                _risk_signals_json.append(
+                    {
+                        "signal_text": _rs.signal_text,
+                        "signal_type": (
+                            _rs.signal_type.value
+                            if hasattr(_rs.signal_type, "value")
+                            else str(_rs.signal_type)
+                        ),
+                        "escalation_multiplier": _rs.escalation_multiplier,
+                        "credibility_score": _rs.credibility_score,
+                    }
+                )
+
+            # ── Evidence types, Appraisal attitude, Audience type ──
+            # FramingService: Martin & White (2005) Appraisal, Entman (1993) Evidence
+            from bb_paxdata.domain.models.sentence import (
+                Sentence as SentenceDomainModel,
+            )
+            from bb_paxdata.domain.services.framing_service import FramingService
+
+            _framing_svc = FramingService()
+            _framing_sentence = SentenceDomainModel(id=sent_id, text=sentence_text)
+            _frame_result = _framing_svc.detect_frame(_framing_sentence)
+
+            _evidence_types = [
+                (et.value if hasattr(et, "value") else str(et))
+                for et in _frame_result.evidence_types
+                if str(et) != "none"
+            ] or None
+
+            _appraisal_attitude = (
+                _frame_result.appraisal_attitude.value
+                if hasattr(_frame_result.appraisal_attitude, "value")
+                else str(_frame_result.appraisal_attitude)
+            )
+            _audience_type = (
+                _frame_result.audience_type.value
+                if hasattr(_frame_result.audience_type, "value")
+                else str(_frame_result.audience_type)
+            )
+
             db_sentence = Sentence(
                 sent_id=sent_id,
                 seg_id=db_segment.seg_id,
-                panel_id=panel_id,
+                file_id=file_id,
                 speaker_id=speaker_id,
                 speaker_name=speaker_name,
                 country=country,
+                bloc=db_speaker.bloc,
+                role=db_speaker.role,
+                power_level=db_speaker.power_level,
                 sent_order=sent_idx,
                 global_sent_order=total_sentences_count,
                 text=sentence_text,
                 word_count=words_count,
                 char_count=len(sentence_text),
                 vader_compound=_ai_sent,
+                diplo_compound=_diplo_compound,
                 emotion_category=pipeline_res.analysis.ai_sentiment_label,
                 dominant_topic=(
                     pipeline_res.analysis.topic_synthesis.topic_label
@@ -936,12 +1201,27 @@ async def _process_single_file(
                     )
                     else None
                 ),
+                topic_scores=(
+                    pipeline_res.analysis.topic_synthesis.topic_scores
+                    if (
+                        pipeline_res.analysis.topic_synthesis
+                        and pipeline_res.analysis.topic_synthesis.topic_scores
+                    )
+                    else None
+                ),
                 risk_score=_normalized_risk,
+                risk_signals=_risk_signals_json if _risk_signals_json else None,
+                entities_gpe=_entities_gpe if _entities_gpe else None,
+                entities_person=_entities_person if _entities_person else None,
                 dominant_frame=(
                     str(pipeline_res.analysis.framing)
                     if pipeline_res.analysis.framing
                     else None
                 ),
+                influence_tier=db_speaker.influence_tier,
+                evidence_types=_evidence_types,
+                appraisal_attitude=_appraisal_attitude,
+                audience_type=_audience_type,
                 negation_aware_diplo=_negation_aware_diplo,
                 hedging_score=_hedging_score,
                 politeness_ratio=_politeness_ratio,
@@ -951,6 +1231,22 @@ async def _process_single_file(
                 logic_result=_logic_result,
             )
             session.add(db_sentence)
+
+            if pipeline_res.analysis.topic_synthesis:
+                ts = pipeline_res.analysis.topic_synthesis
+                from bb_paxdata.infrastructure.db.topic_models import TopicAssignmentORM
+
+                db_assignment = TopicAssignmentORM(
+                    segment_id=db_segment.seg_id,
+                    analysis_id=sent_id,
+                    primary_topic=ts.dominant_topic or "-1",
+                    topic_scores=ts.topic_scores or {},
+                    topic_label=ts.topic_label,
+                    ctfidf_keywords=ts.topic_keywords or {},
+                    model_metadata={},
+                )
+                session.add(db_assignment)
+
             db_sentences_in_seg.append(db_sentence)
             all_processed_sentences.append(db_sentence)
 
@@ -958,7 +1254,7 @@ async def _process_single_file(
             ai_analysis = AISentenceAnalysis.from_domain(
                 pipeline_res.analysis, sent_id=sent_id
             )
-            ai_analysis.panel_id = panel_id
+            ai_analysis.file_id = file_id
             ai_analysis.speaker_name = speaker_name
             ai_analysis.country = country
             ai_analysis.power_level = 0
@@ -1098,7 +1394,7 @@ async def _process_single_file(
                             "speaker_name": speaker_name,
                             "country": country,
                             "power_level": 0,
-                            "panel_id": panel_id,
+                            "file_id": file_id,
                             "check_type": (
                                 val_res.check_type.value
                                 if hasattr(val_res.check_type, "value")
@@ -1165,7 +1461,7 @@ async def _process_single_file(
                         db_fail = AIFailAnalysis(
                             sent_id=sent_id,
                             seg_id=db_segment.seg_id,
-                            panel_id=panel_id,
+                            file_id=file_id,
                             speaker_name=speaker_name,
                             country=country,
                             power_level=0,
@@ -1258,7 +1554,7 @@ async def _process_single_file(
                 review_entry = HumanReviewQueue(
                     sent_id=sent_id,
                     seg_id=db_segment.seg_id,
-                    panel_id=panel_id,
+                    file_id=file_id,
                     speaker_name=speaker_name,
                     country=country,
                     trigger_type=trigger_type,
@@ -1291,18 +1587,25 @@ async def _process_single_file(
                 "have to",
                 "shall",
             ]
-            _sentence_lower = sentence_text.lower()
+            _sentence_lower = turkish_lower(sentence_text)
             _detected_demand_verb = next(
                 (v for v in _demand_verbs if v in _sentence_lower), None
             )
             if _detected_demand_verb:
+                _demand_cat = _classify_demand_category(_sentence_lower)
+                _target_ent = _extract_target_entity(
+                    sentence_text,
+                    pipeline_res.analysis.entities,
+                    speaker_name,
+                    country,
+                )
                 db_demand = DemandRecord(
                     sent_id=sent_id,
                     seg_id=db_segment.seg_id,
-                    panel_id=panel_id,
+                    file_id=file_id,
                     speaker_name=speaker_name,
                     country=country,
-                    power_level=0,
+                    power_level=db_speaker.power_level,
                     demand_verb=_detected_demand_verb,
                     demand_type=(
                         "explicit"
@@ -1311,7 +1614,8 @@ async def _process_single_file(
                         else "implicit"
                     ),
                     demand_weight=max(0.3, min(1.0, _normalized_risk / 10.0)),
-                    target_entity=None,
+                    demand_category=_demand_cat,
+                    target_entity=_target_ent,
                     demand_topic=(
                         pipeline_res.analysis.topic_synthesis.topic_label
                         if pipeline_res.analysis.topic_synthesis
@@ -1321,6 +1625,7 @@ async def _process_single_file(
                     diplo_compound=_negation_aware_diplo,
                 )
                 session.add(db_demand)
+                db_sentence.demand_category = _demand_cat
                 db_sentence.demand_type = db_demand.demand_type
                 db_sentence.demand_weight = db_demand.demand_weight
 
@@ -1350,84 +1655,175 @@ async def _process_single_file(
                 ],
             }
             for _ptype, _pkeywords in _rhetoric_patterns.items():
-                if any(kw in _sentence_lower for kw in _pkeywords):
+                _matched_kw = next(
+                    (
+                        kw
+                        for kw in _pkeywords
+                        if match_keyword_with_boundaries(kw, _sentence_lower)
+                    ),
+                    None,
+                )
+                if _matched_kw is not None:
+                    _subtype = classify_pattern_subtype(_ptype, _matched_kw)
+                    _prev_sent = (
+                        seg["sentences"][sent_idx - 2] if sent_idx >= 2 else "[START]"
+                    )
+                    _next_sent = (
+                        seg["sentences"][sent_idx]
+                        if sent_idx < len(seg["sentences"])
+                        else "[END]"
+                    )
+
+                    _sent_cat = pipeline_res.analysis.ai_sentiment_label
+                    if _sent_cat not in (
+                        "cooperative",
+                        "confrontational",
+                        "concerned",
+                        "neutral_cautious",
+                        "constructive",
+                        "neutral",
+                    ):
+                        _sent_cat = "unknown"
+
                     db_pattern = PatternRecord(
                         sent_id=sent_id,
                         seg_id=db_segment.seg_id,
-                        panel_id=panel_id,
+                        file_id=file_id,
                         speaker_name=speaker_name,
                         country=country,
-                        power_level=0,
+                        power_level=db_speaker.power_level,
                         pattern_type=_ptype,
-                        pattern_text=next(
-                            (kw for kw in _pkeywords if kw in _sentence_lower), ""
-                        ),
+                        pattern_subtype=_subtype,
+                        pattern_text=_matched_kw,
+                        matched_keyword=_matched_kw,
                         full_sentence=sentence_text,
+                        prev_sentence=_prev_sent,
+                        next_sentence=_next_sent,
                         dominant_topic=(
                             pipeline_res.analysis.topic_synthesis.topic_label
                             if pipeline_res.analysis.topic_synthesis
                             else None
                         ),
                         diplo_compound=_negation_aware_diplo,
+                        risk_score=_normalized_risk,
+                        sentiment_category=_sent_cat,
                     )
                     session.add(db_pattern)
+                    db_patterns_in_seg.append(_ptype)
                     if not db_sentence.rhetoric_type:
                         db_sentence.rhetoric_type = _ptype
                     break  # İlk eşleşen kalıp yeterli
 
             # Populate words table
             if pipeline_res.analysis.tokens:
-                STOP_WORDS = {
-                    "the",
-                    "a",
-                    "an",
-                    "and",
-                    "or",
-                    "but",
-                    "in",
-                    "on",
-                    "at",
-                    "to",
-                    "for",
-                    "with",
-                    "by",
-                    "of",
-                    "ve",
-                    "veya",
-                    "ama",
-                    "fakat",
-                    "lakin",
-                    "ile",
-                    "için",
-                    "ise",
-                    "da",
-                    "de",
-                    "ki",
-                    "en",
-                    "daha",
-                    "bir",
-                    "bu",
-                    "şu",
-                    "o",
-                    "ne",
-                    "her",
-                    "hep",
-                    "hiç",
-                }
+                STOP_WORDS = frozenset(
+                    {
+                        "the",
+                        "a",
+                        "an",
+                        "and",
+                        "or",
+                        "but",
+                        "in",
+                        "on",
+                        "at",
+                        "to",
+                        "for",
+                        "with",
+                        "by",
+                        "of",
+                        "ve",
+                        "veya",
+                        "ama",
+                        "fakat",
+                        "lakin",
+                        "ile",
+                        "için",
+                        "ise",
+                        "da",
+                        "de",
+                        "ki",
+                        "en",
+                        "daha",
+                        "bir",
+                        "bu",
+                        "şu",
+                        "o",
+                        "ne",
+                        "her",
+                        "hep",
+                        "hiç",
+                    }
+                )
+                # Determine language and lexicons/stopwords
+                lang = (pipeline_res.analysis.language or "en").lower()
+                if lang == "tr":
+                    from bb_paxdata.domain.lexicon.tr_diplo_lexicon import (
+                        DIPLO_LEXICON_TR,
+                    )
+                    from bb_paxdata.domain.lexicon.tr_stopwords import STOPWORDS_TR
+
+                    lexicon = DIPLO_LEXICON_TR
+                    stop_words = STOPWORDS_TR
+                else:
+                    from bb_paxdata.domain.services.sentiment_service import (
+                        SentimentService,
+                    )
+
+                    lexicon = SentimentService.DIPLO_LEXICON
+                    stop_words = STOP_WORDS
+
+                named_entity_words = set()
+                for ent in getattr(pipeline_res.analysis, "entities", []):
+                    ent_text = ent.get("text", "")
+                    for word in ent_text.split():
+                        named_entity_words.add(word.lower().strip(",.!?;:()\"'"))
+
                 for w_idx, token in enumerate(pipeline_res.analysis.tokens):
+                    # Clean trailing/leading punctuation
+                    token_clean = token.strip(",.!?;:()\"'")
+                    token_lower = token_clean.lower()
+
+                    # Skip if token is purely composed of punctuation
+                    if not token_lower:
+                        continue
+
+                    # Diplo skoru hesapla
+                    w_score = lexicon.get(token_lower, 0.0)
+                    if w_score == 0.0:
+                        # Fallback: check other lexicon if primary is 0.0
+                        if lang == "tr":
+                            from bb_paxdata.domain.services.sentiment_service import (
+                                SentimentService,
+                            )
+
+                            w_score = SentimentService.DIPLO_LEXICON.get(
+                                token_lower, 0.0
+                            )
+                        else:
+                            from bb_paxdata.domain.lexicon.tr_diplo_lexicon import (
+                                DIPLO_LEXICON_TR,
+                            )
+
+                            w_score = DIPLO_LEXICON_TR.get(token_lower, 0.0)
+
+                    is_ne = token_lower in named_entity_words
+
                     db_word = Word(
                         sent_id=sent_id,
                         seg_id=db_segment.seg_id,
-                        panel_id=panel_id,
+                        file_id=file_id,
                         speaker_id=speaker_id,
                         speaker_name=speaker_name,
                         country=country,
-                        word_raw=token,
-                        word_norm=token.lower(),
+                        bloc=db_speaker.bloc,
+                        power_level=db_speaker.power_level,
+                        word_raw=token_clean,
+                        word_norm=token_lower,
                         word_position=w_idx,
-                        is_stopword=token.lower() in STOP_WORDS,
-                        diplo_score=0.0,
-                        is_named_entity=False,
+                        is_stopword=token_lower in stop_words,
+                        diplo_score=w_score,
+                        is_named_entity=is_ne,
                     )
                     session.add(db_word)
 
@@ -1439,10 +1835,87 @@ async def _process_single_file(
         ]
         db_segment.vader_compound = sum(vaders) / len(vaders) if vaders else 0.0
 
+        diplos = [
+            s.diplo_compound
+            for s in db_sentences_in_seg
+            if s.diplo_compound is not None
+        ]
+        db_segment.diplo_compound = sum(diplos) / len(diplos) if diplos else 0.0
+
         risks = [s.risk_score for s in db_sentences_in_seg if s.risk_score is not None]
         db_segment.risk_score = max(risks) if risks else 0
-        db_segment.sbi_score = db_segment.vader_compound or 0.0
-        db_segment.dki_score = 0.0
+
+        # Calculate VADER pos, neg, neu components on segment text
+        try:
+            from vaderSentiment.vaderSentiment import SentimentIntensityAnalyzer
+
+            _vader_analyzer = SentimentIntensityAnalyzer()
+            _vader_res = _vader_analyzer.polarity_scores(db_segment.text or "")
+            db_segment.vader_pos = _vader_res.get("pos", 0.0)
+            db_segment.vader_neg = _vader_res.get("neg", 0.0)
+            db_segment.vader_neu = _vader_res.get("neu", 0.0)
+        except Exception as e:
+            logger.warning(f"VADER parsing failed for segment {db_segment.seg_id}: {e}")
+            db_segment.vader_pos = 0.0
+            db_segment.vader_neg = 0.0
+            db_segment.vader_neu = 0.0
+
+        # Recalculate SBI and DKI using auditor's formula so they are correct in DB
+        from bb_paxdata.infrastructure.logic.formula_auditor import (
+            RISK_SIGNAL_WEIGHTS,
+            RISK_SIGNALS,
+        )
+
+        _power_levels = []
+        _demand_weights = []
+        _risk_scores = []
+        _sp_power = float(db_speaker.power_level) if db_speaker else 5.0
+
+        for s in db_sentences_in_seg:
+            stxt_lower = (s.text or "").lower()
+            _d_w = 0.5
+            if any(w in stxt_lower for w in ["must", "require", "demand", "insist"]):
+                _d_w = 0.9
+            elif any(w in stxt_lower for w in ["should", "ought", "recommend"]):
+                _d_w = 0.7
+            elif any(w in stxt_lower for w in ["suggest", "propose", "consider"]):
+                _d_w = 0.5
+            _demand_weights.append(_d_w)
+
+            _det_sigs = [sig for sig in RISK_SIGNALS if sig in stxt_lower]
+            _r_val = min(
+                10.0, sum(RISK_SIGNAL_WEIGHTS.get(sig, 1) for sig in _det_sigs)
+            )
+            _risk_scores.append(_r_val)
+            _power_levels.append(_sp_power)
+
+        if _risk_scores:
+            _avg_power = sum(_power_levels) / len(_power_levels)
+            _avg_demand = sum(_demand_weights) / len(_demand_weights)
+            _avg_risk = sum(_risk_scores) / len(_risk_scores)
+
+            db_segment.sbi_score = (_avg_power * _avg_demand) / 2.0 + _avg_risk
+
+            def norm_val(val: float, min_v: float = 0.0, max_v: float = 10.0) -> float:
+                if max_v <= min_v:
+                    return 0.0
+                return max(0.0, min(1.0, (val - min_v) / (max_v - min_v)))
+
+            _norm_diplo = norm_val(5.0 - _avg_risk)
+            _norm_risk = norm_val(_avg_risk)
+            _norm_demand = min(_avg_demand, 1.0)
+            _norm_manip = min(1.0, max(0.0, (_avg_demand - 0.5) * 2.0))
+
+            _base_dki = (
+                _norm_diplo * 0.4
+                + (1.0 - _norm_risk) * 0.3
+                + _norm_demand * 0.2
+                + (1.0 - _norm_manip) * 0.1
+            )
+            db_segment.dki_score = (_base_dki * 2.0) - 1.0
+        else:
+            db_segment.sbi_score = 0.0
+            db_segment.dki_score = 0.0
 
         frames = [s.dominant_frame for s in db_sentences_in_seg if s.dominant_frame]
         db_segment.dominant_frame = (
@@ -1457,12 +1930,124 @@ async def _process_single_file(
         )
 
         topics = [s.dominant_topic for s in db_sentences_in_seg if s.dominant_topic]
+        valid_topics = [t for t in topics if t != "-1"]
         db_segment.dominant_topic = (
-            Counter(topics).most_common(1)[0][0] if topics else None
+            Counter(valid_topics).most_common(1)[0][0] if valid_topics else "General"
         )
 
         db_segment.word_count = sum(s.word_count for s in db_sentences_in_seg)
         db_segment.sentence_count = len(db_sentences_in_seg)
+
+        # avg_word_len
+        _seg_words = re.findall(r"\w+", db_segment.text or "")
+        db_segment.avg_word_len = (
+            sum(len(w) for w in _seg_words) / len(_seg_words) if _seg_words else 0.0
+        )
+
+        # rhetoric_patterns JSON
+        db_segment.rhetoric_patterns = dict(Counter(db_patterns_in_seg))
+
+        # risk_trajectory
+        if len(db_sentences_in_seg) >= 3:
+            _n = len(db_sentences_in_seg)
+            _idx_25 = max(1, _n // 4)
+            _start_risk = (
+                sum(s.risk_score or 0.0 for s in db_sentences_in_seg[:_idx_25])
+                / _idx_25
+            )
+            _end_risk = (
+                sum(s.risk_score or 0.0 for s in db_sentences_in_seg[-_idx_25:])
+                / _idx_25
+            )
+            _diff = _end_risk - _start_risk
+            if _diff > 1.5:
+                db_segment.risk_trajectory = "ESCALATING"
+            elif _diff < -1.5:
+                db_segment.risk_trajectory = "DE-ESCALATING"
+            else:
+                db_segment.risk_trajectory = "STABLE"
+        else:
+            db_segment.risk_trajectory = "STABLE"
+
+        # risk_trend
+        if len(db_sentences_in_seg) >= 2:
+            _first_half = db_sentences_in_seg[: len(db_sentences_in_seg) // 2]
+            _second_half = db_sentences_in_seg[len(db_sentences_in_seg) // 2 :]
+            _avg_first = sum(s.risk_score or 0.0 for s in _first_half) / len(
+                _first_half
+            )
+            _avg_second = sum(s.risk_score or 0.0 for s in _second_half) / len(
+                _second_half
+            )
+            _trend_diff = _avg_second - _avg_first
+            if _trend_diff > 0.5:
+                db_segment.risk_trend = "UPWARD"
+            elif _trend_diff < -0.5:
+                db_segment.risk_trend = "DOWNWARD"
+            else:
+                db_segment.risk_trend = "FLAT"
+        else:
+            db_segment.risk_trend = "FLAT"
+
+        # intro_sentiment, develop_sentiment, concl_sentiment
+        _n_sents = len(db_sentences_in_seg)
+        if _n_sents > 0:
+            _intro_end = max(1, _n_sents // 5)
+            _concl_start = max(_n_sents - _intro_end, _intro_end + 1)
+
+            _intro_sents = db_sentences_in_seg[:_intro_end]
+            _concl_sents = db_sentences_in_seg[_concl_start:]
+            _develop_sents = db_sentences_in_seg[_intro_end:_concl_start]
+
+            db_segment.intro_sentiment = (
+                sum(s.vader_compound or 0.0 for s in _intro_sents) / len(_intro_sents)
+                if _intro_sents
+                else 0.0
+            )
+            db_segment.develop_sentiment = (
+                sum(s.vader_compound or 0.0 for s in _develop_sents)
+                / len(_develop_sents)
+                if _develop_sents
+                else 0.0
+            )
+            db_segment.concl_sentiment = (
+                sum(s.vader_compound or 0.0 for s in _concl_sents) / len(_concl_sents)
+                if _concl_sents
+                else 0.0
+            )
+        else:
+            db_segment.intro_sentiment = 0.0
+            db_segment.develop_sentiment = 0.0
+            db_segment.concl_sentiment = 0.0
+
+        # dominant_audience, dominant_evidence, formula_manip_score
+        audiences = [s.audience_type for s in db_sentences_in_seg if s.audience_type]
+        db_segment.dominant_audience = (
+            Counter(audiences).most_common(1)[0][0] if audiences else None
+        )
+
+        evidences = []
+        for s in db_sentences_in_seg:
+            if s.evidence_types:
+                if isinstance(s.evidence_types, list):
+                    evidences.extend(s.evidence_types)
+                elif isinstance(s.evidence_types, str):
+                    try:
+                        import json
+
+                        evidences.extend(json.loads(s.evidence_types))
+                    except Exception:
+                        pass
+        db_segment.dominant_evidence = (
+            Counter(evidences).most_common(1)[0][0] if evidences else None
+        )
+
+        db_segment.formula_manip_score = (
+            sum(s.negation_aware_diplo or 0.0 for s in db_sentences_in_seg)
+            / len(db_sentences_in_seg)
+            if db_sentences_in_seg
+            else 0.0
+        )
 
         # ── Segment-level NLP aggregation ──
         hedgings = [s.hedging_score for s in db_sentences_in_seg if s.hedging_score]
@@ -1480,27 +2065,55 @@ async def _process_single_file(
         demands_in_seg = [s for s in db_sentences_in_seg if s.demand_type]
         db_segment.demand_count = len(demands_in_seg)
 
-    # Save Panel ORM
+    # Save File ORM
     file_hash = hashlib.sha256(file_content.encode("utf-8")).hexdigest()
-    db_panel = Panel(
-        panel_id=panel_id,
-        file_name=file_path.name,
-        title=panel_title,
-        panel_number=panel_number,
-        inferred_theme=panel_theme,
-        date_str=panel_date,
-        file_format="new",
-        file_hash=file_hash,
-        n_segments=len(segments_data),
-        n_sentences=total_sentences_count,
-        n_speakers=len(unique_speakers_in_file),
-        n_countries=len(unique_countries_in_file),
-        total_words=total_words_in_file,
-        imported_at=datetime.now(timezone.utc),
-    )
-    session.add(db_panel)
+    if existing:
+        db_file = existing
+        db_file.file_name = file_path.name
+        db_file.title = file_title
+        db_file.panel_number = file_number
+        db_file.inferred_theme = file_theme
+        db_file.date_str = file_date
+        db_file.file_format = "new"
+        db_file.file_hash = file_hash
+        db_file.file_size_bytes = len(file_content.encode("utf-8"))
+        db_file.n_segments = len(segments_data)
+        db_file.n_sentences = total_sentences_count
+        db_file.n_speakers = len(unique_speakers_in_file)
+        db_file.n_countries = len(unique_countries_in_file)
+        db_file.total_words = total_words_in_file
+        db_file.last_processed_at = datetime.now(timezone.utc)
+        db_file.reprocess_count += 1
+        if force_rebuild:
+            db_file.force_rebuild = 0
+    else:
+        db_file = File(
+            file_id=file_id,
+            file_name=file_path.name,
+            title=file_title,
+            panel_number=file_number,
+            inferred_theme=file_theme,
+            date_str=file_date,
+            file_format="new",
+            file_hash=file_hash,
+            file_size_bytes=len(file_content.encode("utf-8")),
+            idempotency_key=idempotency_key,
+            parser_version=get_parser_version(),
+            speaker_map_version=get_speaker_map_version(),
+            first_processed_at=datetime.now(timezone.utc),
+            last_processed_at=datetime.now(timezone.utc),
+            reprocess_count=0,
+            force_rebuild=0,
+            n_segments=len(segments_data),
+            n_sentences=total_sentences_count,
+            n_speakers=len(unique_speakers_in_file),
+            n_countries=len(unique_countries_in_file),
+            total_words=total_words_in_file,
+            imported_at=datetime.now(timezone.utc),
+        )
+        session.add(db_file)
 
-    # ── Panel Dynamics: cümle bazlı temporal değişim kayıtları ──
+    # ── File Dynamics: cümle bazlı temporal değişim kayıtları ──
     # Tüm segment döngülerinden toplanan cümleleri sıralı şekilde işle
     _all_built_sentences = all_processed_sentences
 
@@ -1518,8 +2131,8 @@ async def _process_single_file(
         # KGI = abs(risk_delta) * 0.4 + abs(emotion_shift) * 0.3 + topic_shift * 0.3
         _kgi = abs(_risk_d / 10.0) * 0.4 + abs(_sent_d) * 0.3 + _topic_changed * 0.3
 
-        db_dyn = PanelDynamics(
-            panel_id=panel_id,
+        db_dyn = FileDynamics(
+            file_id=file_id,
             position=dyn_pos,
             speaker_name=dyn_sent.speaker_name,
             country=dyn_sent.country,
@@ -1536,29 +2149,655 @@ async def _process_single_file(
         _prev_sentiment_dyn = dyn_sent.vader_compound or 0.0
         _prev_topic_dyn = dyn_sent.dominant_topic
 
-    # Update processed files tracking
-    if existing:
-        existing.reprocess_count += 1
-        existing.last_processed_at = datetime.now(timezone.utc)
-        if force_rebuild:
-            existing.force_rebuild = 0
-    else:
-        processed_file = ProcessedFile(
-            file_hash=file_hash,
-            file_name=file_path.name,
-            file_size_bytes=len(file_content.encode("utf-8")),
-            idempotency_key=idempotency_key,
-            parser_version=get_parser_version(),
-            speaker_map_version=get_speaker_map_version(),
-            first_processed_at=datetime.now(timezone.utc),
-            last_processed_at=datetime.now(timezone.utc),
-            reprocess_count=0,
-            force_rebuild=0,
+    # Processed files tracking updated above
+
+    # ── Topic Modeling Post-Processing (Faz 5) ──
+    try:
+        from bb_paxdata.domain.models.segment import Segment as SegmentDomain
+        from bb_paxdata.domain.models.sentence import Sentence as SentenceDomain
+        from bb_paxdata.infrastructure.db.topic_models import TopicAssignmentORM
+
+        # Group sentences by segment ID
+        sentences_by_seg_id: dict[str, list[Any]] = {}
+        for sent in all_processed_sentences:
+            sentences_by_seg_id.setdefault(sent.seg_id, []).append(sent)
+
+        # Construct SegmentDomain and SentenceDomain objects
+        domain_segments = []
+        for seg_id, seg_sents in sentences_by_seg_id.items():
+            domain_sents = [
+                SentenceDomain(id=s.sent_id, text=s.text) for s in seg_sents
+            ]
+
+            # Extract speaker, GPE, and tokens for Phase 4 Discourse Network build
+            primary_speaker = None
+            concepts = []
+            segment_tokens = []
+            for s in seg_sents:
+                if not primary_speaker:
+                    primary_speaker = s.speaker_id
+                segment_tokens.extend(s.text.lower().split())
+                if s.entities_gpe:
+                    for gpe in s.entities_gpe:
+                        gpe_clean = gpe.strip().title()
+                        if gpe_clean and gpe_clean not in concepts:
+                            concepts.append(gpe_clean)
+                if (
+                    s.dominant_topic
+                    and s.dominant_topic != "-1"
+                    and s.dominant_topic not in concepts
+                ):
+                    concepts.append(s.dominant_topic)
+
+            domain_segments.append(
+                SegmentDomain(
+                    id=seg_id,
+                    file_id=file_id,
+                    primary_speaker_id=primary_speaker,
+                    tokens=segment_tokens,
+                    key_concepts=concepts,
+                    sentences=domain_sents,
+                )
+            )
+
+        if len(domain_segments) >= 2:
+            console.print(
+                f"[bold blue]ℹ️ Running panel-level topic modeling on {len(domain_segments)} segments...[/bold blue]"
+            )
+            lang = "en"
+            if all_processed_sentences and "pipeline_res" in locals():
+                lang = (pipeline_res.analysis.language or "en").lower()
+
+            topic_result = await container.topic_modeling_service.extract_topics(
+                segments=domain_segments,
+                language=lang,
+                min_topic_size=2,
+            )
+
+            # Map the assignments by segment ID
+            assignments_by_seg = {a.segment_id: a for a in topic_result.assignments}
+
+            for seg_id, seg_sents in sentences_by_seg_id.items():
+                assign = assignments_by_seg.get(seg_id)
+                if assign:
+                    primary_topic = assign.primary_topic or "-1"
+                    topic_scores = assign.topic_scores or {}
+
+                    # Get topic keywords for this topic
+                    keywords = topic_result.topic_keywords.get(primary_topic, {})
+                    if keywords:
+                        topic_label = ", ".join(list(keywords.keys())[:3])
+                    else:
+                        topic_label = primary_topic
+
+                    # Update Segment ORM
+                    seg_stmt = select(Segment).where(Segment.seg_id == seg_id)
+                    res_seg = await session.execute(seg_stmt)
+                    db_seg = res_seg.scalar_one_or_none()
+                    if db_seg:
+                        db_seg.dominant_topic = topic_label
+                        db_seg.topic_scores = topic_scores
+
+                    # Update Sentence ORM & TopicAssignmentORM
+                    for s in seg_sents:
+                        s.dominant_topic = topic_label
+                        s.topic_scores = topic_scores
+
+                        # ── Calculate topic_specificity (Shannon entropy) ──
+                        import math
+
+                        _non_zero = [v for v in topic_scores.values() if v > 0]
+                        if not _non_zero:
+                            s.topic_specificity = 0.0
+                        elif len(_non_zero) == 1:
+                            s.topic_specificity = 1.0
+                        else:
+                            _tot = sum(_non_zero)
+                            _probs = [v / _tot for v in _non_zero]
+                            _ent = -sum(p * math.log2(p) for p in _probs if p > 0)
+                            _max_ent = math.log2(len(_non_zero))
+                            s.topic_specificity = round(
+                                1.0 - (_ent / _max_ent) if _max_ent > 0 else 1.0, 4
+                            )
+
+                        stmt_assign = select(TopicAssignmentORM).where(
+                            TopicAssignmentORM.analysis_id == s.sent_id
+                        )
+                        res_assign = await session.execute(stmt_assign)
+                        db_assign = res_assign.scalar_one_or_none()
+                        if db_assign:
+                            db_assign.primary_topic = primary_topic
+                            db_assign.topic_scores = topic_scores
+                            db_assign.topic_label = topic_label
+                            db_assign.ctfidf_keywords = keywords
+            console.print(
+                "[green][OK] Topic modeling post-processing completed successfully.[/green]"
+            )
+    except Exception as exc:
+        console.print(
+            f"[yellow][WARN] Topic modeling post-processing failed: {exc}[/yellow]"
         )
-        session.add(processed_file)
+        logger.warning("build.topic_modeling_post_processing_failed", error=str(exc))
+
+    # ── Formula Logic Audit (YENİ) ──
+    try:
+        import json
+        import uuid
+
+        run_id = f"run_{uuid.uuid4().hex[:8]}"
+        auditor = FormulaAuditor()
+
+        # Group sentences by segment id for segment audit
+        sents_by_seg: dict[str, list[Any]] = {}
+        logic_fail_sents_added = set()
+
+        for sent in all_processed_sentences:
+            sents_by_seg.setdefault(sent.seg_id, []).append(sent)
+
+            # Audit sentence
+            sent_logs = auditor.audit_sentence(run_id, sent)
+            for log_data in sent_logs:
+                db_log = FormulaValidationLog(
+                    run_id=log_data["run_id"],
+                    entity_type=log_data["entity_type"],
+                    entity_id=log_data["entity_id"],
+                    formula_name=log_data["formula_name"],
+                    expected_constraint=log_data["expected_constraint"],
+                    actual_value=log_data["actual_value"],
+                    status=log_data["status"],
+                    details=log_data["details"],
+                )
+                session.add(db_log)
+
+                # Flag to Human Review Queue if FAIL
+                if (
+                    log_data["status"] == "FAIL"
+                    and sent.sent_id not in logic_fail_sents_added
+                ):
+                    logic_fail_sents_added.add(sent.sent_id)
+                    _ai_json = json.dumps(
+                        {
+                            "formula_name": log_data["formula_name"],
+                            "expected_constraint": log_data["expected_constraint"],
+                            "actual_value": log_data["actual_value"],
+                            "details": log_data["details"],
+                            "text": getattr(sent, "text", ""),
+                        },
+                        ensure_ascii=False,
+                    )
+                    review_entry = HumanReviewQueue(
+                        sent_id=sent.sent_id,
+                        seg_id=sent.seg_id,
+                        file_id=sent.file_id,
+                        speaker_name=sent.speaker_name,
+                        country=sent.country,
+                        trigger_type="LOGIC_CHECK_FAILURE",
+                        ai_risk_score=sent.risk_score,
+                        anomaly_types=f"LOGIC_FAIL: {log_data['formula_name']}",
+                        uncertainty_score=0.0,
+                        status="PENDING",
+                        original_ai_json=_ai_json,
+                        flagged_at=datetime.now(timezone.utc),
+                    )
+                    session.add(review_entry)
+
+        for db_seg in all_processed_segments:
+            seg_sents = sents_by_seg.get(db_seg.seg_id, [])
+            seg_logs = auditor.audit_segment(run_id, db_seg, seg_sents)
+            for log_data in seg_logs:
+                db_log = FormulaValidationLog(
+                    run_id=log_data["run_id"],
+                    entity_type=log_data["entity_type"],
+                    entity_id=log_data["entity_id"],
+                    formula_name=log_data["formula_name"],
+                    expected_constraint=log_data["expected_constraint"],
+                    actual_value=log_data["actual_value"],
+                    status=log_data["status"],
+                    details=log_data["details"],
+                )
+                session.add(db_log)
+
+                # Flag to Human Review Queue if FAIL
+                if log_data["status"] == "FAIL" and seg_sents:
+                    first_sent = seg_sents[0]
+                    if first_sent.sent_id not in logic_fail_sents_added:
+                        logic_fail_sents_added.add(first_sent.sent_id)
+                        _ai_json = json.dumps(
+                            {
+                                "formula_name": log_data["formula_name"],
+                                "expected_constraint": log_data["expected_constraint"],
+                                "actual_value": log_data["actual_value"],
+                                "details": log_data["details"],
+                                "segment_text": getattr(db_seg, "text", ""),
+                            },
+                            ensure_ascii=False,
+                        )
+                        review_entry = HumanReviewQueue(
+                            sent_id=first_sent.sent_id,
+                            seg_id=db_seg.seg_id,
+                            file_id=db_seg.file_id,
+                            speaker_name=db_seg.speaker_name,
+                            country=db_seg.country,
+                            trigger_type="LOGIC_CHECK_FAILURE",
+                            ai_risk_score=db_seg.risk_score,
+                            anomaly_types=f"LOGIC_FAIL: {log_data['formula_name']}",
+                            uncertainty_score=0.0,
+                            status="PENDING",
+                            original_ai_json=_ai_json,
+                            flagged_at=datetime.now(timezone.utc),
+                        )
+                        session.add(review_entry)
+        console.print(
+            "[green][OK] Formula logic audit completed and logged to database.[/green]"
+        )
+    except Exception as exc:
+        console.print(f"[yellow][WARN] Formula logic audit failed: {exc}[/yellow]")
+        logger.warning("build.formula_logic_audit_failed", error=str(exc))
+
+    # ── Temporal Drift Event Analysis ──
+    try:
+        from bb_paxdata.domain.services.temporal import TemporalAnalyzer
+        from bb_paxdata.infrastructure.db.drift_events import (
+            DriftEvent as DriftEventORM,
+        )
+
+        # Group sentences by speaker
+        speaker_data = {}
+        sentence_data = []
+        for s in all_processed_sentences:
+            sp_id = s.speaker_id or s.speaker_name or "unknown"
+            if sp_id not in speaker_data:
+                speaker_data[sp_id] = {
+                    "speaker_id": sp_id,
+                    "speaker_name": s.speaker_name,
+                    "country": s.country,
+                }
+
+            sentence_data.append(
+                {
+                    "speaker_id": sp_id,
+                    "global_sent_order": s.global_sent_order or 0,
+                    "text": s.text or "",
+                    "AI_Duygu_Skoru": s.vader_compound,
+                    "AI_Risk_Skoru": s.risk_score,
+                    "AI_Birincil_Konu": s.dominant_topic,
+                    "AI_Diplomatik_Ton": s.dominant_frame,
+                }
+            )
+
+        panel_data = {"panel_id": file_id}
+        analyzer = TemporalAnalyzer()
+        drift_events = analyzer.analyze_panel_drift(
+            panel_data, speaker_data, sentence_data
+        )
+
+        # Delete old drift events for this panel first (idempotency)
+        await session.execute(
+            delete(DriftEventORM).where(DriftEventORM.panel_id == file_id)
+        )
+
+        for drift in drift_events:
+            db_drift = DriftEventORM(
+                speaker_id=drift.speaker_id,
+                panel_id=drift.panel_id,
+                drift_type=drift.drift_type,
+                start_position=drift.start_position,
+                end_position=drift.end_position,
+                severity=drift.severity,
+                before_state=drift.before_state,
+                after_state=drift.after_state,
+                confidence=drift.confidence,
+                algorithm=drift.algorithm,
+            )
+            session.add(db_drift)
+
+        if drift_events:
+            console.print(
+                f"[green][OK] Detected and logged {len(drift_events)} temporal drift events to database.[/green]"
+            )
+        else:
+            console.print(
+                "[green][OK] Temporal drift analysis completed (no drift events detected).[/green]"
+            )
+
+    except Exception as exc:
+        console.print(f"[yellow][WARN] Temporal drift analysis failed: {exc}[/yellow]")
+        logger.warning("build.temporal_drift_analysis_failed", error=str(exc))
+
+    # ── Phase 4 Discourse Network and Flows Integration ──
+    try:
+        await rebuild_network_for_file(session, file_id)
+    except Exception as exc:
+        console.print(
+            f"[yellow][WARN] Rebuilding network data failed for {file_id}: {exc}[/yellow]"
+        )
+        logger.warning("build.rebuild_network_failed", file_id=file_id, error=str(exc))
 
     await session.flush()
     return "processed"
+
+
+async def rebuild_network_for_file(session: Any, file_id: str) -> None:
+    """Rebuilds bilateral sentiments, discourse network edges, and discourse flows for a single file/panel."""
+    from bb_paxdata.infrastructure.db.country_models import (
+        BilateralSentimentTable,
+        DiscourseFlowTable,
+    )
+    from bb_paxdata.infrastructure.db.discourse_network_table import (
+        DiscourseNetworkEdgeTable,
+    )
+    from bb_paxdata.infrastructure.db.models import (
+        ActorActionMatrixORM,
+        DependencyTripleORM,
+        DiscourseNetworkEdge,
+    )
+    from sqlalchemy import delete
+
+    # Clean existing network data for this panel to support clean re-runs
+    await session.execute(
+        delete(BilateralSentimentTable).where(
+            BilateralSentimentTable.file_id == file_id
+        )
+    )
+    await session.execute(
+        delete(DiscourseFlowTable).where(DiscourseFlowTable.file_id == file_id)
+    )
+    await session.execute(
+        delete(DiscourseNetworkEdgeTable).where(
+            DiscourseNetworkEdgeTable.file_id == file_id
+        )
+    )
+    await session.execute(
+        delete(DiscourseNetworkEdge).where(DiscourseNetworkEdge.file_id == file_id)
+    )
+    await session.execute(
+        delete(DependencyTripleORM).where(DependencyTripleORM.file_id == file_id)
+    )
+    await session.execute(
+        delete(ActorActionMatrixORM).where(ActorActionMatrixORM.file_id == file_id)
+    )
+    await session.flush()
+
+    # Construct SegmentDomain and SentenceDomain from database Segment and Sentence ORM tables
+    from bb_paxdata.domain.models.segment import Segment as SegmentDomain
+    from bb_paxdata.domain.models.sentence import Sentence as SentenceDomain
+    from bb_paxdata.infrastructure.db.models import Segment as SegmentORM
+    from bb_paxdata.infrastructure.db.models import Sentence as SentenceORM
+
+    # Get segments
+    seg_res = await session.execute(
+        select(SegmentORM)
+        .where(SegmentORM.file_id == file_id)
+        .order_by(SegmentORM.seq_order)
+    )
+    db_segs = seg_res.scalars().all()
+
+    # Get sentences
+    sent_res = await session.execute(
+        select(SentenceORM)
+        .where(SentenceORM.file_id == file_id)
+        .order_by(SentenceORM.global_sent_order)
+    )
+    db_sents = sent_res.scalars().all()
+
+    # Group sentences by segment id
+    sents_by_seg: dict[str, list[Any]] = {}
+    for s in db_sents:
+        sents_by_seg.setdefault(s.seg_id, []).append(s)
+
+    # Build domain segments
+    domain_segments = []
+    for db_seg in db_segs:
+        seg_sents = sents_by_seg.get(db_seg.seg_id, [])
+        domain_sents = [SentenceDomain(id=s.sent_id, text=s.text) for s in seg_sents]
+
+        # Extract speaker, GPE, and tokens
+        primary_speaker = db_seg.speaker_id
+        segment_tokens = db_seg.text.lower().split() if db_seg.text else []
+        concepts = []
+        for s in seg_sents:
+            if s.entities_gpe:
+                for gpe in s.entities_gpe:
+                    gpe_clean = gpe.strip().title()
+                    if gpe_clean and gpe_clean not in concepts:
+                        concepts.append(gpe_clean)
+            if (
+                s.dominant_topic
+                and s.dominant_topic != "-1"
+                and s.dominant_topic not in concepts
+            ):
+                concepts.append(s.dominant_topic)
+
+        domain_segments.append(
+            SegmentDomain(
+                id=db_seg.seg_id,
+                file_id=file_id,
+                primary_speaker_id=primary_speaker,
+                tokens=segment_tokens,
+                key_concepts=concepts,
+                sentences=domain_sents,
+            )
+        )
+
+    # ── 1. Aggregate Bilateral Sentiment ──
+    try:
+        from bb_paxdata.application.use_cases.aggregate_bilateral_sentiment import (
+            AggregateBilateralSentimentInput,
+            AggregateBilateralSentimentUseCase,
+        )
+        from bb_paxdata.infrastructure.db.repositories.country_repository import (
+            BilateralSentimentRepository,
+            CountryReferenceRepository,
+        )
+
+        bil_agg_use_case = AggregateBilateralSentimentUseCase(
+            ref_repo=CountryReferenceRepository(session),
+            sentiment_repo=BilateralSentimentRepository(session),
+        )
+        bil_agg_output = await bil_agg_use_case.execute(
+            AggregateBilateralSentimentInput(panel_id=file_id)
+        )
+        if bil_agg_output.succeeded:
+            console.print(
+                f"[{file_id}] [green][OK] Bilateral sentiments aggregated successfully. Saved {bil_agg_output.created_count} new pairs.[/green]"
+            )
+        else:
+            console.print(
+                f"[{file_id}] [yellow][WARN] Bilateral sentiments aggregation failed: {bil_agg_output.errors}[/yellow]"
+            )
+    except Exception as exc:
+        console.print(
+            f"[{file_id}] [yellow][WARN] Bilateral sentiments aggregation failed: {exc}[/yellow]"
+        )
+
+    # ── 2. Discourse Network Analysis (Fischer DNA & Maoz Dyadic) ──
+    try:
+        from bb_paxdata.application.pipeline.stages.assemble_network import (
+            NetworkAssemblyStage,
+        )
+        from bb_paxdata.application.pipeline.stages.finalize_network import (
+            NetworkFinalizeStage,
+        )
+        from bb_paxdata.domain.models.analysis import Analysis as AnalysisDomain
+        from bb_paxdata.infrastructure.db.country_models import BilateralSentimentTable
+        from bb_paxdata.infrastructure.db.repositories.country_repository import (
+            BilateralSentimentRepository,
+        )
+        from bb_paxdata.infrastructure.db.repositories.discourse_network_repository import (
+            DiscourseNetworkRepository,
+        )
+        from bb_paxdata.infrastructure.nlp.fischer_dna_service import FischerDNAService
+        from bb_paxdata.infrastructure.nlp.maoz_dyadic_service import MaozDyadicService
+
+        # Construct AnalysisDomain
+        analysis_domain = AnalysisDomain(
+            id=file_id,
+            segments=domain_segments,
+            bilateral_sentiments=[],
+        )
+
+        # Query existing bilateral sentiments for this file_id from database to populate domain model
+        bil_res = await session.execute(
+            select(BilateralSentimentTable).where(
+                BilateralSentimentTable.file_id == file_id
+            )
+        )
+        db_bilaterals = bil_res.scalars().all()
+        domain_bilaterals = [b.to_domain() for b in db_bilaterals]
+
+        analysis_domain = analysis_domain.model_copy(
+            update={"bilateral_sentiments": domain_bilaterals}
+        )
+
+        # Instantiate services & repositories
+        fischer_service = FischerDNAService()
+        maoz_service = MaozDyadicService()
+
+        network_repo = DiscourseNetworkRepository(session)
+        bilateral_repo = BilateralSentimentRepository(session)
+
+        # Assemble network
+        assembly_stage = NetworkAssemblyStage(
+            fischer_service=fischer_service,
+            maoz_service=maoz_service,
+        )
+        enriched_analysis = await assembly_stage.process(analysis_domain)
+
+        # Finalize and persist network
+        finalize_stage = NetworkFinalizeStage(
+            network_repo=network_repo,
+            bilateral_repo=bilateral_repo,
+        )
+        await finalize_stage.process(session, enriched_analysis)
+
+        console.print(
+            f"[{file_id}] [green][OK] Discourse network analysis completed. Saved {enriched_analysis.discourse_flow.edge_count if enriched_analysis.discourse_flow else 0} modern edges.[/green]"
+        )
+    except Exception as exc:
+        console.print(
+            f"[{file_id}] [yellow][WARN] Discourse network analysis failed: {exc}[/yellow]"
+        )
+
+    # ── 3. Build Panel Network (Discourse Flows) ──
+    try:
+        from bb_paxdata.application.use_cases.build_panel_network import (
+            BuildPanelNetworkInput,
+            BuildPanelNetworkUseCase,
+        )
+        from bb_paxdata.infrastructure.db.repositories.country_repository import (
+            BilateralSentimentRepository,
+            DiscourseFlowRepository,
+        )
+
+        flow_use_case = BuildPanelNetworkUseCase(
+            sentiment_repo=BilateralSentimentRepository(session),
+            flow_repo=DiscourseFlowRepository(session),
+        )
+        flow_output = await flow_use_case.execute(
+            BuildPanelNetworkInput(panel_id=file_id)
+        )
+        if flow_output.succeeded:
+            console.print(
+                f"[{file_id}] [green][OK] Discourse flows built successfully. Saved {flow_output.edges_created} flows.[/green]"
+            )
+        else:
+            console.print(
+                f"[{file_id}] [yellow][WARN] Discourse flows build had errors: {flow_output.errors}[/yellow]"
+            )
+    except Exception as exc:
+        console.print(
+            f"[{file_id}] [yellow][WARN] Discourse flows use case execution failed: {exc}[/yellow]"
+        )
+
+    # ── 4. Extract and Persist Grammatical Dependency Triples (SVO) ──
+    try:
+        from collections import defaultdict
+
+        from bb_paxdata.domain.models.dependency import ActorActionMatrix
+        from bb_paxdata.domain.services.actor_resolver import ActorResolver
+        from bb_paxdata.infrastructure.container.service_container import (
+            ServiceContainer,
+        )
+        from bb_paxdata.infrastructure.db.repositories.dependency import (
+            DependencyRepository,
+        )
+
+        container = ServiceContainer.get_instance()
+        nlp_en = container.ner_service._models.get("en")
+        nlp_tr = container.ner_service._models.get("tr")
+        from bb_paxdata.domain.services.language_detector import LanguageDetector
+
+        dep_service = container.dependency_service
+        dep_repo = DependencyRepository(session)
+
+        matrix_counts: dict[tuple[str, str, str], dict[str, Any]] = defaultdict(
+            lambda: {"count": 0, "sentiment_sum": 0.0, "passive_cnt": 0, "neg_cnt": 0}
+        )
+
+        for s in db_sents:
+            if not s.text:
+                continue
+            lang = LanguageDetector.detect(s.text)
+            nlp = nlp_en if lang == "en" else nlp_tr
+            if not nlp:
+                nlp = nlp_en or nlp_tr
+            if not nlp:
+                continue
+            doc = nlp(s.text)
+            triples = dep_service.extract_triples(doc)
+            for t in triples:
+                subj_res = (
+                    ActorResolver.resolve_actor(t.subject_raw) or t.subject_resolved
+                )
+                obj_res = ActorResolver.resolve_actor(t.object_raw) or t.object_resolved
+
+                t.subject_resolved = subj_res
+                t.object_resolved = obj_res
+                t.sent_id = s.sent_id
+                t.seg_id = s.seg_id
+                t.panel_id = file_id
+                t.speaker_name = s.speaker_name
+                t.country = s.country
+
+                t.sentiment_context = s.vader_compound
+                t.risk_score = s.risk_score
+
+                await dep_repo.insert_triple(t)
+
+                if subj_res and obj_res:
+                    key = (subj_res, obj_res, t.verb_lemma)
+                    matrix_counts[key]["count"] += 1
+                    matrix_counts[key]["sentiment_sum"] += s.vader_compound or 0.0
+                    matrix_counts[key]["passive_cnt"] += 1 if t.is_passive else 0
+                    matrix_counts[key]["neg_cnt"] += 1 if t.is_negative else 0
+
+        for (from_c, to_c, verb), stats in matrix_counts.items():
+            cnt = stats["count"]
+            avg_sent = stats["sentiment_sum"] / cnt if cnt > 0 else 0.0
+            passive_pct = stats["passive_cnt"] / cnt if cnt > 0 else 0.0
+            neg_pct = stats["neg_cnt"] / cnt if cnt > 0 else 0.0
+
+            matrix_entry = ActorActionMatrix(
+                panel_id=file_id,
+                from_country=from_c,
+                to_country=to_c,
+                verb=verb,
+                count=cnt,
+                avg_sentiment=avg_sent,
+                is_passive_pct=passive_pct,
+                is_negative_pct=neg_pct,
+            )
+            await dep_repo.upsert_actor_action_matrix(matrix_entry)
+
+        console.print(
+            f"[{file_id}] [green][OK] Dependency parsing completed successfully. Extracted triples persisted.[/green]"
+        )
+    except Exception as exc:
+        console.print(
+            f"[{file_id}] [yellow][WARN] Dependency parsing failed: {exc}[/yellow]"
+        )
+
+    await session.flush()
 
 
 async def update_speaker_profiles(session: Any) -> None:
@@ -1584,7 +2823,7 @@ async def update_speaker_profiles(session: Any) -> None:
         words = [w.word_norm for w in word_res.scalars().all()]
 
         # Calculate basic counts
-        sp.n_panels = len(set(s.panel_id for s in sentences))
+        sp.n_panels = len(set(s.file_id for s in sentences))
         sp.n_segments = len(segments)
         sp.n_sentences = len(sentences)
         sp.total_words = len(words)
@@ -1696,17 +2935,24 @@ async def update_speaker_profiles(session: Any) -> None:
             sp.diplo_vocab_score = diplo_words_cnt / len(words)
 
         # Country references
-        if seg_ids:
-            from bb_paxdata.infrastructure.db.models import CountryReference
+        if seg_ids and sp.country:
+            from bb_paxdata.infrastructure.db.country_models import (
+                CountryReferenceTable,
+            )
 
             ref_stmt = (
                 select(
-                    CountryReference.to_country,
-                    func.sum(CountryReference.mention_count),
-                    func.avg(CountryReference.sentiment_context),
+                    CountryReferenceTable.referenced_country,
+                    func.count(CountryReferenceTable.id),
+                    func.avg(CountryReferenceTable.raw_sentiment_score),
                 )
-                .where(CountryReference.seg_id.in_(seg_ids))
-                .group_by(CountryReference.to_country)
+                .where(
+                    CountryReferenceTable.file_id.in_(
+                        list(set(s.file_id for s in segments))
+                    ),
+                    CountryReferenceTable.speaker_country == sp.country,
+                )
+                .group_by(CountryReferenceTable.referenced_country)
             )
             ref_res = await session.execute(ref_stmt)
             ref_rows = ref_res.all()
@@ -1729,7 +2975,90 @@ async def update_speaker_profiles(session: Any) -> None:
             sp.adversary_countries = adversaries if adversaries else None
 
         if not sp.first_seen_panel and sentences:
-            sp.first_seen_panel = sentences[0].panel_id
+            sp.first_seen_panel = sentences[0].file_id
+
+
+async def update_country_stats(session: Any) -> None:
+    from collections import Counter
+
+    from bb_paxdata.infrastructure.db.models import CountryStat, Segment, TopicMatrix
+
+    await session.execute(delete(CountryStat))
+    await session.execute(delete(TopicMatrix))
+
+    stmt = select(Segment)
+    res = await session.execute(stmt)
+    segments = res.scalars().all()
+
+    groups: dict[tuple[str, str], list[Segment]] = {}
+    for s in segments:
+        if not s.country or s.country in ("—", "Unknown", "unknown", ""):
+            continue
+        key = (s.country, s.file_id)
+        if key not in groups:
+            groups[key] = []
+        groups[key].append(s)
+
+    for (country, file_id), grp in groups.items():
+        n_segs = len(grp)
+        sents = sum(s.sentence_count or 0 for s in grp)
+        words = sum(s.word_count or 0 for s in grp)
+        dur = sum(s.duration_sec or 0 for s in grp)
+
+        diplo_compounds = [
+            s.diplo_compound for s in grp if s.diplo_compound is not None
+        ]
+        avg_s = sum(diplo_compounds) / len(diplo_compounds) if diplo_compounds else 0.0
+
+        emos = [s.emotion_category for s in grp if s.emotion_category]
+        dom_emo = Counter(emos).most_common(1)[0][0] if emos else None
+
+        all_ts: dict[str, float] = {}
+        for s in grp:
+            if isinstance(s.topic_scores, dict):
+                for t, sc in s.topic_scores.items():
+                    all_ts[t] = all_ts.get(t, 0.0) + float(sc or 0.0)
+
+        dom_topic = max(all_ts, key=lambda k: all_ts[k]) if all_ts else None
+        wpm = round(words / (dur / 60.0), 1) if dur > 0 else 0.0
+
+        cs = CountryStat(
+            country=country,
+            file_id=file_id,
+            n_segments=n_segs,
+            n_sentences=sents,
+            total_words=words,
+            total_duration_sec=dur,
+            words_per_minute=wpm,
+            avg_sentiment=avg_s,
+            dominant_emotion=dom_emo,
+            dominant_topic=dom_topic,
+            topic_scores=dict(
+                sorted(all_ts.items(), key=lambda item: item[1], reverse=True)[:5]
+            ),
+        )
+        session.add(cs)
+
+        for topic, score in all_ts.items():
+            if score > 0.0:
+                tm = TopicMatrix(
+                    file_id=file_id,
+                    country=country,
+                    topic=topic,
+                    score=float(score),
+                )
+                session.add(tm)
+
+    await session.flush()
+
+
+async def update_country_pair_sentiments(session: Any) -> None:
+    from bb_paxdata.infrastructure.db.repositories.country_repository import (
+        BilateralSentimentRepository,
+    )
+
+    repo = BilateralSentimentRepository(session)
+    await repo.rebuild_global_country_pair_sentiments()
 
 
 async def _async_build(
@@ -1797,24 +3126,37 @@ async def _async_build(
                     processed_count += 1
                 elif status == "skipped":
                     console.print(
-                        f"[yellow]⏭️  Skipping {file_path.name} (already processed)"
+                        f"[yellow][SKIP] Skipping {file_path.name} (already processed)"
                     )
                     skipped_count += 1
                 elif status == "error":
                     error_count += 1
             except Exception as e:
-                console.print(f"[red]❌ Error processing {file_path.name}: {e}")
+                console.print(f"[red][ERROR] Error processing {file_path.name}: {e}")
                 logger.error(f"Error processing file {file_path.name}", error=str(e))
                 error_count += 1
+                try:
+                    await session.rollback()
+                except Exception:
+                    pass
                 continue
 
         # Post-processing: Update Speaker stats
         console.print("Updating speaker statistics...")
         await update_speaker_profiles(session)
+        console.print("Updating country statistics and topic matrices...")
+        await update_country_stats(session)
+        console.print("Rebuilding discourse network and flows for all files...")
+        file_ids_res = await session.execute(select(File.file_id))
+        file_ids = file_ids_res.scalars().all()
+        for fid in file_ids:
+            await rebuild_network_for_file(session, fid)
+        console.print("Updating country pair sentiments...")
+        await update_country_pair_sentiments(session)
         await session.commit()
 
         # Summary
-        console.print("\n[green]✅ Build completed!")
+        console.print("\n[green][OK] Build completed!")
         console.print(f"Processed: {processed_count}")
         console.print(f"Skipped: {skipped_count}")
         console.print(f"Errors: {error_count}")
@@ -1828,7 +3170,7 @@ async def _async_build(
             console.print(f"  Kalan hak:               {usage['remaining']}")
             if usage["is_exhausted"]:
                 console.print(
-                    "  [yellow]⚠️  Limit doldu — sonraki cümleler logic-only ile analiz edildi.[/yellow]"
+                    "  [yellow][WARN]  Limit doldu — sonraki cümleler logic-only ile analiz edildi.[/yellow]"
                 )
 
 
@@ -1899,7 +3241,7 @@ async def _async_watch(
 
             deleted_files = [f for f in known_files if f not in current_files]
             for f in deleted_files:
-                console.print(f"[yellow]🗑️ File removed from directory: {f.name}")
+                console.print(f"[yellow][REMOVE] File removed from directory: {f.name}")
                 del known_files[f]
 
             if not files_to_process:
@@ -1924,26 +3266,37 @@ async def _async_watch(
                         )
                         if status == "processed":
                             console.print(
-                                f"[green]✅ Successfully processed and ingested: {file_path.name}"
+                                f"[green][OK] Successfully processed and ingested: {file_path.name}"
                             )
                         elif status == "skipped":
                             console.print(
-                                f"[yellow]⏭️ Skipped (already in DB): {file_path.name}"
+                                f"[yellow][SKIP] Skipped (already in DB): {file_path.name}"
                             )
                         elif status == "error":
                             console.print(
-                                f"[red]❌ Processing failed: {file_path.name}"
+                                f"[red][ERROR] Processing failed: {file_path.name}"
                             )
 
                         # Update memory cache
                         known_files[file_path] = current_files[file_path]
                     except Exception as e:
-                        console.print(f"[red]❌ Error processing {file_path.name}: {e}")
+                        console.print(
+                            f"[red][ERROR] Error processing {file_path.name}: {e}"
+                        )
                         known_files[file_path] = current_files[file_path]
 
                 # Update speaker stats after changes
                 console.print("Updating speaker statistics...")
                 await update_speaker_profiles(session)
+                console.print("Updating country statistics and topic matrices...")
+                await update_country_stats(session)
+                console.print("Rebuilding discourse network and flows for all files...")
+                file_ids_res = await session.execute(select(File.file_id))
+                file_ids = file_ids_res.scalars().all()
+                for fid in file_ids:
+                    await rebuild_network_for_file(session, fid)
+                console.print("Updating country pair sentiments...")
+                await update_country_pair_sentiments(session)
                 await session.commit()
 
             console.print("[bold green]👀 Monitoring...[/bold green]")
@@ -2055,14 +3408,14 @@ def status(
         with get_db_session() as session:
             # Check processed files
             processed = (
-                session.query(ProcessedFile)
-                .filter(ProcessedFile.idempotency_key == idempotency_key)
+                session.query(File)
+                .filter(File.idempotency_key == idempotency_key)
                 .first()
             )
 
             # Check panels
             file_hash = hashlib.sha256(file_content.encode("utf-8")).hexdigest()
-            panels = session.query(Panel).filter(Panel.file_hash == file_hash).all()
+            panels = session.query(File).filter(File.file_hash == file_hash).all()
 
             console.print(f"File: {path.name}")
             console.print(f"Size: {len(file_content)} characters")
@@ -2070,19 +3423,19 @@ def status(
             console.print(f"File hash: {file_hash}")
 
             if processed:
-                console.print(f"[green]✅ Processed: {processed.first_processed_at}")
+                console.print(f"[green][OK] Processed: {processed.first_processed_at}")
                 console.print(f"Reprocess count: {processed.reprocess_count}")
                 console.print(f"Last processed: {processed.last_processed_at}")
                 console.print(f"Parser version: {processed.parser_version}")
                 console.print(f"Speaker map version: {processed.speaker_map_version}")
             else:
-                console.print("[yellow]⏳ Not processed yet")
+                console.print("[yellow][WAIT] Not processed yet")
 
             if panels:
                 console.print(f"Associated panels: {len(panels)}")
                 for panel in panels:
                     status = "Active" if getattr(panel, "is_active", 1) else "Inactive"
-                    console.print(f"  - {panel.panel_id} ({status})")
+                    console.print(f"  - {panel.file_id} ({status})")
             else:
                 console.print("No associated panels found")
 
@@ -2094,7 +3447,7 @@ def status(
 
 @app.command("clean")
 def clean(
-    panel_id: str | None = typer.Option(
+    file_id: str | None = typer.Option(
         None, "--panel", "-p", help="Clean specific panel"
     ),
     older_than: int | None = typer.Option(
@@ -2107,21 +3460,19 @@ def clean(
     """Clean processed files and panels."""
     try:
         with get_db_session() as session:
-            if panel_id:
+            if file_id:
                 # Clean specific panel
                 panels = (
-                    session.query(Panel)
-                    .filter(Panel.panel_id.like(f"%{panel_id}%"))
-                    .all()
+                    session.query(File).filter(File.file_id.like(f"%{file_id}%")).all()
                 )
 
                 if not panels:
-                    console.print(f"[yellow]No panels found matching: {panel_id}")
+                    console.print(f"[yellow]No panels found matching: {file_id}")
                     return
 
                 if not force:
                     if not typer.confirm(
-                        f"Delete {len(panels)} panels matching '{panel_id}'?"
+                        f"Delete {len(panels)} panels matching '{file_id}'?"
                     ):
                         console.print("Cleanup cancelled")
                         return
@@ -2129,7 +3480,7 @@ def clean(
                 for panel in panels:
                     session.delete(panel)
 
-                console.print(f"[green]✅ Deleted {len(panels)} panels")
+                console.print(f"[green][OK] Deleted {len(panels)} panels")
 
             elif older_than:
                 # Clean old processed files

@@ -99,7 +99,7 @@ class SpacyNERService:
     ):
         self.language_detector = language_detector or LanguageDetector()
         self._model_map = model_map or {
-            "tr": "tr_core_news_sm",
+            "tr": "tr_core_news_md",
             "en": "en_core_web_sm",
         }
         self._models: dict[str, Language] = {}

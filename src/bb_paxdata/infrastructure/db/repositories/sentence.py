@@ -40,12 +40,12 @@ class SentenceRepository(BaseRepository[Sentence]):
         return await super().add(orm)
 
     async def get_unanalyzed(
-        self, panel_id: str | None = None, limit: int | None = None
+        self, file_id: str | None = None, limit: int | None = None
     ) -> Sequence[Sentence]:
         """Get sentences that haven't been analyzed yet, ordered by risk_score DESC."""
         stmt = select(Sentence).where(Sentence.ai_analyzed == 0)
-        if panel_id:
-            stmt = stmt.where(Sentence.panel_id == panel_id)
+        if file_id:
+            stmt = stmt.where(Sentence.file_id == file_id)
         stmt = stmt.order_by(Sentence.risk_score.desc())
         if limit:
             stmt = stmt.limit(limit)
@@ -53,9 +53,9 @@ class SentenceRepository(BaseRepository[Sentence]):
         result = await self._session.execute(stmt)
         return result.scalars().all()  # type: ignore[no-any-return]
 
-    async def get_by_panel(self, panel_id: str) -> Sequence[Sentence]:
+    async def get_by_panel(self, file_id: str) -> Sequence[Sentence]:
         """Get all sentences for a specific panel."""
-        stmt = select(Sentence).where(Sentence.panel_id == panel_id)
+        stmt = select(Sentence).where(Sentence.file_id == file_id)
         result = await self._session.execute(stmt)
         return result.scalars().all()  # type: ignore[no-any-return]
 
@@ -66,12 +66,12 @@ class SentenceRepository(BaseRepository[Sentence]):
         return result.scalars().all()  # type: ignore[no-any-return]
 
     async def get_fail_sentences(
-        self, panel_id: str | None = None, check_type: str | None = None
+        self, file_id: str | None = None, check_type: str | None = None
     ) -> Sequence[Sentence]:
         """Get sentences that failed logic checks."""
         stmt = select(Sentence).where(Sentence.logic_result == "FAIL")
-        if panel_id:
-            stmt = stmt.where(Sentence.panel_id == panel_id)
+        if file_id:
+            stmt = stmt.where(Sentence.file_id == file_id)
 
         result = await self._session.execute(stmt)
         return result.scalars().all()  # type: ignore[no-any-return]
@@ -95,12 +95,12 @@ class SentenceRepository(BaseRepository[Sentence]):
         await self._session.flush()
 
     async def get_priority_queue(
-        self, top_n: int, panel_id: str | None = None
+        self, top_n: int, file_id: str | None = None
     ) -> Sequence[Sentence]:
         """Get top N sentences ordered by risk_score DESC, power_level DESC."""
         stmt = select(Sentence).where(Sentence.ai_analyzed == 0)
-        if panel_id:
-            stmt = stmt.where(Sentence.panel_id == panel_id)
+        if file_id:
+            stmt = stmt.where(Sentence.file_id == file_id)
         stmt = stmt.order_by(
             Sentence.risk_score.desc(), Sentence.power_level.desc()
         ).limit(top_n)

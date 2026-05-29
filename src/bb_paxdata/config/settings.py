@@ -78,6 +78,18 @@ class Settings(BaseSettings):
         default=True, description="SOFT_ANOMALY'leri sadece logla, HITL'e gönderme"
     )
 
+    # ── Metodoloji ve Eşikler ─────────────────────────────────────────────
+    turkish_char_ratio_threshold: float = Field(
+        default=0.025, description="Dil Tespit Eşiği"
+    )
+    risk_ai_weight: float = Field(default=0.6, description="Risk Hesaplama AI Ağırlığı")
+    risk_anomaly_weight: float = Field(
+        default=0.4, description="Risk Hesaplama Anomali Ağırlığı"
+    )
+    risk_fallback_anomaly_weight: float = Field(
+        default=1.0, description="AI devredışıyken anomali ağırlığı"
+    )
+
     # ── Validators ────────────────────────────────────────────────────────
 
     @field_validator("database_url", mode="before")

@@ -102,7 +102,7 @@ def install_completion(
         f.write(f"\n{END_MARKER_TMPL.format(shell=shell)}\n")
 
     console.print(
-        f"[green]✓[/green] [bold]{shell}[/bold] completion installed: [dim]{rc_path}[/dim]\n"
+        f"[green][OK][/green] [bold]{shell}[/bold] completion installed: [dim]{rc_path}[/dim]\n"
         f"[dim]To take effect:[/dim] [bold]source {rc_path}[/bold]"
     )
 
@@ -144,4 +144,4 @@ def uninstall_completion(
     end_idx = content.find(end_marker) + len(end_marker)
     new_content = content[:start_idx].rstrip() + "\n" + content[end_idx:].lstrip()
     rc_path.write_text(new_content, encoding="utf-8")
-    console.print(f"[green]✓[/green] Completion removed: {rc_path}")
+    console.print(f"[green][OK][/green] Completion removed: {rc_path}")

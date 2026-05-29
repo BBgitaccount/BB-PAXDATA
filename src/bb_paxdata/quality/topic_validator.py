@@ -1,6 +1,6 @@
 # src/bb_paxdata/quality/topic_validator.py
 import pandas as pd
-import pandera as pa
+import pandera.pandas as pa
 
 from bb_paxdata.domain.models.topic import TopicResult
 

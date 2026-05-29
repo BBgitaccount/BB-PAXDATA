@@ -60,18 +60,18 @@ class TestLanguageDetector:
 class TestLanguageRouter:
     def test_get_config_turkish(self) -> None:
         config = LanguageRouter.get_config("tr")
-        assert config.spacy_model == "tr_core_news_trf"
+        assert config.spacy_model == "tr_core_news_md"
         assert config.sentiment_lexicon == "DIPLO_LEXICON_TR"
 
     def test_get_config_english(self) -> None:
         config = LanguageRouter.get_config("en")
-        assert config.spacy_model == "en_core_web_trf"
+        assert config.spacy_model == "en_core_web_sm"
         assert config.sentiment_lexicon == "DIPLO_LEXICON"
 
     def test_get_config_unsupported_falls_back_to_english(self) -> None:
         config = LanguageRouter.get_config("ar")
         # Should return English config by default
-        assert config.spacy_model == "en_core_web_trf"
+        assert config.spacy_model == "en_core_web_sm"
 
     def test_supported_languages_list(self) -> None:
         langs = LanguageRouter.supported_languages()

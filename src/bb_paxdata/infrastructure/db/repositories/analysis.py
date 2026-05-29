@@ -41,12 +41,12 @@ class AnalysisRepository(BaseRepository[AISentenceAnalysis]):
 
     model_class = AISentenceAnalysis
 
-    async def get_failures(self, panel_id: str | None = None) -> list[AnalysisDomain]:
+    async def get_failures(self, file_id: str | None = None) -> list[AnalysisDomain]:
         """Get analysis failures."""
         fail = func.lower(AISentenceAnalysis.overall_logic_check) == "fail"
         stmt = select(AISentenceAnalysis).where(fail)
-        if panel_id is not None:
-            stmt = stmt.where(AISentenceAnalysis.panel_id == panel_id)
+        if file_id is not None:
+            stmt = stmt.where(AISentenceAnalysis.file_id == file_id)
         result = await self._session.execute(stmt)
         rows = result.scalars().all()
         return [r.to_domain() for r in rows]
@@ -202,14 +202,14 @@ class AnalysisRepository(BaseRepository[AISentenceAnalysis]):
         return result.scalar_one_or_none()
 
     async def get_fail_analyses(
-        self, panel_id: str | None = None, check_type: str | None = None
+        self, file_id: str | None = None, check_type: str | None = None
     ) -> Sequence[AISentenceAnalysis]:
         """Get analyses that failed logic checks."""
         stmt = select(AISentenceAnalysis).where(
             AISentenceAnalysis.logic_result == "FAIL"
         )
-        if panel_id:
-            stmt = stmt.where(AISentenceAnalysis.panel_id == panel_id)
+        if file_id:
+            stmt = stmt.where(AISentenceAnalysis.file_id == file_id)
 
         result = await self._session.execute(stmt)
         return result.scalars().all()  # type: ignore[no-any-return]
@@ -339,8 +339,8 @@ class AnalysisRepository(BaseRepository[AISentenceAnalysis]):
 
             # Update panel list
             panels = set((pattern.affected_panels or "").split(","))
-            if fail_analysis.panel_id:
-                panels.add(fail_analysis.panel_id)
+            if fail_analysis.file_id:
+                panels.add(fail_analysis.file_id)
             pattern.affected_panels = ",".join(filter(None, panels))
 
             pattern.last_seen_at = func.now()
@@ -356,7 +356,7 @@ class AnalysisRepository(BaseRepository[AISentenceAnalysis]):
                 avg_discrepancy=fail_analysis.discrepancy_score or 0.0,
                 avg_ai_confidence=fail_analysis.confidence_score or 0.0,
                 dominant_negation_type=fail_analysis.negation_type,
-                affected_panels=fail_analysis.panel_id,
+                affected_panels=fail_analysis.file_id,
                 example_sent_id=fail_analysis.sent_id,
                 example_sentence=fail_analysis.original_sentence,
                 example_explanation=fail_analysis.fail_reason,

@@ -10,11 +10,11 @@ from bb_paxdata.application.cli.use_cases.validation import (
     ValidationUseCase,
 )
 from bb_paxdata.config.settings import get_settings
-from bb_paxdata.infrastructure.persistence.session import get_session_factory
-from bb_paxdata.infrastructure.persistence.validators.data_validator import (
+from bb_paxdata.infrastructure.legacy_migration.session import get_session_factory
+from bb_paxdata.infrastructure.legacy_migration.validators.data_validator import (
     SQLDataValidator,
 )
-from bb_paxdata.infrastructure.persistence.validators.schema_validator import (
+from bb_paxdata.infrastructure.legacy_migration.validators.schema_validator import (
     AlembicSchemaValidator,
 )
 from rich.console import Console
@@ -31,7 +31,9 @@ _SEVERITY_COLOR = {
 
 
 def _render_table(result: ValidationResult) -> None:
-    status = "[green]✅ PASSED[/green]" if result.passed else "[red]❌ FAILED[/red]"
+    status = (
+        "[green][OK] PASSED[/green]" if result.passed else "[red][FAILED] FAILED[/red]"
+    )
     table = Table(
         title=f"Validation Report — {status}",
         show_header=True,
@@ -101,7 +103,7 @@ def validate_db(
         if output_file:
             with open(output_file, "w", encoding="utf-8") as f:
                 f.write(payload)
-            console.print(f"[green]✓[/green] Report written: {output_file}")
+            console.print(f"[green][OK][/green] Report written: {output_file}")
         else:
             typer.echo(payload)
         return
@@ -204,10 +206,10 @@ def validate_legacy_compare(
 
         if has_discrepancies:
             console.print(
-                "[yellow]⚠ Note: Row count differences are present. This is normal if segments were split differently or extra sentences were processed.[/yellow]"
+                "[yellow][WARN] Note: Row count differences are present. This is normal if segments were split differently or extra sentences were processed.[/yellow]"
             )
         else:
-            console.print("[green]✓ Row counts are fully matched![/green]")
+            console.print("[green][OK] Row counts are fully matched![/green]")
 
     except Exception as e:
         console.print(f"[red]Error during comparison: {e}[/red]")

@@ -50,24 +50,24 @@ def run_tests(
     if type == "logic":
         pytest_args.extend(["-m", "not ai and not e2e"])
         console.print(
-            "[yellow]ℹ[/yellow] Sadece logic (mantık) ve NLP testleri çalıştırılıyor. AI çağrıları yapılmayacak."
+            "[yellow][INFO][/yellow] Sadece logic (mantık) ve NLP testleri çalıştırılıyor. AI çağrıları yapılmayacak."
         )
     elif type == "ai":
         pytest_args.extend(["-m", "ai"])
         console.print(
-            "[yellow]ℹ[/yellow] Sadece AI (LLM) değerlendirme testleri çalıştırılıyor."
+            "[yellow][INFO][/yellow] Sadece AI (LLM) değerlendirme testleri çalıştırılıyor."
         )
         if limit:
             # We can pass limit via env var to be caught by tests/conftest.py or test code
             os.environ["AI_TEST_LIMIT"] = str(limit)
             console.print(
-                f"[yellow]ℹ[/yellow] Test limiti {limit} cümle ile sınırlandırıldı."
+                f"[yellow][INFO][/yellow] Test limiti {limit} cümle ile sınırlandırıldı."
             )
     elif type == "e2e":
         pytest_args.extend(["-m", "e2e"])
-        console.print("[yellow]ℹ[/yellow] Uçtan uca (E2E) testler çalıştırılıyor.")
+        console.print("[yellow][INFO][/yellow] Uçtan uca (E2E) testler çalıştırılıyor.")
     elif type == "all":
-        console.print("[yellow]ℹ[/yellow] Tüm test süiti çalıştırılıyor.")
+        console.print("[yellow][INFO][/yellow] Tüm test süiti çalıştırılıyor.")
     else:
         console.print(
             f"[red]Geçersiz test tipi: {type}. (Geçerli tipler: logic, ai, e2e, all)[/red]"
@@ -77,10 +77,10 @@ def run_tests(
     exit_code = pytest.main(pytest_args)
 
     if exit_code == 0:
-        console.print("[green bold]✓ Tüm testler başarıyla geçti![/green bold]")
+        console.print("[green bold][OK] Tüm testler başarıyla geçti![/green bold]")
     else:
         console.print(
-            f"[red bold]✗ Testler başarısız oldu. (Çıkış kodu: {exit_code})[/red bold]"
+            f"[red bold][ERROR] Testler başarısız oldu. (Çıkış kodu: {exit_code})[/red bold]"
         )
         sys.exit(exit_code)
 

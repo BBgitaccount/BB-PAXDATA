@@ -8,8 +8,9 @@ from __future__ import annotations
 import logging
 from typing import Any, Protocol, runtime_checkable
 
+from bb_paxdata.config.settings import get_settings
+
 from ...application.protocols import AnomalyResult as LegacyAnomalyResult
-from ...core.config import settings
 from ..enums import AnomalySeverity, AnomalyType, NegationType, RiskLevel
 from ..models.analysis import Analysis
 from ..models.negation_cue import NegationCue
@@ -233,6 +234,119 @@ class CheapTalkAnomalyRule:
         return False, 0.0, ""
 
 
+class ToneDriftRule:
+    """
+    ID: RULE_TONE_DRIFT
+    Mantık: Tek segment içinde ardışık cümlelerin sentiment skorlarının varyansı
+           popülasyonun 2 standart sapması (2σ) üzerine çıkarsa anomali.
+    """
+
+    def __init__(self, sigma_multiplier: float = 2.0, min_sentences: int = 3):
+        from vaderSentiment.vaderSentiment import SentimentIntensityAnalyzer
+
+        self._vader = SentimentIntensityAnalyzer()
+        self.sigma_multiplier = sigma_multiplier
+        self.min_sentences = min_sentences
+
+    def evaluate(self, analysis: Analysis) -> tuple[bool, float, str]:
+        sentences = analysis.sentences
+        if not sentences or len(sentences) < self.min_sentences:
+            return False, 0.0, ""
+
+        # Her cümle için polarity (VADER compound) hesapla
+        scores = [self._vader.polarity_scores(s)["compound"] for s in sentences]
+
+        # Ortalama ve Standart Sapma
+        n = len(scores)
+        mean = sum(scores) / n
+        variance = sum((x - mean) ** 2 for x in scores) / n
+        import math
+
+        std = math.sqrt(variance)
+
+        if std < 0.25:
+            return False, 0.0, ""
+
+        max_possible_z = (n - 1) / math.sqrt(n)
+        effective_multiplier = min(self.sigma_multiplier, 0.9 * max_possible_z)
+        threshold = effective_multiplier * std
+
+        max_deviation = max(abs(s - mean) for s in scores)
+
+        if max_deviation > threshold:
+            z = max_deviation / std
+            # Normalize confidence (max_z=4.0)
+            confidence = min(1.0, z / 4.0)
+            return (
+                True,
+                round(confidence, 4),
+                f"TONE_DRIFT: deviation={max_deviation:.2f} > threshold={threshold:.2f} ({self.sigma_multiplier}σ)",
+            )
+
+        return False, 0.0, ""
+
+
+class EntityFlipRule:
+    """
+    ID: RULE_ENTITY_FLIP
+    Mantık: Aynı entity (GPE veya PERSON) tek segment/cümle grubu içindeki cümlelerde
+            taban tabana zıt duygu skorları alıyorsa anomali.
+    """
+
+    def __init__(self, flip_threshold: float = 1.0):
+        from vaderSentiment.vaderSentiment import SentimentIntensityAnalyzer
+
+        self._vader = SentimentIntensityAnalyzer()
+        self.flip_threshold = flip_threshold
+        self.entity_types = {"GPE", "PERSON"}
+
+    def evaluate(self, analysis: Analysis) -> tuple[bool, float, str]:
+        sentences = analysis.sentences
+        entities = analysis.entities
+        if not sentences or len(sentences) < 2 or not entities:
+            return False, 0.0, ""
+
+        sentence_scores = [
+            self._vader.polarity_scores(s)["compound"] for s in sentences
+        ]
+
+        entity_sentiments: dict[str, list[tuple[int, float, str]]] = {}
+        for i, sent in enumerate(sentences):
+            sent_lower = sent.lower()
+            for ent in entities:
+                ent_text = ent.get("text", "").strip()
+                ent_label = ent.get("label", "")
+                if ent_label in self.entity_types and ent_text.lower() in sent_lower:
+                    if ent_text.lower() not in entity_sentiments:
+                        entity_sentiments[ent_text.lower()] = []
+                    entity_sentiments[ent_text.lower()].append(
+                        (i, sentence_scores[i], ent_label)
+                    )
+
+        max_confidence = 0.0
+        triggered_msg = ""
+        for ent_text, occurrences in entity_sentiments.items():
+            if len(occurrences) < 2:
+                continue
+            scores = [occ[1] for occ in occurrences]
+            max_score = max(scores)
+            min_score = min(scores)
+            flip_size = max_score - min_score
+
+            if flip_size >= self.flip_threshold:
+                ent_label = occurrences[0][2]
+                weight = 1.0 if ent_label == "GPE" else 0.9
+                confidence = min(1.0, (flip_size / 2.0) * weight)
+                if confidence > max_confidence:
+                    max_confidence = confidence
+                    triggered_msg = f"ENTITY_FLIP: Entity '{ent_text}' has contradictory sentiments ({flip_size:.2f}) across sentences: {scores} ({ent_label})"
+
+        if max_confidence > 0.0:
+            return True, round(max_confidence, 4), triggered_msg
+
+        return False, 0.0, ""
+
+
 class CrossAnomalyService:
     """
     Tüm anomali kurallarını koordine eden servis.
@@ -259,6 +373,8 @@ class CrossAnomalyService:
             NegativeSentimentRule(),
             PowerAsymmetryAnomalyRule(),
             CheapTalkAnomalyRule(),
+            ToneDriftRule(),
+            EntityFlipRule(),
         ]
         self.confidence = 1.0
 
@@ -712,11 +828,12 @@ class CrossAnomalyService:
         Bileşik risk seviyesi hesaplama — Dinamik Ağırlıklandırma.
         AI verisi yoksa anomali tek başına karar verici olur.
         """
+        settings = get_settings()
         # 1. Durum: AI verisi yoksa (AI çökmüş veya atlanmışsa)
         if not analysis.has_ai_output:
             anomaly = analysis.anomaly_score or 0.0
             # AI yokken anomali skoru tam ağırlıkla hesaba katılır
-            composite = anomaly * settings.RISK_FALLBACK_ANOMALY_WEIGHT
+            composite = anomaly * settings.risk_fallback_anomaly_weight
 
             # AI yokken düşük risk yoktur, belirsizlik vardır.
             if composite >= 0.7:
@@ -732,8 +849,8 @@ class CrossAnomalyService:
         ai_risk = analysis.effective_risk
         anomaly = analysis.anomaly_score or 0.0
 
-        composite = (ai_risk * settings.RISK_AI_WEIGHT) + (
-            anomaly * settings.RISK_ANOMALY_WEIGHT
+        composite = (ai_risk * settings.risk_ai_weight) + (
+            anomaly * settings.risk_anomaly_weight
         )
 
         # Yükseltme mantığı (Escalation): AI düşük dese bile anomali çok yüksekse riski yükselt

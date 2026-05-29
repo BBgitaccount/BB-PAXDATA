@@ -53,10 +53,11 @@ async def db_session() -> AsyncGenerator[AsyncSession, None]:
 
 async def seed_panel_speaker_segment(session: AsyncSession) -> None:
     session.add(
-        m.Panel(
-            panel_id="p1",
+        m.File(
+            file_id="p1",
             file_name="t.txt",
             file_format="txt",
+            idempotency_key="p1_key",
         )
     )
     session.add(

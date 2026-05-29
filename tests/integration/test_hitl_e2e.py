@@ -39,14 +39,14 @@ async def test_hitl_e2e_flow(session_factory):
     # 1. Seed database with required panel, speaker, segment, sentences, and AI analyses
     async with session_factory() as session:
         # Seed panel, speaker, segment
-        session.add(m.Panel(panel_id="p1", file_name="p1.txt"))
+        session.add(m.File(file_id="p1", file_name="p1.txt", idempotency_key="p1_key"))
         session.add(m.SpeakerProfile(speaker_id="sp1", full_name="Expert speaker"))
         await session.flush()
 
         session.add(
             m.Segment(
                 seg_id="seg1",
-                panel_id="p1",
+                file_id="p1",
                 speaker_id="sp1",
                 speaker_name="Expert speaker",
                 text="Diplomatic statement",
@@ -59,7 +59,7 @@ async def test_hitl_e2e_flow(session_factory):
             m.Sentence(
                 sent_id="sent_01",
                 seg_id="seg1",
-                panel_id="p1",
+                file_id="p1",
                 speaker_id="sp1",
                 speaker_name="Expert speaker",
                 text="We want to cooperate with our neighbors.",
@@ -69,7 +69,7 @@ async def test_hitl_e2e_flow(session_factory):
             m.Sentence(
                 sent_id="sent_02",
                 seg_id="seg1",
-                panel_id="p1",
+                file_id="p1",
                 speaker_id="sp1",
                 speaker_name="Expert speaker",
                 text="We will retaliate against any aggression.",

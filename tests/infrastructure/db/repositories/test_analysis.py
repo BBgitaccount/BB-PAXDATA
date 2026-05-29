@@ -49,7 +49,7 @@ async def test_analysis_get_failures(db_session: AsyncSession) -> None:
     db_session.add(
         m.AISentenceAnalysis(
             sent_id="s1",
-            panel_id="p1",
+            file_id="p1",
             overall_logic_check="FAIL",
             risk_level="HIGH",
             sentiment_score=0.0,
@@ -63,7 +63,7 @@ async def test_analysis_get_failures(db_session: AsyncSession) -> None:
     )
     await db_session.commit()
     repo = AnalysisRepository(db_session)
-    fails = await repo.get_failures(panel_id="p1")
+    fails = await repo.get_failures(file_id="p1")
     assert len(fails) >= 1
 
 

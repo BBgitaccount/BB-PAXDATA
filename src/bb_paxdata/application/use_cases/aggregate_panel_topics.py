@@ -57,34 +57,44 @@ class AggregatePanelTopicsUseCase:
         panel_id = input_data.panel_id
         errors: list[str] = []
 
-        references = await self._ref_repo.get_by_panel(panel_id)
-        if not references:
-            return AggregatePanelTopicsOutput(panel_id=panel_id, synthesized_count=0)
+        # Get session from ref_repo
+        session = self._ref_repo.session
+        from bb_paxdata.infrastructure.db.models import Sentence as SentenceORM
+        from sqlalchemy import select
+
+        # Retrieve all sentences for this panel to get their country & topic scores
+        stmt = select(SentenceORM).where(SentenceORM.file_id == panel_id)
+        res = await session.execute(stmt)
+        sentences = res.scalars().all()
 
         # Ülke başına kümülatif topic skorları topla
         country_scores: dict[str, dict[str, float]] = defaultdict(
             lambda: defaultdict(float)
         )
 
-        for ref in references:
-            country = ref.speaker_country
+        for sent in sentences:
+            country = sent.country
+            if not country or country.lower() == "unknown":
+                continue
+            if sent.topic_scores:
+                for topic, score in sent.topic_scores.items():
+                    country_scores[country][topic] += score
 
-            # Bu referansın ait olduğu analysis'in topic skorlarını ekle
-            # mapping mantığı projeye özeldir — gerekirse güncelle
-            analysis_id = str(
-                ref.panel_id
-            )  # Using panel_id as fallback analysis_id if mapping not clear
-            # Wait, usually a panel contains multiple analyses.
-            # In the prompt it says topic_scores_by_analysis: dict[str, dict[str, float]]
-            # where key is analysis_id.
-            # But CountryReference has panel_id.
-            # We might need analysis_id on CountryReference or some mapping.
-            # Assuming for now we use panel_id as the key if analysis_id is not directly available.
-
-            for topic, score in input_data.topic_scores_by_analysis.get(
-                analysis_id, {}
-            ).items():
-                country_scores[country][topic] += score
+        # If country_scores is empty, fall back to referencing active countries and input dictionary
+        if not country_scores:
+            references = await self._ref_repo.get_by_panel(panel_id)
+            if not references:
+                return AggregatePanelTopicsOutput(
+                    panel_id=panel_id, synthesized_count=0
+                )
+            for ref in references:
+                country = ref.speaker_country
+                if country and country.lower() != "unknown":
+                    analysis_id = str(ref.panel_id)
+                    for topic, score in input_data.topic_scores_by_analysis.get(
+                        analysis_id, {}
+                    ).items():
+                        country_scores[country][topic] += score
 
         synthesized_countries: list[str] = []
         for country, raw_scores in country_scores.items():

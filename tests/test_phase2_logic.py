@@ -5,7 +5,8 @@ from bb_paxdata.domain.services.cross_anomaly_service import (
     CrossAnomalyService,
 )
 from bb_paxdata.domain.services.prompt_registry import PromptRegistry, PromptVersion
-from bb_paxdata.infrastructure.repositories.analysis_repository import (
+
+from tests.mocks.analysis_repository import (
     AnalysisRepository,
     IntegrityError,
 )

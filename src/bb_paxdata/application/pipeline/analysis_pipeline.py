@@ -137,7 +137,7 @@ class AnalysisPipeline:
         self,
         text: str,
         metadata: dict[str, Any] | None = None,
-        panel_id: str = "default_panel",
+        file_id: str = "default_panel",
         speaker_country: str = "unknown",
         speaker_power_level: float = 0.5,
         session: AsyncSession | None = None,
@@ -159,7 +159,7 @@ class AnalysisPipeline:
         # ─────────────────────────────────────────
         collect_result = await self.collect_stage.run(
             text=text,
-            panel_id=panel_id,
+            panel_id=file_id,
             speaker_country=speaker_country,
             speaker_power_level=speaker_power_level,
             language=detected_language,

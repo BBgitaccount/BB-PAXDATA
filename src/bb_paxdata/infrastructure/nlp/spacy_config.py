@@ -15,7 +15,7 @@ class PipelineConfig(TypedDict):
 # Defines which models to use and which components to disable for performance.
 SPACY_PIPELINES: dict[str, PipelineConfig] = {
     "tr": {
-        "model": "en_core_web_sm",
+        "model": "tr_core_news_md",
         "components": ["tok2vec", "tagger", "parser", "ner"],
         "disabled": ["attribute_ruler", "lemmatizer"],
     },

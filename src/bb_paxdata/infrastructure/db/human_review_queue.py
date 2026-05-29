@@ -21,7 +21,7 @@ class HumanReviewQueue(Base):
     )
     sent_id: Mapped[str] = mapped_column(String, nullable=False)
     seg_id: Mapped[str | None] = mapped_column(Text, nullable=True)
-    panel_id: Mapped[str | None] = mapped_column(Text, nullable=True)
+    file_id: Mapped[str | None] = mapped_column(Text, nullable=True)
     speaker_name: Mapped[str | None] = mapped_column(Text, nullable=True)
     country: Mapped[str | None] = mapped_column(Text, nullable=True)
 

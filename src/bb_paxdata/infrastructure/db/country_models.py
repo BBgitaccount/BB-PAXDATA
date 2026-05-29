@@ -34,14 +34,14 @@ class Base(DeclarativeBase):
 class CountryReferenceTable(Base):
     __tablename__ = "country_references"
     __table_args__ = (
-        Index("ix_cr_panel_id", "panel_id"),
+        Index("ix_cr_panel_id", "file_id"),
         Index("ix_cr_speaker_referenced", "speaker_country", "referenced_country"),
     )
 
     id: Mapped[str] = mapped_column(
         String(36), primary_key=True, default=lambda: str(uuid.uuid4())
     )
-    panel_id: Mapped[str] = mapped_column(String(255), nullable=False)
+    file_id: Mapped[str] = mapped_column(String(255), nullable=False)
     speaker_country: Mapped[str] = mapped_column(String(100), nullable=False)
     referenced_country: Mapped[str] = mapped_column(String(100), nullable=False)
     sentence_index: Mapped[int] = mapped_column(Integer, nullable=False)
@@ -68,7 +68,7 @@ class CountryReferenceTable(Base):
 
         return CountryReference(
             id=uuid.UUID(self.id),
-            panel_id=self.panel_id,
+            panel_id=self.file_id,
             speaker_country=self.speaker_country,
             referenced_country=self.referenced_country,
             sentence_index=self.sentence_index,
@@ -82,7 +82,7 @@ class CountryReferenceTable(Base):
     def from_domain(cls, entity: CountryReference) -> CountryReferenceTable:
         return cls(
             id=str(entity.id),
-            panel_id=entity.panel_id,
+            file_id=entity.panel_id,
             speaker_country=entity.speaker_country,
             referenced_country=entity.referenced_country,
             sentence_index=entity.sentence_index,
@@ -96,15 +96,13 @@ class CountryReferenceTable(Base):
 class BilateralSentimentTable(Base):
     __tablename__ = "bilateral_sentiments"
     __table_args__ = (
-        Index(
-            "ix_bs_panel_pair", "panel_id", "from_country", "to_country", unique=True
-        ),
+        Index("ix_bs_panel_pair", "file_id", "from_country", "to_country", unique=True),
     )
 
     id: Mapped[str] = mapped_column(
         String(36), primary_key=True, default=lambda: str(uuid.uuid4())
     )
-    panel_id: Mapped[str] = mapped_column(String(255), nullable=False)
+    file_id: Mapped[str] = mapped_column(String(255), nullable=False)
     from_country: Mapped[str] = mapped_column(String(100), nullable=False)
     to_country: Mapped[str] = mapped_column(String(100), nullable=False)
     total_mentions: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
@@ -146,7 +144,7 @@ class BilateralSentimentTable(Base):
 
         return BilateralSentiment(
             id=uuid.UUID(self.id),
-            panel_id=self.panel_id,
+            panel_id=self.file_id,
             from_country=self.from_country,
             to_country=self.to_country,
             total_mentions=self.total_mentions,
@@ -163,7 +161,7 @@ class BilateralSentimentTable(Base):
     def from_domain(cls, entity: BilateralSentiment) -> BilateralSentimentTable:
         return cls(
             id=str(entity.id),
-            panel_id=entity.panel_id,
+            file_id=entity.panel_id,
             from_country=entity.from_country,
             to_country=entity.to_country,
             total_mentions=entity.total_mentions,
@@ -180,14 +178,14 @@ class BilateralSentimentTable(Base):
 class DiscourseFlowTable(Base):
     __tablename__ = "discourse_flows"
     __table_args__ = (
-        Index("ix_df_panel_id", "panel_id"),
+        Index("ix_df_panel_id", "file_id"),
         Index("ix_df_from_to", "from_country", "to_country"),
     )
 
     id: Mapped[str] = mapped_column(
         String(36), primary_key=True, default=lambda: str(uuid.uuid4())
     )
-    panel_id: Mapped[str] = mapped_column(String(255), nullable=False)
+    file_id: Mapped[str] = mapped_column(String(255), nullable=False)
     from_country: Mapped[str] = mapped_column(String(100), nullable=False)
     to_country: Mapped[str] = mapped_column(String(100), nullable=False)
     edge_type: Mapped[str] = mapped_column(
@@ -208,7 +206,7 @@ class DiscourseFlowTable(Base):
 
         return DiscourseFlow(
             id=uuid.UUID(self.id),
-            panel_id=self.panel_id,
+            panel_id=self.file_id,
             from_country=self.from_country,
             to_country=self.to_country,
             edge_type=EdgeType(self.edge_type),
@@ -222,7 +220,7 @@ class DiscourseFlowTable(Base):
     def from_domain(cls, entity: DiscourseFlow) -> DiscourseFlowTable:
         return cls(
             id=str(entity.id),
-            panel_id=entity.panel_id,
+            file_id=entity.panel_id,
             from_country=entity.from_country,
             to_country=entity.to_country,
             edge_type=entity.edge_type.value,
@@ -235,12 +233,12 @@ class DiscourseFlowTable(Base):
 
 class TopicMatrixTable(Base):
     __tablename__ = "topic_matrices"
-    __table_args__ = (Index("ix_tm_panel_country", "panel_id", "country", unique=True),)
+    __table_args__ = (Index("ix_tm_panel_country", "file_id", "country", unique=True),)
 
     id: Mapped[str] = mapped_column(
         String(36), primary_key=True, default=lambda: str(uuid.uuid4())
     )
-    panel_id: Mapped[str] = mapped_column(String(255), nullable=False)
+    file_id: Mapped[str] = mapped_column(String(255), nullable=False)
     country: Mapped[str] = mapped_column(String(100), nullable=False)
     topic_scores: Mapped[dict[str, Any]] = mapped_column(
         JSON, nullable=False, default=dict
@@ -254,7 +252,7 @@ class TopicMatrixTable(Base):
 
         return TopicSynthesis(
             id=uuid.UUID(self.id),
-            panel_id=self.panel_id,
+            panel_id=self.file_id,
             country=self.country,
             topic_scores=self.topic_scores,
             topic_label=self.dominant_topic,
@@ -264,7 +262,7 @@ class TopicMatrixTable(Base):
     def from_domain(cls, entity: TopicSynthesis) -> TopicMatrixTable:
         return cls(
             id=str(entity.id),
-            panel_id=entity.panel_id,
+            file_id=entity.panel_id,
             country=entity.country,
             topic_scores=entity.topic_scores,
             dominant_topic=entity.topic_label,

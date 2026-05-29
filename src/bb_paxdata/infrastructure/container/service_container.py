@@ -19,17 +19,18 @@ from ...config.settings import get_settings
 from ...domain.enums import AIProvider
 from ...domain.services.ai_analyst import AIAnalyst
 from ...domain.services.cross_anomaly_service import CrossAnomalyService
+from ...domain.services.dependency import DependencyService
 from ...domain.services.language_detector import LanguageDetector
 from ...domain.services.ner_service import SpacyNERService
 from ...domain.services.prompt_registry import build_default_registry
 from ...domain.services.tokenizer_service import SpacyTokenizerService
 from ..ai.analyst import AIAnalyst as InfraAIAnalyst
 from ..ai.analyst import BackendType
+from ..db.repositories.country_repository import CountryReferenceRepository
 from ..nlp.negation_detector import SpacyNegationDetector
 from ..nlp.power_index_calculator import PowerIndexCalculator
 from ..nlp.risk_signal_detector import RiskSignalDetector
 from ..nlp.topic_modeling import TopicModelingService
-from ..repositories.country_repository import CountryReferenceRepository
 
 logger = logging.getLogger(__name__)
 
@@ -150,6 +151,7 @@ class ServiceContainer:
         self.topic_modeling_service = TopicModelingService(
             prompt_registry=self.prompt_registry
         )
+        self.dependency_service = DependencyService()
 
         # ── Pipeline Stages ────────────────────────────────────────
         # Note: CountryReferenceCollector needs a spacy model.

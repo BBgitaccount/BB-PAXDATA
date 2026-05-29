@@ -1,10 +1,9 @@
-# Python
+# Python Standart
 __pycache__/
 *.py[cod]
 *.class
 *.so
 .Python
-env/
 build/
 develop-eggs/
 dist/
@@ -23,12 +22,13 @@ share/python-wheels/
 *.egg
 MANIFEST
 
-# Poetry
-.venv/
-poetry.lock
+# Statik Analiz ve Linter Önbellekleri
+.mypy_cache/
+.ruff_cache/
 
-# Environments
+# Ortam (Environments)
 .env
+.venv/
 .venv
 env/
 venv/
@@ -42,11 +42,14 @@ venv.bak/
 output/*
 !output/.gitkeep
 data/*
+!data/.gitkeep
 
-# IDE
+# IDE ve İşletim Sistemi
 .idea/
 .vscode/
 *.swp
+Thumbs.db
+Desktop.ini
 
 # Graphify
 graphify-out/

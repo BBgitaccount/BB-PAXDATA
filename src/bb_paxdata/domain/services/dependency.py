@@ -2,7 +2,7 @@
 Dependency Parsing Service for extraction of subject-verb-object triples.
 """
 
-from spacy.tokens import Doc, Span, Token
+from spacy.tokens import Doc, Token
 
 from bb_paxdata.domain.models.dependency import DependencyTriple
 
@@ -18,60 +18,60 @@ class DependencyService:
         """
         triples = []
         for sent in doc.sents:
-            root = self._find_root(sent)
-            if not root:
-                continue
+            # Find all verbs or roots
+            verbs = [t for t in sent if t.pos_ in ("VERB", "AUX") or t.dep_ == "ROOT"]
+            for verb in verbs:
+                # Find nominal or passive subjects
+                subjects = [
+                    c
+                    for c in verb.children
+                    if c.dep_ in ("nsubj", "nsubj:pass", "nsubjpass")
+                ]
 
-            subjects = self._find_subjects(root)
-            objects = self._find_objects(root)
+                # Find direct, indirect, oblique objects/nominals
+                objects = [
+                    c
+                    for c in verb.children
+                    if c.dep_ in ("obj", "iobj", "obl", "dobj", "pobj")
+                ]
 
-            # If no direct subjects found, check for passive subjects
-            is_passive = self._is_passive(root)
+                # Prepositional objects (e.g. faced with choices -> with (prep) -> choices (pobj))
+                prep_children = [c for c in verb.children if c.dep_ == "prep"]
+                for prep in prep_children:
+                    pobjs = [c for c in prep.children if c.dep_ == "pobj"]
+                    objects.extend(pobjs)
 
-            for subj in subjects:
-                for obj in objects:
-                    triple = DependencyTriple(
-                        sent_id="",  # To be filled by caller
-                        subject_raw=self._subtree_text(subj),
-                        subject_resolved=subj.text,  # To be resolved by ActorResolver
-                        verb_lemma=root.lemma_,
-                        object_raw=self._subtree_text(obj),
-                        object_resolved=obj.text,  # To be resolved by ActorResolver
-                        is_passive=is_passive,
-                        is_negative=self._is_negative(root),
-                        subject_head_pos=subj.pos_,
-                        object_head_pos=obj.pos_,
-                        verb_pos=root.pos_,
-                    )
-                    triples.append(triple)
+                # Attributes for copulas (e.g. Syria is a bridge -> bridge (attr))
+                attrs = [c for c in verb.children if c.dep_ == "attr"]
+                objects.extend(attrs)
+
+                is_passive = any(
+                    c.dep_ in ("nsubj:pass", "nsubjpass", "auxpass")
+                    for c in verb.children
+                )
+                is_negative = any(c.dep_ == "neg" for c in verb.children)
+
+                for subj in subjects:
+                    for obj in objects:
+                        triple = DependencyTriple(
+                            sent_id="",  # To be filled by caller
+                            subject_raw=self._subtree_text(subj),
+                            subject_resolved=subj.text,  # To be resolved by ActorResolver
+                            verb_lemma=verb.lemma_,
+                            object_raw=self._subtree_text(obj),
+                            object_resolved=obj.text,  # To be resolved by ActorResolver
+                            is_passive=is_passive,
+                            is_negative=is_negative,
+                            subject_head_pos=subj.pos_,
+                            object_head_pos=obj.pos_,
+                            verb_pos=verb.pos_,
+                        )
+                        triples.append(triple)
         return triples
-
-    def _find_root(self, sent: Span) -> Token | None:
-        """Find the root verb of the sentence."""
-        for token in sent:
-            if token.dep_ == "ROOT":
-                return token
-        return None
-
-    def _find_subjects(self, root: Token) -> list[Token]:
-        """Find nominal or passive subjects of the root."""
-        return [
-            child for child in root.children if child.dep_ in ("nsubj", "nsubj:pass")
-        ]
-
-    def _find_objects(self, root: Token) -> list[Token]:
-        """Find direct, indirect or oblique objects/nominals."""
-        return [
-            child for child in root.children if child.dep_ in ("obj", "iobj", "obl")
-        ]
 
     def _subtree_text(self, token: Token) -> str:
         """Get the full text of the subtree rooted at this token."""
         return " ".join([t.text for t in token.subtree])
-
-    def _is_passive(self, root: Token) -> bool:
-        """Check if the verb is in passive voice."""
-        return any(child.dep_ == "nsubj:pass" for child in root.children)
 
     def _is_negative(self, root: Token) -> bool:
         """Check for negation modifiers in the verb's children."""

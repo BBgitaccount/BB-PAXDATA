@@ -12,7 +12,10 @@ from alembic import context
 sys.path.insert(0, r"C:\Users\THINKPAD\Desktop\BB-PAXDATA\src")
 
 # ── METADATA IMPORT ────────────────────────────────────────
+import bb_paxdata.infrastructure.db.drift_events
+import bb_paxdata.infrastructure.db.human_review_queue
 import bb_paxdata.infrastructure.db.human_review_table
+import bb_paxdata.infrastructure.db.models
 import bb_paxdata.infrastructure.db.topic_models  # noqa: F401
 from bb_paxdata.infrastructure.db.base import Base
 from bb_paxdata.infrastructure.db.country_models import Base as CountryBase
@@ -28,9 +31,13 @@ target_metadata = [Base.metadata, CountryBase.metadata, PersistenceBase.metadata
 
 
 def run_migrations_offline() -> None:
-    url = config.get_main_option("sqlalchemy.url")
+    from bb_paxdata.config.settings import get_settings
+
+    settings = get_settings()
+    url = settings.database_url or config.get_main_option("sqlalchemy.url")
+    url_sync = url.replace("sqlite+aiosqlite", "sqlite")
     context.configure(
-        url=url,
+        url=url_sync,
         target_metadata=target_metadata,
         literal_binds=True,
         dialect_opts={"paramstyle": "named"},
@@ -53,8 +60,17 @@ def do_run_migrations(connection: Connection) -> None:
 
 
 def run_migrations_online() -> None:
+    from bb_paxdata.config.settings import get_settings
+
+    settings = get_settings()
+    url = settings.database_url or config.get_main_option("sqlalchemy.url")
+    url_sync = url.replace("sqlite+aiosqlite", "sqlite")
+
+    alembic_config = config.get_section(config.config_ini_section, {})
+    alembic_config["sqlalchemy.url"] = url_sync
+
     connectable = engine_from_config(
-        config.get_section(config.config_ini_section, {}),
+        alembic_config,
         prefix="sqlalchemy.",
         poolclass=pool.NullPool,
     )

@@ -18,7 +18,7 @@ from bb_paxdata.application.use_cases.aggregate_panel_topics import (
 from bb_paxdata.application.use_cases.build_panel_network import (
     BuildPanelNetworkUseCase,
 )
-from bb_paxdata.infrastructure.repositories.country_repository import (
+from bb_paxdata.infrastructure.db.repositories.country_repository import (
     BilateralSentimentRepository,
     CountryReferenceRepository,
     DiscourseFlowRepository,

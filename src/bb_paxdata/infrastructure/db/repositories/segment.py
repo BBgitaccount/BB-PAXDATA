@@ -77,7 +77,7 @@ class SegmentRepository(BaseRepository[Segment]):
         await self.update_insight(seg_id, insight_text, version_str)
 
     async def get_without_insights(
-        self, panel_id: str | None = None
+        self, file_id: str | None = None
     ) -> Sequence[Segment]:
         """Get segments that don't have AI insights yet."""
         stmt = (
@@ -85,8 +85,8 @@ class SegmentRepository(BaseRepository[Segment]):
             .outerjoin(AISegmentInsight, Segment.seg_id == AISegmentInsight.seg_id)
             .where(AISegmentInsight.seg_id.is_(None))
         )
-        if panel_id:
-            stmt = stmt.where(Segment.panel_id == panel_id)
+        if file_id:
+            stmt = stmt.where(Segment.file_id == file_id)
 
         result = await self._session.execute(stmt)
         return result.scalars().all()  # type: ignore[no-any-return]
@@ -111,7 +111,7 @@ class SegmentRepository(BaseRepository[Segment]):
             if segment:
                 insight_record = AISegmentInsight(
                     seg_id=seg_id,
-                    panel_id=segment.panel_id,
+                    file_id=segment.file_id,
                     speaker_name=segment.speaker_name,
                     country=segment.country,
                     power_level=segment.power_level,
@@ -124,32 +124,32 @@ class SegmentRepository(BaseRepository[Segment]):
 
         await self._session.flush()
 
-    async def get_by_panel(self, panel_id: str) -> Sequence[Segment]:
+    async def get_by_panel(self, file_id: str) -> Sequence[Segment]:
         """Get all segments for a specific panel."""
-        stmt = select(Segment).where(Segment.panel_id == panel_id)
+        stmt = select(Segment).where(Segment.file_id == file_id)
         result = await self._session.execute(stmt)
         return result.scalars().all()  # type: ignore[no-any-return]
 
     async def get_speaker_segments(
-        self, speaker_name: str, panel_id: str | None = None
+        self, speaker_name: str, file_id: str | None = None
     ) -> Sequence[Segment]:
         """Get segments for a specific speaker."""
         stmt = select(Segment).where(Segment.speaker_name == speaker_name)
-        if panel_id:
-            stmt = stmt.where(Segment.panel_id == panel_id)
+        if file_id:
+            stmt = stmt.where(Segment.file_id == file_id)
 
         result = await self._session.execute(stmt)
         return result.scalars().all()  # type: ignore[no-any-return]
 
-    async def get_with_insights(self, panel_id: str | None = None) -> Sequence[Segment]:
+    async def get_with_insights(self, file_id: str | None = None) -> Sequence[Segment]:
         """Get segments that have AI insights."""
         stmt = (
             select(Segment)
             .join(AISegmentInsight, Segment.seg_id == AISegmentInsight.seg_id)
             .options(joinedload(Segment.ai_insight))
         )
-        if panel_id:
-            stmt = stmt.where(Segment.panel_id == panel_id)
+        if file_id:
+            stmt = stmt.where(Segment.file_id == file_id)
 
         result = await self._session.execute(stmt)
         return result.scalars().all()  # type: ignore[no-any-return]

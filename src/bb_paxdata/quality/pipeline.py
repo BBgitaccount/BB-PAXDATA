@@ -121,7 +121,7 @@ class QualityPipeline:
                     "text": result.get("text", ""),
                     "context": {
                         "speaker_name": result.get("speaker_name"),
-                        "panel_id": result.get("panel_id"),
+                        "file_id": result.get("file_id"),
                     },
                 }
                 for i, result in enumerate(ai_results)
@@ -159,7 +159,7 @@ class QualityPipeline:
                             trigger_type=trigger_type,
                             trigger_details=trigger_details,
                             context={
-                                "panel_id": ai_output.get("panel_id"),
+                                "file_id": ai_output.get("file_id"),
                                 "seg_id": ai_output.get("seg_id"),
                                 "speaker_name": ai_output.get("speaker_name"),
                                 "country": ai_output.get("country"),
@@ -243,7 +243,7 @@ class QualityPipeline:
                         trigger_type=trigger_type,
                         trigger_details=trigger_details,
                         context={
-                            "panel_id": ai_result.get("panel_id"),
+                            "file_id": ai_result.get("file_id"),
                             "seg_id": ai_result.get("seg_id"),
                             "speaker_name": ai_result.get("speaker_name"),
                             "country": ai_result.get("country"),
@@ -252,9 +252,9 @@ class QualityPipeline:
                     summary["review_flags"] += 1
 
             # Step 6: Temporal analysis (if panel-level data available)
-            panel_id = ai_results[0].get("panel_id") if ai_results else None
-            if panel_id:
-                self.logger.info(f"Running temporal analysis for panel {panel_id}")
+            file_id = ai_results[0].get("file_id") if ai_results else None
+            if file_id:
+                self.logger.info(f"Running temporal analysis for panel {file_id}")
 
                 try:
                     # Group by speaker for temporal analysis
@@ -282,7 +282,7 @@ class QualityPipeline:
                             }
                         )
 
-                    panel_data = {"panel_id": panel_id}
+                    panel_data = {"file_id": file_id}
 
                     drift_events = self.temporal_analyzer.analyze_panel_drift(
                         panel_data, speaker_data, sentence_data

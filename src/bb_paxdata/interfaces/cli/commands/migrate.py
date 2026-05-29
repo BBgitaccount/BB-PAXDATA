@@ -9,13 +9,13 @@ from bb_paxdata.application.cli.use_cases.migration import (
     MigrationUseCase,
 )
 from bb_paxdata.config.settings import get_settings, override_settings
-from bb_paxdata.infrastructure.persistence.legacy.sqlite_reader import (
+from bb_paxdata.infrastructure.legacy_migration.legacy.sqlite_reader import (
     LegacySQLiteReader,
 )
-from bb_paxdata.infrastructure.persistence.modern.sqlalchemy_writer import (
+from bb_paxdata.infrastructure.legacy_migration.modern.sqlalchemy_writer import (
     ModernSQLAlchemyWriter,
 )
-from bb_paxdata.infrastructure.persistence.session import get_session_factory
+from bb_paxdata.infrastructure.legacy_migration.session import get_session_factory
 from rich.console import Console
 from rich.panel import Panel
 from rich.progress import (
@@ -35,7 +35,7 @@ console = Console()
 
 def _build_result_table(result: MigrationResult) -> Table:
     table = Table(
-        title=f"Migration Result — {'✅ SUCCESS' if result.status == 'completed' else '⚠ PARTIAL'}",
+        title=f"Migration Result — {'[OK] SUCCESS' if result.status == 'completed' else '[WARN] PARTIAL'}",
         show_header=True,
         header_style="bold magenta",
         border_style="dim",
