@@ -346,7 +346,7 @@ class SentimentService(BaseService, SentimentServiceProtocol):
         adj = max(-2.0, min(2.0, adj))
 
         # Blend with VADER compound
-        vader_compound = self._vader_analyzer.polarity_scores(text)["compound"]
+        vader_compound = float(self._vader_analyzer.polarity_scores(text)["compound"])
         diplo = round(max(-1.0, min(1.0, vader_compound + adj)), 4)
         return diplo
 
@@ -390,7 +390,7 @@ class SentimentService(BaseService, SentimentServiceProtocol):
         adj = sum(scores) * 0.05
 
         # Blend with VADER compound, clamp to [-1, 1]
-        vader_score = self._vader_analyzer.polarity_scores(text)["compound"]
+        vader_score = float(self._vader_analyzer.polarity_scores(text)["compound"])
         return round(max(-1.0, min(1.0, vader_score + adj)), 4)
 
     def _classify_emotion(self, sentiment_score: float) -> SentimentCategory:
