@@ -1,0 +1,364 @@
+diff --git a/src/bb_paxdata/infrastructure/db/models.py b/src/bb_paxdata/infrastructure/db/models.py
+index 108044e..6031403 100644
+--- a/src/bb_paxdata/infrastructure/db/models.py
++++ b/src/bb_paxdata/infrastructure/db/models.py
+@@ -489,7 +489,7 @@ class Segment(Base):
+             raise ValueError("panel_id is required (argument or Segment.panel_id)")
+         return cls(
+             seg_id=model.id,
+-            file_id=resolved_panel,
++            panel_id=resolved_panel,
+             speaker_id=model.primary_speaker_id,
+             speaker_name="",
+             ts_start_sec=int(model.start_time or 0),
+@@ -681,7 +681,7 @@ class Sentence(Base):
+         return cls(
+             sent_id=model.id,
+             seg_id=seg_id,
+-            file_id=panel_id,
++            panel_id=panel_id,
+             speaker_id=model.speaker_id,
+             speaker_name="",
+             text=model.text,
+@@ -759,7 +759,7 @@ class Word(Base):
+             custom_fields={
+                 "sent_id": self.sent_id,
+                 "seg_id": self.seg_id,
+-                "panel_id": self.file_id,
++                "panel_id": self.panel_id,
+                 "word_raw": self.word_raw,
+                 "word_norm": self.word_norm,
+                 "is_stopword": self.is_stopword,
+@@ -773,7 +773,7 @@ class Word(Base):
+         return cls(
+             sent_id=str(cf["sent_id"]),
+             seg_id=str(cf["seg_id"]),
+-            file_id=str(cf["panel_id"]),
++            panel_id=str(cf["panel_id"]),
+             word_raw=str(cf.get("word_raw") or ""),
+             word_norm=str(cf.get("word_norm") or ""),
+             is_stopword=bool(cf.get("is_stopword")),
+@@ -825,7 +825,7 @@ class CountryReference(Base):
+             access_level=None,
+             expires_at=None,
+             custom_fields={
+-                "panel_id": self.file_id,
++                "panel_id": self.panel_id,
+                 "seg_id": self.seg_id,
+                 "from_country": self.from_country,
+                 "to_country": self.to_country,
+@@ -838,7 +838,7 @@ class CountryReference(Base):
+     def from_domain(cls, model: Metadata) -> CountryReference:
+         cf = model.custom_fields or {}
+         return cls(
+-            file_id=cf.get("panel_id"),
++            panel_id=cf.get("panel_id"),
+             seg_id=cf.get("seg_id"),
+             from_country=str(cf.get("from_country") or ""),
+             to_country=str(cf.get("to_country") or ""),
+@@ -851,7 +851,9 @@ class CountryStat(Base):
+     __tablename__ = "country_stats"
+ 
+     country: Mapped[str] = mapped_column(Text, primary_key=True)
+-    file_id: Mapped[str] = mapped_column(ForeignKey("files.file_id"), primary_key=True)
++    file_id: Mapped[str] = mapped_column(
++        ForeignKey("files.file_id"), primary_key=True
++    )
+     n_segments: Mapped[int] = mapped_column(Integer, default=0)
+     n_sentences: Mapped[int] = mapped_column(Integer, default=0)
+     total_words: Mapped[int] = mapped_column(Integer, default=0)
+@@ -868,7 +870,7 @@ class CountryStat(Base):
+         from bb_paxdata.domain.models.metadata import Metadata
+ 
+         return Metadata(
+-            id=f"country_stat:{self.country}:{self.file_id}",
++            id=f"country_stat:{self.country}:{self.panel_id}",
+             entity_id=self.file_id,
+             entity_type="country_stats",
+             title=self.country,
+@@ -897,7 +899,7 @@ class CountryStat(Base):
+         cf = model.custom_fields or {}
+         return cls(
+             country=model.title or str(cf.get("country") or ""),
+-            file_id=model.entity_id,
++            panel_id=model.entity_id,
+             n_segments=int(cf.get("n_segments") or 0),
+             topic_scores=cf.get("topic_scores"),
+             words_per_minute=cf.get("words_per_minute"),
+@@ -907,7 +909,9 @@ class CountryStat(Base):
+ class TopicMatrix(Base):
+     __tablename__ = "topic_matrix"
+ 
+-    file_id: Mapped[str] = mapped_column(ForeignKey("files.file_id"), primary_key=True)
++    file_id: Mapped[str] = mapped_column(
++        ForeignKey("files.file_id"), primary_key=True
++    )
+     country: Mapped[str] = mapped_column(Text, primary_key=True)
+     topic: Mapped[str] = mapped_column(Text, primary_key=True)
+     score: Mapped[float] = mapped_column(Float, default=0.0)
+@@ -918,7 +922,7 @@ class TopicMatrix(Base):
+ 
+         cat = _try_enum(TopicCategory, self.topic) or TopicCategory.NONE
+         return TopicModel(
+-            id=f"{self.file_id}:{self.country}:{self.topic}",
++            id=f"{self.panel_id}:{self.country}:{self.topic}",
+             topic_category=cat,
+             topic_name=self.topic,
+             topic_description=None,
+@@ -958,7 +962,7 @@ class TopicMatrix(Base):
+     @classmethod
+     def from_domain(cls, model: Topic, *, panel_id: str, country: str) -> TopicMatrix:
+         return cls(
+-            file_id=panel_id,
++            panel_id=panel_id,
+             country=country,
+             topic=model.topic_name,
+             score=float(model.prominence_score or 0),
+@@ -1120,7 +1124,7 @@ class DemandRecord(Base):
+         return cls(
+             sent_id=model.sentence_id,
+             seg_id=model.segment_id,
+-            file_id=panel_id,
++            panel_id=panel_id,
+             speaker_name=model.speaker_id,
+             country="",
+             demand_verb="",
+@@ -1136,16 +1140,12 @@ class PatternRecord(Base):
+     __table_args__ = (
+         Index("idx_pattern_type", "pattern_type"),
+         Index("idx_pattern_country", "country"),
+-        CheckConstraint(
+-            "risk_score >= 0 AND risk_score <= 10", name="check_risk_score_range"
+-        ),
++        CheckConstraint("risk_score >= 0 AND risk_score <= 10", name="check_risk_score_range"),
+         CheckConstraint(
+             "sentiment_category IN ('cooperative', 'confrontational', 'concerned', 'neutral_cautious', 'constructive', 'neutral', 'unknown')",
+-            name="check_sentiment_category",
+-        ),
+-        UniqueConstraint(
+-            "sent_id", "pattern_type", "matched_keyword", name="uq_pattern_per_sentence"
++            name="check_sentiment_category"
+         ),
++        UniqueConstraint("sent_id", "pattern_type", "matched_keyword", name="uq_pattern_per_sentence"),
+     )
+ 
+     pattern_id: Mapped[int] = mapped_column(
+@@ -1173,9 +1173,7 @@ class PatternRecord(Base):
+     dominant_topic: Mapped[str | None] = mapped_column(Text, nullable=True)
+     diplo_compound: Mapped[float] = mapped_column(Float, default=0)
+     risk_score: Mapped[int] = mapped_column(Integer, default=0, nullable=False)
+-    sentiment_category: Mapped[str | None] = mapped_column(
+-        Text, default="unknown", nullable=True
+-    )
++    sentiment_category: Mapped[str | None] = mapped_column(Text, default="unknown", nullable=True)
+     created_at: Mapped[datetime | None] = mapped_column(
+         DateTime, server_default=func.now(), nullable=True
+     )
+@@ -1220,10 +1218,10 @@ class PatternRecord(Base):
+         )
+ 
+ 
+-class FileDynamics(Base):
++class PanelDynamics(Base):
+     __tablename__ = "panel_dynamics"
+     __table_args__ = (
+-        Index("idx_dyn_panel", "file_id"),
++        Index("idx_dyn_panel", "panel_id"),
+         Index("idx_dyn_sent", "sent_id", unique=True),
+     )
+ 
+@@ -1265,22 +1263,18 @@ class FileDynamics(Base):
+             access_level=None,
+             expires_at=None,
+             custom_fields={
+-                "panel_id": self.file_id,
+-                "position": self.position,
++                "panel_id": self.panel_id,
+                 "kgi_score": self.kgi_score,
+                 "risk_delta": self.risk_delta,
+-                "emotion_shift": self.emotion_shift,
+-                "topic_shift": self.topic_shift,
+-                "inconsistency_score": self.inconsistency_score,
+                 "sent_id": self.sent_id,
+             },
+         )
+ 
+     @classmethod
+-    def from_domain(cls, model: Metadata) -> FileDynamics:
++    def from_domain(cls, model: Metadata) -> PanelDynamics:
+         cf = model.custom_fields or {}
+         return cls(
+-            file_id=cf.get("panel_id"),
++            panel_id=cf.get("panel_id"),
+             position=int(cf.get("position") or 0),
+             kgi_score=float(cf.get("kgi_score") or 0),
+             risk_delta=float(cf.get("risk_delta") or 0),
+@@ -1350,7 +1344,7 @@ class AISentenceAnalysis(Base):
+     __tablename__ = "ai_sentence_analysis"
+     __table_args__ = (
+         Index("idx_ai_sent_id", "sent_id"),
+-        Index("idx_ai_panel", "file_id"),
++        Index("idx_ai_panel", "panel_id"),
+         Index("idx_ai_country", "country"),
+         Index("idx_ai_logic", "overall_logic_check"),
+         Index("idx_ai_risk", "risk_level"),
+@@ -1941,7 +1935,7 @@ class AIPanelSynthesis(Base):
+     def from_domain(cls, model: Metadata) -> AIPanelSynthesis:
+         cf = model.custom_fields or {}
+         return cls(
+-            file_id=model.entity_id,
++            panel_id=model.entity_id,
+             panel_summary=cf.get("panel_summary"),
+             power_balance=cf.get("power_balance"),
+         )
+@@ -1954,7 +1948,7 @@ class AIFailAnalysis(Base):
+         Index("idx_fail_check", "check_type"),
+         Index("idx_fail_kategori", "fail_category"),
+         Index("idx_fail_country", "country"),
+-        Index("idx_fail_panel", "file_id"),
++        Index("idx_fail_panel", "panel_id"),
+     )
+ 
+     fail_id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+@@ -2219,7 +2213,7 @@ class DependencyTripleORM(Base):
+     __tablename__ = "dependency_triples"
+     __table_args__ = (
+         Index("idx_dep_sent", "sent_id"),
+-        Index("idx_dep_panel", "file_id"),
++        Index("idx_dep_panel", "panel_id"),
+         Index("idx_dep_from", "subject_resolved"),
+         Index("idx_dep_to", "object_resolved"),
+         Index("idx_dep_verb", "verb_lemma"),
+@@ -2256,7 +2250,7 @@ class DependencyTripleORM(Base):
+ class ActorActionMatrixORM(Base):
+     __tablename__ = "actor_action_matrix"
+     __table_args__ = (
+-        Index("idx_matrix_panel", "file_id"),
++        Index("idx_matrix_panel", "panel_id"),
+         Index("idx_matrix_from", "from_country"),
+         Index("idx_matrix_to", "to_country"),
+     )
+@@ -2315,9 +2309,7 @@ class FormulaValidationLog(Base):
+     expected_constraint: Mapped[str] = mapped_column(Text, nullable=False)
+     actual_value: Mapped[float] = mapped_column(Float, nullable=False)
+     status: Mapped[str] = mapped_column(String, nullable=False)
+-    details: Mapped[dict[str, Any] | list[Any] | None] = mapped_column(
+-        JSON, nullable=True
+-    )
++    details: Mapped[dict[str, Any] | list[Any] | None] = mapped_column(JSON, nullable=True)
+     created_at: Mapped[datetime | None] = mapped_column(
+         DateTime, server_default=func.now(), nullable=True
+     )
+@@ -2365,3 +2357,112 @@ class FormulaValidationLog(Base):
+             status=model.validation_status or "FAIL",
+             details=cf.get("details"),
+         )
++
++
++class SegmentAnalyzedEvent(Base):
++    __tablename__ = "segment_events"
++
++    event_id: Mapped[str] = mapped_column(String(36), primary_key=True)
++    event_timestamp: Mapped[datetime] = mapped_column(DateTime, nullable=False)
++    file_id: Mapped[str] = mapped_column(String(255), nullable=False)
++    segment_id: Mapped[str] = mapped_column(String(255), nullable=False)
++    country: Mapped[str] = mapped_column(String(100), nullable=False)
++    text_snippet: Mapped[str | None] = mapped_column(Text, nullable=True)
++    vader_compound: Mapped[float] = mapped_column(Float, default=0.0, nullable=False)
++    diplo_compound: Mapped[float] = mapped_column(Float, default=0.0, nullable=False)
++    vad_vector: Mapped[dict[str, Any] | None] = mapped_column(JSON, nullable=True)
++    emotion_category: Mapped[str | None] = mapped_column(String(50), nullable=True)
++    risk_score: Mapped[float] = mapped_column(Float, default=0.0, nullable=False)
++    demand_count: Mapped[int] = mapped_column(Integer, default=0, nullable=False)
++    speech_act: Mapped[str | None] = mapped_column(String(50), nullable=True)
++    hedging_score: Mapped[float] = mapped_column(Float, default=0.0, nullable=False)
++    politeness_ratio: Mapped[float] = mapped_column(Float, default=0.0, nullable=False)
++    topic_scores: Mapped[dict[str, Any]] = mapped_column(JSON, nullable=False)
++    topic_model_version: Mapped[str] = mapped_column(String(50), nullable=False)
++    frame_distribution: Mapped[dict[str, Any] | None] = mapped_column(JSON, nullable=True)
++    pipeline_run_id: Mapped[str] = mapped_column(String(36), nullable=False)
++
++
++class ActorTopicProjection(Base):
++    __tablename__ = "actor_topic_projection"
++
++    file_id: Mapped[str] = mapped_column(String(255), primary_key=True)
++    country: Mapped[str] = mapped_column(String(100), primary_key=True)
++    topic: Mapped[str] = mapped_column(String(200), primary_key=True)
++    topic_model_version: Mapped[str] = mapped_column(String(50), primary_key=True)
++    score: Mapped[float] = mapped_column(Float, nullable=False)
++    mention_count: Mapped[int] = mapped_column(Integer, nullable=False)
++    fuzzy_mention_mass: Mapped[float] = mapped_column(Float, nullable=False)
++    avg_sentiment: Mapped[float] = mapped_column(Float, nullable=False)
++    sentiment_ci_lower: Mapped[float | None] = mapped_column(Float, nullable=True)
++    sentiment_ci_upper: Mapped[float | None] = mapped_column(Float, nullable=True)
++    sentiment_std: Mapped[float | None] = mapped_column(Float, nullable=True)
++    risk_score: Mapped[float] = mapped_column(Float, nullable=False)
++    risk_ci_lower: Mapped[float | None] = mapped_column(Float, nullable=True)
++    risk_ci_upper: Mapped[float | None] = mapped_column(Float, nullable=True)
++    composite_risk_index: Mapped[float | None] = mapped_column(Float, nullable=True)
++    demand_count: Mapped[float] = mapped_column(Float, nullable=False)
++    demand_density_per_1k: Mapped[float | None] = mapped_column(Float, nullable=True)
++    speech_act_distribution: Mapped[dict[str, Any] | None] = mapped_column(JSON, nullable=True)
++    avg_vad: Mapped[dict[str, Any] | None] = mapped_column(JSON, nullable=True)
++    dominant_emotion: Mapped[str | None] = mapped_column(String(50), nullable=True)
++    frame_distribution: Mapped[dict[str, Any] | None] = mapped_column(JSON, nullable=True)
++    dominant_frame: Mapped[str | None] = mapped_column(String(50), nullable=True)
++    frame_competition_index: Mapped[float | None] = mapped_column(Float, nullable=True)
++    avg_hedging: Mapped[float | None] = mapped_column(Float, nullable=True)
++    avg_politeness: Mapped[float | None] = mapped_column(Float, nullable=True)
++    diplomatic_signal_index: Mapped[float | None] = mapped_column(Float, nullable=True)
++    topic_entropy: Mapped[float | None] = mapped_column(Float, nullable=True)
++    js_divergence: Mapped[float | None] = mapped_column(Float, nullable=True)
++    top_coalition_actors: Mapped[list[Any] | None] = mapped_column(JSON, nullable=True)
++    last_event_id: Mapped[str] = mapped_column(String(36), nullable=False)
++    segment_count: Mapped[int] = mapped_column(Integer, nullable=False)
++    total_word_count: Mapped[int] = mapped_column(Integer, nullable=False)
++    updated_at: Mapped[datetime] = mapped_column(DateTime, nullable=False)
++
++
++class ActorTopicDocument(Base):
++    __tablename__ = "actor_topic_documents"
++
++    id: Mapped[str] = mapped_column(String(36), primary_key=True)
++    file_id: Mapped[str] = mapped_column(String(255), nullable=False)
++    country: Mapped[str] = mapped_column(String(100), nullable=False)
++    topic_model_version: Mapped[str] = mapped_column(String(50), nullable=False)
++    topic_details: Mapped[dict[str, Any]] = mapped_column(JSON, nullable=False)
++    network_edges: Mapped[dict[str, Any] | None] = mapped_column(JSON, nullable=True)
++    diplomatic_tension_index: Mapped[float | None] = mapped_column(Float, nullable=True)
++    agenda_diversity_index: Mapped[float | None] = mapped_column(Float, nullable=True)
++    created_at: Mapped[datetime] = mapped_column(DateTime, nullable=False)
++    updated_at: Mapped[datetime] = mapped_column(DateTime, nullable=False)
++
++
++class AggregationLineage(Base):
++    __tablename__ = "aggregation_lineage"
++
++    id: Mapped[str] = mapped_column(String(36), primary_key=True)
++    projection_id: Mapped[str] = mapped_column(String(36), nullable=False)
++    event_id: Mapped[str] = mapped_column(String(36), nullable=False)
++    weight_contribution: Mapped[float] = mapped_column(Float, nullable=False)
++    contribution_timestamp: Mapped[datetime] = mapped_column(DateTime, nullable=False)
++
++
++class TopicModelVersion(Base):
++    __tablename__ = "topic_model_versions"
++
++    version_id: Mapped[str] = mapped_column(String(50), primary_key=True)
++    trained_at: Mapped[datetime] = mapped_column(DateTime, nullable=False)
++    hyperparameters: Mapped[dict[str, Any]] = mapped_column(JSON, nullable=False)
++    corpus_checksum: Mapped[str] = mapped_column(String(64), nullable=False)
++
++
++class TopicMapping(Base):
++    __tablename__ = "topic_mappings"
++
++    version_from: Mapped[str] = mapped_column(String(50), primary_key=True)
++    topic_from: Mapped[str] = mapped_column(String(200), primary_key=True)
++    version_to: Mapped[str] = mapped_column(String(50), primary_key=True)
++    topic_to: Mapped[str] = mapped_column(String(200), primary_key=True)
++    wasserstein_distance: Mapped[float] = mapped_column(Float, nullable=False)
++    mapping_confidence: Mapped[float] = mapped_column(Float, nullable=False)
++
++

@@ -1,0 +1,1159 @@
+diff --git a/src/bb_paxdata/interfaces/cli/commands/build.py b/src/bb_paxdata/interfaces/cli/commands/build.py
+index 58dee27..f2afcf9 100644
+--- a/src/bb_paxdata/interfaces/cli/commands/build.py
++++ b/src/bb_paxdata/interfaces/cli/commands/build.py
+@@ -1,6 +1,7 @@
+ """Build database command with duplicate protection and quality integration."""
+ 
+ import asyncio
++import time
+ import hashlib
+ import re
+ import sys
+@@ -11,6 +12,7 @@ from typing import Any
+ 
+ import structlog
+ import typer
++from bb_paxdata.interfaces.cli.tui import BuildState, BuildTUI
+ from rich.console import Console
+ from sqlalchemy import delete, func, select
+ 
+@@ -19,6 +21,7 @@ sys.path.insert(0, str(Path(__file__).parent.parent.parent.parent / "src"))
+ 
+ from bb_paxdata.domain.enums.demand_category import DemandCategory
+ from bb_paxdata.domain.services.risk_service import RiskService
++from bb_paxdata.domain.utils.hash import generate_sentence_code
+ from bb_paxdata.infrastructure.ai.fail_check import (
+     AIFailCheck,
+     ValidationStatus,
+@@ -130,7 +133,7 @@ SPEAKER_MAP = {
+     "Ahmed Al Sharaa": ("Syria", "President", "head_of_state"),
+     "Azali Assoumani": ("Comoros", "President", "head_of_state"),
+     "Evariste Ndayishimiye": ("Burundi", "President", "head_of_state"),
+-    "Felix Antoine Tshisekedi": ("DRC", "President", "head_of_state"),
++    "Felix Antoine Tshisekedi": ("Democratic Republic of the Congo", "President", "head_of_state"),
+     "Gordana Siljanovska Davkova": ("North Macedonia", "President", "head_of_state"),
+     "Gordana Siljanovska-Davkova": ("North Macedonia", "President", "head_of_state"),
+     "Hasan Şeyh Mahmud": ("Somalia", "President", "head_of_state"),
+@@ -179,19 +182,19 @@ SPEAKER_MAP = {
+     ),
+     "Radmila Šekerinska": ("NATO", "Deputy Secretary General", "intl_official"),
+     "Selwin Hart": ("UN", "Special Adviser on Climate Action", "intl_official"),
+-    "Tom Barrack": ("USA", "US Ambassador", "diplomat"),
++    "Tom Barrack": ("United States", "US Ambassador", "diplomat"),
+     "Thomas Greminger": ("Switzerland", "Director of GCSP", "moderator"),
+-    "Abdul Hamid": ("USA", "UN Correspondent", "journalist"),
+-    "Abdul Hamid Siyam": ("USA", "UN Correspondent", "journalist"),
+-    "Daniel Levy": ("UK", "President of USMEP", "expert"),
+-    "Emile Hokayem": ("UK", "Director of Regional Security at IISS", "expert"),
++    "Abdul Hamid": ("United States", "UN Correspondent", "journalist"),
++    "Abdul Hamid Siyam": ("United States", "UN Correspondent", "journalist"),
++    "Daniel Levy": ("United Kingdom", "President of USMEP", "expert"),
++    "Emile Hokayem": ("Lebanon", "Director of Regional Security at IISS", "expert"),
+     "Faisal Dawjee": (
+         "South Africa",
+         "Former Media Director for SA Government",
+         "expert",
+     ),
+-    "Keir Simmons": ("UK", "Chief International Correspondent at NBC", "journalist"),
+-    "Lizzie Porter": ("UK", "Journalist", "journalist"),
++    "Keir Simmons": ("United Kingdom", "Chief International Correspondent at NBC", "journalist"),
++    "Lizzie Porter": ("United Kingdom", "Journalist", "journalist"),
+     "Manolis Kostidis": ("Greece", "Journalist", "journalist"),
+     "Maria Fantappiè": ("Italy", "Expert", "expert"),
+     "Xəyalə Rəis": ("Azerbaijan", "Journalist", "journalist"),
+@@ -203,10 +206,10 @@ SPEAKER_MAP = {
+     "Moderator": ("Unknown", "Moderator", "moderator"),
+     "Moderatör": ("Unknown", "Moderator", "moderator"),
+     "Mülakatçı": ("Unknown", "Interviewer", "moderator"),
+-    "Marabski [Soyisim]": ("Unknown", "Participant", "panelist"),
+-    "Mercy Bamola": ("Unknown", "Participant", "panelist"),
+-    "Olga Osacheva": ("Unknown", "Participant", "panelist"),
+-    "İsmail": ("Unknown", "Participant", "panelist"),
++    "Marabski [Soyisim]": ("Poland", "Participant", "panelist"),
++    "Mercy Bamola": ("Nigeria", "Participant", "panelist"),
++    "Olga Osacheva": ("Belarus", "Participant", "panelist"),
++    "İsmail": ("Turkey", "Participant", "panelist"),
+     "Əli Vəliyev": ("Azerbaijan", "Participant", "panelist"),
+ }
+ 
+@@ -218,7 +221,7 @@ BLOC_MAP = {
+     "Somalia": "Africa",
+     "Syria": "MENA",
+     "Russia": "Eurasian",
+-    "USA": "West",
++    "United States": "West",
+     "Ukraine": "Eurasian",
+     "Azerbaijan": "Caucasus",
+     "Serbia": "Balkans",
+@@ -227,7 +230,7 @@ BLOC_MAP = {
+     "Palestine": "MENA",
+     "Yemen": "MENA",
+     "Burundi": "Africa",
+-    "DRC": "Africa",
++    "Democratic Republic of the Congo": "Africa",
+     "Sierra Leone": "Africa",
+     "Comoros": "Africa",
+     "El Salvador": "Central America",
+@@ -243,6 +246,17 @@ BLOC_MAP = {
+     "Saudi Arabia": "MENA",
+     "Qatar": "MENA",
+     "UAE": "MENA",
++    "United Arab Emirates": "MENA",
++    "United Kingdom": "West",
++    "Greece": "Europe",
++    "Italy": "Europe",
++    "Poland": "Europe",
++    "Belarus": "Eurasian",
++    "Sweden": "Europe",
++    "Nigeria": "Africa",
++    "South Africa": "Africa",
++    "Lebanon": "MENA",
++    "Barbados": "Global South",
+ }
+ 
+ POWER_LEVELS = {
+@@ -474,17 +488,110 @@ def _classify_demand_category(sentence_lower: str) -> DemandCategory:
+         return DemandCategory.LEGAL_ACCOUNTABILITY
+     return DemandCategory.DIPLOMATIC_ENGAGEMENT
+ 
++COUNTRY_NORM_MAP = {
++    "TR": "Turkey",
++    "TURKEY": "Turkey",
++    "TÜRKİYE": "Turkey",
++    "US": "United States",
++    "USA": "United States",
++    "UNITED STATES": "United States",
++    "RU": "Russia",
++    "RUSSIA": "Russia",
++    "RUSYA": "Russia",
++    "UA": "Ukraine",
++    "UKRAINE": "Ukraine",
++    "UKRAYNA": "Ukraine",
++    "AZ": "Azerbaijan",
++    "AZERBAIJAN": "Azerbaijan",
++    "GR": "Greece",
++    "GREECE": "Greece",
++    "IT": "Italy",
++    "ITALY": "Italy",
++    "RS": "Serbia",
++    "SERBIA": "Serbia",
++    "PL": "Poland",
++    "POLAND": "Poland",
++    "BY": "Belarus",
++    "BELARUS": "Belarus",
++    "CH": "Switzerland",
++    "SWITZERLAND": "Switzerland",
++    "YE": "Yemen",
++    "YEMEN": "Yemen",
++    "CD": "Democratic Republic of the Congo",
++    "DRC": "Democratic Republic of the Congo",
++    "CONGO": "Democratic Republic of the Congo",
++    "KM": "Comoros",
++    "COMOROS": "Comoros",
++    "SO": "Somalia",
++    "SOMALIA": "Somalia",
++    "GE": "Georgia",
++    "GEORGIA": "Georgia",
++    "KZ": "Kazakhstan",
++    "KAZAKHSTAN": "Kazakhstan",
++    "LT": "Lithuania",
++    "LITHUANIA": "Lithuania",
++    "FR": "France",
++    "FRANCE": "France",
++    "ZA": "South Africa",
++    "SOUTH AFRICA": "South Africa",
++    "SL": "Sierra Leone",
++    "SIERRA LEONE": "Sierra Leone",
++    "SV": "El Salvador",
++    "EL SALVADOR": "El Salvador",
++    "LB": "Lebanon",
++    "LEBANON": "Lebanon",
++    "BB": "Barbados",
++    "BARBADOS": "Barbados",
++    "PS": "Palestine",
++    "PALESTINE": "Palestine",
++    "SY": "Syria",
++    "SYRIA": "Syria",
++    "BR": "Brazil",
++    "BRAZIL": "Brazil",
++    "NG": "Nigeria",
++    "NIGERIA": "Nigeria",
++    "LV": "Latvia",
++    "LATVIA": "Latvia",
++    "SE": "Sweden",
++    "SWEDEN": "Sweden",
++    "UK": "United Kingdom",
++    "GB": "United Kingdom",
++    "UNITED KINGDOM": "United Kingdom",
++    "AE": "United Arab Emirates",
++    "UAE": "United Arab Emirates",
++    "UNITED ARAB EMIRATES": "United Arab Emirates",
++    "SA": "Saudi Arabia",
++    "SAUDI ARABIA": "Saudi Arabia",
++    "QA": "Qatar",
++    "QATAR": "Qatar",
++    "IR": "Iran",
++    "IRAN": "Iran",
++    "IL": "Israel",
++    "ISRAEL": "Israel",
++    "CN": "China",
++    "CHINA": "China",
++}
++
+ 
+ def clean_speaker_name_helper(speaker: str) -> tuple[str, str]:
+     """Extract clean speaker name and existing country code if present, otherwise map it."""
+     match = re.search(r"\(([^)]+)\)$|\[([^\]]+)\]$", speaker)
+     if match:
+-        country = (match.group(1) or match.group(2)).strip().upper()
++        country = (match.group(1) or match.group(2)).strip()
++        country_upper = country.upper()
++        if country_upper in COUNTRY_NORM_MAP:
++            country = COUNTRY_NORM_MAP[country_upper]
++        else:
++            country = country.title()
+         clean_name = re.sub(r"\s*\(.*\)$|\s*\[.*\]$", "", speaker).strip()
+         return clean_name, country
+ 
+     clean_name = speaker.strip()
+-    country = SPEAKER_COUNTRY_MAP.get(clean_name, "unknown")
++    raw_country = SPEAKER_COUNTRY_MAP.get(clean_name, "unknown")
++    if raw_country != "unknown":
++        country = COUNTRY_NORM_MAP.get(raw_country.upper(), raw_country)
++    else:
++        country = "unknown"
+     return clean_name, country
+ 
+ 
+@@ -697,8 +804,14 @@ async def _process_single_file(
+     violation_logger: Any,
+     container: Any,
+     pipeline: Any,
++    build_state: BuildState | None = None,
++    event_bus: Any = None,
+ ) -> str:
+     """Processes, standardizes, and ingests a single transcript file into the database."""
++    import time
++
++    start_time = time.monotonic()
++
+     # 1. Read raw content
+     with open(file_path, encoding="utf-8") as f:
+         raw_content = f.read()
+@@ -734,16 +847,45 @@ async def _process_single_file(
+     existing = res.scalar_one_or_none()
+ 
+     if existing and not force_rebuild and existing.force_rebuild == 0:
++        if build_state is not None:
++            build_state.skipped += 1
++        if event_bus is not None:
++            from bb_paxdata.domain.models.tui import FileProcessedEvent, StageStatus
++
++            await event_bus.publish(
++                FileProcessedEvent(
++                    path=file_path.name,
++                    words=0,
++                    sentences=0,
++                    processing_time_ms=0.0,
++                    status=StageStatus.CANCELLED,
++                )
++            )
+         return "skipped"
+ 
+     # Validate input
+     validation_result = validator.validate_transcript_input(file_content, file_path)
+     if not validation_result.passed:
+-        console.print(f"[red][ERROR] Input validation failed for {file_path.name}")
++        if build_state is None:
++            console.print(f"[red][ERROR] Input validation failed for {file_path.name}")
+         violation_logger.log_input_violation(
+             str(file_path),
+             validation_result.details.get("failed_checks", []),
+         )
++        if build_state is not None:
++            build_state.errors += 1
++        if event_bus is not None:
++            from bb_paxdata.domain.models.tui import FileProcessedEvent, StageStatus
++
++            await event_bus.publish(
++                FileProcessedEvent(
++                    path=file_path.name,
++                    words=0,
++                    sentences=0,
++                    processing_time_ms=0.0,
++                    status=StageStatus.FAILED,
++                )
++            )
+         return "error"
+ 
+     if dry_run:
+@@ -751,8 +893,11 @@ async def _process_single_file(
+         console.print(f"   Idempotency key: {idempotency_key[:16]}...")
+         return "processed"
+ 
+-    # Process file
+-    console.print(f"[green]📝 Processing: {file_path.name}")
++    # Process file — notify state
++    if build_state is not None:
++        build_state.current_file = file_path.name
++    else:
++        console.print(f"[green]📝 Processing: {file_path.name}")
+ 
+     # File ID from file stem
+     file_id = file_path.stem.lower().replace(" ", "_")
+@@ -790,6 +935,11 @@ async def _process_single_file(
+             TopicAssignmentORM.segment_id.like(f"seg_{file_id}_%")
+         )
+     )
++    from bb_paxdata.infrastructure.db.models import SegmentAnalyzedEvent
++
++    await session.execute(
++        delete(SegmentAnalyzedEvent).where(SegmentAnalyzedEvent.file_id == file_id)
++    )
+     await session.execute(
+         delete(TopicMatrixTable).where(TopicMatrixTable.file_id == file_id)
+     )
+@@ -1014,6 +1164,7 @@ async def _process_single_file(
+         for sent_idx, sentence_text in enumerate(seg["sentences"], 1):
+             total_sentences_count += 1
+             sent_id = f"sent_{file_id}_{total_sentences_count}"
++            sent_code = generate_sentence_code()
+ 
+             # Cümle bazlı AI limit takibi (LimitedAIAnalyst aktifse)
+             ai_analyst = getattr(pipeline, "ai_analyst", None) or getattr(
+@@ -1034,6 +1185,8 @@ async def _process_single_file(
+                     "file_id": file_id,
+                     "speaker_id": speaker_id,
+                     "speaker_country": country,
++                    "id": sent_id,
++                    "sentence_code": sent_code,
+                 },
+                 session=session,
+             )
+@@ -1177,6 +1330,7 @@ async def _process_single_file(
+ 
+             db_sentence = Sentence(
+                 sent_id=sent_id,
++                sentence_code=sent_code,
+                 seg_id=db_segment.seg_id,
+                 file_id=file_id,
+                 speaker_id=speaker_id,
+@@ -1254,6 +1408,7 @@ async def _process_single_file(
+             ai_analysis = AISentenceAnalysis.from_domain(
+                 pipeline_res.analysis, sent_id=sent_id
+             )
++            ai_analysis.sentence_code = sent_code
+             ai_analysis.file_id = file_id
+             ai_analysis.speaker_name = speaker_name
+             ai_analysis.country = country
+@@ -1460,6 +1615,7 @@ async def _process_single_file(
+                         # Build AIFailAnalysis database model
+                         db_fail = AIFailAnalysis(
+                             sent_id=sent_id,
++                            sentence_code=sent_code,
+                             seg_id=db_segment.seg_id,
+                             file_id=file_id,
+                             speaker_name=speaker_name,
+@@ -2301,6 +2457,7 @@ async def _process_single_file(
+                     run_id=log_data["run_id"],
+                     entity_type=log_data["entity_type"],
+                     entity_id=log_data["entity_id"],
++                    sentence_code=getattr(sent, "sentence_code", None),
+                     formula_name=log_data["formula_name"],
+                     expected_constraint=log_data["expected_constraint"],
+                     actual_value=log_data["actual_value"],
+@@ -2327,6 +2484,7 @@ async def _process_single_file(
+                     )
+                     review_entry = HumanReviewQueue(
+                         sent_id=sent.sent_id,
++                        sentence_code=getattr(sent, "sentence_code", None),
+                         seg_id=sent.seg_id,
+                         file_id=sent.file_id,
+                         speaker_name=sent.speaker_name,
+@@ -2345,10 +2503,12 @@ async def _process_single_file(
+             seg_sents = sents_by_seg.get(db_seg.seg_id, [])
+             seg_logs = auditor.audit_segment(run_id, db_seg, seg_sents)
+             for log_data in seg_logs:
++                first_sent_code = seg_sents[0].sentence_code if seg_sents else None
+                 db_log = FormulaValidationLog(
+                     run_id=log_data["run_id"],
+                     entity_type=log_data["entity_type"],
+                     entity_id=log_data["entity_id"],
++                    sentence_code=first_sent_code,
+                     formula_name=log_data["formula_name"],
+                     expected_constraint=log_data["expected_constraint"],
+                     actual_value=log_data["actual_value"],
+@@ -2374,6 +2534,7 @@ async def _process_single_file(
+                         )
+                         review_entry = HumanReviewQueue(
+                             sent_id=first_sent.sent_id,
++                            sentence_code=getattr(first_sent, "sentence_code", None),
+                             seg_id=db_seg.seg_id,
+                             file_id=db_seg.file_id,
+                             speaker_name=db_seg.speaker_name,
+@@ -2473,7 +2634,75 @@ async def _process_single_file(
+         )
+         logger.warning("build.rebuild_network_failed", file_id=file_id, error=str(exc))
+ 
++    # ── Topic Matrix 2.0: Event Logging ──
++    try:
++        import uuid
++
++        from bb_paxdata.domain.services.linguistic_helpers import (
++            classify_speech_act,
++            get_frame_distribution,
++            get_vad_vector,
++        )
++        from bb_paxdata.infrastructure.db.models import SegmentAnalyzedEvent
++
++        run_id_event = f"run_{uuid.uuid4().hex[:8]}"
++
++        for db_seg in all_processed_segments:
++            vad = get_vad_vector(db_seg.diplo_compound or 0.0, db_seg.emotion_category)
++            act = classify_speech_act(db_seg.text or "", db_seg.demand_count or 0)
++            frames = get_frame_distribution(db_seg.text or "", db_seg.dominant_frame)
++
++            event = SegmentAnalyzedEvent(
++                file_id=file_id,
++                segment_id=db_seg.seg_id,
++                country=db_seg.country or "unknown",
++                text_snippet=db_seg.text,
++                vader_compound=db_seg.vader_compound or 0.0,
++                diplo_compound=db_seg.diplo_compound or 0.0,
++                vad_vector=vad,
++                emotion_category=db_seg.emotion_category,
++                risk_score=db_seg.risk_score or 0.0,
++                demand_count=db_seg.demand_count or 0,
++                speech_act=act,
++                hedging_score=(
++                    db_seg.avg_hedging_score
++                    if hasattr(db_seg, "avg_hedging_score")
++                    else 0.0
++                ),
++                politeness_ratio=(
++                    db_seg.avg_politeness_ratio
++                    if hasattr(db_seg, "avg_politeness_ratio")
++                    else 0.0
++                ),
++                topic_scores=db_seg.topic_scores or {},
++                topic_model_version="bertopic_v1",
++                frame_distribution=frames,
++                pipeline_run_id=run_id_event,
++            )
++            session.add(event)
++
++        console.print("[green][OK] Logged segment events to event store.[/green]")
++    except Exception as exc:
++        console.print(f"[yellow][WARN] Logging segment events failed: {exc}[/yellow]")
++        logger.warning("build.segment_event_logging_failed", error=str(exc))
++
+     await session.flush()
++    elapsed_ms = (time.monotonic() - start_time) * 1000
++    if build_state is not None:
++        build_state.total_sentences += total_sentences_count
++        build_state.total_words += total_words_in_file
++    if event_bus is not None:
++        from bb_paxdata.domain.models.tui import FileProcessedEvent, StageStatus
++
++        await event_bus.publish(
++            FileProcessedEvent(
++                path=file_path.name,
++                words=total_words_in_file,
++                sentences=total_sentences_count,
++                processing_time_ms=elapsed_ms,
++                status=StageStatus.COMPLETED,
++            )
++        )
+     return "processed"
+ 
+ 
+@@ -2978,77 +3207,183 @@ async def update_speaker_profiles(session: Any) -> None:
+             sp.first_seen_panel = sentences[0].file_id
+ 
+ 
++async def backfill_segment_events(session: Any) -> None:
++    from bb_paxdata.domain.services.linguistic_helpers import (
++        classify_speech_act,
++        get_frame_distribution,
++        get_vad_vector,
++    )
++    from bb_paxdata.infrastructure.db.models import Segment as SegmentORM
++    from bb_paxdata.infrastructure.db.models import SegmentAnalyzedEvent
++    from sqlalchemy import func, select
++
++    # Check if segment_events is empty
++    cnt_res = await session.execute(select(func.count(SegmentAnalyzedEvent.event_id)))
++    cnt = cnt_res.scalar()
++    if cnt > 0:
++        return
++
++    # Fetch all segments
++    console.print(
++        "Running migration backfill: converting legacy segments to event log..."
++    )
++    res = await session.execute(select(SegmentORM))
++    segments = res.scalars().all()
++    if not segments:
++        return
++
++    import uuid
++
++    run_id = f"backfill_{uuid.uuid4().hex[:8]}"
++    for s in segments:
++        vad = get_vad_vector(s.diplo_compound or 0.0, s.emotion_category)
++        act = classify_speech_act(s.text or "", s.demand_count or 0)
++        frames = get_frame_distribution(s.text or "", s.dominant_frame)
++
++        event = SegmentAnalyzedEvent(
++            file_id=s.file_id,
++            segment_id=s.seg_id,
++            country=s.country or "unknown",
++            text_snippet=s.text,
++            vader_compound=s.vader_compound or 0.0,
++            diplo_compound=s.diplo_compound or 0.0,
++            vad_vector=vad,
++            emotion_category=s.emotion_category,
++            risk_score=s.risk_score or 0.0,
++            demand_count=s.demand_count or 0,
++            speech_act=act,
++            hedging_score=(
++                s.avg_hedging_score if hasattr(s, "avg_hedging_score") else 0.0
++            ),
++            politeness_ratio=(
++                s.avg_politeness_ratio if hasattr(s, "avg_politeness_ratio") else 0.0
++            ),
++            topic_scores=s.topic_scores or {},
++            topic_model_version="bertopic_v1",
++            frame_distribution=frames,
++            pipeline_run_id=run_id,
++        )
++        session.add(event)
++    await session.flush()
++    console.print(
++        f"[green][OK] Backfilled {len(segments)} segment events successfully.[/green]"
++    )
++
++
+ async def update_country_stats(session: Any) -> None:
+-    from collections import Counter
++    from bb_paxdata.application.services.aggregation_engine import AggregationEngine
++    from bb_paxdata.infrastructure.db.country_models import TopicMatrixTable
++    from bb_paxdata.infrastructure.db.models import (
++        ActorTopicDocument,
++        ActorTopicProjection,
++        CountryStat,
++        SegmentAnalyzedEvent,
++        TopicMatrix,
++    )
++    from sqlalchemy import delete, select
+ 
+-    from bb_paxdata.infrastructure.db.models import CountryStat, Segment, TopicMatrix
++    # 1. Run backfill if necessary
++    await backfill_segment_events(session)
+ 
++    # 2. Clear existing projections, documents and stats
++    await session.execute(delete(ActorTopicProjection))
++    await session.execute(delete(ActorTopicDocument))
+     await session.execute(delete(CountryStat))
+     await session.execute(delete(TopicMatrix))
++    await session.execute(delete(TopicMatrixTable))
++
++    # 3. Load all events
++    res = await session.execute(select(SegmentAnalyzedEvent))
++    events = res.scalars().all()
++    if not events:
++        return
++
++    # 4. Run Aggregation Engine
++    engine = AggregationEngine()
++    projections, documents = engine.aggregate_events(events)
++
++    # 5. Persist Projections and Documents
++    for proj in projections:
++        session.add(proj)
++    for doc in documents:
++        session.add(doc)
++
++    # 6. Rebuild legacy compatibility records (TopicMatrixTable, TopicMatrix, CountryStat)
++    for doc in documents:
++        if not doc.topic_details:
++            continue
+ 
+-    stmt = select(Segment)
+-    res = await session.execute(stmt)
+-    segments = res.scalars().all()
++        dominant_topic = (
++            max(doc.topic_details, key=lambda t: doc.topic_details[t]["score"])
++            if doc.topic_details
++            else None
++        )
++        topic_scores_compat = {t: det["score"] for t, det in doc.topic_details.items()}
++
++        # Write to TopicMatrixTable (topic_matrices)
++        tmt = TopicMatrixTable(
++            file_id=doc.file_id,
++            country=doc.country,
++            topic_scores=topic_scores_compat,
++            dominant_topic=dominant_topic,
++            topic_details=doc.topic_details,
++        )
++        session.add(tmt)
++
++        # Write to TopicMatrix (topic_matrix)
++        for t, det in doc.topic_details.items():
++            tm = TopicMatrix(
++                file_id=doc.file_id,
++                country=doc.country,
++                topic=t,
++                score=det["score"],
++                mention_count=det["mention_count"],
++                avg_sentiment=det["sentiment"]["diplomatic_compound"],
++                risk_score=det["risk"]["composite_risk_index"],
++                demand_count=int(det["demands"]["weighted_count"]),
++                dominant_emotion=det["emotion"]["dominant"],
++                dominant_frame=det["frames"]["dominant"],
++            )
++            session.add(tm)
+ 
+-    groups: dict[tuple[str, str], list[Segment]] = {}
+-    for s in segments:
+-        if not s.country or s.country in ("—", "Unknown", "unknown", ""):
+-            continue
+-        key = (s.country, s.file_id)
+-        if key not in groups:
+-            groups[key] = []
+-        groups[key].append(s)
+-
+-    for (country, file_id), grp in groups.items():
+-        n_segs = len(grp)
+-        sents = sum(s.sentence_count or 0 for s in grp)
+-        words = sum(s.word_count or 0 for s in grp)
+-        dur = sum(s.duration_sec or 0 for s in grp)
+-
+-        diplo_compounds = [
+-            s.diplo_compound for s in grp if s.diplo_compound is not None
++        # Extract stats for CountryStat
++        sents_s = [
++            det["sentiment"]["diplomatic_compound"]
++            for det in doc.topic_details.values()
+         ]
+-        avg_s = sum(diplo_compounds) / len(diplo_compounds) if diplo_compounds else 0.0
+-
+-        emos = [s.emotion_category for s in grp if s.emotion_category]
+-        dom_emo = Counter(emos).most_common(1)[0][0] if emos else None
++        avg_s = sum(sents_s) / len(sents_s) if sents_s else 0.0
+ 
+-        all_ts: dict[str, float] = {}
+-        for s in grp:
+-            if isinstance(s.topic_scores, dict):
+-                for t, sc in s.topic_scores.items():
+-                    all_ts[t] = all_ts.get(t, 0.0) + float(sc or 0.0)
++        emos = [
++            det["emotion"]["dominant"]
++            for det in doc.topic_details.values()
++            if det["emotion"]["dominant"]
++        ]
++        dom_emo = max(set(emos), key=emos.count) if emos else None
+ 
+-        dom_topic = max(all_ts, key=lambda k: all_ts[k]) if all_ts else None
+-        wpm = round(words / (dur / 60.0), 1) if dur > 0 else 0.0
++        actor_projs = [
++            p
++            for p in projections
++            if p.file_id == doc.file_id and p.country == doc.country
++        ]
++        seg_count = actor_projs[0].segment_count if actor_projs else 0
++        word_count = actor_projs[0].total_word_count if actor_projs else 0
+ 
+         cs = CountryStat(
+-            country=country,
+-            file_id=file_id,
+-            n_segments=n_segs,
+-            n_sentences=sents,
+-            total_words=words,
+-            total_duration_sec=dur,
+-            words_per_minute=wpm,
++            country=doc.country,
++            file_id=doc.file_id,
++            n_segments=seg_count,
++            total_words=word_count,
+             avg_sentiment=avg_s,
+             dominant_emotion=dom_emo,
+-            dominant_topic=dom_topic,
++            dominant_topic=dominant_topic,
+             topic_scores=dict(
+-                sorted(all_ts.items(), key=lambda item: item[1], reverse=True)[:5]
++                sorted(
++                    topic_scores_compat.items(), key=lambda item: item[1], reverse=True
++                )[:5]
+             ),
+         )
+         session.add(cs)
+ 
+-        for topic, score in all_ts.items():
+-            if score > 0.0:
+-                tm = TopicMatrix(
+-                    file_id=file_id,
+-                    country=country,
+-                    topic=topic,
+-                    score=float(score),
+-                )
+-                session.add(tm)
+-
+     await session.flush()
+ 
+ 
+@@ -3068,6 +3403,8 @@ async def _async_build(
+     dry_run: bool,
+     logic_only: bool = False,
+     ai_limit: int | None = None,
++    verbose: bool = False,
++    legacy_tui: bool = False,
+ ) -> None:
+     data_path = Path(data_dir)
+     if not data_path.exists():
+@@ -3089,89 +3426,345 @@ async def _async_build(
+     # Ensure tables are created
+     await init_db()
+ 
++    # Find transcript files
++    transcript_files = list(data_path.rglob("*.txt"))
++    if panel_filter:
++        transcript_files = [f for f in transcript_files if panel_filter in f.name]
++
++    # Determine mode label
+     if logic_only:
+-        console.print(
+-            "[bold yellow]⚡ LOGIC-ONLY mod aktif — LLM/AI çağrısı yapılmayacak.[/bold yellow]"
+-        )
++        mode_label = "Logic-Only"
+     elif ai_limit and ai_limit > 0:
+-        console.print(
+-            f"[bold cyan]⚡ AI LIMIT aktif — ilk {ai_limit} cümle AI'a gönderilecek, sonrası logic-only.[/bold cyan]"
+-        )
++        mode_label = f"AI-Limit ({ai_limit})"
++    else:
++        mode_label = "Full AI"
+ 
+-    async with get_session() as session:
+-        processed_count = 0
+-        skipped_count = 0
+-        error_count = 0
++    if verbose:
++        # ── VERBOSE MODE: plain console output, no TUI ─────────────────────
++        console.print(f"Found {len(transcript_files)} transcript files")
++        if logic_only:
++            console.print(
++                "[bold yellow]⚡ LOGIC-ONLY mod aktif — LLM/AI çağrısı yapılmayacak.[/bold yellow]"
++            )
++        elif ai_limit and ai_limit > 0:
++            console.print(
++                f"[bold cyan]⚡ AI LIMIT aktif — ilk {ai_limit} cümle AI'a gönderilecek, sonrası logic-only.[/bold cyan]"
++            )
+ 
+-        # Find transcript files recursively in subfolders
+-        transcript_files = list(data_path.rglob("*.txt"))
+-        if panel_filter:
+-            transcript_files = [f for f in transcript_files if panel_filter in f.name]
++        async with get_session() as session:
++            processed_count = 0
++            skipped_count = 0
++            error_count = 0
+ 
+-        console.print(f"Found {len(transcript_files)} transcript files")
++            for file_path in transcript_files:
++                try:
++                    status = await _process_single_file(
++                        session=session,
++                        file_path=file_path,
++                        force_rebuild=force_rebuild,
++                        dry_run=dry_run,
++                        validator=validator,
++                        violation_logger=violation_logger,
++                        container=container,
++                        pipeline=pipeline,
++                    )
++                    if status == "processed":
++                        processed_count += 1
++                        console.print(f"[green]📝 Processed: {file_path.name}")
++                    elif status == "skipped":
++                        console.print(
++                            f"[yellow][SKIP] Skipping {file_path.name} (already processed)"
++                        )
++                        skipped_count += 1
++                    elif status == "error":
++                        error_count += 1
++                except Exception as e:
++                    console.print(
++                        f"[red][ERROR] Error processing {file_path.name}: {e}"
++                    )
++                    logger.error(
++                        f"Error processing file {file_path.name}", error=str(e)
++                    )
++                    error_count += 1
++                    try:
++                        await session.rollback()
++                    except Exception:
++                        pass
++                    continue
++
++            console.print("Updating speaker statistics...")
++            await update_speaker_profiles(session)
++            console.print("Updating country statistics and topic matrices...")
++            await update_country_stats(session)
++            console.print("Rebuilding discourse network and flows for all files...")
++            file_ids_res = await session.execute(select(File.file_id))
++            file_ids = file_ids_res.scalars().all()
++            for fid in file_ids:
++                await rebuild_network_for_file(session, fid)
++            console.print("Updating country pair sentiments...")
++            await update_country_pair_sentiments(session)
++            await session.commit()
++
++            console.print(
++                f"\n[green][OK] Build completed! Processed={processed_count} Skipped={skipped_count} Errors={error_count}"
++            )
++
++            if hasattr(container.ai_analyst, "get_usage_summary"):
++                usage = container.ai_analyst.get_usage_summary()
++                console.print("\n[bold cyan]📊 AI Kullanım Raporu:[/bold cyan]")
++                console.print(f"  AI çağrısı yapılan cümle: {usage['ai_calls_made']}")
++                console.print(f"  AI limiti:               {usage['ai_limit']}")
++                console.print(f"  Kalan hak:               {usage['remaining']}")
++                if usage["is_exhausted"]:
++                    console.print(
++                        "  [yellow][WARN]  Limit doldu — sonraki cümleler logic-only ile analiz edildi.[/yellow]"
++                    )
++        return
++
++    if not legacy_tui:
++        import asyncio
++        import uuid
++
++        from bb_paxdata.domain.models.tui import (
++            BuildCancelledEvent,
++            BuildEvent,
++            FileProcessedEvent,
++            StageCompletedEvent,
++            StageStartedEvent,
++            StageStatus,
++        )
++        from bb_paxdata.infrastructure.messaging.async_event_bus import AsyncEventBus
++        from bb_paxdata.infrastructure.state.memory_state_store import MemoryStateStore
++        from bb_paxdata.interfaces.cli.tui.app import BuildApp
++
++        session_id = f"build_{uuid.uuid4().hex[:8]}"
++        event_bus = AsyncEventBus()
++        state_store = MemoryStateStore(session_id, len(transcript_files))
++
++        # Pipeline execution coroutine
++        async def pipeline_worker():
++            # Connect the event bus to the state store
++            await event_bus.subscribe(BuildEvent, state_store.apply_event)
+ 
+-        for file_path in transcript_files:
+             try:
+-                status = await _process_single_file(
+-                    session=session,
+-                    file_path=file_path,
+-                    force_rebuild=force_rebuild,
+-                    dry_run=dry_run,
+-                    validator=validator,
+-                    violation_logger=violation_logger,
+-                    container=container,
+-                    pipeline=pipeline,
++                # Stage 0: Transcript Ingestion
++                await event_bus.publish(
++                    StageStartedEvent(stage_name="Transcript Ingestion")
+                 )
+-                if status == "processed":
+-                    processed_count += 1
+-                elif status == "skipped":
+-                    console.print(
+-                        f"[yellow][SKIP] Skipping {file_path.name} (already processed)"
++                async with get_session() as session:
++                    for idx, file_path in enumerate(transcript_files, 1):
++                        # Graceful cancellation check
++                        snapshot = await state_store.get_snapshot()
++                        if snapshot.is_cancelled:
++                            break
++
++                        start_time = time.monotonic()
++                        try:
++                            status = await _process_single_file(
++                                session=session,
++                                file_path=file_path,
++                                force_rebuild=force_rebuild,
++                                dry_run=dry_run,
++                                validator=validator,
++                                violation_logger=violation_logger,
++                                container=container,
++                                pipeline=pipeline,
++                                event_bus=event_bus,
++                            )
++                        except Exception as e:
++                            logger.error(
++                                f"Error processing file {file_path.name}", error=str(e)
++                            )
++                            elapsed_ms = (time.monotonic() - start_time) * 1000
++                            await event_bus.publish(
++                                FileProcessedEvent(
++                                    path=file_path.name,
++                                    words=0,
++                                    sentences=0,
++                                    processing_time_ms=elapsed_ms,
++                                    status=StageStatus.FAILED,
++                                )
++                            )
++                            try:
++                                await session.rollback()
++                            except Exception:
++                                pass
++                            continue
++
++                    await event_bus.publish(
++                        StageCompletedEvent(
++                            stage_name="Transcript Ingestion",
++                            status=StageStatus.COMPLETED,
++                        )
+                     )
+-                    skipped_count += 1
+-                elif status == "error":
+-                    error_count += 1
++
++                    # Stage 1: Speaker Profiles
++                    await event_bus.publish(
++                        StageStartedEvent(stage_name="Speaker Profiles")
++                    )
++                    await update_speaker_profiles(session)
++                    await event_bus.publish(
++                        StageCompletedEvent(
++                            stage_name="Speaker Profiles",
++                            status=StageStatus.COMPLETED,
++                        )
++                    )
++
++                    # Stage 2: Country Statistics
++                    await event_bus.publish(
++                        StageStartedEvent(stage_name="Country Statistics")
++                    )
++                    await update_country_stats(session)
++                    await event_bus.publish(
++                        StageCompletedEvent(
++                            stage_name="Country Statistics",
++                            status=StageStatus.COMPLETED,
++                        )
++                    )
++
++                    # Stage 3: Discourse Network
++                    await event_bus.publish(
++                        StageStartedEvent(stage_name="Discourse Network")
++                    )
++                    file_ids_res = await session.execute(select(File.file_id))
++                    file_ids = file_ids_res.scalars().all()
++                    for fid in file_ids:
++                        await rebuild_network_for_file(session, fid)
++                    await event_bus.publish(
++                        StageCompletedEvent(
++                            stage_name="Discourse Network",
++                            status=StageStatus.COMPLETED,
++                        )
++                    )
++
++                    # Stage 4: Bilateral Sentiments
++                    await event_bus.publish(
++                        StageStartedEvent(stage_name="Bilateral Sentiments")
++                    )
++                    await update_country_pair_sentiments(session)
++                    await event_bus.publish(
++                        StageCompletedEvent(
++                            stage_name="Bilateral Sentiments",
++                            status=StageStatus.COMPLETED,
++                        )
++                    )
++
++                    await session.commit()
++
++            except asyncio.CancelledError:
++                await event_bus.publish(
++                    BuildCancelledEvent(reason="User requested cancellation")
++                )
++                raise
+             except Exception as e:
+-                console.print(f"[red][ERROR] Error processing {file_path.name}: {e}")
+-                logger.error(f"Error processing file {file_path.name}", error=str(e))
+-                error_count += 1
++                logger.critical("Pipeline execution failed", error=str(e))
++                await event_bus.publish(BuildCancelledEvent(reason=str(e)))
++                raise
++
++        app = BuildApp(
++            state_store=state_store,
++            event_bus=event_bus,
++            pipeline_worker_coro=pipeline_worker(),
++        )
++        await app.run_async()
++        return
++
++    # ── TUI MODE ───────────────────────────────────────────────────────────
++    with BuildTUI(total_files=len(transcript_files), mode_label=mode_label) as tui:
++        state = tui.state
++
++        # Stage 0: Transcript Ingestion
++        state.set_stage(0, "active", f"{len(transcript_files)} files")
++
++        async with get_session() as session:
++
++            for idx, file_path in enumerate(transcript_files, 1):
++                state.current_file_idx = idx
++                state.current_file = file_path.name
++                state.set_stage(0, "active", file_path.name)
++                tui.refresh()
++
+                 try:
+-                    await session.rollback()
+-                except Exception:
+-                    pass
+-                continue
++                    status = await _process_single_file(
++                        session=session,
++                        file_path=file_path,
++                        force_rebuild=force_rebuild,
++                        dry_run=dry_run,
++                        validator=validator,
++                        violation_logger=violation_logger,
++                        container=container,
++                        pipeline=pipeline,
++                        build_state=state,
++                    )
++                    if status == "processed":
++                        state.processed += 1
++                    elif status == "error":
++                        state.errors += 1
++                    # skipped is incremented inside _process_single_file
++                except Exception as e:
++                    logger.error(
++                        f"Error processing file {file_path.name}", error=str(e)
++                    )
++                    state.errors += 1
++                    try:
++                        await session.rollback()
++                    except Exception:
++                        pass
++                    continue
+ 
+-        # Post-processing: Update Speaker stats
+-        console.print("Updating speaker statistics...")
+-        await update_speaker_profiles(session)
+-        console.print("Updating country statistics and topic matrices...")
+-        await update_country_stats(session)
+-        console.print("Rebuilding discourse network and flows for all files...")
+-        file_ids_res = await session.execute(select(File.file_id))
+-        file_ids = file_ids_res.scalars().all()
+-        for fid in file_ids:
+-            await rebuild_network_for_file(session, fid)
+-        console.print("Updating country pair sentiments...")
+-        await update_country_pair_sentiments(session)
+-        await session.commit()
+-
+-        # Summary
+-        console.print("\n[green][OK] Build completed!")
+-        console.print(f"Processed: {processed_count}")
+-        console.print(f"Skipped: {skipped_count}")
+-        console.print(f"Errors: {error_count}")
+-
+-        # AI kullanım raporu (LimitedAIAnalyst aktifse)
+-        if hasattr(container.ai_analyst, "get_usage_summary"):
+-            usage = container.ai_analyst.get_usage_summary()
+-            console.print("\n[bold cyan]📊 AI Kullanım Raporu:[/bold cyan]")
+-            console.print(f"  AI çağrısı yapılan cümle: {usage['ai_calls_made']}")
+-            console.print(f"  AI limiti:               {usage['ai_limit']}")
+-            console.print(f"  Kalan hak:               {usage['remaining']}")
+-            if usage["is_exhausted"]:
+-                console.print(
+-                    "  [yellow][WARN]  Limit doldu — sonraki cümleler logic-only ile analiz edildi.[/yellow]"
+-                )
++            # Mark ingestion done, begin post-processing
++            state.set_stage(0, "done", f"{state.processed} processed")
++            state.current_file = ""
++
++            # Stage 1: Speaker Profiles
++            state.set_stage(1, "active")
++            tui.refresh()
++            await update_speaker_profiles(session)
++            state.set_stage(1, "done")
++
++            # Stage 2: Country Statistics
++            state.set_stage(2, "active")
++            tui.refresh()
++            await update_country_stats(session)
++            state.set_stage(2, "done")
++
++            # Stage 3: Discourse Network
++            state.set_stage(3, "active")
++            tui.refresh()
++            file_ids_res = await session.execute(select(File.file_id))
++            file_ids = file_ids_res.scalars().all()
++            for fid in file_ids:
++                await rebuild_network_for_file(session, fid)
++            state.set_stage(3, "done")
++
++            # Stage 4: Bilateral Sentiments
++            state.set_stage(4, "active")
++            tui.refresh()
++            await update_country_pair_sentiments(session)
++            state.set_stage(4, "done")
++
++            await session.commit()
++            tui.refresh()
++
++    # ── Post-TUI: Print summary to terminal ────────────────────────────────
++    console.print("")
++    console.print(
++        f"[bold green]✓ Build completed[/bold green]  "
++        f"processed=[green]{state.processed}[/green]  "
++        f"skipped=[yellow]{state.skipped}[/yellow]  "
++        f"errors=[{'red' if state.errors else 'dim'}]{state.errors}[/{'red' if state.errors else 'dim'}]"
++    )
++
++    if hasattr(container.ai_analyst, "get_usage_summary"):
++        usage = container.ai_analyst.get_usage_summary()
++        console.print("\n[bold cyan]📊 AI Kullanım Raporu:[/bold cyan]")
++        console.print(f"  AI çağrısı yapılan cümle: {usage['ai_calls_made']}")
++        console.print(f"  AI limiti:               {usage['ai_limit']}")
++        console.print(f"  Kalan hak:               {usage['remaining']}")
++        if usage["is_exhausted"]:
++            console.print(
++                "  [yellow][WARN]  Limit doldu — sonraki cümleler logic-only ile analiz edildi.[/yellow]"
++            )
+ 
+ 
+ async def _async_watch(
+@@ -3329,6 +3922,17 @@ def build(
+         "-n",
+         help="AI'a gönderilecek maksimum cümle sayısı (maliyet kontrolü). Örn: --ai-limit 50",
+     ),
++    verbose: bool = typer.Option(
++        False,
++        "--verbose",
++        "-v",
++        help="TUI dashboard yerine düz konsol çıktısı kullan",
++    ),
++    legacy_tui: bool = typer.Option(
++        False,
++        "--legacy-tui",
++        help="Orijinal rich.live TUI dashboard'unu kullan",
++    ),
+ ) -> None:
+     """Build database from transcript files with duplicate protection."""
+     try:
+@@ -3340,6 +3944,8 @@ def build(
+                 dry_run=dry_run,
+                 logic_only=logic_only,
+                 ai_limit=ai_limit,
++                verbose=verbose,
++                legacy_tui=legacy_tui,
+             )
+         )
+     except Exception as e:
