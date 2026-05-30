@@ -38,8 +38,8 @@ deepeval = "^4.0.2"
 textual = "0.86.0"
 
 [tool.poetry.group.dev.dependencies]
-pytest          = "^8.2"
-pytest-asyncio  = "^0.23"
+pytest          = ">=9.0.3"
+pytest-asyncio  = ">=0.25.0"
 mypy            = "^1.10"
 ruff            = "^0.4"
 pre-commit      = "^4.0"
