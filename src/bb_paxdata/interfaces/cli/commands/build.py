@@ -19,6 +19,7 @@ sys.path.insert(0, str(Path(__file__).parent.parent.parent.parent / "src"))
 
 from bb_paxdata.domain.enums.demand_category import DemandCategory
 from bb_paxdata.domain.services.risk_service import RiskService
+from bb_paxdata.domain.utils.hash import generate_sentence_code
 from bb_paxdata.infrastructure.ai.fail_check import (
     AIFailCheck,
     ValidationStatus,
@@ -130,7 +131,11 @@ SPEAKER_MAP = {
     "Ahmed Al Sharaa": ("Syria", "President", "head_of_state"),
     "Azali Assoumani": ("Comoros", "President", "head_of_state"),
     "Evariste Ndayishimiye": ("Burundi", "President", "head_of_state"),
-    "Felix Antoine Tshisekedi": ("DRC", "President", "head_of_state"),
+    "Felix Antoine Tshisekedi": (
+        "Democratic Republic of the Congo",
+        "President",
+        "head_of_state",
+    ),
     "Gordana Siljanovska Davkova": ("North Macedonia", "President", "head_of_state"),
     "Gordana Siljanovska-Davkova": ("North Macedonia", "President", "head_of_state"),
     "Hasan Şeyh Mahmud": ("Somalia", "President", "head_of_state"),
@@ -179,19 +184,23 @@ SPEAKER_MAP = {
     ),
     "Radmila Šekerinska": ("NATO", "Deputy Secretary General", "intl_official"),
     "Selwin Hart": ("UN", "Special Adviser on Climate Action", "intl_official"),
-    "Tom Barrack": ("USA", "US Ambassador", "diplomat"),
+    "Tom Barrack": ("United States", "US Ambassador", "diplomat"),
     "Thomas Greminger": ("Switzerland", "Director of GCSP", "moderator"),
-    "Abdul Hamid": ("USA", "UN Correspondent", "journalist"),
-    "Abdul Hamid Siyam": ("USA", "UN Correspondent", "journalist"),
-    "Daniel Levy": ("UK", "President of USMEP", "expert"),
-    "Emile Hokayem": ("UK", "Director of Regional Security at IISS", "expert"),
+    "Abdul Hamid": ("United States", "UN Correspondent", "journalist"),
+    "Abdul Hamid Siyam": ("United States", "UN Correspondent", "journalist"),
+    "Daniel Levy": ("United Kingdom", "President of USMEP", "expert"),
+    "Emile Hokayem": ("Lebanon", "Director of Regional Security at IISS", "expert"),
     "Faisal Dawjee": (
         "South Africa",
         "Former Media Director for SA Government",
         "expert",
     ),
-    "Keir Simmons": ("UK", "Chief International Correspondent at NBC", "journalist"),
-    "Lizzie Porter": ("UK", "Journalist", "journalist"),
+    "Keir Simmons": (
+        "United Kingdom",
+        "Chief International Correspondent at NBC",
+        "journalist",
+    ),
+    "Lizzie Porter": ("United Kingdom", "Journalist", "journalist"),
     "Manolis Kostidis": ("Greece", "Journalist", "journalist"),
     "Maria Fantappiè": ("Italy", "Expert", "expert"),
     "Xəyalə Rəis": ("Azerbaijan", "Journalist", "journalist"),
@@ -203,10 +212,10 @@ SPEAKER_MAP = {
     "Moderator": ("Unknown", "Moderator", "moderator"),
     "Moderatör": ("Unknown", "Moderator", "moderator"),
     "Mülakatçı": ("Unknown", "Interviewer", "moderator"),
-    "Marabski [Soyisim]": ("Unknown", "Participant", "panelist"),
-    "Mercy Bamola": ("Unknown", "Participant", "panelist"),
-    "Olga Osacheva": ("Unknown", "Participant", "panelist"),
-    "İsmail": ("Unknown", "Participant", "panelist"),
+    "Marabski [Soyisim]": ("Poland", "Participant", "panelist"),
+    "Mercy Bamola": ("Nigeria", "Participant", "panelist"),
+    "Olga Osacheva": ("Belarus", "Participant", "panelist"),
+    "İsmail": ("Turkey", "Participant", "panelist"),
     "Əli Vəliyev": ("Azerbaijan", "Participant", "panelist"),
 }
 
@@ -218,7 +227,7 @@ BLOC_MAP = {
     "Somalia": "Africa",
     "Syria": "MENA",
     "Russia": "Eurasian",
-    "USA": "West",
+    "United States": "West",
     "Ukraine": "Eurasian",
     "Azerbaijan": "Caucasus",
     "Serbia": "Balkans",
@@ -227,7 +236,7 @@ BLOC_MAP = {
     "Palestine": "MENA",
     "Yemen": "MENA",
     "Burundi": "Africa",
-    "DRC": "Africa",
+    "Democratic Republic of the Congo": "Africa",
     "Sierra Leone": "Africa",
     "Comoros": "Africa",
     "El Salvador": "Central America",
@@ -242,7 +251,101 @@ BLOC_MAP = {
     "EU": "Europe",
     "Saudi Arabia": "MENA",
     "Qatar": "MENA",
-    "UAE": "MENA",
+    "United Arab Emirates": "MENA",
+    "United Kingdom": "West",
+    "Greece": "Europe",
+    "Italy": "Europe",
+    "Poland": "Europe",
+    "Belarus": "Eurasian",
+    "Sweden": "Europe",
+    "Nigeria": "Africa",
+    "South Africa": "Africa",
+    "Lebanon": "MENA",
+    "Barbados": "Global South",
+}
+
+COUNTRY_NORM_MAP = {
+    "TR": "Turkey",
+    "TURKEY": "Turkey",
+    "TÜRKİYE": "Turkey",
+    "US": "United States",
+    "USA": "United States",
+    "UNITED STATES": "United States",
+    "RU": "Russia",
+    "RUSSIA": "Russia",
+    "RUSYA": "Russia",
+    "UA": "Ukraine",
+    "UKRAINE": "Ukraine",
+    "UKRAYNA": "Ukraine",
+    "AZ": "Azerbaijan",
+    "AZERBAIJAN": "Azerbaijan",
+    "GR": "Greece",
+    "GREECE": "Greece",
+    "IT": "Italy",
+    "ITALY": "Italy",
+    "RS": "Serbia",
+    "SERBIA": "Serbia",
+    "PL": "Poland",
+    "POLAND": "Poland",
+    "BY": "Belarus",
+    "BELARUS": "Belarus",
+    "CH": "Switzerland",
+    "SWITZERLAND": "Switzerland",
+    "YE": "Yemen",
+    "YEMEN": "Yemen",
+    "CD": "Democratic Republic of the Congo",
+    "DRC": "Democratic Republic of the Congo",
+    "CONGO": "Democratic Republic of the Congo",
+    "KM": "Comoros",
+    "COMOROS": "Comoros",
+    "SO": "Somalia",
+    "SOMALIA": "Somalia",
+    "GE": "Georgia",
+    "GEORGIA": "Georgia",
+    "KZ": "Kazakhstan",
+    "KAZAKHSTAN": "Kazakhstan",
+    "LT": "Lithuania",
+    "LITHUANIA": "Lithuania",
+    "FR": "France",
+    "FRANCE": "France",
+    "ZA": "South Africa",
+    "SOUTH AFRICA": "South Africa",
+    "SL": "Sierra Leone",
+    "SIERRA LEONE": "Sierra Leone",
+    "SV": "El Salvador",
+    "EL SALVADOR": "El Salvador",
+    "LB": "Lebanon",
+    "LEBANON": "Lebanon",
+    "BB": "Barbados",
+    "BARBADOS": "Barbados",
+    "PS": "Palestine",
+    "PALESTINE": "Palestine",
+    "SY": "Syria",
+    "SYRIA": "Syria",
+    "BR": "Brazil",
+    "BRAZIL": "Brazil",
+    "NG": "Nigeria",
+    "NIGERIA": "Nigeria",
+    "LV": "Latvia",
+    "LATVIA": "Latvia",
+    "SE": "Sweden",
+    "SWEDEN": "Sweden",
+    "UK": "United Kingdom",
+    "GB": "United Kingdom",
+    "UNITED KINGDOM": "United Kingdom",
+    "AE": "United Arab Emirates",
+    "UAE": "United Arab Emirates",
+    "UNITED ARAB EMIRATES": "United Arab Emirates",
+    "SA": "Saudi Arabia",
+    "SAUDI ARABIA": "Saudi Arabia",
+    "QA": "Qatar",
+    "QATAR": "Qatar",
+    "IR": "Iran",
+    "IRAN": "Iran",
+    "IL": "Israel",
+    "ISRAEL": "Israel",
+    "CN": "China",
+    "CHINA": "China",
 }
 
 POWER_LEVELS = {
@@ -479,12 +582,21 @@ def clean_speaker_name_helper(speaker: str) -> tuple[str, str]:
     """Extract clean speaker name and existing country code if present, otherwise map it."""
     match = re.search(r"\(([^)]+)\)$|\[([^\]]+)\]$", speaker)
     if match:
-        country = (match.group(1) or match.group(2)).strip().upper()
+        country = (match.group(1) or match.group(2)).strip()
+        country_upper = country.upper()
+        if country_upper in COUNTRY_NORM_MAP:
+            country = COUNTRY_NORM_MAP[country_upper]
+        else:
+            country = country.title()
         clean_name = re.sub(r"\s*\(.*\)$|\s*\[.*\]$", "", speaker).strip()
         return clean_name, country
 
     clean_name = speaker.strip()
-    country = SPEAKER_COUNTRY_MAP.get(clean_name, "unknown")
+    raw_country = SPEAKER_COUNTRY_MAP.get(clean_name, "unknown")
+    if raw_country != "unknown":
+        country = COUNTRY_NORM_MAP.get(raw_country.upper(), raw_country)
+    else:
+        country = "unknown"
     return clean_name, country
 
 
@@ -790,6 +902,11 @@ async def _process_single_file(
             TopicAssignmentORM.segment_id.like(f"seg_{file_id}_%")
         )
     )
+    from bb_paxdata.infrastructure.db.models import SegmentAnalyzedEvent
+
+    await session.execute(
+        delete(SegmentAnalyzedEvent).where(SegmentAnalyzedEvent.file_id == file_id)
+    )
     await session.execute(
         delete(TopicMatrixTable).where(TopicMatrixTable.file_id == file_id)
     )
@@ -1014,6 +1131,7 @@ async def _process_single_file(
         for sent_idx, sentence_text in enumerate(seg["sentences"], 1):
             total_sentences_count += 1
             sent_id = f"sent_{file_id}_{total_sentences_count}"
+            sent_code = generate_sentence_code()
 
             # Cümle bazlı AI limit takibi (LimitedAIAnalyst aktifse)
             ai_analyst = getattr(pipeline, "ai_analyst", None) or getattr(
@@ -1034,6 +1152,8 @@ async def _process_single_file(
                     "file_id": file_id,
                     "speaker_id": speaker_id,
                     "speaker_country": country,
+                    "id": sent_id,
+                    "sentence_code": sent_code,
                 },
                 session=session,
             )
@@ -1177,6 +1297,7 @@ async def _process_single_file(
 
             db_sentence = Sentence(
                 sent_id=sent_id,
+                sentence_code=sent_code,
                 seg_id=db_segment.seg_id,
                 file_id=file_id,
                 speaker_id=speaker_id,
@@ -1255,6 +1376,7 @@ async def _process_single_file(
                 pipeline_res.analysis, sent_id=sent_id
             )
             ai_analysis.file_id = file_id
+            ai_analysis.sentence_code = sent_code
             ai_analysis.speaker_name = speaker_name
             ai_analysis.country = country
             ai_analysis.power_level = 0
@@ -1460,6 +1582,7 @@ async def _process_single_file(
                         # Build AIFailAnalysis database model
                         db_fail = AIFailAnalysis(
                             sent_id=sent_id,
+                            sentence_code=sent_code,
                             seg_id=db_segment.seg_id,
                             file_id=file_id,
                             speaker_name=speaker_name,
@@ -2301,6 +2424,7 @@ async def _process_single_file(
                     run_id=log_data["run_id"],
                     entity_type=log_data["entity_type"],
                     entity_id=log_data["entity_id"],
+                    sentence_code=getattr(sent, "sentence_code", None),
                     formula_name=log_data["formula_name"],
                     expected_constraint=log_data["expected_constraint"],
                     actual_value=log_data["actual_value"],
@@ -2327,6 +2451,7 @@ async def _process_single_file(
                     )
                     review_entry = HumanReviewQueue(
                         sent_id=sent.sent_id,
+                        sentence_code=getattr(sent, "sentence_code", None),
                         seg_id=sent.seg_id,
                         file_id=sent.file_id,
                         speaker_name=sent.speaker_name,
@@ -2349,6 +2474,7 @@ async def _process_single_file(
                     run_id=log_data["run_id"],
                     entity_type=log_data["entity_type"],
                     entity_id=log_data["entity_id"],
+                    sentence_code=seg_sents[0].sentence_code if seg_sents else None,
                     formula_name=log_data["formula_name"],
                     expected_constraint=log_data["expected_constraint"],
                     actual_value=log_data["actual_value"],
@@ -2374,6 +2500,7 @@ async def _process_single_file(
                         )
                         review_entry = HumanReviewQueue(
                             sent_id=first_sent.sent_id,
+                            sentence_code=getattr(first_sent, "sentence_code", None),
                             seg_id=db_seg.seg_id,
                             file_id=db_seg.file_id,
                             speaker_name=db_seg.speaker_name,
@@ -2472,6 +2599,60 @@ async def _process_single_file(
             f"[yellow][WARN] Rebuilding network data failed for {file_id}: {exc}[/yellow]"
         )
         logger.warning("build.rebuild_network_failed", file_id=file_id, error=str(exc))
+
+    # ── Topic Matrix 2.0: Event Logging ──
+    try:
+        import uuid
+
+        from bb_paxdata.domain.services.linguistic_helpers import (
+            classify_speech_act,
+            get_frame_distribution,
+            get_vad_vector,
+        )
+        from bb_paxdata.infrastructure.db.models import SegmentAnalyzedEvent
+
+        run_id_event = f"run_{uuid.uuid4().hex[:8]}"
+
+        for db_seg in all_processed_segments:
+            vad = get_vad_vector(db_seg.diplo_compound or 0.0, db_seg.emotion_category)
+            act = classify_speech_act(db_seg.text or "", db_seg.demand_count or 0)
+            frames_dist = get_frame_distribution(
+                db_seg.text or "", db_seg.dominant_frame
+            )
+
+            event = SegmentAnalyzedEvent(
+                file_id=file_id,
+                segment_id=db_seg.seg_id,
+                country=db_seg.country or "unknown",
+                text_snippet=db_seg.text,
+                vader_compound=db_seg.vader_compound or 0.0,
+                diplo_compound=db_seg.diplo_compound or 0.0,
+                vad_vector=vad,
+                emotion_category=db_seg.emotion_category,
+                risk_score=db_seg.risk_score or 0.0,
+                demand_count=db_seg.demand_count or 0,
+                speech_act=act,
+                hedging_score=(
+                    db_seg.avg_hedging_score
+                    if hasattr(db_seg, "avg_hedging_score")
+                    else 0.0
+                ),
+                politeness_ratio=(
+                    db_seg.avg_politeness_ratio
+                    if hasattr(db_seg, "avg_politeness_ratio")
+                    else 0.0
+                ),
+                topic_scores=db_seg.topic_scores or {},
+                topic_model_version="bertopic_v1",
+                frame_distribution=frames_dist,
+                pipeline_run_id=run_id_event,
+            )
+            session.add(event)
+
+        console.print("[green][OK] Logged segment events to event store.[/green]")
+    except Exception as exc:
+        console.print(f"[yellow][WARN] Logging segment events failed: {exc}[/yellow]")
+        logger.warning("build.segment_event_logging_failed", error=str(exc))
 
     await session.flush()
     return "processed"
@@ -2978,76 +3159,193 @@ async def update_speaker_profiles(session: Any) -> None:
             sp.first_seen_panel = sentences[0].file_id
 
 
+async def backfill_segment_events(session: Any) -> None:
+    from bb_paxdata.domain.services.linguistic_helpers import (
+        classify_speech_act,
+        get_frame_distribution,
+        get_vad_vector,
+    )
+    from bb_paxdata.infrastructure.db.models import Segment as SegmentORM
+    from bb_paxdata.infrastructure.db.models import SegmentAnalyzedEvent
+    from sqlalchemy import func, select
+
+    # Check if segment_events is empty
+    cnt_res = await session.execute(select(func.count(SegmentAnalyzedEvent.event_id)))
+    cnt = cnt_res.scalar()
+    if cnt > 0:
+        return
+
+    # Fetch all segments
+    console.print(
+        "Running migration backfill: converting legacy segments to event log..."
+    )
+    res = await session.execute(select(SegmentORM))
+    segments = res.scalars().all()
+    if not segments:
+        return
+
+    import uuid
+
+    run_id = f"backfill_{uuid.uuid4().hex[:8]}"
+    for s in segments:
+        vad = get_vad_vector(s.diplo_compound or 0.0, s.emotion_category)
+        act = classify_speech_act(s.text or "", s.demand_count or 0)
+        frames = get_frame_distribution(s.text or "", s.dominant_frame)
+
+        event = SegmentAnalyzedEvent(
+            event_id=str(uuid.uuid4()),
+            event_timestamp=(
+                datetime.now(timezone.utc)
+                if hasattr(s, "created_at")
+                else datetime.now()
+            ),
+            file_id=s.file_id,
+            segment_id=s.seg_id,
+            country=s.country or "unknown",
+            text_snippet=s.text,
+            vader_compound=s.vader_compound or 0.0,
+            diplo_compound=s.diplo_compound or 0.0,
+            vad_vector=vad,
+            emotion_category=s.emotion_category,
+            risk_score=s.risk_score or 0.0,
+            demand_count=s.demand_count or 0,
+            speech_act=act,
+            hedging_score=(
+                s.avg_hedging_score if hasattr(s, "avg_hedging_score") else 0.0
+            ),
+            politeness_ratio=(
+                s.avg_politeness_ratio if hasattr(s, "avg_politeness_ratio") else 0.0
+            ),
+            topic_scores=s.topic_scores or {},
+            topic_model_version="bertopic_v1",
+            frame_distribution=frames,
+            pipeline_run_id=run_id,
+        )
+        session.add(event)
+    await session.flush()
+    console.print(
+        f"[green][OK] Backfilled {len(segments)} segment events successfully.[/green]"
+    )
+
+
 async def update_country_stats(session: Any) -> None:
-    from collections import Counter
+    from bb_paxdata.application.services.aggregation_engine import AggregationEngine
+    from bb_paxdata.infrastructure.db.country_models import TopicMatrixTable
+    from bb_paxdata.infrastructure.db.models import (
+        ActorTopicDocument,
+        ActorTopicProjection,
+        CountryStat,
+        SegmentAnalyzedEvent,
+        TopicMatrix,
+    )
+    from sqlalchemy import delete, select
 
-    from bb_paxdata.infrastructure.db.models import CountryStat, Segment, TopicMatrix
+    # 1. Run backfill if necessary
+    await backfill_segment_events(session)
 
+    # 2. Clear existing projections, documents and stats
+    await session.execute(delete(ActorTopicProjection))
+    await session.execute(delete(ActorTopicDocument))
     await session.execute(delete(CountryStat))
     await session.execute(delete(TopicMatrix))
+    await session.execute(delete(TopicMatrixTable))
 
-    stmt = select(Segment)
-    res = await session.execute(stmt)
-    segments = res.scalars().all()
+    # 3. Load all events
+    res = await session.execute(select(SegmentAnalyzedEvent))
+    events = res.scalars().all()
+    if not events:
+        return
 
-    groups: dict[tuple[str, str], list[Segment]] = {}
-    for s in segments:
-        if not s.country or s.country in ("—", "Unknown", "unknown", ""):
+    # 4. Run Aggregation Engine
+    engine = AggregationEngine()
+    projections, documents = engine.aggregate_events(events)
+
+    # 5. Persist Projections and Documents
+    for proj in projections:
+        session.add(proj)
+    for doc in documents:
+        session.add(doc)
+
+    # 6. Rebuild legacy compatibility records (TopicMatrixTable, TopicMatrix, CountryStat)
+    for doc in documents:
+        if not doc.topic_details:
             continue
-        key = (s.country, s.file_id)
-        if key not in groups:
-            groups[key] = []
-        groups[key].append(s)
 
-    for (country, file_id), grp in groups.items():
-        n_segs = len(grp)
-        sents = sum(s.sentence_count or 0 for s in grp)
-        words = sum(s.word_count or 0 for s in grp)
-        dur = sum(s.duration_sec or 0 for s in grp)
+        dominant_topic = (
+            max(doc.topic_details, key=lambda t: doc.topic_details[t])
+            if doc.topic_details
+            else None
+        )
+        topic_scores_compat = {t: val for t, val in doc.topic_details.items()}
 
-        diplo_compounds = [
-            s.diplo_compound for s in grp if s.diplo_compound is not None
+        # Write to TopicMatrixTable (topic_matrices)
+        tmt = TopicMatrixTable(
+            file_id=doc.file_id,
+            country=doc.country,
+            topic_scores=topic_scores_compat,
+            dominant_topic=dominant_topic,
+            topic_details=doc.topic_details,
+        )
+        session.add(tmt)
+
+        # Write to TopicMatrix (topic_matrix)
+        for t, val in doc.topic_details.items():
+            # Find the corresponding projection
+            found_proj: ActorTopicProjection | None = next(
+                (
+                    p
+                    for p in projections
+                    if p.file_id == doc.file_id
+                    and p.country == doc.country
+                    and p.topic == t
+                ),
+                None,
+            )
+            if found_proj:
+                tm = TopicMatrix(
+                    file_id=doc.file_id,
+                    country=doc.country,
+                    topic=t,
+                    score=val,
+                    mention_count=found_proj.mention_count,
+                    avg_sentiment=found_proj.avg_sentiment,
+                    risk_score=found_proj.risk_score,
+                    demand_count=int(found_proj.demand_count),
+                    dominant_emotion=found_proj.dominant_emotion,
+                    dominant_frame=found_proj.dominant_frame,
+                )
+                session.add(tm)
+
+        # Extract stats for CountryStat
+        actor_projs = [
+            p
+            for p in projections
+            if p.file_id == doc.file_id and p.country == doc.country
         ]
-        avg_s = sum(diplo_compounds) / len(diplo_compounds) if diplo_compounds else 0.0
+        sents_s = [p.avg_sentiment for p in actor_projs]
+        avg_s = sum(sents_s) / len(sents_s) if sents_s else 0.0
 
-        emos = [s.emotion_category for s in grp if s.emotion_category]
-        dom_emo = Counter(emos).most_common(1)[0][0] if emos else None
+        emos = [p.dominant_emotion for p in actor_projs if p.dominant_emotion]
+        dom_emo = max(set(emos), key=emos.count) if emos else None
 
-        all_ts: dict[str, float] = {}
-        for s in grp:
-            if isinstance(s.topic_scores, dict):
-                for t, sc in s.topic_scores.items():
-                    all_ts[t] = all_ts.get(t, 0.0) + float(sc or 0.0)
-
-        dom_topic = max(all_ts, key=lambda k: all_ts[k]) if all_ts else None
-        wpm = round(words / (dur / 60.0), 1) if dur > 0 else 0.0
+        seg_count = actor_projs[0].segment_count if actor_projs else 0
+        word_count = actor_projs[0].total_word_count if actor_projs else 0
 
         cs = CountryStat(
-            country=country,
-            file_id=file_id,
-            n_segments=n_segs,
-            n_sentences=sents,
-            total_words=words,
-            total_duration_sec=dur,
-            words_per_minute=wpm,
+            country=doc.country,
+            file_id=doc.file_id,
+            n_segments=seg_count,
+            total_words=word_count,
             avg_sentiment=avg_s,
             dominant_emotion=dom_emo,
-            dominant_topic=dom_topic,
+            dominant_topic=dominant_topic,
             topic_scores=dict(
-                sorted(all_ts.items(), key=lambda item: item[1], reverse=True)[:5]
+                sorted(
+                    topic_scores_compat.items(), key=lambda item: item[1], reverse=True
+                )[:5]
             ),
         )
         session.add(cs)
-
-        for topic, score in all_ts.items():
-            if score > 0.0:
-                tm = TopicMatrix(
-                    file_id=file_id,
-                    country=country,
-                    topic=topic,
-                    score=float(score),
-                )
-                session.add(tm)
 
     await session.flush()
 

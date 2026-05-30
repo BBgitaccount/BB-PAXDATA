@@ -52,6 +52,9 @@ class Analysis(BaseModel):
 
     segment_id: str | None = Field(default=None, description="ID of analyzed segment")
     sentence_id: str | None = Field(default=None, description="ID of analyzed sentence")
+    sentence_code: str | None = Field(
+        default=None, description="Unique short code for the sentence"
+    )
     speaker_id: str | None = Field(
         default=None, description="ID of the speaker analyzed"
     )

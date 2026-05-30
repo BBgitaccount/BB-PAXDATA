@@ -16,3 +16,10 @@ def compute_audit_hash(*data: str) -> str:
     for item in data:
         hasher.update(item.encode("utf-8"))
     return hasher.hexdigest()
+
+
+def generate_sentence_code() -> str:
+    """Generates a unique 10-character sentence code starting with 'S_' followed by 8 uppercase alphanumeric characters."""
+    import uuid
+
+    return f"S_{uuid.uuid4().hex[:8].upper()}"

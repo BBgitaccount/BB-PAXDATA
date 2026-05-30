@@ -2,7 +2,7 @@
 
 from typing import TYPE_CHECKING
 
-from sqlalchemy import Integer, String, Text, func
+from sqlalchemy import Index, Integer, String, Text, func
 from sqlalchemy.orm import Mapped, mapped_column
 
 from bb_paxdata.infrastructure.db.base import Base
@@ -15,11 +15,13 @@ class HumanReviewQueue(Base):
     """Tracks sentences requiring human review."""
 
     __tablename__ = "ai_human_review_queue"
+    __table_args__ = (Index("idx_review_sentence_code", "sentence_code"),)
 
     review_id: Mapped[int] = mapped_column(
         Integer, primary_key=True, autoincrement=True
     )
     sent_id: Mapped[str] = mapped_column(String, nullable=False)
+    sentence_code: Mapped[str | None] = mapped_column(String(50), nullable=True)
     seg_id: Mapped[str | None] = mapped_column(Text, nullable=True)
     file_id: Mapped[str | None] = mapped_column(Text, nullable=True)
     speaker_name: Mapped[str | None] = mapped_column(Text, nullable=True)

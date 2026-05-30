@@ -4,6 +4,8 @@ from typing import Any
 
 from pydantic import BaseModel, Field
 
+from bb_paxdata.domain.utils.hash import generate_sentence_code
+
 from ..enums import (
     AppraisalAttitude,
     AudienceType,
@@ -24,6 +26,10 @@ class Sentence(BaseModel):
     """Represents a single sentence in a transcript with analysis metadata."""
 
     id: str = Field(..., description="Unique identifier for the sentence")
+    sentence_code: str = Field(
+        default_factory=generate_sentence_code,
+        description="Unique short code for the sentence",
+    )
     text: str = Field(..., description="The actual text content of the sentence")
     speaker_id: str | None = Field(
         default=None, description="ID of the speaker who uttered this sentence"

@@ -515,9 +515,13 @@ class Sentence(Base):
         Index("idx_sent_rhetoric", "rhetoric_type"),
         Index("idx_sent_frame", "dominant_frame"),
         Index("idx_sent_audience", "audience_type"),
+        Index("idx_sent_code", "sentence_code", unique=True),
     )
 
     sent_id: Mapped[str] = mapped_column(String, primary_key=True)
+    sentence_code: Mapped[str | None] = mapped_column(
+        String(50), unique=True, nullable=True
+    )
     seg_id: Mapped[str] = mapped_column(ForeignKey("segments.seg_id"), nullable=False)
     file_id: Mapped[str] = mapped_column(ForeignKey("files.file_id"), nullable=False)
     speaker_id: Mapped[str | None] = mapped_column(Text, nullable=True)
@@ -1357,12 +1361,14 @@ class AISentenceAnalysis(Base):
         Index("idx_ai_tone", "diplomatic_tone"),
         Index("idx_ai_prompt_processed", "prompt_version", "processed_at"),
         Index("idx_ai_processed_at", "processed_at"),
+        Index("idx_ai_sentence_code", "sentence_code"),
     )
 
     ai_id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
     sent_id: Mapped[str] = mapped_column(
         ForeignKey("sentences.sent_id"), nullable=False
     )
+    sentence_code: Mapped[str | None] = mapped_column(String(50), nullable=True)
     prompt_version: Mapped[str | None] = mapped_column(
         String(80),
         nullable=True,
@@ -1548,10 +1554,12 @@ class AIValidationLog(Base):
         Index("idx_val_sent", "sent_id"),
         Index("idx_val_result", "result"),
         Index("idx_val_type", "check_type"),
+        Index("idx_val_sentence_code", "sentence_code"),
     )
 
     val_id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
     sent_id: Mapped[str] = mapped_column(Text, nullable=False)
+    sentence_code: Mapped[str | None] = mapped_column(String(50), nullable=True)
     seg_id: Mapped[str | None] = mapped_column(Text, nullable=True)
     file_id: Mapped[str | None] = mapped_column(Text, nullable=True)
     speaker_name: Mapped[str | None] = mapped_column(Text, nullable=True)
@@ -1746,10 +1754,12 @@ class AIContextualFlag(Base):
         Index("idx_flags_type", "anomaly_type"),
         Index("idx_flags_country", "country"),
         Index("idx_flags_cat", "flag_category"),
+        Index("idx_flags_sentence_code", "sentence_code"),
     )
 
     flag_id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
     sent_id: Mapped[str] = mapped_column(Text, nullable=False)
+    sentence_code: Mapped[str | None] = mapped_column(String(50), nullable=True)
     seg_id: Mapped[str | None] = mapped_column(Text, nullable=True)
     file_id: Mapped[str | None] = mapped_column(Text, nullable=True)
     speaker_name: Mapped[str | None] = mapped_column(Text, nullable=True)
@@ -1955,10 +1965,12 @@ class AIFailAnalysis(Base):
         Index("idx_fail_kategori", "fail_category"),
         Index("idx_fail_country", "country"),
         Index("idx_fail_panel", "file_id"),
+        Index("idx_fail_sentence_code", "sentence_code"),
     )
 
     fail_id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
     sent_id: Mapped[str] = mapped_column(Text, nullable=False)
+    sentence_code: Mapped[str | None] = mapped_column(String(50), nullable=True)
     prompt_version: Mapped[str | None] = mapped_column(
         String(80),
         nullable=True,
@@ -2305,10 +2317,12 @@ class FormulaValidationLog(Base):
         Index("idx_fval_entity", "entity_type", "entity_id"),
         Index("idx_fval_formula", "formula_name"),
         Index("idx_fval_status", "status"),
+        Index("idx_fval_sentence_code", "sentence_code"),
     )
 
     log_id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
     run_id: Mapped[str] = mapped_column(String, nullable=False)
+    sentence_code: Mapped[str | None] = mapped_column(String(50), nullable=True)
     entity_type: Mapped[str] = mapped_column(String, nullable=False)
     entity_id: Mapped[str] = mapped_column(String, nullable=False)
     formula_name: Mapped[str] = mapped_column(String, nullable=False)
@@ -2365,3 +2379,116 @@ class FormulaValidationLog(Base):
             status=model.validation_status or "FAIL",
             details=cf.get("details"),
         )
+
+
+class SegmentAnalyzedEvent(Base):
+    __tablename__ = "segment_events"
+
+    event_id: Mapped[str] = mapped_column(String(36), primary_key=True)
+    event_timestamp: Mapped[datetime] = mapped_column(DateTime, nullable=False)
+    file_id: Mapped[str] = mapped_column(String(255), nullable=False)
+    segment_id: Mapped[str] = mapped_column(String(255), nullable=False)
+    country: Mapped[str] = mapped_column(String(100), nullable=False)
+    text_snippet: Mapped[str | None] = mapped_column(Text, nullable=True)
+    vader_compound: Mapped[float] = mapped_column(Float, default=0.0, nullable=False)
+    diplo_compound: Mapped[float] = mapped_column(Float, default=0.0, nullable=False)
+    vad_vector: Mapped[dict[str, Any] | None] = mapped_column(JSON, nullable=True)
+    emotion_category: Mapped[str | None] = mapped_column(String(50), nullable=True)
+    risk_score: Mapped[float] = mapped_column(Float, default=0.0, nullable=False)
+    demand_count: Mapped[int] = mapped_column(Integer, default=0, nullable=False)
+    speech_act: Mapped[str | None] = mapped_column(String(50), nullable=True)
+    hedging_score: Mapped[float] = mapped_column(Float, default=0.0, nullable=False)
+    politeness_ratio: Mapped[float] = mapped_column(Float, default=0.0, nullable=False)
+    topic_scores: Mapped[dict[str, Any]] = mapped_column(JSON, nullable=False)
+    topic_model_version: Mapped[str] = mapped_column(String(50), nullable=False)
+    frame_distribution: Mapped[dict[str, Any] | None] = mapped_column(
+        JSON, nullable=True
+    )
+    pipeline_run_id: Mapped[str] = mapped_column(String(36), nullable=False)
+
+
+class ActorTopicProjection(Base):
+    __tablename__ = "actor_topic_projection"
+
+    file_id: Mapped[str] = mapped_column(String(255), primary_key=True)
+    country: Mapped[str] = mapped_column(String(100), primary_key=True)
+    topic: Mapped[str] = mapped_column(String(200), primary_key=True)
+    topic_model_version: Mapped[str] = mapped_column(String(50), primary_key=True)
+    score: Mapped[float] = mapped_column(Float, nullable=False)
+    mention_count: Mapped[int] = mapped_column(Integer, nullable=False)
+    fuzzy_mention_mass: Mapped[float] = mapped_column(Float, nullable=False)
+    avg_sentiment: Mapped[float] = mapped_column(Float, nullable=False)
+    sentiment_ci_lower: Mapped[float | None] = mapped_column(Float, nullable=True)
+    sentiment_ci_upper: Mapped[float | None] = mapped_column(Float, nullable=True)
+    sentiment_std: Mapped[float | None] = mapped_column(Float, nullable=True)
+    risk_score: Mapped[float] = mapped_column(Float, nullable=False)
+    risk_ci_lower: Mapped[float | None] = mapped_column(Float, nullable=True)
+    risk_ci_upper: Mapped[float | None] = mapped_column(Float, nullable=True)
+    composite_risk_index: Mapped[float | None] = mapped_column(Float, nullable=True)
+    demand_count: Mapped[float] = mapped_column(Float, nullable=False)
+    demand_density_per_1k: Mapped[float | None] = mapped_column(Float, nullable=True)
+    speech_act_distribution: Mapped[dict[str, Any] | None] = mapped_column(
+        JSON, nullable=True
+    )
+    avg_vad: Mapped[dict[str, Any] | None] = mapped_column(JSON, nullable=True)
+    dominant_emotion: Mapped[str | None] = mapped_column(String(50), nullable=True)
+    frame_distribution: Mapped[dict[str, Any] | None] = mapped_column(
+        JSON, nullable=True
+    )
+    dominant_frame: Mapped[str | None] = mapped_column(String(50), nullable=True)
+    frame_competition_index: Mapped[float | None] = mapped_column(Float, nullable=True)
+    avg_hedging: Mapped[float | None] = mapped_column(Float, nullable=True)
+    avg_politeness: Mapped[float | None] = mapped_column(Float, nullable=True)
+    diplomatic_signal_index: Mapped[float | None] = mapped_column(Float, nullable=True)
+    topic_entropy: Mapped[float | None] = mapped_column(Float, nullable=True)
+    js_divergence: Mapped[float | None] = mapped_column(Float, nullable=True)
+    top_coalition_actors: Mapped[list[Any] | None] = mapped_column(JSON, nullable=True)
+    last_event_id: Mapped[str] = mapped_column(String(36), nullable=False)
+    segment_count: Mapped[int] = mapped_column(Integer, nullable=False)
+    total_word_count: Mapped[int] = mapped_column(Integer, nullable=False)
+    updated_at: Mapped[datetime] = mapped_column(DateTime, nullable=False)
+
+
+class ActorTopicDocument(Base):
+    __tablename__ = "actor_topic_documents"
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True)
+    file_id: Mapped[str] = mapped_column(String(255), nullable=False)
+    country: Mapped[str] = mapped_column(String(100), nullable=False)
+    topic_model_version: Mapped[str] = mapped_column(String(50), nullable=False)
+    topic_details: Mapped[dict[str, Any]] = mapped_column(JSON, nullable=False)
+    network_edges: Mapped[dict[str, Any] | None] = mapped_column(JSON, nullable=True)
+    diplomatic_tension_index: Mapped[float | None] = mapped_column(Float, nullable=True)
+    agenda_diversity_index: Mapped[float | None] = mapped_column(Float, nullable=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime, nullable=False)
+    updated_at: Mapped[datetime] = mapped_column(DateTime, nullable=False)
+
+
+class AggregationLineage(Base):
+    __tablename__ = "aggregation_lineage"
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True)
+    projection_id: Mapped[str] = mapped_column(String(36), nullable=False)
+    event_id: Mapped[str] = mapped_column(String(36), nullable=False)
+    weight_contribution: Mapped[float] = mapped_column(Float, nullable=False)
+    contribution_timestamp: Mapped[datetime] = mapped_column(DateTime, nullable=False)
+
+
+class TopicModelVersion(Base):
+    __tablename__ = "topic_model_versions"
+
+    version_id: Mapped[str] = mapped_column(String(50), primary_key=True)
+    trained_at: Mapped[datetime] = mapped_column(DateTime, nullable=False)
+    hyperparameters: Mapped[dict[str, Any]] = mapped_column(JSON, nullable=False)
+    corpus_checksum: Mapped[str] = mapped_column(String(64), nullable=False)
+
+
+class TopicMapping(Base):
+    __tablename__ = "topic_mappings"
+
+    version_from: Mapped[str] = mapped_column(String(50), primary_key=True)
+    topic_from: Mapped[str] = mapped_column(String(200), primary_key=True)
+    version_to: Mapped[str] = mapped_column(String(50), primary_key=True)
+    topic_to: Mapped[str] = mapped_column(String(200), primary_key=True)
+    wasserstein_distance: Mapped[float] = mapped_column(Float, nullable=False)
+    mapping_confidence: Mapped[float] = mapped_column(Float, nullable=False)

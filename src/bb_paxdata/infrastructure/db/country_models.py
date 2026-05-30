@@ -244,6 +244,7 @@ class TopicMatrixTable(Base):
         JSON, nullable=False, default=dict
     )
     dominant_topic: Mapped[str | None] = mapped_column(String(200), nullable=True)
+    topic_details: Mapped[dict[str, Any] | None] = mapped_column(JSON, nullable=True)
 
     def to_domain(self) -> TopicSynthesis:
         from bb_paxdata.domain.models.topic_synthesis import (
