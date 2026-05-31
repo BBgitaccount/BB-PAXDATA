@@ -294,13 +294,7 @@ class LogicOnlyAIAnalyst:
 
         sentiment_service = SentimentService()
         sentiment_score = sentiment_service.negation_aware_diplo(text)
-
-        if sentiment_score > 0.05:
-            sentiment_label = "positive"
-        elif sentiment_score < -0.05:
-            sentiment_label = "negative"
-        else:
-            sentiment_label = "neutral"
+        sentiment_label = sentiment_service._classify_emotion(sentiment_score).value
 
         risk_score, risk_factors = _compute_risk(tokens)
         summary = _extract_summary(text)

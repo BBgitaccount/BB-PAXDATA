@@ -83,11 +83,11 @@ class DKIAssembler:
             # Assuming Analysis has a timestamp we can parse or use
             # Analysis.timestamp is ISO string
             try:
-                from datetime import datetime
+                from datetime import datetime, timezone
 
                 ts = datetime.fromisoformat(h.timestamp)
             except Exception:
-                ts = datetime.now()
+                ts = datetime.now(timezone.utc)
 
             trajectory_points.append({"theta": theta, "timestamp": ts})
 

@@ -620,12 +620,12 @@ class Sentence(Base):
 
         ts_dict: dict[str, float] | None = None
         if isinstance(self.topic_scores, dict):
-            ts_dict = {str(k): float(v) for k, v in self.topic_scores.items()}
+            ts_dict = {k: float(v) for k, v in self.topic_scores.items()}
         elif isinstance(self.topic_scores, str):
             try:
                 loaded = json.loads(self.topic_scores)
                 if isinstance(loaded, dict):
-                    ts_dict = {str(k): float(v) for k, v in loaded.items()}
+                    ts_dict = {k: float(v) for k, v in loaded.items()}
             except json.JSONDecodeError:
                 ts_dict = None
 
@@ -915,6 +915,13 @@ class TopicMatrix(Base):
     country: Mapped[str] = mapped_column(Text, primary_key=True)
     topic: Mapped[str] = mapped_column(Text, primary_key=True)
     score: Mapped[float] = mapped_column(Float, default=0.0)
+
+    mention_count: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    avg_sentiment: Mapped[float | None] = mapped_column(Float, nullable=True)
+    risk_score: Mapped[float | None] = mapped_column(Float, nullable=True)
+    demand_count: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    dominant_emotion: Mapped[str | None] = mapped_column(Text, nullable=True)
+    dominant_frame: Mapped[str | None] = mapped_column(Text, nullable=True)
 
     def to_domain(self) -> Topic:
         from bb_paxdata.domain.enums import TopicCategory

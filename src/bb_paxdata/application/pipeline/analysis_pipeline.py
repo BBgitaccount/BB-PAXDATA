@@ -142,6 +142,7 @@ class AnalysisPipeline:
         speaker_power_level: float = 0.5,
         session: AsyncSession | None = None,
         historical_analyses: list[Analysis] | None = None,
+        speaker_id: str = "unknown",
     ) -> PipelineResult:
         """Metni uçtan uca analiz eder. Tüm hatalar PipelineResult.errors'a eklenir."""
         errors: list[str] = []
@@ -166,7 +167,7 @@ class AnalysisPipeline:
             historical_segments=(
                 [
                     SegmentWindow(
-                        segment_ids=[h.segment_id],
+                        segment_ids=[h.segment_id] if h.segment_id else [],
                         texts=[h.source_text],
                         speaker_id=h.speaker_id,
                     )
@@ -175,6 +176,7 @@ class AnalysisPipeline:
                 if historical_analyses
                 else None
             ),
+            speaker_id=speaker_id,
         )
         errors.extend(collect_result.errors)
 

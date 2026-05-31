@@ -1,5 +1,4 @@
-# tests/domain/test_human_review.py
-from datetime import datetime
+from datetime import datetime, timezone
 
 import pytest
 from bb_paxdata.domain.models.calibration import CalibrationReport
@@ -140,8 +139,8 @@ def test_calibration_report_disagreement_rate_and_reliability() -> None:
     """CalibrationReport properties (disagreement_rate, is_reliable) doğru hesaplanmalı."""
     report = CalibrationReport(
         prompt_version="sentence_analysis@v1.2",
-        evaluation_period_start=datetime.utcnow(),
-        evaluation_period_end=datetime.utcnow(),
+        evaluation_period_start=datetime.now(timezone.utc),
+        evaluation_period_end=datetime.now(timezone.utc),
         total_reviews=10,
         total_disagreements=3,
         cohens_kappa_frame=0.72,
@@ -153,8 +152,8 @@ def test_calibration_report_disagreement_rate_and_reliability() -> None:
     # Test not reliable due to one low kappa
     unreliable_report = CalibrationReport(
         prompt_version="sentence_analysis@v1.2",
-        evaluation_period_start=datetime.utcnow(),
-        evaluation_period_end=datetime.utcnow(),
+        evaluation_period_start=datetime.now(timezone.utc),
+        evaluation_period_end=datetime.now(timezone.utc),
         total_reviews=10,
         total_disagreements=3,
         cohens_kappa_frame=0.61,  # <= 0.67
@@ -165,8 +164,8 @@ def test_calibration_report_disagreement_rate_and_reliability() -> None:
     # Test total reviews is 0
     empty_report = CalibrationReport(
         prompt_version="sentence_analysis@v1.2",
-        evaluation_period_start=datetime.utcnow(),
-        evaluation_period_end=datetime.utcnow(),
+        evaluation_period_start=datetime.now(timezone.utc),
+        evaluation_period_end=datetime.now(timezone.utc),
         total_reviews=0,
     )
     assert empty_report.disagreement_rate == 0.0

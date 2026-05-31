@@ -7,7 +7,7 @@ AI çıktıları burada referans olarak tutulur, değiştirilmez.
 
 from __future__ import annotations
 
-from datetime import datetime
+from datetime import datetime, timezone
 from enum import Enum
 from uuid import uuid4
 
@@ -63,7 +63,7 @@ class HumanReview(BaseModel):
         description="Uzmanın anlaşmazlık gerekçesi — kalibrasyon için kritik veri",
     )
     review_duration_seconds: int | None = None  # Uzmanın ne kadar süre harcadığı
-    created_at: datetime = Field(default_factory=datetime.utcnow)
+    created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
 
     @property
     def has_sbi_disagreement(self) -> bool:

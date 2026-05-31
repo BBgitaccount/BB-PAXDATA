@@ -145,7 +145,17 @@ class StanceDensityCalculator:
             weight = self.weights.get(category, 1.0)
             count = 0
             for marker in markers:
-                count += token_set.count(marker)
+                marker_words = marker.split()
+                if len(marker_words) == 1:
+                    count += token_set.count(marker_words[0])
+                else:
+                    # Multi-word phrase matching in token list
+                    match_count = 0
+                    m_len = len(marker_words)
+                    for i in range(len(token_set) - m_len + 1):
+                        if token_set[i : i + m_len] == marker_words:
+                            match_count += 1
+                    count += match_count
 
             weighted_sum += count * weight
             details[category] = count

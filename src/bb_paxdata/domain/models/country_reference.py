@@ -1,7 +1,7 @@
 # src/bb_paxdata/domain/models/country_reference.py
 from __future__ import annotations
 
-from datetime import datetime
+from datetime import datetime, timezone
 from uuid import UUID, uuid4
 
 from pydantic import BaseModel, Field
@@ -26,6 +26,9 @@ class CountryReference(BaseModel):
         ..., min_length=1, description="Analiz edilen panel/transkript ID'si"
     )
     speaker_country: str = Field(..., min_length=2, max_length=100)
+    speaker_id: str | None = Field(
+        default=None, max_length=255, description="Konuşmacının ID'si"
+    )
     referenced_country: str = Field(..., min_length=2, max_length=100)
     sentence_index: int = Field(
         ..., ge=0, description="Atıfın yapıldığı cümlenin sıra numarası"
@@ -38,7 +41,7 @@ class CountryReference(BaseModel):
         le=1.0,
         description="Konuşmacının panel içindeki güç/otorite ağırlığı (SBI'dan türetilir)",
     )
-    created_at: datetime = Field(default_factory=datetime.utcnow)
+    created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
 
     @property
     def is_hostile(self) -> bool:

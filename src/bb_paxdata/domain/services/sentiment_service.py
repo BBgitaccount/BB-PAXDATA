@@ -195,6 +195,11 @@ class SentimentService(BaseService, SentimentServiceProtocol):
         "transition": 0.1,
     }
 
+    # Pre-sorted list of lexicon items for performance (longest phrase matched first)
+    SORTED_DIPLO_ITEMS: ClassVar[list[tuple[str, float]]] = sorted(
+        DIPLO_LEXICON.items(), key=lambda x: -len(x[0])
+    )
+
     # Extended negation words list
     NEGATION_WORDS: ClassVar[list[str]] = [
         "not",
@@ -276,40 +281,16 @@ class SentimentService(BaseService, SentimentServiceProtocol):
         Returns:
             List of lowercase word tokens
         """
-        # Contraction map — encode (apostrophe → underscore)
-        contraction_map = {
-            "won't": "won_t",
-            "don't": "don_t",
-            "doesn't": "doesn_t",
-            "didn't": "didn_t",
-            "can't": "can_t",
-            "couldn't": "couldn_t",
-            "shouldn't": "shouldn_t",
-            "wouldn't": "wouldn_t",
-            "isn't": "isn_t",
-            "aren't": "aren_t",
-            "wasn't": "wasn_t",
-            "weren't": "weren_t",
-            "haven't": "haven_t",
-            "hasn't": "hasn_t",
-            "hadn't": "hadn_t",
-            "mustn't": "mustn_t",
-            "needn't": "needn_t",
-            "shan't": "shan_t",
-        }
-
         tl = text.lower()
 
-        # Step 1: encode contractions
-        for contraction, encoded in contraction_map.items():
-            tl = tl.replace(contraction, encoded)
+        # Step 1: encode contractions (apostrophe between letters becomes underscore)
+        tl = re.sub(r"([a-zğüşıöç])'([a-zğüşıöç])", r"\1_\2", tl)
 
         # Step 2: tokenize — includes Turkish chars and underscore/hyphen
-        raw_tokens = re.findall(r"\b[a-zğüşıöç'_-]+\b", tl)
+        raw_tokens = re.findall(r"\b[a-zğüşıöç_-]+\b", tl)
 
         # Step 3: decode back (won_t → won't so negation list matches)
-        decode_map = {v: k for k, v in contraction_map.items()}
-        tokens = [decode_map.get(tok, tok) for tok in raw_tokens]
+        tokens = [t.replace("_", "'") for t in raw_tokens]
 
         return tokens
 
@@ -334,9 +315,7 @@ class SentimentService(BaseService, SentimentServiceProtocol):
         adj = (
             sum(
                 v
-                for phrase, v in sorted(
-                    self.DIPLO_LEXICON.items(), key=lambda x: -len(x[0])
-                )
+                for phrase, v in self.SORTED_DIPLO_ITEMS
                 if re.search(r"\b" + re.escape(phrase) + r"\b", tl)
             )
             * 0.05
@@ -373,9 +352,7 @@ class SentimentService(BaseService, SentimentServiceProtocol):
 
         for i, _tok in enumerate(tokens):
             # Match phrases starting at position i (phrase-first: longest first)
-            for phrase, val in sorted(
-                self.DIPLO_LEXICON.items(), key=lambda x: -len(x[0])
-            ):
+            for phrase, val in self.SORTED_DIPLO_ITEMS:
                 phrase_words = phrase.split()
                 end = i + len(phrase_words)
                 if end <= len(tokens) and tokens[i:end] == phrase_words:

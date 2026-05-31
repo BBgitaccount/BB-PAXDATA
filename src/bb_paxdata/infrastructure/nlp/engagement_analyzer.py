@@ -152,6 +152,58 @@ EVASION_MARKERS = {
 }
 
 
+ME_MA_LI_LI_PATTERN = re.compile(
+    r"\b\w+(?:meli|malı)(?:yim|yım|sin|sın|yiz|yız|siniz|sınız|ler|lar|ydi|ydı|ymış|ymış|yse|ysek|n|m|k)?\b"
+)
+
+
+def _match_engagement_marker(sent_lower: str, marker: str) -> bool:
+    if marker == "states":
+        return bool(re.search(r"\b(?<!united\s)states\b", sent_lower))
+    elif marker == "yet":
+        return bool(re.search(r"\byet\b", sent_lower))
+    else:
+        return bool(re.search(rf"\b{re.escape(marker)}\b", sent_lower))
+
+
+def _match_word(sent_lower: str, word: str) -> bool:
+    return bool(re.search(rf"\b{re.escape(word)}\b", sent_lower))
+
+
+def _match_demand_keyword(sent_lower: str, keyword: str) -> bool:
+    if keyword in ("meli", "malı"):
+        return bool(ME_MA_LI_LI_PATTERN.search(sent_lower))
+    if keyword in (
+        "demand",
+        "require",
+        "insist",
+        "urge",
+        "request",
+        "gerekmek",
+        "istemek",
+    ):
+        return bool(re.search(rf"\b{re.escape(keyword)}\w*\b", sent_lower))
+    if keyword == "talep etmek":
+        return bool(re.search(r"\btalep\s+etmek\w*\b", sent_lower))
+    if keyword == "çağrıda bulunmak":
+        return bool(re.search(r"\bçağrıda\s+bulunmak\w*\b", sent_lower))
+    return bool(re.search(rf"\b{re.escape(keyword)}\b", sent_lower))
+
+
+def _match_rst_connective(sent_lower: str, conn: str) -> bool:
+    return bool(re.search(rf"\b{re.escape(conn)}\b", sent_lower))
+
+
+def _count_elaboration_connective(sent_lower: str, conn: str) -> int:
+    return len(re.findall(rf"\b{re.escape(conn)}\b", sent_lower))
+
+
+def _count_evasion_marker(sent_lower: str, ev_marker: str) -> int:
+    if ev_marker in ("...", "[...]"):
+        return sent_lower.count(ev_marker)
+    return len(re.findall(rf"\b{re.escape(ev_marker)}\b", sent_lower))
+
+
 class DetailedEngagementScore(float):
     """Float subclass that carries additional engagement/rhetorical metadata."""
 
@@ -260,7 +312,7 @@ class EngagementAnalyzer:
             # Check for polygloss markers
             for category, markers in self.markers.items():
                 for marker in markers:
-                    if marker in sent_lower:
+                    if _match_engagement_marker(sent_lower, marker):
                         is_polygloss = True
                         total_markers += 1
 
@@ -269,23 +321,29 @@ class EngagementAnalyzer:
 
             # Check for graduation force
             for booster in self.graduation["boosters"]:
-                if booster in sent_lower:
+                if _match_word(sent_lower, booster):
                     force_scores.append(1.0)
             for hedge in self.graduation["hedges"]:
-                if hedge in sent_lower:
+                if _match_word(sent_lower, hedge):
                     force_scores.append(0.5)
 
             # Demands count for density
-            if any(demand_kw in sent_lower for demand_kw in DEMAND_KEYWORDS):
+            if any(
+                _match_demand_keyword(sent_lower, demand_kw)
+                for demand_kw in DEMAND_KEYWORDS
+            ):
                 demands_count += 1
 
             # Silence / evasion markers
             for ev_marker in EVASION_MARKERS:
-                if ev_marker in sent_lower:
-                    silence_markers_count += sent_lower.count(ev_marker)
+                silence_markers_count += _count_evasion_marker(sent_lower, ev_marker)
 
             # RST depth heuristic: 1 + count of connectives
-            depth = 1.0 + sum(1.0 for conn in RST_CONNECTIVES if conn in sent_lower)
+            depth = 1.0 + sum(
+                1.0
+                for conn in RST_CONNECTIVES
+                if _match_rst_connective(sent_lower, conn)
+            )
             depth_scores.append(depth)
 
             # RST nucleus ratio heuristic
@@ -297,8 +355,7 @@ class EngagementAnalyzer:
 
             # RST elaboration density heuristic
             for conn in ELABORATION_CONNECTIVES:
-                if conn in sent_lower:
-                    elaboration_count += sent_lower.count(conn)
+                elaboration_count += _count_elaboration_connective(sent_lower, conn)
 
         # Baseline engagement score
         if total_markers == 0:

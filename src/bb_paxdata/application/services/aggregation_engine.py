@@ -1,6 +1,6 @@
 # src/bb_paxdata/application/services/aggregation_engine.py
 import uuid
-from datetime import datetime
+from datetime import datetime, timezone
 
 import numpy as np
 from bb_paxdata.infrastructure.db.models import (
@@ -29,9 +29,10 @@ class AggregationEngine:
         n = len(values)
         for _ in range(self.n_bootstrap_iterations):
             indices = np.random.choice(n, size=n, replace=True)
-            bootstrap_means.append(
-                np.average(values[indices], weights=weights[indices])
-            )
+            w_sample = weights[indices]
+            if np.sum(w_sample) == 0:
+                w_sample = np.ones(n)
+            bootstrap_means.append(np.average(values[indices], weights=w_sample))
 
         lower = float(np.percentile(bootstrap_means, 2.5))
         upper = float(np.percentile(bootstrap_means, 97.5))
@@ -63,7 +64,7 @@ class AggregationEngine:
             return float(np.sum(sim))
 
         jsd = 0.5 * kl_divergence(p_arr, m) + 0.5 * kl_divergence(q_arr, m)
-        return float(jsd)
+        return jsd
 
     def aggregate_events(
         self, events: list[SegmentAnalyzedEvent]
@@ -191,7 +192,7 @@ class AggregationEngine:
                     last_event_id=evs[-1].event_id,
                     segment_count=len(set(ev.segment_id for ev in evs)),
                     total_word_count=total_word_count,
-                    updated_at=datetime.now(),
+                    updated_at=datetime.now(timezone.utc),
                 )
                 projections.append(proj)
 
@@ -215,8 +216,8 @@ class AggregationEngine:
                 network_edges={},
                 diplomatic_tension_index=diplomatic_tension_index,
                 agenda_diversity_index=agenda_diversity_index,
-                created_at=datetime.now(),
-                updated_at=datetime.now(),
+                created_at=datetime.now(timezone.utc),
+                updated_at=datetime.now(timezone.utc),
             )
             documents.append(doc)
 

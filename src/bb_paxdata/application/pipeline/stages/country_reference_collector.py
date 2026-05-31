@@ -82,6 +82,7 @@ class CountryReferenceCollector:
         panel_id: str,
         speaker_country: str,
         speaker_power_level: float = 0.5,
+        speaker_id: str | None = None,
     ) -> CountryCollectResult:
         """
         Ana giriş noktası. COLLECT aşamasından asyncio.gather() ile çağrılır.
@@ -94,11 +95,20 @@ class CountryReferenceCollector:
 
             if self._use_llm_context:
                 references = await self._classify_with_llm(
-                    raw_mentions, text, panel_id, speaker_country, speaker_power_level
+                    raw_mentions,
+                    text,
+                    panel_id,
+                    speaker_country,
+                    speaker_power_level,
+                    speaker_id=speaker_id,
                 )
             else:
                 references = self._classify_with_rules(
-                    raw_mentions, panel_id, speaker_country, speaker_power_level
+                    raw_mentions,
+                    panel_id,
+                    speaker_country,
+                    speaker_power_level,
+                    speaker_id=speaker_id,
                 )
 
             confidence = self._calculate_confidence(references)
@@ -163,6 +173,7 @@ class CountryReferenceCollector:
         panel_id: str,
         speaker_country: str,
         power_level: float,
+        speaker_id: str | None = None,
     ) -> list[CountryReference]:
         """
         Kural tabanlı bağlam sınıflandırması.
@@ -181,6 +192,7 @@ class CountryReferenceCollector:
                 CountryReference(
                     panel_id=panel_id,
                     speaker_country=speaker_country,
+                    speaker_id=speaker_id,
                     referenced_country=country,
                     sentence_index=sent_idx,
                     reference_context=context,
@@ -197,6 +209,7 @@ class CountryReferenceCollector:
         panel_id: str,
         speaker_country: str,
         power_level: float,
+        speaker_id: str | None = None,
     ) -> list[CountryReference]:
         """
         LLM ile gelişmiş bağlam sınıflandırması.
@@ -210,7 +223,7 @@ class CountryReferenceCollector:
         """
         if not self._prompts or not self._recovery or not self._llm:
             return self._classify_with_rules(
-                mentions, panel_id, speaker_country, power_level
+                mentions, panel_id, speaker_country, power_level, speaker_id=speaker_id
             )
 
         try:
@@ -267,7 +280,12 @@ class CountryReferenceCollector:
                     )
 
             return self._build_from_llm_output(
-                parsed, mentions, panel_id, speaker_country, power_level
+                parsed,
+                mentions,
+                panel_id,
+                speaker_country,
+                power_level,
+                speaker_id=speaker_id,
             )
 
         except Exception as exc:
@@ -277,7 +295,7 @@ class CountryReferenceCollector:
                 panel_id=panel_id,
             )
             return self._classify_with_rules(
-                mentions, panel_id, speaker_country, power_level
+                mentions, panel_id, speaker_country, power_level, speaker_id=speaker_id
             )
 
     def _build_from_llm_output(
@@ -287,6 +305,7 @@ class CountryReferenceCollector:
         panel_id: str,
         speaker_country: str,
         power_level: float,
+        speaker_id: str | None = None,
     ) -> list[CountryReference]:
         """LLM çıktısından CountryReference listesi oluşturur."""
         mention_lookup: dict[str, tuple[int, float]] = {
@@ -321,6 +340,7 @@ class CountryReferenceCollector:
                 CountryReference(
                     panel_id=panel_id,
                     speaker_country=speaker_country,
+                    speaker_id=speaker_id,
                     referenced_country=country,
                     sentence_index=sent_idx,
                     reference_context=context,

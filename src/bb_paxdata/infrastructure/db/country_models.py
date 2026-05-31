@@ -12,7 +12,7 @@ Kurallar:
 from __future__ import annotations
 
 import uuid
-from datetime import datetime
+from datetime import datetime, timezone
 from decimal import Decimal
 from typing import TYPE_CHECKING, Any
 
@@ -43,6 +43,7 @@ class CountryReferenceTable(Base):
     )
     file_id: Mapped[str] = mapped_column(String(255), nullable=False)
     speaker_country: Mapped[str] = mapped_column(String(100), nullable=False)
+    speaker_id: Mapped[str | None] = mapped_column(String(255), nullable=True)
     referenced_country: Mapped[str] = mapped_column(String(100), nullable=False)
     sentence_index: Mapped[int] = mapped_column(Integer, nullable=False)
     reference_context: Mapped[str] = mapped_column(
@@ -55,7 +56,7 @@ class CountryReferenceTable(Base):
         Float, nullable=False, default=0.5
     )
     created_at: Mapped[datetime] = mapped_column(
-        DateTime, nullable=False, default=datetime.utcnow
+        DateTime, nullable=False, default=lambda: datetime.now(timezone.utc)
     )
 
     def to_domain(self) -> CountryReference:
@@ -70,6 +71,7 @@ class CountryReferenceTable(Base):
             id=uuid.UUID(self.id),
             panel_id=self.file_id,
             speaker_country=self.speaker_country,
+            speaker_id=self.speaker_id,
             referenced_country=self.referenced_country,
             sentence_index=self.sentence_index,
             reference_context=ReferenceContext(self.reference_context),
@@ -84,6 +86,7 @@ class CountryReferenceTable(Base):
             id=str(entity.id),
             file_id=entity.panel_id,
             speaker_country=entity.speaker_country,
+            speaker_id=entity.speaker_id,
             referenced_country=entity.referenced_country,
             sentence_index=entity.sentence_index,
             reference_context=entity.reference_context.value,
@@ -131,7 +134,7 @@ class BilateralSentimentTable(Base):
     maoz_diplomatic_distance: Mapped[Decimal | None] = mapped_column(Numeric(12, 6))
     maoz_affinity_score: Mapped[Decimal | None] = mapped_column(Numeric(12, 6))
     last_updated: Mapped[datetime] = mapped_column(
-        DateTime, nullable=False, default=datetime.utcnow
+        DateTime, nullable=False, default=lambda: datetime.now(timezone.utc)
     )
 
     def to_domain(self) -> BilateralSentiment:

@@ -105,6 +105,7 @@ class CollectStage:
         speaker_power_level: float = 0.5,
         language: str | None = None,
         historical_segments: list[SegmentWindow] | None = None,
+        speaker_id: str | None = None,
     ) -> CollectResult:
         """
         Tüm servisleri paralel çalıştırır.
@@ -128,6 +129,7 @@ class CollectStage:
                 panel_id=panel_id,
                 speaker_country=speaker_country,
                 speaker_power_level=speaker_power_level,
+                speaker_id=speaker_id,
             ),
             self._negation_detector.detect(text, sentence_id=panel_id),
             self._risk_detector.detect(text, sentence_id=panel_id),

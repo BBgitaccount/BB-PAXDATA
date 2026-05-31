@@ -578,6 +578,23 @@ def _classify_demand_category(sentence_lower: str) -> DemandCategory:
     return DemandCategory.DIPLOMATIC_ENGAGEMENT
 
 
+def normalize_name_for_matching(name: str) -> str:
+    """Normalize a name to lowercase ASCII by removing accents and special characters."""
+    name_lower = name.lower()
+    name_lower = (
+        name_lower.replace("ı", "i")
+        .replace("ö", "o")
+        .replace("ü", "u")
+        .replace("ş", "s")
+        .replace("ç", "c")
+        .replace("ğ", "g")
+    )
+    import unicodedata
+
+    nfkd_form = unicodedata.normalize("NFKD", name_lower)
+    return nfkd_form.encode("ASCII", "ignore").decode("ASCII").strip()
+
+
 def clean_speaker_name_helper(speaker: str) -> tuple[str, str]:
     """Extract clean speaker name and existing country code if present, otherwise map it."""
     match = re.search(r"\(([^)]+)\)$|\[([^\]]+)\]$", speaker)
@@ -593,6 +610,13 @@ def clean_speaker_name_helper(speaker: str) -> tuple[str, str]:
 
     clean_name = speaker.strip()
     raw_country = SPEAKER_COUNTRY_MAP.get(clean_name, "unknown")
+    if raw_country == "unknown":
+        norm_clean = normalize_name_for_matching(clean_name)
+        for name, code in SPEAKER_COUNTRY_MAP.items():
+            if normalize_name_for_matching(name) == norm_clean:
+                raw_country = code
+                break
+
     if raw_country != "unknown":
         country = COUNTRY_NORM_MAP.get(raw_country.upper(), raw_country)
     else:
@@ -600,14 +624,61 @@ def clean_speaker_name_helper(speaker: str) -> tuple[str, str]:
     return clean_name, country
 
 
-def standardize_file_content(file_path: Path, file_content: str) -> str:
+def parse_speakers_metadata(speakers_raw: str) -> dict[str, dict[str, Any]]:
     """
-    Standardize the raw transcript file content:
-    - Adds metadata headers at the top if missing or incomplete.
-    - Appends country code suffix to speakers.
+    Parses SPEAKERS line from file header.
+    Format: "Cevdet Yılmaz (Turkey) [Power: 8], Hakan Fidan (Turkey) [Power: 9]"
+    Returns:
+        {"cevdet yılmaz": {"name": "Cevdet Yılmaz", "country": "Turkey", "power_level": 8}, ...}
     """
+    speakers_map: dict[str, dict[str, Any]] = {}
+    if not speakers_raw:
+        return speakers_map
+
+    parts = speakers_raw.split(", ")
+    for part in parts:
+        part = part.strip()
+        if not part:
+            continue
+        match = re.match(r"^(.+?)\s*\(([^)]+)\)\s*\[Power:\s*(\d+)\]$", part)
+        if match:
+            name = match.group(1).strip()
+            country = match.group(2).strip()
+            power_level = int(match.group(3).strip())
+            speakers_map[name.lower()] = {
+                "name": name,
+                "country": country,
+                "power_level": power_level,
+            }
+    return speakers_map
+
+
+def get_speaker_power_level(speaker_name: str) -> int:
+    """Helper to determine a speaker's power level using SPEAKER_MAP and POWER_LEVELS."""
+    sp_info = SPEAKER_MAP.get(speaker_name)
+    if not sp_info:
+        for name, info in SPEAKER_MAP.items():
+            if name.lower() == speaker_name.lower():
+                sp_info = info
+                break
+    if not sp_info:
+        norm_speaker = normalize_name_for_matching(speaker_name)
+        for name, info in SPEAKER_MAP.items():
+            if normalize_name_for_matching(name) == norm_speaker:
+                sp_info = info
+                break
+    if sp_info:
+        _, _, sp_role = sp_info
+        return POWER_LEVELS.get(sp_role, 3)
+    return 3
+
+
+def _parse_transcript_header_and_dialogue(
+    file_content: str,
+) -> tuple[dict[str, str], list[str]]:
+    """Parses metadata header and splits dialogue lines from transcript content."""
     lines = file_content.splitlines()
-    metadata = {}
+    metadata: dict[str, str] = {}
     line_idx = 0
     has_metadata = False
 
@@ -621,23 +692,32 @@ def standardize_file_content(file_path: Path, file_content: str) -> str:
             line_idx += 1
             break
         if ":" in line and not any(
-            line.startswith(x) for x in ["TITLE:", "DATE:", "THEME:", "PANEL_NUMBER:"]
+            line.startswith(x)
+            for x in ["TITLE:", "DATE:", "THEME:", "PANEL_NUMBER:", "SPEAKERS:"]
         ):
             break
 
-        if line.startswith("TITLE:"):
-            metadata["title"] = line.split("TITLE:", 1)[1].strip()
-        elif line.startswith("DATE:"):
-            metadata["date"] = line.split("DATE:", 1)[1].strip()
-        elif line.startswith("THEME:"):
-            metadata["theme"] = line.split("THEME:", 1)[1].strip()
-        elif line.startswith("PANEL_NUMBER:"):
-            metadata["file_number"] = line.split("PANEL_NUMBER:", 1)[1].strip()
-        else:
+        matched = False
+        for key in ["TITLE", "DATE", "THEME", "PANEL_NUMBER", "SPEAKERS"]:
+            if line.startswith(f"{key}:"):
+                metadata[key.lower()] = line.split(f"{key}:", 1)[1].strip()
+                matched = True
+                break
+        if not matched:
             break
         line_idx += 1
 
     dialogue_lines = lines[line_idx:] if has_metadata else lines
+    return metadata, dialogue_lines
+
+
+def standardize_file_content(file_path: Path, file_content: str) -> str:
+    """
+    Standardize the raw transcript file content:
+    - Adds metadata headers at the top if missing or incomplete.
+    - Appends country code suffix to speakers.
+    """
+    metadata, dialogue_lines = _parse_transcript_header_and_dialogue(file_content)
 
     title = (
         metadata.get("title")
@@ -655,11 +735,12 @@ def standardize_file_content(file_path: Path, file_content: str) -> str:
         or "Diplomacy"
     )
     file_number = (
-        metadata.get("file_number")
+        metadata.get("panel_number")
         or PANELS_METADATA.get(file_path.name, {}).get("file_number")
         or ""
     )
 
+    unique_speakers: dict[str, dict[str, Any]] = {}
     new_dialogue_lines = []
     for line in dialogue_lines:
         line_str = line.strip()
@@ -682,11 +763,27 @@ def standardize_file_content(file_path: Path, file_content: str) -> str:
         clean_name, country = clean_speaker_name_helper(speaker_part)
         new_dialogue_lines.append(f"{clean_name} ({country}) : {text_part}")
 
+        name_lower = clean_name.lower()
+        if name_lower not in unique_speakers:
+            power = get_speaker_power_level(clean_name)
+            unique_speakers[name_lower] = {
+                "name": clean_name,
+                "country": country,
+                "power": power,
+            }
+
+    sorted_speakers = sorted(unique_speakers.values(), key=lambda s: s["name"])
+    speaker_strings = [
+        f"{s['name']} ({s['country']}) [Power: {s['power']}]" for s in sorted_speakers
+    ]
+    speakers_line = "SPEAKERS: " + ", ".join(speaker_strings)
+
     header_block = [
         f"TITLE: {title}",
         f"DATE: {date}",
         f"THEME: {theme}",
         f"PANEL_NUMBER: {file_number}",
+        speakers_line,
         "---",
     ]
 
@@ -715,16 +812,39 @@ def get_speaker_map_version() -> str:
     return "1.0"
 
 
+_SPEAKER_COUNTRY_LOWER_CACHE: dict[str, str] | None = None
+_SPEAKER_COUNTRY_NORM_CACHE: dict[str, str] | None = None
+
+
 def resolve_country(speaker_name: str) -> str:
+    global _SPEAKER_COUNTRY_LOWER_CACHE, _SPEAKER_COUNTRY_NORM_CACHE
+    if _SPEAKER_COUNTRY_LOWER_CACHE is None or _SPEAKER_COUNTRY_NORM_CACHE is None:
+        _SPEAKER_COUNTRY_LOWER_CACHE = {
+            k.lower(): v for k, v in SPEAKER_COUNTRY_MAP.items()
+        }
+        _SPEAKER_COUNTRY_NORM_CACHE = {
+            normalize_name_for_matching(k): v for k, v in SPEAKER_COUNTRY_MAP.items()
+        }
+
+    lower_cache = _SPEAKER_COUNTRY_LOWER_CACHE
+    norm_cache = _SPEAKER_COUNTRY_NORM_CACHE
+    assert lower_cache is not None
+    assert norm_cache is not None
+
     # First check SPEAKER_COUNTRY_MAP
     clean_name = re.sub(r"\s*\(.*\)$|\s*\[.*\]$", "", speaker_name).strip()
     if clean_name in SPEAKER_COUNTRY_MAP:
         return SPEAKER_COUNTRY_MAP[clean_name]
 
     # Try exact match case-insensitive
-    for name, code in SPEAKER_COUNTRY_MAP.items():
-        if name.lower() == clean_name.lower():
-            return code
+    clean_lower = clean_name.lower()
+    if clean_lower in lower_cache:
+        return lower_cache[clean_lower]
+
+    # Try normalized match
+    norm_clean = normalize_name_for_matching(clean_name)
+    if norm_clean in norm_cache:
+        return norm_cache[norm_clean]
 
     name_lower = clean_name.lower()
     if any(
@@ -934,55 +1054,20 @@ async def _process_single_file(
     )
 
     # Parse metadata headers
-    file_title = file_path.stem
-    file_date = "April 2026"
-    file_theme = "Diplomacy"
-    file_number = None
+    metadata_lines, dialogue_lines = _parse_transcript_header_and_dialogue(file_content)
 
-    lines = file_content.splitlines()
-    line_idx = 0
-    has_metadata = False
-    metadata_lines: dict[str, Any] = {}
+    file_title = metadata_lines.get("title") or file_path.stem
+    file_date = metadata_lines.get("date") or "April 2026"
+    file_theme = metadata_lines.get("theme") or "Diplomacy"
 
-    while line_idx < len(lines):
-        line = lines[line_idx].strip()
-        if not line:
-            line_idx += 1
-            continue
-        if line == "---":
-            has_metadata = True
-            line_idx += 1
-            break
-        if ":" in line and not any(
-            line.startswith(x) for x in ["TITLE:", "DATE:", "THEME:", "PANEL_NUMBER:"]
-        ):
-            break
+    try:
+        file_number = int(metadata_lines.get("panel_number", ""))
+    except ValueError:
+        file_number = None
 
-        if line.startswith("TITLE:"):
-            metadata_lines["title"] = line.split("TITLE:", 1)[1].strip()
-        elif line.startswith("DATE:"):
-            metadata_lines["date"] = line.split("DATE:", 1)[1].strip()
-        elif line.startswith("THEME:"):
-            metadata_lines["theme"] = line.split("THEME:", 1)[1].strip()
-        elif line.startswith("PANEL_NUMBER:"):
-            try:
-                metadata_lines["file_number"] = int(
-                    line.split("PANEL_NUMBER:", 1)[1].strip()
-                )
-            except ValueError:
-                pass
-        else:
-            break
-        line_idx += 1
-
-    if has_metadata:
-        file_title = metadata_lines.get("title", file_title)
-        file_date = metadata_lines.get("date", file_date)
-        file_theme = metadata_lines.get("theme", file_theme)
-        file_number = metadata_lines.get("file_number", file_number)
-        dialogue_lines = lines[line_idx:]
-    else:
-        dialogue_lines = lines
+    file_speakers_metadata = {}
+    if "speakers" in metadata_lines:
+        file_speakers_metadata = parse_speakers_metadata(metadata_lines["speakers"])
 
     # Parse lines and group dialogue turns into segments
     segments_data: list[dict[str, Any]] = []
@@ -1069,30 +1154,54 @@ async def _process_single_file(
         country = seg["country"]
         unique_countries_in_file.add(country)
 
-        if not db_speaker:
-            sp_info = SPEAKER_MAP.get(speaker_name)
-            if not sp_info:
-                for name, info in SPEAKER_MAP.items():
-                    if name.lower() == speaker_name.lower():
-                        sp_info = info
-                        break
+        file_speaker_info = file_speakers_metadata.get(speaker_name.lower())
 
-            if sp_info:
-                sp_country, sp_title, sp_role = sp_info
+        if not db_speaker:
+            if file_speaker_info:
+                sp_country = file_speaker_info["country"]
+                sp_power = file_speaker_info["power_level"]
+                sp_info = SPEAKER_MAP.get(speaker_name)
+                if not sp_info:
+                    for name, info in SPEAKER_MAP.items():
+                        if name.lower() == speaker_name.lower():
+                            sp_info = info
+                            break
+                if sp_info:
+                    _, sp_title, sp_role = sp_info
+                else:
+                    sp_title = "Participant"
+                    sp_role = "panelist"
+                    for r, p in POWER_LEVELS.items():
+                        if p == sp_power:
+                            sp_role = r
+                            sp_title = r.replace("_", " ").title()
+                            break
                 sp_bloc = BLOC_MAP.get(sp_country, "unknown")
-                sp_power = POWER_LEVELS.get(sp_role, 3)
                 sp_tier = power_to_tier(sp_power)
             else:
-                sp_country = country
-                sp_title = "Participant"
-                sp_role = "panelist"
-                sp_bloc = (
-                    BLOC_MAP.get(sp_country, "unknown")
-                    if sp_country != "unknown"
-                    else "unknown"
-                )
-                sp_power = 3
-                sp_tier = "TIER4_EXPERT"
+                sp_info = SPEAKER_MAP.get(speaker_name)
+                if not sp_info:
+                    for name, info in SPEAKER_MAP.items():
+                        if name.lower() == speaker_name.lower():
+                            sp_info = info
+                            break
+
+                if sp_info:
+                    sp_country, sp_title, sp_role = sp_info
+                    sp_bloc = BLOC_MAP.get(sp_country, "unknown")
+                    sp_power = POWER_LEVELS.get(sp_role, 3)
+                    sp_tier = power_to_tier(sp_power)
+                else:
+                    sp_country = country
+                    sp_title = "Participant"
+                    sp_role = "panelist"
+                    sp_bloc = (
+                        BLOC_MAP.get(sp_country, "unknown")
+                        if sp_country != "unknown"
+                        else "unknown"
+                    )
+                    sp_power = 3
+                    sp_tier = "TIER4_EXPERT"
 
             db_speaker = SpeakerProfile(
                 speaker_id=speaker_id,
@@ -1106,10 +1215,25 @@ async def _process_single_file(
             )
             session.add(db_speaker)
             await session.flush()
-        elif db_speaker.country == "unknown" and country != "unknown":
-            db_speaker.country = country
-            db_speaker.bloc = BLOC_MAP.get(country, "unknown")
-            await session.flush()
+        else:
+            changed = False
+            if file_speaker_info:
+                file_power = file_speaker_info["power_level"]
+                file_country = file_speaker_info["country"]
+                if db_speaker.power_level != file_power:
+                    db_speaker.power_level = file_power
+                    db_speaker.influence_tier = power_to_tier(file_power)
+                    changed = True
+                if file_country not in {db_speaker.country, "unknown"}:
+                    db_speaker.country = file_country
+                    db_speaker.bloc = BLOC_MAP.get(file_country, "unknown")
+                    changed = True
+            elif db_speaker.country == "unknown" and country != "unknown":
+                db_speaker.country = country
+                db_speaker.bloc = BLOC_MAP.get(country, "unknown")
+                changed = True
+            if changed:
+                await session.flush()
 
         db_segment = Segment(
             seg_id=f"seg_{file_id}_{seg_idx}",
@@ -1147,7 +1271,8 @@ async def _process_single_file(
                 text=sentence_text,
                 file_id=file_id,
                 speaker_country=country,
-                speaker_power_level=0.5,
+                speaker_power_level=float(db_speaker.power_level if db_speaker else 5)
+                / 10.0,
                 metadata={
                     "file_id": file_id,
                     "speaker_id": speaker_id,
@@ -1156,6 +1281,7 @@ async def _process_single_file(
                     "sentence_code": sent_code,
                 },
                 session=session,
+                speaker_id=speaker_id,
             )
 
             words_count = (
@@ -2621,6 +2747,8 @@ async def _process_single_file(
             )
 
             event = SegmentAnalyzedEvent(
+                event_id=str(uuid.uuid4()),
+                event_timestamp=datetime.now(timezone.utc),
                 file_id=file_id,
                 segment_id=db_seg.seg_id,
                 country=db_seg.country or "unknown",
@@ -3116,7 +3244,7 @@ async def update_speaker_profiles(session: Any) -> None:
             sp.diplo_vocab_score = diplo_words_cnt / len(words)
 
         # Country references
-        if seg_ids and sp.country:
+        if seg_ids:
             from bb_paxdata.infrastructure.db.country_models import (
                 CountryReferenceTable,
             )
@@ -3131,7 +3259,7 @@ async def update_speaker_profiles(session: Any) -> None:
                     CountryReferenceTable.file_id.in_(
                         list(set(s.file_id for s in segments))
                     ),
-                    CountryReferenceTable.speaker_country == sp.country,
+                    CountryReferenceTable.speaker_id == sp.speaker_id,
                 )
                 .group_by(CountryReferenceTable.referenced_country)
             )
@@ -3146,9 +3274,9 @@ async def update_speaker_profiles(session: Any) -> None:
                 if to_country and mention_sum:
                     top_countries[to_country] = int(mention_sum)
                     if avg_sent is not None:
-                        if avg_sent > 0.0:
+                        if avg_sent >= 0.10:
                             allies[to_country] = int(mention_sum)
-                        elif avg_sent < 0.0:
+                        elif avg_sent <= -0.10:
                             adversaries[to_country] = int(mention_sum)
 
             sp.top_countries_mentioned = top_countries if top_countries else None
@@ -3197,7 +3325,7 @@ async def backfill_segment_events(session: Any) -> None:
             event_timestamp=(
                 datetime.now(timezone.utc)
                 if hasattr(s, "created_at")
-                else datetime.now()
+                else datetime.now(timezone.utc)
             ),
             file_id=s.file_id,
             segment_id=s.seg_id,

@@ -67,7 +67,7 @@ async def test_limited_ai_analyst_exceeds_limit(mock_real_analyst):
     # Real AI call count should still be 1
     assert mock_real_analyst.analyze.call_count == 1
     # Fallback result should have logic-only outputs (e.g. risk score 0.6)
-    assert result.sentiment_label == "negative"
+    assert result.sentiment_label == "confrontational"
     assert result.risk_score == 0.6
 
     summary = limit_analyst.get_usage_summary()

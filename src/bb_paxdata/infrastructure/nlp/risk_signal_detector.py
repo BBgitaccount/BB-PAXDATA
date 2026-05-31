@@ -125,7 +125,9 @@ class RiskSignalDetector:
         return tuple(sorted(signals, key=lambda s: s.signal_start))
 
     def _detect_phrases(self, text: str, sentence_id: str) -> list[RiskSignal]:
-        """Multi-word phrase detection (case-insensitive substring match)."""
+        """Multi-word phrase detection (case-insensitive with word boundaries)."""
+        import re
+
         signals: list[RiskSignal] = []
         text_lower = text.lower()
 
@@ -138,8 +140,9 @@ class RiskSignalDetector:
 
         for cue_set, sig_type, multiplier in all_phrases:
             for cue in cue_set:
-                idx = text_lower.find(cue)
-                while idx != -1:
+                pattern = re.compile(r"\b" + re.escape(cue) + r"\b", re.IGNORECASE)
+                for match in pattern.finditer(text_lower):
+                    start, end = match.span()
                     # Credibility: costly > red_line > retaliation > cheap_talk
                     credibility = {
                         SignalType.COSTLY_SIGNAL: 0.9,
@@ -150,16 +153,15 @@ class RiskSignalDetector:
 
                     signals.append(
                         RiskSignal(
-                            signal_text=text[idx : idx + len(cue)],
-                            signal_start=idx,
-                            signal_end=idx + len(cue),
+                            signal_text=text[start:end],
+                            signal_start=start,
+                            signal_end=end,
                             signal_type=sig_type,
                             escalation_multiplier=multiplier,
                             credibility_score=credibility,
                             sentence_id=sentence_id,
                         )
                     )
-                    idx = text_lower.find(cue, idx + 1)
 
         return signals
 

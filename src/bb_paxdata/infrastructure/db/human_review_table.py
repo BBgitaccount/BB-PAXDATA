@@ -3,7 +3,7 @@
 
 from __future__ import annotations
 
-from datetime import datetime
+from datetime import datetime, timezone
 
 from sqlalchemy import JSON, Boolean, DateTime, Float, Index, Integer, String, Text
 from sqlalchemy.orm import Mapped, mapped_column
@@ -41,7 +41,7 @@ class HumanReviewORM(Base):
     disagreement_reason: Mapped[str | None] = mapped_column(Text, nullable=True)
     review_duration_seconds: Mapped[int | None] = mapped_column(Integer, nullable=True)
     created_at: Mapped[datetime] = mapped_column(
-        DateTime, default=datetime.utcnow, nullable=False
+        DateTime, default=lambda: datetime.now(timezone.utc), nullable=False
     )
 
     # Computed flags (SQLite'da GENERATED ALWAYS AS yoktur; uygulama katmanında hesapla)
@@ -73,4 +73,6 @@ class CalibrationReportORM(Base):
     requires_prompt_update: Mapped[bool] = mapped_column(Boolean, default=False)
     requires_weight_update: Mapped[bool] = mapped_column(Boolean, default=False)
     alert_message: Mapped[str | None] = mapped_column(Text, nullable=True)
-    created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime, default=lambda: datetime.now(timezone.utc)
+    )

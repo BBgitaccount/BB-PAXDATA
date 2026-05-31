@@ -5,7 +5,7 @@ from __future__ import annotations
 
 import logging
 from collections import Counter
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from typing import Any
 
 from bb_paxdata.domain.models.calibration import CalibrationReport
@@ -25,7 +25,7 @@ class CalibrationService:
     async def run_weekly_calibration(
         self, prompt_version: str, days_back: int = 7
     ) -> CalibrationReport:
-        end = datetime.utcnow()
+        end = datetime.now(timezone.utc)
         start = end - timedelta(days=days_back)
 
         async with self._uow_factory() as uow:
