@@ -26,6 +26,39 @@ def upgrade() -> None:
     inspector = sa.inspect(conn)
     tables = inspector.get_table_names()
 
+    # Create Enum types for PostgreSQL
+    if conn.dialect.name == "postgresql":
+        # Check and create demandcategory
+        type_exists = conn.scalar(
+            sa.text(
+                "SELECT EXISTS (SELECT 1 FROM pg_type WHERE typname = 'demandcategory')"
+            )
+        )
+        if not type_exists:
+            op.execute(
+                "CREATE TYPE demandcategory AS ENUM ('INSTITUTIONAL_REFORM', 'SECURITY_ACTION', 'ECONOMIC_COOPERATION', 'HUMANITARIAN_RESPONSE', 'DIPLOMATIC_ENGAGEMENT', 'LEGAL_ACCOUNTABILITY')"
+            )
+
+        # Check and create risklevel
+        type_exists = conn.scalar(
+            sa.text("SELECT EXISTS (SELECT 1 FROM pg_type WHERE typname = 'risklevel')")
+        )
+        if not type_exists:
+            op.execute(
+                "CREATE TYPE risklevel AS ENUM ('NONE', 'LOW', 'MEDIUM', 'HIGH', 'CRITICAL')"
+            )
+
+        # Check and create relationshiptype
+        type_exists = conn.scalar(
+            sa.text(
+                "SELECT EXISTS (SELECT 1 FROM pg_type WHERE typname = 'relationshiptype')"
+            )
+        )
+        if not type_exists:
+            op.execute(
+                "CREATE TYPE relationshiptype AS ENUM ('ALLY', 'ADVERSARY', 'PARTNER', 'CAUTIOUS', 'NEUTRAL')"
+            )
+
     # Drop views before altering tables to prevent SQLite view dependencies issues
     op.execute("DROP VIEW IF EXISTS v_f_fail_contextual_deep")
     op.execute("DROP VIEW IF EXISTS v_f_fail_ai_cross_reference")
@@ -149,6 +182,7 @@ def upgrade() -> None:
                 name="demandcategory",
             ),
             existing_nullable=True,
+            postgresql_using="demand_category::demandcategory",
         )
 
     with op.batch_alter_table("ai_segment_insights", schema=None) as batch_op:
@@ -196,6 +230,7 @@ def upgrade() -> None:
                 "NONE", "LOW", "MEDIUM", "HIGH", "CRITICAL", name="risklevel"
             ),
             existing_nullable=True,
+            postgresql_using="risk_level::risklevel",
         )
         batch_op.drop_index(batch_op.f("idx_ai_sent_prompt_ver"))
 
@@ -212,6 +247,7 @@ def upgrade() -> None:
                 name="relationshiptype",
             ),
             existing_nullable=True,
+            postgresql_using="relationship_type::relationshiptype",
         )
 
     with op.batch_alter_table("demand_records", schema=None) as batch_op:
@@ -228,6 +264,7 @@ def upgrade() -> None:
                 name="demandcategory",
             ),
             existing_nullable=True,
+            postgresql_using="demand_category::demandcategory",
         )
 
     with op.batch_alter_table("panels", schema=None) as batch_op:
@@ -253,6 +290,7 @@ def upgrade() -> None:
                 name="demandcategory",
             ),
             existing_nullable=True,
+            postgresql_using="demand_category::demandcategory",
         )
 
     # Recreate views after altering tables

@@ -32,9 +32,9 @@ if sys.platform.startswith("win"):
 
 
 def _get_database_url() -> str:
-    import os
+    from bb_paxdata.config.settings import get_settings
 
-    return os.getenv("DATABASE_URL", "sqlite+aiosqlite:///bb-paxdata.db")
+    return get_settings().database_url or "sqlite+aiosqlite:///paxdata.db"
 
 
 def _get_uow_factory() -> Callable[[], SqlAlchemyUnitOfWork]:

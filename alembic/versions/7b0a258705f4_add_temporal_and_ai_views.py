@@ -43,8 +43,8 @@ def upgrade() -> None:
         a.speaker_name, a.country,
         COUNT(*)                                            AS total_fails,
         COUNT(DISTINCT a.check_type)                        AS affected_checks,
-        ROUND(AVG(a.discrepancy_score), 4)                  AS avg_discrepancy,
-        ROUND(AVG(a.confidence_score), 3)                   AS avg_ai_confidence,
+        ROUND(CAST(AVG(a.discrepancy_score) AS numeric), 4)                  AS avg_discrepancy,
+        ROUND(CAST(AVG(a.confidence_score) AS numeric), 3)                   AS avg_ai_confidence,
         (SELECT a2.fail_category FROM ai_fail_analysis a2
          WHERE a2.speaker_name = a.speaker_name
          GROUP BY a2.fail_category ORDER BY COUNT(*) DESC LIMIT 1) AS dominant_fail_category,
@@ -86,8 +86,8 @@ def upgrade() -> None:
     SELECT
         a.check_type, a.fail_category AS AI_Fail_Kategorisi,
         COUNT(*)                                            AS fail_count,
-        ROUND(AVG(a.discrepancy_score), 4)                  AS avg_discrepancy,
-        ROUND(AVG(a.confidence_score), 3)                   AS avg_ai_confidence,
+        ROUND(CAST(AVG(a.discrepancy_score) AS numeric), 4)                  AS avg_discrepancy,
+        ROUND(CAST(AVG(a.confidence_score) AS numeric), 3)                   AS avg_ai_confidence,
         COUNT(DISTINCT a.sent_id)                           AS affected_sentences,
         COUNT(DISTINCT a.speaker_name)                      AS affected_speakers,
         (SELECT a2.sent_id FROM ai_fail_analysis a2
@@ -109,12 +109,12 @@ def upgrade() -> None:
         a.formula_gap                                       AS formula_shortcoming,
         a.correction_suggestion                             AS correction_suggestion,
         a.comparative_correction                            AS comparative_fix,
-        ROUND(AVG(a.discrepancy_score), 4)                  AS avg_discrepancy,
-        ROUND(AVG(a.confidence_score), 3)                   AS avg_confidence,
+        ROUND(CAST(AVG(a.discrepancy_score) AS numeric), 4)                  AS avg_discrepancy,
+        ROUND(CAST(AVG(a.confidence_score) AS numeric), 3)                   AS avg_confidence,
         MAX(a.processed_at)                                 AS last_seen
     FROM ai_fail_analysis a
     WHERE a.country NOT IN ('—','Unknown') AND a.correction_suggestion IS NOT NULL
-    GROUP BY a.fail_category, a.check_type, a.correction_suggestion
+    GROUP BY a.fail_category, a.check_type, a.negation_type, a.formula_gap, a.correction_suggestion, a.comparative_correction
     """
     )
 

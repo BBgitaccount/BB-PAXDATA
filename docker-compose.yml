@@ -3,7 +3,7 @@ version: '3.8'
 services:
   prometheus:
     image: prom/prometheus:v2.51.0
-    container_name: bbpaxdata-prometheus
+    container_name: paxdata-prometheus
     volumes:
       - ./src/bb_paxdata/infrastructure/observability/prometheus.yml:/etc/prometheus/prometheus.yml:ro
       - prometheus_data:/prometheus
@@ -14,14 +14,14 @@ services:
       - "--storage.tsdb.retention.time=15d"
     restart: unless-stopped
     networks:
-      - bbpaxdata-net
+      - paxdata-net
 
   grafana:
     image: grafana/grafana:10.4.0
-    container_name: bbpaxdata-grafana
+    container_name: paxdata-grafana
     environment:
       - GF_SECURITY_ADMIN_USER=admin
-      - GF_SECURITY_ADMIN_PASSWORD=bbpaxdata2024
+      - GF_SECURITY_ADMIN_PASSWORD=paxdata2024
       - GF_USERS_ALLOW_SIGN_UP=false
       - GF_DASHBOARDS_DEFAULT_HOME_DASHBOARD_PATH=/var/lib/grafana/dashboards/bbpaxdata.json
     volumes:
@@ -33,12 +33,28 @@ services:
       - prometheus
     restart: unless-stopped
     networks:
-      - bbpaxdata-net
+      - paxdata-net
+
+  postgres:
+    image: postgres:16-alpine
+    container_name: paxdata-postgres
+    environment:
+      - POSTGRES_USER=paxdata_user
+      - POSTGRES_PASSWORD=paxdata_password
+      - POSTGRES_DB=paxdata_db
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    restart: unless-stopped
+    networks:
+      - paxdata-net
 
 volumes:
   prometheus_data:
   grafana_data:
+  postgres_data:
 
 networks:
-  bbpaxdata-net:
+  paxdata-net:
     driver: bridge

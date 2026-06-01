@@ -32,6 +32,11 @@ def add_column_safely(
     inspector = sa.inspect(conn)
     if not inspector.has_table(table_name):
         if table_name == "ai_human_review_queue":
+            flagged_at_default = (
+                sa.text("CURRENT_TIMESTAMP")
+                if conn.dialect.name == "postgresql"
+                else sa.text("datetime('now')")
+            )
             op.create_table(
                 "ai_human_review_queue",
                 sa.Column(
@@ -60,7 +65,7 @@ def add_column_safely(
                 sa.Column(
                     "flagged_at",
                     sa.Text(),
-                    server_default=sa.text("datetime('now')"),
+                    server_default=flagged_at_default,
                     nullable=True,
                 ),
                 sa.Column("reviewed_at", sa.Text(), nullable=True),
@@ -106,8 +111,10 @@ def drop_column_safely(
 
 def upgrade() -> None:
     # Disable SQLite view and foreign key checks during alterations
-    op.execute("PRAGMA legacy_alter_table = ON")
-    op.execute("PRAGMA foreign_keys = OFF")
+    bind = op.get_bind()
+    if bind.dialect.name == "sqlite":
+        op.execute("PRAGMA legacy_alter_table = ON")
+        op.execute("PRAGMA foreign_keys = OFF")
 
     # Drop view first to avoid issues with schema alterations
     op.execute("DROP VIEW IF EXISTS v_formula_validation_results")
@@ -206,7 +213,7 @@ def upgrade() -> None:
             COALESCE(s.text, seg.text) AS text,
             COALESCE(s.speaker_name, seg.speaker_name) AS speaker_name,
             COALESCE(s.country, seg.country) AS country,
-            COALESCE(s.panel_id, seg.panel_id) AS panel_id,
+            COALESCE(s.file_id, seg.file_id) AS file_id,
             f.created_at
         FROM formula_validation_logs f
         LEFT JOIN sentences s ON f.entity_type = 'sentence' AND f.entity_id = s.sent_id
@@ -215,14 +222,17 @@ def upgrade() -> None:
     )
 
     # Re-enable SQLite checks
-    op.execute("PRAGMA legacy_alter_table = OFF")
-    op.execute("PRAGMA foreign_keys = ON")
+    if bind.dialect.name == "sqlite":
+        op.execute("PRAGMA legacy_alter_table = OFF")
+        op.execute("PRAGMA foreign_keys = ON")
 
 
 def downgrade() -> None:
     # Disable SQLite view and foreign key checks during alterations
-    op.execute("PRAGMA legacy_alter_table = ON")
-    op.execute("PRAGMA foreign_keys = OFF")
+    bind = op.get_bind()
+    if bind.dialect.name == "sqlite":
+        op.execute("PRAGMA legacy_alter_table = ON")
+        op.execute("PRAGMA foreign_keys = OFF")
 
     # Drop view first to avoid issues with schema alterations
     op.execute("DROP VIEW IF EXISTS v_formula_validation_results")
@@ -290,7 +300,7 @@ def downgrade() -> None:
             COALESCE(s.text, seg.text) AS text,
             COALESCE(s.speaker_name, seg.speaker_name) AS speaker_name,
             COALESCE(s.country, seg.country) AS country,
-            COALESCE(s.panel_id, seg.panel_id) AS panel_id,
+            COALESCE(s.file_id, seg.file_id) AS file_id,
             f.created_at
         FROM formula_validation_logs f
         LEFT JOIN sentences s ON f.entity_type = 'sentence' AND f.entity_id = s.sent_id
@@ -299,5 +309,6 @@ def downgrade() -> None:
     )
 
     # Re-enable SQLite checks
-    op.execute("PRAGMA legacy_alter_table = OFF")
-    op.execute("PRAGMA foreign_keys = ON")
+    if bind.dialect.name == "sqlite":
+        op.execute("PRAGMA legacy_alter_table = OFF")
+        op.execute("PRAGMA foreign_keys = ON")

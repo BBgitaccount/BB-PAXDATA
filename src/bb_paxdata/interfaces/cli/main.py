@@ -6,7 +6,7 @@ import typer
 from rich.console import Console
 
 app = typer.Typer(
-    name="BB-PAXDATA",
+    name="PAXDATA",
     help="[bold cyan]Diplomatic Discourse Analysis Engine[/bold cyan] — CLI Interface",
     no_args_is_help=True,
     # Shell completion injected automatically by Typer
@@ -73,7 +73,7 @@ def main(
         "--config",
         "-c",
         help="Custom .env file path",
-        envvar="BBPAX_ENV_FILE",
+        envvar="PAXDATA_ENV_FILE",
     ),
     verbose: bool = typer.Option(
         False,
@@ -91,13 +91,13 @@ def main(
 
     if config:
         # Runtime .env file change
-        os.environ["BBPAX_ENV_FILE"] = config
+        os.environ["PAXDATA_ENV_FILE"] = config
         from bb_paxdata.config.settings import reset_settings
 
         reset_settings()
 
     if verbose:
-        os.environ["BBPAX_LOG_LEVEL"] = "DEBUG"
+        os.environ["PAXDATA_LOG_LEVEL"] = "DEBUG"
         from bb_paxdata.config.settings import reset_settings
 
         reset_settings()
@@ -113,7 +113,7 @@ def main(
     setup_logging(
         level=log_level,
         pretty=True,
-        log_file=Path("logs/bb-paxdata.log"),
+        log_file=Path("logs/paxdata.log"),
     )
 
 
@@ -121,7 +121,7 @@ def entrypoint() -> None:
     """
     pyproject.toml entry point'i.
     [tool.poetry.scripts]
-    bbpaxdata = "bb_paxdata.interfaces.cli.main:entrypoint"
+    paxdata = "bb_paxdata.interfaces.cli.main:entrypoint"
     """
     _lazy_import_commands()
     app()

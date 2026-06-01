@@ -2325,6 +2325,10 @@ class FormulaValidationLog(Base):
         Index("idx_fval_formula", "formula_name"),
         Index("idx_fval_status", "status"),
         Index("idx_fval_sentence_code", "sentence_code"),
+        # v2 HITL indexes
+        Index("idx_fval_is_current", "is_current"),
+        Index("idx_fval_reviewer", "reviewer_id"),
+        Index("idx_fval_human_verdict", "human_verdict"),
     )
 
     log_id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
@@ -2341,6 +2345,43 @@ class FormulaValidationLog(Base):
     )
     created_at: Mapped[datetime | None] = mapped_column(
         DateTime, server_default=func.now(), nullable=True
+    )
+
+    # ── HITL Karar Alanları (v2) ──────────────────────────────────────
+    human_review_id: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    human_verdict: Mapped[str | None] = mapped_column(
+        String(20),
+        nullable=True,
+        # "CONFIRMED_FAIL" | "CONFIRMED_PASS" | "CORRECTED"
+    )
+    human_corrected_value: Mapped[float | None] = mapped_column(Float, nullable=True)
+    human_note: Mapped[str | None] = mapped_column(Text, nullable=True)
+    human_reviewed_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
+    human_reviewed_by: Mapped[str | None] = mapped_column(String(100), nullable=True)
+    human_reviewer_role: Mapped[str | None] = mapped_column(
+        String(50),
+        nullable=True,
+        # 'senior_analyst' | 'junior_analyst'
+    )
+
+    # ── Immutability / Versiyonlama (v2) ──────────────────────────────
+    log_version: Mapped[int] = mapped_column(Integer, default=1)
+    superseded_by: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    is_current: Mapped[bool] = mapped_column(Boolean, default=True)
+
+    # ── Auto-Triage (v2) ─────────────────────────────────────────────
+    auto_triage_reason: Mapped[str | None] = mapped_column(Text, nullable=True)
+    confidence_at_review: Mapped[str | None] = mapped_column(
+        String(20), nullable=True  # LOW | MEDIUM | HIGH
+    )
+
+    # ── Optimistic Locking (v2) ──────────────────────────────────────
+    reviewer_id: Mapped[str | None] = mapped_column(String(100), nullable=True)
+    locked_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
+
+    # ── Relationships (v2) ───────────────────────────────────────────
+    audit_entries: Mapped[list[FormulaValidationAudit]] = relationship(
+        "FormulaValidationAudit", back_populates="log", lazy="selectin"
     )
 
     def to_domain(self) -> Metadata:
@@ -2361,7 +2402,7 @@ class FormulaValidationLog(Base):
             validation_status=self.status,
             last_validated=self.created_at,
             processed_by="FormulaAuditor",
-            processing_version="1.0",
+            processing_version="2.0",
             access_level=None,
             expires_at=None,
             custom_fields={
@@ -2370,6 +2411,10 @@ class FormulaValidationLog(Base):
                 "expected_constraint": self.expected_constraint,
                 "actual_value": self.actual_value,
                 "details": self.details,
+                "human_verdict": self.human_verdict,
+                "human_corrected_value": self.human_corrected_value,
+                "log_version": self.log_version,
+                "is_current": self.is_current,
             },
         )
 
@@ -2386,6 +2431,118 @@ class FormulaValidationLog(Base):
             status=model.validation_status or "FAIL",
             details=cf.get("details"),
         )
+
+
+class FormulaValidationAudit(Base):
+    """WORM (Write Once Read Many) audit trail for HITL formula validation actions.
+
+    Records are immutable — they are never deleted or updated after creation.
+    """
+
+    __tablename__ = "formula_validation_audit"
+    __table_args__ = (
+        Index("idx_faudit_log", "log_id"),
+        Index("idx_faudit_action", "action_type"),
+        Index("idx_faudit_performer", "performed_by"),
+        Index("idx_faudit_at", "performed_at"),
+    )
+
+    audit_id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    log_id: Mapped[int] = mapped_column(
+        Integer, ForeignKey("formula_validation_logs.log_id"), nullable=False
+    )
+
+    action_type: Mapped[str] = mapped_column(String(50), nullable=False)
+    # REVIEW_STARTED | VERDICT_SUBMITTED | CORRECTED | ROLLED_BACK | ESCALATED
+
+    previous_verdict: Mapped[str | None] = mapped_column(String(20), nullable=True)
+    new_verdict: Mapped[str | None] = mapped_column(String(20), nullable=True)
+    previous_value: Mapped[float | None] = mapped_column(Float, nullable=True)
+    new_value: Mapped[float | None] = mapped_column(Float, nullable=True)
+
+    performed_by: Mapped[str] = mapped_column(String(100), nullable=False)
+    performed_at: Mapped[datetime] = mapped_column(
+        DateTime, default=lambda: datetime.now(timezone.utc)
+    )
+    ip_address: Mapped[str | None] = mapped_column(String(45), nullable=True)
+    justification: Mapped[str | None] = mapped_column(Text, nullable=True)
+
+    # Second-eye review (for high-risk corrections)
+    reviewed_by: Mapped[str | None] = mapped_column(String(100), nullable=True)
+    review_status: Mapped[str | None] = mapped_column(
+        String(20), nullable=True
+    )  # PENDING | APPROVED
+
+    # Relationship back to log
+    log: Mapped[FormulaValidationLog] = relationship(
+        "FormulaValidationLog", back_populates="audit_entries"
+    )
+
+    def to_domain(self) -> Metadata:
+        from bb_paxdata.domain.models.metadata import Metadata
+
+        return Metadata(
+            id=f"formula_audit:{self.audit_id}",
+            entity_id=str(self.log_id),
+            entity_type="formula_validation_audit",
+            title=f"Audit {self.action_type} on log #{self.log_id}",
+            description=f"{self.performed_by} → {self.action_type}: {self.previous_verdict} → {self.new_verdict}",
+            category=self.action_type,
+            subcategory=self.review_status,
+            source="HITL",
+            source_url=None,
+            source_date=self.performed_at,
+            quality_score=None,
+            validation_status=None,
+            last_validated=None,
+            processed_by=self.performed_by,
+            processing_version="2.0",
+            access_level=None,
+            expires_at=None,
+            custom_fields={
+                "previous_verdict": self.previous_verdict,
+                "new_verdict": self.new_verdict,
+                "previous_value": self.previous_value,
+                "new_value": self.new_value,
+                "justification": self.justification,
+                "ip_address": self.ip_address,
+            },
+        )
+
+
+class ReviewerAssignment(Base):
+    """RBAC table: which reviewer can review which formula/speaker/panel/country."""
+
+    __tablename__ = "reviewer_assignments"
+    __table_args__ = (
+        Index("idx_rassign_reviewer", "reviewer_id"),
+        Index("idx_rassign_scope", "scope_type", "scope_value"),
+        UniqueConstraint(
+            "reviewer_id", "scope_type", "scope_value", name="uq_reviewer_scope"
+        ),
+    )
+
+    assignment_id: Mapped[int] = mapped_column(
+        Integer, primary_key=True, autoincrement=True
+    )
+    reviewer_id: Mapped[str] = mapped_column(String(100), nullable=False)
+
+    scope_type: Mapped[str] = mapped_column(String(50), nullable=False)
+    # 'formula' | 'speaker' | 'panel' | 'country' | 'global'
+    scope_value: Mapped[str] = mapped_column(String(100), nullable=False)
+
+    permission_level: Mapped[str] = mapped_column(String(20), nullable=False)
+    # 'view' | 'verdict' | 'correct' | 'escalate' | 'admin'
+
+    max_daily_reviews: Mapped[int] = mapped_column(Integer, default=50)
+    current_daily_count: Mapped[int] = mapped_column(Integer, default=0)
+    last_reset_at: Mapped[datetime] = mapped_column(
+        DateTime, default=lambda: datetime.now(timezone.utc)
+    )
+    is_active: Mapped[bool] = mapped_column(Boolean, default=True)
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime, default=lambda: datetime.now(timezone.utc)
+    )
 
 
 class SegmentAnalyzedEvent(Base):

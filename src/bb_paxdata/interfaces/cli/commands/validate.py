@@ -122,7 +122,7 @@ def validate_legacy_compare(
         "--legacy-db",
         "-l",
         help="Legacy DB path",
-        envvar="BBPAX_LEGACY_DB_PATH",
+        envvar="PAXDATA_LEGACY_DB_PATH",
     ),
 ) -> None:
     """

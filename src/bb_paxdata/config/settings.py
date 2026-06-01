@@ -12,27 +12,27 @@ from bb_paxdata.domain.enums import AIProvider, DatabaseMode, LogLevel
 class Settings(BaseSettings):
     """
     Uygulama çapındaki yapılandırma.
-    Tüm env değişkenleri BBPAX_ prefix'i ile tanımlanır.
+    Tüm env değişkenleri PAXDATA_ prefix'i ile tanımlanır.
 
     Örnek .env:
-        BBPAX_DEBUG=true
-        BBPAX_LOG_LEVEL=DEBUG
-        BBPAX_DATABASE_PATH=/data/bb-paxdata.db
-        BBPAX_ANTHROPIC_API_KEY=sk-ant-...
-        BBPAX_LEGACY_DB_PATH=/old/data/legacy.db
+        PAXDATA_DEBUG=true
+        PAXDATA_LOG_LEVEL=DEBUG
+        PAXDATA_DATABASE_PATH=/data/paxdata.db
+        PAXDATA_ANTHROPIC_API_KEY=sk-ant-...
+        PAXDATA_LEGACY_DB_PATH=/old/data/legacy.db
     """
 
     model_config = SettingsConfigDict(
         env_file=".env",
         env_file_encoding="utf-8",
-        env_prefix="BBPAX_",
+        env_prefix="PAXDATA_",
         extra="ignore",
         # Secrets dosyasından da okuyabilir (Docker secret mounting için)
         secrets_dir="/run/secrets" if Path("/run/secrets").exists() else None,
     )
 
     # ── Genel ────────────────────────────────────────────────────────────
-    app_name: str = Field(default="BB-PAXDATA", frozen=True)
+    app_name: str = Field(default="PAXDATA", frozen=True)
     version: str = Field(default="6.0.0", frozen=True)
     debug: bool = Field(default=False)
     log_level: LogLevel = Field(default=LogLevel.INFO)
@@ -41,7 +41,7 @@ class Settings(BaseSettings):
     # ── Veritabanı ────────────────────────────────────────────────────────
     database_mode: DatabaseMode = Field(default=DatabaseMode.SQLITE)
     database_url: str | None = Field(default=None)
-    database_path: Path = Field(default=Path("bb-paxdata.db"))
+    database_path: Path = Field(default=Path("paxdata.db"))
     alembic_ini_path: Path = Field(default=Path("alembic.ini"))
     db_pool_size: int = Field(default=5, ge=1, le=50)
     db_pool_timeout: int = Field(default=30, ge=5, le=300)
@@ -100,7 +100,7 @@ class Settings(BaseSettings):
             return v
         mode = info.data.get("database_mode", DatabaseMode.SQLITE)
         if mode == DatabaseMode.SQLITE:
-            path = info.data.get("database_path", Path("bb-paxdata.db"))
+            path = info.data.get("database_path", Path("paxdata.db"))
             abs_path = Path(path).expanduser().resolve()
             return f"sqlite+aiosqlite:///{abs_path}"
         return None  # PostgreSQL URL zorunlu; model_validator kontrol eder
@@ -119,8 +119,8 @@ class Settings(BaseSettings):
         """PostgreSQL seçilmişse URL'in tanımlı olduğunu doğrula."""
         if self.database_mode == DatabaseMode.POSTGRESQL and not self.database_url:
             raise ValueError(
-                "DATABASE_MODE=postgresql için BBPAX_DATABASE_URL zorunludur.\n"
-                "Örnek: postgresql+asyncpg://user:pass@localhost/bbpaxdata"
+                "DATABASE_MODE=postgresql için PAXDATA_DATABASE_URL zorunludur.\n"
+                "Örnek: postgresql+asyncpg://user:pass@localhost/paxdata"
             )
         return self
 
@@ -182,7 +182,7 @@ def get_settings() -> Settings:
     """
     Global settings singleton.
     Test ortamında `reset_settings()` ile temizlenebilir.
-    CI/CD'de BBPAX_ENVIRONMENT=test ile test moduna alınır.
+    CI/CD'de PAXDATA_ENVIRONMENT=test ile test moduna alınır.
     """
     global _settings
     if _settings is None:

@@ -5,7 +5,7 @@
 
 <br/>
 
-[![Version](https://img.shields.io/badge/version-1.1.0-a78bfa?style=for-the-badge&logo=semantic-release&logoColor=white)](https://github.com/BBgitaccount/BB-PAXDATA)
+[![Version](https://img.shields.io/badge/version-3.0.0-a78bfa?style=for-the-badge&logo=semantic-release&logoColor=white)](https://github.com/BBgitaccount/BB-PAXDATA)
 [![Python](https://img.shields.io/badge/Python-3.12+-3b82f6?style=for-the-badge&logo=python&logoColor=white)](https://www.python.org/)
 [![License](https://img.shields.io/badge/License-GPL--3.0-34d399?style=for-the-badge&logo=gnu&logoColor=white)](./LICENSE)
 [![Tests](https://img.shields.io/badge/Tests-pytest-f472b6?style=for-the-badge&logo=pytest&logoColor=white)](./tests)
@@ -17,7 +17,7 @@
 *Diplomatik transkriplerin yapısal çıkarımı, çok katmanlı anotasyonu ve kantitatif çerçeveleme analizi için geliştirilmiş **açık kaynaklı NLP motoru**.*
 
 > [!WARNING]
-> **Bu döküman v1.1.0'e özeldir.** Sistem geliştikçe API'ler, formüller ve mimariler önemli ölçüde değişebilir. Güncel bilgi için her zaman etiketli sürümün dökümantasyonuna başvurun.
+> **Bu döküman v3.0.0'e özeldir.** Sistem geliştikçe API'ler, formüller ve mimariler önemli ölçüde değişebilir. Güncel bilgi için her zaman etiketli sürümün dökümantasyonuna başvurun.
 
 </div>
 
@@ -33,7 +33,7 @@
 | 4   | [Analitik Pipeline](#4-analitik-pipeline)                                               |
 | 5   | [Domain Servisleri — Teknik Detaylar](#5-domain-servisleri--teknik-detaylar)            |
 | 6   | [Analiz Çıktıları ve Metrik Hesaplamaları](#6-analiz-çıktıları-ve-metrik-hesaplamaları) |
-| 7   | [Kalite Güvencesi ve HITL](#7-kalite-güvencesi-ve-hitl)                                 |
+| 7   | [Kalite Güvencesi, Formül Doğrulama ve HITL](#7-kalite-güvencesi-formül-doğrulama-ve-hitl) |
 | 8   | [Altyapı](#8-altyapı)                                                                   |
 | 9   | [Gözlemlenebilirlik](#9-gözlemlenebilirlik)                                             |
 | 10  | [CLI Referansı](#10-cli-referansı)                                                      |
@@ -53,6 +53,7 @@
 | ----------------------- | ----------- | -------------------------- |
 | Python                  | $\geq$ 3.12 | ✅                          |
 | Poetry                  | $\geq$ 1.8  | ✅                          |
+| Streamlit               | $\geq$ 1.30 | ✅ (Dashboard için)         |
 | Docker + Docker Compose | Herhangi    | İzleme için (Opsiyonel)    |
 | Ollama                  | Herhangi    | Yerel LLM için (Opsiyonel) |
 
@@ -114,6 +115,13 @@ poetry run bbpaxdata analyze full --panel-id "panel_01" --threshold 0.5 --centra
 poetry run bbpaxdata validate db --strict
 ```
 
+### 1.4 HITL Dashboard Çalıştırma
+Yapay zeka analizlerinin ve matematiksel/mantıksal formül hatalarının insan denetçiler tarafından incelenebilmesi için geliştirilmiş olan Streamlit Dashboard uygulamasını aşağıdaki komutla başlatabilirsiniz:
+
+```bash
+poetry run streamlit run scripts/hitl_dashboard.py
+```
+
 ---
 
 ## 2. Sistem Genel Bakış
@@ -159,6 +167,7 @@ flowchart TB
 graph TB
     subgraph INTERFACES["🖥️ INTERFACES"]
         CLI["CLI (Typer + Rich)"]
+        DASHBOARD["Streamlit Dashboard"]
         API["Future: FastAPI REST"]
     end
 
@@ -221,6 +230,7 @@ sequenceDiagram
     participant AI as AI Client
     participant RECOVERY as RecoveryEngine
     participant CACHE as Cache
+    participant AUDITOR as FormulaAuditor
 
     CLI->>CMD: bbpaxdata build --transcript transcript.json
     CMD->>INGEST: parse_transcript()
@@ -240,6 +250,18 @@ sequenceDiagram
             PIPELINE->>CACHE: store(sha256(text), result)
         end
         PIPELINE->>DB: upsert Analysis
+    end
+
+    rect rgb(30, 41, 59)
+        Note over CMD,AUDITOR: Formül Doğrulama & Triage (v3.0.0)
+        loop Her Cümle için
+            CMD->>AUDITOR: audit_sentence(run_id, sentence)
+            AUDITOR-->>CMD: validation_logs
+            CMD->>DB: save logs
+            alt fail_count >= 3
+                CMD->>DB: insert into HumanReviewQueue (FORMULA_FAILURE)
+            end
+        end
     end
     CMD-->>CLI: ✅ Analysis complete
 ```
@@ -303,6 +325,37 @@ erDiagram
         float accuracy_vs_golden
         string review_status
     }
+    FORMULA_VALIDATION_LOG {
+        int log_id PK
+        string run_id
+        string entity_type
+        string entity_id FK
+        string formula_name
+        string expected_constraint
+        float actual_value
+        string status
+        string human_verdict
+        float human_corrected_value
+        string reviewer_id
+        bool is_current
+        int log_version
+        int superseded_by FK
+    }
+    FORMULA_VALIDATION_AUDIT {
+        int audit_id PK
+        int log_id FK
+        string reviewer_id
+        string action_type
+        datetime action_timestamp
+        json details
+    }
+    REVIEWER_ASSIGNMENT {
+        int assignment_id PK
+        string reviewer_id
+        string scope_type
+        string scope_value
+        string permission_level
+    }
 
     TRANSCRIPT ||--o{ SPEAKER : "has"
     TRANSCRIPT ||--o{ SEGMENT : "contains"
@@ -311,6 +364,8 @@ erDiagram
     SPEAKER ||--o{ SENTENCE : "spoken_by"
     SENTENCE ||--|| ANALYSIS : "analyzed_as"
     ANALYSIS ||--o| QUALITY_REPORT : "evaluated_by"
+    SENTENCE ||--o{ FORMULA_VALIDATION_LOG : "has_validation"
+    FORMULA_VALIDATION_LOG ||--o{ FORMULA_VALIDATION_AUDIT : "audited_by"
 ```
 
 ---
@@ -657,7 +712,7 @@ flowchart LR
 
 ---
 
-## 7. Kalite Güvencesi ve HITL
+## 7. Kalite Güvencesi, Formül Doğrulama ve HITL
 
 Modelin sürekli öğrenmesi ve kalibre edilmesi için sisteme entegre bir **Human-in-the-Loop (HITL)** döngüsü ve kalite güvence altyapısı bulunur.
 
@@ -711,6 +766,38 @@ sequenceDiagram
     
     PROMPT->>AI: 9. Yeni Analizlerde Few-Shot Olarak Enjekte Et
 ```
+
+### 7.3 HITL Formül Doğrulama ve Denetçi Arayüzü (v3.0.0)
+
+Sistemin en güncel aşamasında, yapay zeka tarafından üretilen metriklerin tutarlılığını sağlamak amacıyla gelişmiş bir **HITL Formül Doğrulama ve Denetçi Arayüzü** entegre edilmiştir. Bu sistem, AI çıktılarındaki mantıksal ve matematiksel hataları yakalamak ve denetçilerin müdahalesine sunmak için çalışır.
+
+#### 1. FormulaAuditor (Mantıksal ve Matematiksel Denetim)
+* **Veri Kalitesi Kapısı (Data Quality Gate):** Analiz edilmek üzere gelen cümle ve segmentlerde kritik veri eksikliklerini (`DATA_INCOMPLETE`, `MISSING_CONTEXT`) denetler. Kalite kriterini geçemeyen kayıtlar review kuyruğuna alınmaz.
+* **Deterministik Formül Kontrolleri:** VADER/DIPLO sentiment skoru, risk skoru (SBI/DKI), çit (hedge) yoğunluğu, konuşmacı gücü ve duygu kategorisi arasındaki mantıksal uyumu denetler.
+* **Otomatik Önceliklendirme (Auto-Triage):** Yakalanan formül hataları (`FAIL`), aşağıdaki kriterlere göre otomatik olarak önceliklendirilir:
+  * **CRITICAL:** Risk veya Duygu formülü hata vermiş ve AI Risk Skoru $\geq 7.0$ ise.
+  * **SOVEREIGN_PRIORITY:** Güç seviyesi $\geq 9$ olan Tier-1 konuşmacıların (örneğin devlet başkanları) ifadeleriyse.
+  * **HIGH_PRIORITY:** Aynı cümlede 3 veya daha fazla formül hatası (FAIL) birikmişse.
+  * **NORMAL:** Standart öncelik seviyesi.
+
+#### 2. Güvenlik ve RBAC (Rol Tabanlı Erişim Kontrolü)
+Sistem, denetçilerin yetki sınırlarını korumak için rol tabanlı erişim kontrolü (RBAC) ve JWT tabanlı kimlik doğrulama altyapısına sahiptir:
+* **Yetki Seviyeleri (Permission Levels):** `view` (görüntüleme), `verdict` (onaylama), `correct` (düzeltme), `escalate` (yöneticiye sevk) ve `admin` (yönetici).
+* **Denetçi Kapsamı (Reviewer Scope):** Denetçiler global düzeyde veya belirli bir formül (`formula`), konuşmacı (`speaker`), ülke (`country`) ya da panel (`panel`) bazında yetkilendirilebilir.
+
+#### 3. Salt-Okunur Denetim Geçmişi (WORM Audit Trail)
+Reviewer tarafından yapılan her işlem (`REVIEW_STARTED`, `VERDICT_SUBMITTED`, `CORRECTED`, `ROLLED_BACK`, `ESCALATED`) üzerinde hiçbir değişiklik yapılamayan (WORM - Write Once Read Many) `formula_validation_audit` tablosuna anlık olarak kaydedilir.
+
+#### 4. Sürüm Zinciri ve Düzeltmeler (Log Versioning)
+Bir formülün değeri denetçi tarafından düzeltildiğinde (`CORRECTED`), eski kayıt silinmez veya güncellenmez. Bunun yerine, eski kayıt `is_current=False` olarak işaretlenir ve `superseded_by` ilişkisiyle yeni oluşturulan güncel versiyona bağlanır. Bu sayede tam izlenebilirlik sağlanır.
+
+#### 5. Streamlit Review Dashboard
+Denetçilerin kullanımına sunulan modern web arayüzüdür:
+* **KPI Şeridi:** Toplam log, toplam FAIL, bekleyen inceleme sayısı ve doğruluk/düzeltme oranlarını canlı gösterir.
+* **Formül Sağlık Analizi:** Her bir formülün false-positive ve düzeltme oranlarını tablo ve grafiklerle raporlar.
+* **Filtreleme Paneli:** Formül adı, öncelik derecesi, konuşmacı ve inceleme durumuna göre kuyruğu süzer.
+* **Üçlü Bağlam Kartı (Triplet Card):** İncelenen cümlenin kendisini, bir önceki ve bir sonraki cümlenin bağlamını konuşmacı detaylarıyla birlikte sunar.
+* **Karar Verme ve Düzeltme Arayüzü:** Denetçinin `CONFIRMED_FAIL`, `CONFIRMED_PASS` veya `CORRECTED` (düzeltilmiş değer girişi ile) kararlarını girmesini sağlar.
 
 ---
 

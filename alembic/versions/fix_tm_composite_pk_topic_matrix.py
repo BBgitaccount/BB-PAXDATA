@@ -37,12 +37,22 @@ def upgrade() -> None:
     )
 
     # Copy data from old table (if any exists)
-    op.execute(
-        "INSERT OR IGNORE INTO topic_matrix "
-        "(file_id, country, topic, score) "
-        "SELECT file_id, country, topic, score "
-        "FROM topic_matrix_old"
-    )
+    bind = op.get_bind()
+    if bind.dialect.name == "postgresql":
+        op.execute(
+            "INSERT INTO topic_matrix "
+            "(file_id, country, topic, score) "
+            "SELECT file_id, country, topic, score "
+            "FROM topic_matrix_old "
+            "ON CONFLICT (file_id, country, topic) DO NOTHING"
+        )
+    else:
+        op.execute(
+            "INSERT OR IGNORE INTO topic_matrix "
+            "(file_id, country, topic, score) "
+            "SELECT file_id, country, topic, score "
+            "FROM topic_matrix_old"
+        )
 
     op.drop_table("topic_matrix_old")
 
@@ -62,11 +72,21 @@ def downgrade() -> None:
         sa.PrimaryKeyConstraint("country", "topic"),
     )
 
-    op.execute(
-        "INSERT OR IGNORE INTO topic_matrix "
-        "(country, topic, score, file_id) "
-        "SELECT country, topic, score, file_id "
-        "FROM topic_matrix_new"
-    )
+    bind = op.get_bind()
+    if bind.dialect.name == "postgresql":
+        op.execute(
+            "INSERT INTO topic_matrix "
+            "(country, topic, score, file_id) "
+            "SELECT country, topic, score, file_id "
+            "FROM topic_matrix_new "
+            "ON CONFLICT (country, topic) DO NOTHING"
+        )
+    else:
+        op.execute(
+            "INSERT OR IGNORE INTO topic_matrix "
+            "(country, topic, score, file_id) "
+            "SELECT country, topic, score, file_id "
+            "FROM topic_matrix_new"
+        )
 
     op.drop_table("topic_matrix_new")

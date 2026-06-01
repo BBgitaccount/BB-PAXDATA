@@ -35,7 +35,7 @@ def upgrade() -> None:
 
     op.execute("DROP VIEW IF EXISTS v_diplomatic_network")
     op.execute(
-        """CREATE VIEW v_diplomatic_network AS SELECT from_country, to_country, COUNT(*) as edges FROM discourse_network_edges GROUP BY from_country, to_country"""
+        """CREATE VIEW v_diplomatic_network AS SELECT from_country, to_country, COUNT(*) as edges FROM discourse_flows GROUP BY from_country, to_country"""
     )
 
     op.execute("DROP VIEW IF EXISTS v_ally_enemy")

@@ -23,14 +23,31 @@ depends_on: Union[str, Sequence[str], None] = None
 def upgrade() -> None:
     # Fetch and drop all views to avoid view validation errors on batch alter
     bind = op.get_bind()
-    views = bind.execute(
-        sa.text("SELECT name, sql FROM sqlite_master WHERE type='view'")
-    ).fetchall()
+    if bind.dialect.name == "sqlite":
+        views = bind.execute(
+            sa.text("SELECT name, sql FROM sqlite_master WHERE type='view'")
+        ).fetchall()
+    else:
+        raw_views = bind.execute(
+            sa.text(
+                "SELECT viewname, definition FROM pg_views WHERE schemaname = 'public'"
+            )
+        ).fetchall()
+        views = [
+            (name, f"CREATE VIEW {name} AS {definition}")
+            for name, definition in raw_views
+        ]
     view_defs = []
     for name, sql in views:
         if sql:
             op.execute(f"DROP VIEW IF EXISTS {name}")
             view_defs.append((name, sql))
+
+    def get_fk_name(table_name: str, column_name: str, referred_table_name: str) -> str:
+        if bind.dialect.name == "postgresql":
+            return f"{table_name}_{column_name}_fkey"
+        else:
+            return f"fk_{table_name}_{column_name}_{referred_table_name}"
 
     naming_convention = {
         "ix": "ix_%(column_0_label)s",
@@ -114,7 +131,7 @@ def upgrade() -> None:
         batch_op.add_column(sa.Column("file_id", sa.String(), nullable=False))
         batch_op.create_unique_constraint("uq_ai_panel_synthesis_file_id", ["file_id"])
         batch_op.drop_constraint(
-            "fk_ai_panel_synthesis_panel_id_panels", type_="foreignkey"
+            get_fk_name("ai_panel_synthesis", "panel_id", "panels"), type_="foreignkey"
         )
         batch_op.create_foreign_key(
             "fk_ai_panel_synthesis_file_id_files", "files", ["file_id"], ["file_id"]
@@ -159,7 +176,9 @@ def upgrade() -> None:
         "country_stats", schema=None, naming_convention=naming_convention
     ) as batch_op:
         batch_op.add_column(sa.Column("file_id", sa.String(), nullable=False))
-        batch_op.drop_constraint("fk_country_stats_panel_id_panels", type_="foreignkey")
+        batch_op.drop_constraint(
+            get_fk_name("country_stats", "panel_id", "panels"), type_="foreignkey"
+        )
         batch_op.create_foreign_key(
             "fk_country_stats_file_id_files", "files", ["file_id"], ["file_id"]
         )
@@ -170,7 +189,7 @@ def upgrade() -> None:
     ) as batch_op:
         batch_op.add_column(sa.Column("file_id", sa.String(), nullable=True))
         batch_op.drop_constraint(
-            "fk_demand_records_panel_id_panels", type_="foreignkey"
+            get_fk_name("demand_records", "panel_id", "panels"), type_="foreignkey"
         )
         batch_op.create_foreign_key(
             "fk_demand_records_file_id_files", "files", ["file_id"], ["file_id"]
@@ -206,7 +225,8 @@ def upgrade() -> None:
             postgresql_where="weight > 0.5",
         )
         batch_op.drop_constraint(
-            "fk_discourse_network_edges_panel_id_panels", type_="foreignkey"
+            get_fk_name("discourse_network_edges", "panel_id", "panels"),
+            type_="foreignkey",
         )
         batch_op.create_foreign_key(
             "fk_discourse_network_edges_panel_id_files",
@@ -225,7 +245,8 @@ def upgrade() -> None:
         batch_op.drop_index(batch_op.f("idx_net_legacy_from"))
         batch_op.create_index("idx_net_from", ["from_country"], unique=False)
         batch_op.drop_constraint(
-            "fk_discourse_network_edges_legacy_panel_id_panels", type_="foreignkey"
+            get_fk_name("discourse_network_edges_legacy", "panel_id", "panels"),
+            type_="foreignkey",
         )
         batch_op.create_foreign_key(
             "fk_discourse_network_edges_legacy_file_id_files",
@@ -250,7 +271,8 @@ def upgrade() -> None:
     ) as batch_op:
         batch_op.add_column(sa.Column("file_id", sa.String(), nullable=True))
         batch_op.drop_constraint(
-            "fk_legacy_country_references_panel_id_panels", type_="foreignkey"
+            get_fk_name("legacy_country_references", "panel_id", "panels"),
+            type_="foreignkey",
         )
         batch_op.create_foreign_key(
             "fk_legacy_country_references_file_id_files",
@@ -267,7 +289,7 @@ def upgrade() -> None:
         batch_op.drop_index(batch_op.f("idx_dyn_panel"))
         batch_op.create_index("idx_dyn_panel", ["file_id"], unique=False)
         batch_op.drop_constraint(
-            "fk_panel_dynamics_panel_id_panels", type_="foreignkey"
+            get_fk_name("panel_dynamics", "panel_id", "panels"), type_="foreignkey"
         )
         batch_op.create_foreign_key(
             "fk_panel_dynamics_file_id_files", "files", ["file_id"], ["file_id"]
@@ -285,7 +307,7 @@ def upgrade() -> None:
             existing_nullable=False,
         )
         batch_op.drop_constraint(
-            "fk_pattern_records_panel_id_panels", type_="foreignkey"
+            get_fk_name("pattern_records", "panel_id", "panels"), type_="foreignkey"
         )
         batch_op.create_foreign_key(
             "fk_pattern_records_file_id_files", "files", ["file_id"], ["file_id"]
@@ -298,8 +320,12 @@ def upgrade() -> None:
         batch_op.add_column(sa.Column("file_id", sa.String(), nullable=False))
         batch_op.drop_index(batch_op.f("idx_seg_panel"))
         batch_op.create_index("idx_seg_file", ["file_id"], unique=False)
-        batch_op.drop_constraint("fk_segments_panel_id_panels", type_="foreignkey")
-        batch_op.drop_constraint("fk_segments_speaker_id_speakers", type_="foreignkey")
+        batch_op.drop_constraint(
+            get_fk_name("segments", "panel_id", "panels"), type_="foreignkey"
+        )
+        batch_op.drop_constraint(
+            get_fk_name("segments", "speaker_id", "speakers"), type_="foreignkey"
+        )
         batch_op.create_foreign_key(
             "fk_segments_file_id_files", "files", ["file_id"], ["file_id"]
         )
@@ -317,7 +343,9 @@ def upgrade() -> None:
         batch_op.add_column(sa.Column("file_id", sa.String(), nullable=False))
         batch_op.drop_index(batch_op.f("idx_sent_panel"))
         batch_op.create_index("idx_sent_file", ["file_id"], unique=False)
-        batch_op.drop_constraint("fk_sentences_panel_id_panels", type_="foreignkey")
+        batch_op.drop_constraint(
+            get_fk_name("sentences", "panel_id", "panels"), type_="foreignkey"
+        )
         batch_op.create_foreign_key(
             "fk_sentences_file_id_files", "files", ["file_id"], ["file_id"]
         )
@@ -333,14 +361,17 @@ def upgrade() -> None:
             existing_nullable=False,
         )
         batch_op.drop_constraint(
-            "fk_speaker_profiles_speaker_id_speakers", type_="foreignkey"
+            get_fk_name("speaker_profiles", "speaker_id", "speakers"),
+            type_="foreignkey",
         )
 
     with op.batch_alter_table(
         "topic_matrix", schema=None, naming_convention=naming_convention
     ) as batch_op:
         batch_op.add_column(sa.Column("file_id", sa.String(), nullable=False))
-        batch_op.drop_constraint("fk_topic_matrix_panel_id_panels", type_="foreignkey")
+        batch_op.drop_constraint(
+            get_fk_name("topic_matrix", "panel_id", "panels"), type_="foreignkey"
+        )
         batch_op.create_foreign_key(
             "fk_topic_matrix_file_id_files", "files", ["file_id"], ["file_id"]
         )
@@ -350,7 +381,9 @@ def upgrade() -> None:
         "words", schema=None, naming_convention=naming_convention
     ) as batch_op:
         batch_op.add_column(sa.Column("file_id", sa.String(), nullable=False))
-        batch_op.drop_constraint("fk_words_panel_id_panels", type_="foreignkey")
+        batch_op.drop_constraint(
+            get_fk_name("words", "panel_id", "panels"), type_="foreignkey"
+        )
         batch_op.create_foreign_key(
             "fk_words_file_id_files", "files", ["file_id"], ["file_id"]
         )
@@ -380,9 +413,20 @@ def upgrade() -> None:
 def downgrade() -> None:
     # Fetch and drop all views to avoid view validation errors on batch alter
     bind = op.get_bind()
-    views = bind.execute(
-        sa.text("SELECT name, sql FROM sqlite_master WHERE type='view'")
-    ).fetchall()
+    if bind.dialect.name == "sqlite":
+        views = bind.execute(
+            sa.text("SELECT name, sql FROM sqlite_master WHERE type='view'")
+        ).fetchall()
+    else:
+        raw_views = bind.execute(
+            sa.text(
+                "SELECT viewname, definition FROM pg_views WHERE schemaname = 'public'"
+            )
+        ).fetchall()
+        views = [
+            (name, f"CREATE VIEW {name} AS {definition}")
+            for name, definition in raw_views
+        ]
     view_defs = []
     for name, sql in views:
         if sql:

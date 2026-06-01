@@ -47,16 +47,30 @@ def upgrade() -> None:
     )
 
     # Copy data from old table (if any exists)
-    op.execute(
-        "INSERT OR IGNORE INTO country_stats "
-        "(country, file_id, n_segments, n_sentences, total_words, "
-        "total_duration_sec, words_per_minute, avg_sentiment, "
-        "dominant_emotion, dominant_topic, topic_scores) "
-        "SELECT country, file_id, n_segments, n_sentences, total_words, "
-        "total_duration_sec, words_per_minute, avg_sentiment, "
-        "dominant_emotion, dominant_topic, topic_scores "
-        "FROM country_stats_old"
-    )
+    bind = op.get_bind()
+    if bind.dialect.name == "postgresql":
+        op.execute(
+            "INSERT INTO country_stats "
+            "(country, file_id, n_segments, n_sentences, total_words, "
+            "total_duration_sec, words_per_minute, avg_sentiment, "
+            "dominant_emotion, dominant_topic, topic_scores) "
+            "SELECT country, file_id, n_segments, n_sentences, total_words, "
+            "total_duration_sec, words_per_minute, avg_sentiment, "
+            "dominant_emotion, dominant_topic, topic_scores "
+            "FROM country_stats_old "
+            "ON CONFLICT (country, file_id) DO NOTHING"
+        )
+    else:
+        op.execute(
+            "INSERT OR IGNORE INTO country_stats "
+            "(country, file_id, n_segments, n_sentences, total_words, "
+            "total_duration_sec, words_per_minute, avg_sentiment, "
+            "dominant_emotion, dominant_topic, topic_scores) "
+            "SELECT country, file_id, n_segments, n_sentences, total_words, "
+            "total_duration_sec, words_per_minute, avg_sentiment, "
+            "dominant_emotion, dominant_topic, topic_scores "
+            "FROM country_stats_old"
+        )
 
     op.drop_table("country_stats_old")
 
@@ -84,15 +98,29 @@ def downgrade() -> None:
         sa.Column("topic_scores", JSON(), nullable=True),
     )
 
-    op.execute(
-        "INSERT OR IGNORE INTO country_stats "
-        "(country, file_id, n_segments, n_sentences, total_words, "
-        "total_duration_sec, words_per_minute, avg_sentiment, "
-        "dominant_emotion, dominant_topic, topic_scores) "
-        "SELECT country, file_id, n_segments, n_sentences, total_words, "
-        "total_duration_sec, words_per_minute, avg_sentiment, "
-        "dominant_emotion, dominant_topic, topic_scores "
-        "FROM country_stats_new"
-    )
+    bind = op.get_bind()
+    if bind.dialect.name == "postgresql":
+        op.execute(
+            "INSERT INTO country_stats "
+            "(country, file_id, n_segments, n_sentences, total_words, "
+            "total_duration_sec, words_per_minute, avg_sentiment, "
+            "dominant_emotion, dominant_topic, topic_scores) "
+            "SELECT country, file_id, n_segments, n_sentences, total_words, "
+            "total_duration_sec, words_per_minute, avg_sentiment, "
+            "dominant_emotion, dominant_topic, topic_scores "
+            "FROM country_stats_new "
+            "ON CONFLICT (country) DO NOTHING"
+        )
+    else:
+        op.execute(
+            "INSERT OR IGNORE INTO country_stats "
+            "(country, file_id, n_segments, n_sentences, total_words, "
+            "total_duration_sec, words_per_minute, avg_sentiment, "
+            "dominant_emotion, dominant_topic, topic_scores) "
+            "SELECT country, file_id, n_segments, n_sentences, total_words, "
+            "total_duration_sec, words_per_minute, avg_sentiment, "
+            "dominant_emotion, dominant_topic, topic_scores "
+            "FROM country_stats_new"
+        )
 
     op.drop_table("country_stats_new")

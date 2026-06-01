@@ -140,8 +140,108 @@ class FormulaAuditor:
             "details": details,
         }
 
-    def audit_sentence(self, run_id: str, sentence: Any) -> list[dict[str, Any]]:
-        """Audits a single sentence ORM model or domain model."""
+    @staticmethod
+    def calculate_triage_priority(
+        *,
+        fail_count: int = 1,
+        speaker_power_level: int = 0,
+        formula_name: str = "",
+        ai_risk_score: float = 0.0,
+    ) -> tuple[str, str]:
+        """Calculate auto-triage priority and reason for a FAIL entry.
+
+        Returns:
+            (priority, reason) — e.g., ("CRITICAL", "risk_score FAIL + AI_Risk ≥ 7")
+        """
+        # CRITICAL: risk/emotion FAIL + high AI risk
+        if (
+            formula_name in ("risk_score", "emotion_category_alignment")
+            and ai_risk_score >= 7
+        ):
+            return (
+                "CRITICAL",
+                f"{formula_name} FAIL + AI_Risk={ai_risk_score:.1f} ≥ 7",
+            )
+
+        # SOVEREIGN_PRIORITY: TIER1 speaker (power >= 9)
+        if speaker_power_level >= 9:
+            return (
+                "SOVEREIGN_PRIORITY",
+                f"TIER1 speaker (power={speaker_power_level})",
+            )
+
+        # HIGH_PRIORITY: multiple failures
+        if fail_count >= 3:
+            return ("HIGH_PRIORITY", f"Multiple formula failures (count={fail_count})")
+
+        return ("NORMAL", "Standard triage")
+
+    def _check_data_quality(
+        self,
+        entity_id: str,
+        entity_type: str,
+        *,
+        ai_analysis: Any | None = None,
+        speaker_id: str | None = None,
+        speaker_name: str | None = None,
+        sent_order: int | None = None,
+    ) -> list[dict[str, Any]]:
+        """Data Quality Gate: check prerequisites before formula audit.
+
+        Returns a list of quality flag dicts. If DATA_INCOMPLETE is returned,
+        the caller should NOT queue this entry for HITL review.
+        """
+        flags: list[dict[str, Any]] = []
+
+        # AI analysis null check
+        if ai_analysis is None and entity_type == "sentence":
+            flags.append(
+                {
+                    "flag": "DATA_INCOMPLETE",
+                    "entity_id": entity_id,
+                    "reason": "AI sentence analysis is null — HITL review not meaningful",
+                }
+            )
+
+        # Speaker profile check
+        if not speaker_id and not speaker_name:
+            flags.append(
+                {
+                    "flag": "MISSING_CONTEXT",
+                    "entity_id": entity_id,
+                    "reason": "Speaker profile missing — reviewer context limited",
+                }
+            )
+
+        # Triplet context check
+        if sent_order is None:
+            flags.append(
+                {
+                    "flag": "LOW_CONFIDENCE",
+                    "entity_id": entity_id,
+                    "reason": "sent_order is None — triplet context unavailable",
+                }
+            )
+
+        return flags
+
+    def audit_sentence(
+        self,
+        run_id: str,
+        sentence: Any,
+        *,
+        ai_analysis: Any | None = None,
+    ) -> list[dict[str, Any]]:
+        """Audits a single sentence ORM model or domain model.
+
+        Args:
+            run_id: Pipeline run identifier.
+            sentence: Sentence ORM or domain model.
+            ai_analysis: Optional AI sentence analysis object for Data Quality Gate.
+
+        Returns:
+            List of log dicts. Each dict may contain a 'data_quality_flags' key.
+        """
         logs = []
         text = getattr(sentence, "text", "") or ""
         text_lower = text.lower()
@@ -151,21 +251,32 @@ class FormulaAuditor:
             or getattr(sentence, "id", "unknown_sent")
         )
 
+        # ── Data Quality Gate (v2) ───────────────────────────────────
+        quality_flags = self._check_data_quality(
+            entity_id=sent_id,
+            entity_type="sentence",
+            ai_analysis=ai_analysis,
+            speaker_id=getattr(sentence, "speaker_id", None),
+            speaker_name=getattr(sentence, "speaker_name", None),
+            sent_order=getattr(sentence, "sent_order", None),
+        )
+
         # 1. VADER Compound Score bounds check [-1.0, 1.0]
         vader_compound = float(getattr(sentence, "vader_compound", 0.0) or 0.0)
         status_vader = "PASS" if -1.0 <= vader_compound <= 1.0 else "FAIL"
-        logs.append(
-            self._create_log(
-                run_id=run_id,
-                entity_type="sentence",
-                entity_id=sent_id,
-                formula_name="vader_compound",
-                expected_constraint="[-1.0, 1.0]",
-                actual_value=vader_compound,
-                status=status_vader,
-                details={"msg": "VADER compound bounds check"},
-            )
+        log_vader = self._create_log(
+            run_id=run_id,
+            entity_type="sentence",
+            entity_id=sent_id,
+            formula_name="vader_compound",
+            expected_constraint="[-1.0, 1.0]",
+            actual_value=vader_compound,
+            status=status_vader,
+            details={"msg": "VADER compound bounds check"},
         )
+        if quality_flags:
+            log_vader["data_quality_flags"] = quality_flags
+        logs.append(log_vader)
 
         # 2. Negation Aware Diplo bounds check [-1.0, 1.0]
         # In DB, it is negation_aware_diplo or diplo_compound
@@ -331,7 +442,29 @@ class FormulaAuditor:
         )
 
         if not sentences:
+            # Data Quality Gate: no sentences for segment → flag
+            logs.append(
+                self._create_log(
+                    run_id=run_id,
+                    entity_type="segment",
+                    entity_id=seg_id,
+                    formula_name="segment_data_quality",
+                    expected_constraint="sentence_count > 0",
+                    actual_value=0.0,
+                    status="FAIL",
+                    details={
+                        "msg": "No sentences available for segment audit",
+                        "data_quality_flag": "DATA_INCOMPLETE",
+                    },
+                )
+            )
             return logs
+
+        # Data Quality Gate: segment speaker check
+        segment_speaker_id = getattr(segment, "speaker_id", None)
+        if not segment_speaker_id:
+            # Not a blocker but flag for reduced context
+            pass
 
         # 1. SBI Verification
         # avg_power = average of power level of speaker or segment sentences

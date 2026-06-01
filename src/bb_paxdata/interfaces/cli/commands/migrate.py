@@ -63,7 +63,7 @@ def migrate_run(
         "--legacy-db",
         "-l",
         help="Path to legacy SQLite DB file",
-        envvar="BBPAX_LEGACY_DB_PATH",
+        envvar="PAXDATA_LEGACY_DB_PATH",
     ),
     dry_run: bool = typer.Option(
         False,

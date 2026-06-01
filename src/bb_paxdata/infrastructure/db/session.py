@@ -11,8 +11,10 @@ from bb_paxdata.config.settings import get_settings
 from bb_paxdata.infrastructure.db.base import Base
 
 _settings = get_settings()
-DATABASE_URL = _settings.database_url or "sqlite+aiosqlite:///bb-paxdata.db"
-DATABASE_URL_SYNC = DATABASE_URL.replace("sqlite+aiosqlite", "sqlite")
+DATABASE_URL = _settings.database_url or "sqlite+aiosqlite:///paxdata.db"
+DATABASE_URL_SYNC = DATABASE_URL.replace("sqlite+aiosqlite", "sqlite").replace(
+    "postgresql+asyncpg", "postgresql"
+)
 
 
 engine = create_async_engine(DATABASE_URL, echo=False, future=True)

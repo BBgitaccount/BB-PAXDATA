@@ -2539,6 +2539,8 @@ async def _process_single_file(
         # Group sentences by segment id for segment audit
         sents_by_seg: dict[str, list[Any]] = {}
         logic_fail_sents_added = set()
+        # v2: Track per-sentence fail counts for FORMULA_FAILURE trigger
+        sent_fail_counts: dict[str, int] = {}
 
         for sent in all_processed_sentences:
             sents_by_seg.setdefault(sent.seg_id, []).append(sent)
@@ -2546,6 +2548,19 @@ async def _process_single_file(
             # Audit sentence
             sent_logs = auditor.audit_sentence(run_id, sent)
             for log_data in sent_logs:
+                # v2: Calculate triage priority
+                _fail_count = sent_fail_counts.get(sent.sent_id, 0)
+                if log_data["status"] == "FAIL":
+                    _fail_count += 1
+                    sent_fail_counts[sent.sent_id] = _fail_count
+
+                _triage_priority, _triage_reason = auditor.calculate_triage_priority(
+                    fail_count=_fail_count,
+                    speaker_power_level=getattr(sent, "power_level", 0) or 0,
+                    formula_name=log_data["formula_name"],
+                    ai_risk_score=float(getattr(sent, "risk_score", 0) or 0),
+                )
+
                 db_log = FormulaValidationLog(
                     run_id=log_data["run_id"],
                     entity_type=log_data["entity_type"],
@@ -2556,12 +2571,23 @@ async def _process_single_file(
                     actual_value=log_data["actual_value"],
                     status=log_data["status"],
                     details=log_data["details"],
+                    # v2: Triage & versioning fields
+                    auto_triage_reason=(
+                        _triage_reason if log_data["status"] == "FAIL" else None
+                    ),
+                    confidence_at_review=(
+                        _triage_priority if log_data["status"] == "FAIL" else None
+                    ),
+                    log_version=1,
+                    is_current=True,
                 )
                 session.add(db_log)
 
-                # Flag to Human Review Queue if FAIL
+                # v2: Flag to Human Review Queue with FORMULA_FAILURE trigger
+                # Only when fail_count >= 3 for this sentence
                 if (
                     log_data["status"] == "FAIL"
+                    and _fail_count >= 3
                     and sent.sent_id not in logic_fail_sents_added
                 ):
                     logic_fail_sents_added.add(sent.sent_id)
@@ -2572,6 +2598,9 @@ async def _process_single_file(
                             "actual_value": log_data["actual_value"],
                             "details": log_data["details"],
                             "text": getattr(sent, "text", ""),
+                            "fail_count": _fail_count,
+                            "triage_priority": _triage_priority,
+                            "triage_reason": _triage_reason,
                         },
                         ensure_ascii=False,
                     )
@@ -2582,9 +2611,9 @@ async def _process_single_file(
                         file_id=sent.file_id,
                         speaker_name=sent.speaker_name,
                         country=sent.country,
-                        trigger_type="LOGIC_CHECK_FAILURE",
+                        trigger_type="FORMULA_FAILURE",
                         ai_risk_score=sent.risk_score,
-                        anomaly_types=f"LOGIC_FAIL: {log_data['formula_name']}",
+                        anomaly_types=f"FORMULA_FAIL(x{_fail_count}): {log_data['formula_name']}",
                         uncertainty_score=0.0,
                         status="PENDING",
                         original_ai_json=_ai_json,
@@ -2606,6 +2635,9 @@ async def _process_single_file(
                     actual_value=log_data["actual_value"],
                     status=log_data["status"],
                     details=log_data["details"],
+                    # v2: versioning
+                    log_version=1,
+                    is_current=True,
                 )
                 session.add(db_log)
 
@@ -2631,9 +2663,9 @@ async def _process_single_file(
                             file_id=db_seg.file_id,
                             speaker_name=db_seg.speaker_name,
                             country=db_seg.country,
-                            trigger_type="LOGIC_CHECK_FAILURE",
+                            trigger_type="FORMULA_FAILURE",
                             ai_risk_score=db_seg.risk_score,
-                            anomaly_types=f"LOGIC_FAIL: {log_data['formula_name']}",
+                            anomaly_types=f"FORMULA_FAIL: {log_data['formula_name']}",
                             uncertainty_score=0.0,
                             status="PENDING",
                             original_ai_json=_ai_json,

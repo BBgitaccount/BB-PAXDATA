@@ -887,11 +887,12 @@ def upgrade() -> None:
         batch_op.create_index("idx_ai_demand_demand", ["demand_id"], unique=False)
         batch_op.create_index("idx_ai_demand_sent", ["sent_id"], unique=False)
 
-    op.execute("PRAGMA journal_mode=WAL")
-    op.execute("PRAGMA synchronous=NORMAL")
-    op.execute("PRAGMA cache_size=10000")
-    op.execute("PRAGMA temp_store=MEMORY")
-    op.execute("PRAGMA foreign_keys=ON")
+    if op.get_bind().dialect.name == "sqlite":
+        op.execute("PRAGMA journal_mode=WAL")
+        op.execute("PRAGMA synchronous=NORMAL")
+        op.execute("PRAGMA cache_size=10000")
+        op.execute("PRAGMA temp_store=MEMORY")
+        op.execute("PRAGMA foreign_keys=ON")
 
     # ### end Alembic commands ###
 

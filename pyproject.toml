@@ -8,7 +8,7 @@ packages = [
 ]
 
 [tool.poetry.scripts]
-bbpaxdata = "bb_paxdata.interfaces.cli.main:entrypoint"
+paxdata = "bb_paxdata.interfaces.cli.main:entrypoint"
 
 [tool.poetry.dependencies]
 python          = ">=3.12,<3.15"
@@ -36,6 +36,10 @@ hdbscan         = "^0.8.33"
 ftfy = "^6.3.1"
 deepeval = "^4.0.2"
 textual = "0.86.0"
+streamlit = "^1.58.0"
+plotly = "^6.7.0"
+asyncpg = "^0.31.0"
+psycopg2-binary = "^2.9.12"
 
 [tool.poetry.group.dev.dependencies]
 pytest          = ">=9.0.3"

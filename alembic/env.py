@@ -37,15 +37,18 @@ def run_migrations_offline() -> None:
     url = (
         settings.database_url
         or config.get_main_option("sqlalchemy.url")
-        or "sqlite:///bb-paxdata.db"
+        or "sqlite:///paxdata.db"
     )
-    url_sync = url.replace("sqlite+aiosqlite", "sqlite")
+    url_sync = url.replace("sqlite+aiosqlite", "sqlite").replace(
+        "postgresql+asyncpg", "postgresql"
+    )
     context.configure(
         url=url_sync,
         target_metadata=target_metadata,
         literal_binds=True,
         dialect_opts={"paramstyle": "named"},
         render_as_batch=True,
+        version_table_pk_max_len=64,
     )
     with context.begin_transaction():
         context.run_migrations()
@@ -58,6 +61,7 @@ def do_run_migrations(connection: Connection) -> None:
         render_as_batch=True,
         compare_type=True,
         compare_server_default=True,
+        version_table_pk_max_len=64,
     )
     with context.begin_transaction():
         context.run_migrations()
@@ -70,9 +74,11 @@ def run_migrations_online() -> None:
     url = (
         settings.database_url
         or config.get_main_option("sqlalchemy.url")
-        or "sqlite:///bb-paxdata.db"
+        or "sqlite:///paxdata.db"
     )
-    url_sync = url.replace("sqlite+aiosqlite", "sqlite")
+    url_sync = url.replace("sqlite+aiosqlite", "sqlite").replace(
+        "postgresql+asyncpg", "postgresql"
+    )
 
     alembic_config = config.get_section(config.config_ini_section, {})
     alembic_config["sqlalchemy.url"] = url_sync

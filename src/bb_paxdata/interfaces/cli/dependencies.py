@@ -4,8 +4,9 @@ CLI komutları için bağımlılık (DI) wiring.
 """
 from __future__ import annotations
 
-from collections.abc import AsyncIterator
+from collections.abc import AsyncGenerator
 from contextlib import asynccontextmanager
+from typing import cast
 
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_async_engine
 
@@ -18,6 +19,7 @@ from bb_paxdata.application.use_cases.aggregate_panel_topics import (
 from bb_paxdata.application.use_cases.build_panel_network import (
     BuildPanelNetworkUseCase,
 )
+from bb_paxdata.config.settings import get_settings
 from bb_paxdata.infrastructure.db.repositories.country_repository import (
     BilateralSentimentRepository,
     CountryReferenceRepository,
@@ -30,16 +32,14 @@ def _get_database_url() -> str:
     """
     Veritabanı URL'ini proje config/env'den okur.
     """
-    from bb_paxdata.config.settings import get_settings
-
     settings = get_settings()
     if settings.database_url:
-        return str(settings.database_url)
-    return "sqlite+aiosqlite:///./bb-paxdata.db"
+        return cast(str, settings.database_url)
+    return "sqlite+aiosqlite:///./paxdata.db"
 
 
 @asynccontextmanager
-async def get_session() -> AsyncIterator[AsyncSession]:
+async def get_session() -> AsyncGenerator[AsyncSession, None]:
     engine = create_async_engine(_get_database_url(), echo=False)
     factory = async_sessionmaker(engine, expire_on_commit=False)
     async with factory() as session:

@@ -43,9 +43,9 @@ class TestPathResolution:
 
 class TestEnvOverride:
     def test_env_variables_applied(self, monkeypatch: pytest.MonkeyPatch) -> None:
-        monkeypatch.setenv("BBPAX_DEBUG", "true")
-        monkeypatch.setenv("BBPAX_LOG_LEVEL", "DEBUG")
-        monkeypatch.setenv("BBPAX_BATCH_SIZE", "50")
+        monkeypatch.setenv("PAXDATA_DEBUG", "true")
+        monkeypatch.setenv("PAXDATA_LOG_LEVEL", "DEBUG")
+        monkeypatch.setenv("PAXDATA_BATCH_SIZE", "50")
         reset_settings()
         s = get_settings()
         assert s.debug is True
