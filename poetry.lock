@@ -400,22 +400,23 @@ files = [
 
 [[package]]
 name = "bertopic"
-version = "0.16.4"
+version = "0.17.4"
 description = "BERTopic performs topic Modeling with state-of-the-art transformer models."
 optional = false
-python-versions = ">=3.8"
+python-versions = ">=3.10"
 groups = ["main"]
 files = [
-    {file = "bertopic-0.16.4-py3-none-any.whl", hash = "sha256:c73676be03f9bd472f8b124c959824d7fd827682732fb6066981e3dd21b94b70"},
-    {file = "bertopic-0.16.4.tar.gz", hash = "sha256:acbe5e9be4ca3c8b89fbfc39a92d172cf7a2bb2f0842dfdb4b227c16ad232d45"},
+    {file = "bertopic-0.17.4-py3-none-any.whl", hash = "sha256:0dbe7ee22c18fb76efe7f4fbf3a14b51c1e67d9fccc569e3f81e75b8f32646d1"},
+    {file = "bertopic-0.17.4.tar.gz", hash = "sha256:f92aa560cdf2bcbf9e22c8ee83dd3bfb225b8dc29381dec7327cc0b21bd852ad"},
 ]
 
 [package.dependencies]
 hdbscan = ">=0.8.29"
+llvmlite = ">0.36.0"
 numpy = ">=1.20.0"
 pandas = ">=1.1.5"
 plotly = ">=4.7.0"
-scikit-learn = ">=0.22.2.post1"
+scikit-learn = ">=1.0"
 sentence-transformers = ">=0.4.1"
 tqdm = ">=4.41.1"
 umap-learn = ">=0.5.0"
@@ -424,11 +425,12 @@ umap-learn = ">=0.5.0"
 datamap = ["datamapplot (>=0.1)", "matplotlib (>=3.8)"]
 dev = ["bertopic[docs,test]"]
 docs = ["mkdocs (==1.5.3)", "mkdocs-material (==9.5.18)", "mkdocstrings (==0.24.3)", "mkdocstrings-python (==1.10.0)"]
+fastembed = ["fastembed (>=0.6.0)"]
 flair = ["flair (>=0.7)", "torch (>=1.4.0)", "transformers (>=3.5.1)"]
 gensim = ["gensim (>=4.0.0)"]
 spacy = ["spacy (>=3.0.1)"]
-test = ["pytest (>=5.4.3)", "pytest-cov (>=2.6.1)", "ruff (>=0.4.7,<0.5.0)"]
-use = ["tensorflow", "tensorflow-hub", "tensorflow-text"]
+test = ["pytest (>=5.4.3)", "pytest-cov (>=2.6.1)", "ruff (>=0.14.0,<0.15.0)"]
+use = ["tensorflow", "tensorflow_hub", "tensorflow_text"]
 vision = ["Pillow (>=9.2.0)", "accelerate (>=0.19.0)"]
 
 [[package]]
@@ -1049,11 +1051,11 @@ description = "Cross-platform colored terminal text."
 optional = false
 python-versions = "!=3.0.*,!=3.1.*,!=3.2.*,!=3.3.*,!=3.4.*,!=3.5.*,!=3.6.*,>=2.7"
 groups = ["main", "dev"]
+markers = "platform_system == \"Windows\" or sys_platform == \"win32\""
 files = [
     {file = "colorama-0.4.6-py2.py3-none-any.whl", hash = "sha256:4f1d9991f5acc0ca119f9d443620b77f9d6b33703e51011c16baf57afb285fc6"},
     {file = "colorama-0.4.6.tar.gz", hash = "sha256:08695f5cb7ed6e0531a20572697297273c47b8cae5a63ffc6d6ed5c201be6e44"},
 ]
-markers = {main = "sys_platform == \"win32\" or platform_system == \"Windows\"", dev = "platform_system == \"Windows\" or sys_platform == \"win32\""}
 
 [[package]]
 name = "confection"
@@ -7423,4 +7425,4 @@ type = ["pytest-mypy"]
 [metadata]
 lock-version = "2.1"
 python-versions = ">=3.12,<3.15"
-content-hash = "5ad260c3d82dab6c07b6373b752edbb0a79c10941060eebcfbc2320d04bac59d"
+content-hash = "88e52aa44ab060b96fbce173ee0e31de89bb3c0320407d669a8ccc41b7d03816"
