@@ -11,6 +11,18 @@ from bb_paxdata.infrastructure.db.repositories.analysis import AnalysisRepositor
 from bb_paxdata.infrastructure.db.repositories.calibration_repository import (
     CalibrationRepository,
 )
+from bb_paxdata.infrastructure.db.repositories.country_repository import (
+    BilateralSentimentRepository,
+    CountryReferenceRepository,
+    DiscourseFlowRepository,
+    TopicSynthesisRepository,
+)
+from bb_paxdata.infrastructure.db.repositories.discourse_network_repository import (
+    DiscourseNetworkRepository,
+)
+from bb_paxdata.infrastructure.db.repositories.dki_repository import (
+    DKIRepository,
+)
 from bb_paxdata.infrastructure.db.repositories.formula_audit import (
     FormulaAuditRepository,
 )
@@ -38,6 +50,12 @@ class AbstractUnitOfWork(ABC):
     formula_validations: FormulaValidationRepository
     formula_audit: FormulaAuditRepository
     reviewer_assignments: ReviewerAssignmentRepository
+    discourse_network: DiscourseNetworkRepository
+    dki: DKIRepository
+    bilateral_sentiments: BilateralSentimentRepository
+    country_references: CountryReferenceRepository
+    discourse_flows: DiscourseFlowRepository
+    topic_syntheses: TopicSynthesisRepository
 
     async def __aenter__(self) -> AbstractUnitOfWork:
         return self
@@ -86,6 +104,12 @@ class SqlAlchemyUnitOfWork(AbstractUnitOfWork):
         self.formula_validations = FormulaValidationRepository(self.session)
         self.formula_audit = FormulaAuditRepository(self.session)
         self.reviewer_assignments = ReviewerAssignmentRepository(self.session)
+        self.discourse_network = DiscourseNetworkRepository(self.session)
+        self.dki = DKIRepository(self.session)
+        self.bilateral_sentiments = BilateralSentimentRepository(self.session)
+        self.country_references = CountryReferenceRepository(self.session)
+        self.discourse_flows = DiscourseFlowRepository(self.session)
+        self.topic_syntheses = TopicSynthesisRepository(self.session)
         return self
 
     async def __aexit__(

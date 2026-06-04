@@ -2,7 +2,7 @@ import sqlite3
 
 
 def main():
-    conn = sqlite3.connect("bb-paxdata.db")
+    conn = sqlite3.connect("paxdata.db")
     cur = conn.cursor()
     tables = [
         t[0]

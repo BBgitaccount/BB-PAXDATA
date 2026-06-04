@@ -1,7 +1,7 @@
 """Violation logging and reporting for data contract violations."""
 
 import json
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 from pathlib import Path
 from typing import Any
 
@@ -114,6 +114,45 @@ class ViolationLogger:
             "recent_violations": [],
         }
 
-        # This would typically query a database or read log files
-        # For now, return empty summary
+        cutoff_date = datetime.now(timezone.utc).date() - timedelta(days=days)
+
+        try:
+            for log_file in self.log_dir.glob("violations_*.jsonl"):
+                try:
+                    date_str = log_file.stem.split("_")[1]
+                    file_date = datetime.strptime(date_str, "%Y%m%d").date()
+                except (IndexError, ValueError):
+                    continue
+
+                if file_date >= cutoff_date:
+                    with open(log_file, encoding="utf-8") as f:
+                        for line in f:
+                            line = line.strip()
+                            if not line:
+                                continue
+                            try:
+                                record = json.loads(line)
+                                summary["total_violations"] += 1
+                                v_type = record.get("violation_type", "UNKNOWN")
+                                severity = record.get("severity", "UNKNOWN")
+                                file_path = record.get("file_path", "UNKNOWN")
+
+                                summary["by_type"][v_type] = (
+                                    summary["by_type"].get(v_type, 0) + 1
+                                )
+                                summary["by_severity"][severity] = (
+                                    summary["by_severity"].get(severity, 0) + 1
+                                )
+                                if file_path and file_path != "UNKNOWN":
+                                    summary["by_file"][file_path] = (
+                                        summary["by_file"].get(file_path, 0) + 1
+                                    )
+
+                                if len(summary["recent_violations"]) < 50:
+                                    summary["recent_violations"].append(record)
+                            except json.JSONDecodeError:
+                                pass
+        except Exception as e:
+            self.logger.error("Failed to read violation logs", error=str(e))
+
         return summary

@@ -98,14 +98,20 @@ def heal_db(db_path: str):
             emos = [s["emotion_category"] for s in grp if s["emotion_category"]]
             dom_emo = Counter(emos).most_common(1)[0][0] if emos else None
 
-            all_ts = Counter()
+            from collections import defaultdict
+
+            all_ts = defaultdict(float)
             for s in grp:
                 if s["topic_scores"]:
                     if isinstance(s["topic_scores"], dict):
                         for t, sc in s["topic_scores"].items():
                             all_ts[t] += float(sc or 0.0)
 
-            dom_topic = all_ts.most_common(1)[0][0] if all_ts else None
+            dom_topic = (
+                sorted(all_ts.items(), key=lambda x: x[1], reverse=True)[0][0]
+                if all_ts
+                else None
+            )
             wpm = round(words / (dur / 60.0), 1) if dur > 0 else 0.0
 
             c.execute(
@@ -124,7 +130,12 @@ def heal_db(db_path: str):
                     avg_s,
                     dom_emo,
                     dom_topic,
-                    json.dumps(dict(all_ts.most_common(5)), ensure_ascii=False),
+                    json.dumps(
+                        dict(
+                            sorted(all_ts.items(), key=lambda x: x[1], reverse=True)[:5]
+                        ),
+                        ensure_ascii=False,
+                    ),
                 ),
             )
             cs_count += 1
@@ -135,7 +146,7 @@ def heal_db(db_path: str):
                         f"""INSERT OR REPLACE INTO topic_matrix
                            ({tm_file_id_col}, country, topic, score)
                            VALUES (?, ?, ?, ?)""",
-                        (file_id, country, topic, float(score)),
+                        (file_id, country, topic, score),
                     )
                     tm_count += 1
 
@@ -149,5 +160,5 @@ def heal_db(db_path: str):
 
 
 if __name__ == "__main__":
-    heal_db("bb-paxdata.db")
-    heal_db("bb-paxdata-temp.db")
+    heal_db("paxdata.db")
+    heal_db("paxdata-temp.db")

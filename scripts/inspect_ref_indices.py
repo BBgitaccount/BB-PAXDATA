@@ -2,7 +2,7 @@ import sqlite3
 
 
 def main():
-    conn = sqlite3.connect("bb-paxdata.db")
+    conn = sqlite3.connect("paxdata.db")
     cursor = conn.cursor()
 
     # Check unique sentence_index in country_references

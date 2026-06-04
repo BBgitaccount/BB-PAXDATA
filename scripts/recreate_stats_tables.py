@@ -63,5 +63,5 @@ def recreate_tables(db_path: str):
 
 
 if __name__ == "__main__":
-    recreate_tables("bb-paxdata.db")
-    recreate_tables("bb-paxdata-temp.db")
+    recreate_tables("paxdata.db")
+    recreate_tables("paxdata-temp.db")

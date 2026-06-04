@@ -75,6 +75,7 @@ class LimitedAIAnalyst:
         self._total_analyze_calls = 0
         self._ai_analyze_calls = 0
         self._logic_analyze_calls = 0
+        self._bypassed_analyze_calls = 0
         self._lock = threading.Lock()
 
     # ── Cümle Yaşam Döngüsü ────────────────────────────────────────
@@ -180,10 +181,27 @@ class LimitedAIAnalyst:
             )
             return result
 
+    # ── Bypass Tracking (Faz 2.2) ──────────────────────────────────
+
+    def increment_bypass(self) -> None:
+        """CollectStage tarafından çağrılır. LLM atlamalarını sayar."""
+        with self._lock:
+            self._bypassed_analyze_calls += 1
+
+    def get_bypass_count(self) -> int:
+        """Mevcut bypass sayısını döndürür."""
+        with self._lock:
+            return self._bypassed_analyze_calls
+
     # ── Raporlama ──────────────────────────────────────────────────
 
-    def get_usage_summary(self) -> dict[str, int | bool]:
+    def get_usage_summary(self) -> dict[str, int | bool | float]:
         """Kullanım özetini döner (CLI raporlama için)."""
+        with self._lock:
+            bypassed = self._bypassed_analyze_calls
+            total = self._total_analyze_calls
+            efficiency = round(bypassed / total, 4) if total > 0 else 0.0
+
         return {
             "sentences_processed": self._sentence_count,
             "ai_sentence_limit": self._limit,
@@ -194,6 +212,8 @@ class LimitedAIAnalyst:
             "total_analyze_calls": self._total_analyze_calls,
             "ai_analyze_calls": self._ai_analyze_calls,
             "logic_analyze_calls": self._logic_analyze_calls,
+            "bypassed_analyze_calls": bypassed,
+            "efficiency_ratio": efficiency,
             # Compatibility keys for build.py
             "ai_calls_made": min(self._sentence_count, self._limit),
             "ai_limit": self._limit,

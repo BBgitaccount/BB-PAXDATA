@@ -78,7 +78,9 @@ class MigrationUseCase:
         self._session_factory = session_factory
         self._log = logger.bind(use_case="migration", version=settings.version)
 
-    async def execute(self, dry_run: bool = False) -> MigrationResult:
+    async def execute(
+        self, dry_run: bool = False, stop_on_error: bool = False
+    ) -> MigrationResult:
         start = time.monotonic()
         errors: list[str] = []
         migrated = 0
@@ -140,12 +142,19 @@ class MigrationUseCase:
                 errors.append(err_msg)
                 self._log.warning("batch_failed", offset=offset, error=str(exc))
 
+                if stop_on_error:
+                    self._log.error("migration_stopped_on_error")
+                    break
+
                 # Individual retry: try each row in the batch separately
-                retry_result = await self._retry_singles(batch, dry_run)
+                retry_result = await self._retry_singles(batch, dry_run, stop_on_error)
                 migrated += retry_result["ok"]
                 failed += retry_result["fail"]
                 retried += retry_result["ok"] + retry_result["fail"]
                 errors.extend(retry_result["errors"])
+
+                if stop_on_error and retry_result["fail"] > 0:
+                    break
 
         return MigrationResult(
             total_source_rows=total,
@@ -161,6 +170,7 @@ class MigrationUseCase:
         self,
         batch: list[LegacyTranscript],
         dry_run: bool,
+        stop_on_error: bool = False,
     ) -> dict[str, Any]:
         ok = 0
         fail = 0
@@ -184,5 +194,7 @@ class MigrationUseCase:
                 self._log.error(
                     "single_retry_fail", transcript_id=tx.id, error=str(exc)
                 )
+                if stop_on_error:
+                    break
 
         return {"ok": ok, "fail": fail, "errors": errors}

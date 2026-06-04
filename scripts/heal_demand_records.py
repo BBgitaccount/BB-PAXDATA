@@ -272,5 +272,5 @@ def heal_db(db_path: str):
 
 
 if __name__ == "__main__":
-    heal_db("bb-paxdata.db")
-    heal_db("bb-paxdata-temp.db")
+    heal_db("paxdata.db")
+    heal_db("paxdata-temp.db")

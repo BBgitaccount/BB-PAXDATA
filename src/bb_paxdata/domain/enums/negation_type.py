@@ -8,3 +8,4 @@ class NegationType(str, Enum):
     SYNTACTIC = "syntactic"  # Dependency-parse tabanlı scope
     SEMANTIC = "semantic"  # Ortük anlamsal negasyon (fail, deny, refuse)
     SCOPE_WIDE = "scope_wide"  # Çok-clause'lu geniş kapsam
+    COMPOUND = "compound"  # Birleşik negasyon

@@ -60,6 +60,21 @@ class ServiceContainer:
 
         # ── Ortak Araçlar ──────────────────────────────────────────
         self.language_detector = LanguageDetector()
+        from ..ai.recovery import RecoveryEngine
+
+        self.recovery_engine = RecoveryEngine()
+
+        # SBERT Embedding Cache (Faz 2.4) - Initialized early for use in other components
+        import redis.asyncio as aioredis
+        from bb_paxdata.infrastructure.nlp.sbert_embedding_service import (
+            SBERTEmbeddingService,
+        )
+
+        settings = get_settings()
+        self.redis_client = aioredis.Redis.from_url(
+            settings.redis_url, decode_responses=False
+        )
+        self.embedding_service = SBERTEmbeddingService(redis_client=self.redis_client)
 
         # ── NLP Servisleri ─────────────────────────────────────────
         self.ner_service = SpacyNERService(language_detector=self.language_detector)
@@ -81,6 +96,11 @@ class ServiceContainer:
                 "AI Analyst: LogicOnlyAIAnalyst aktif (LLM çağrısı yapılmayacak)"
             )
         else:
+            from bb_paxdata.application.services.dynamic_few_shot_optimizer import (
+                DbExampleStore,
+                RedisEmbeddingCache,
+                VectorSimilaritySelector,
+            )
             from bb_paxdata.application.services.few_shot_injector import (
                 FewShotInjector,
             )
@@ -92,7 +112,17 @@ class ServiceContainer:
             def uow_factory() -> SqlAlchemyUnitOfWork:
                 return SqlAlchemyUnitOfWork(SessionLocal)
 
-            self.few_shot_injector = FewShotInjector(uow_factory=uow_factory)
+            self.redis_cache = RedisEmbeddingCache(redis=self.redis_client)
+            self.example_store = DbExampleStore(session_factory=SessionLocal)
+            self.few_shot_selector = VectorSimilaritySelector(
+                embedding_service=self.embedding_service,
+                example_store=self.example_store,
+                cache=self.redis_cache,
+            )
+            self.few_shot_injector = FewShotInjector(
+                selector=self.few_shot_selector,
+                uow_factory=uow_factory,
+            )
             self.prompt_registry = build_default_registry()
 
             # Initialize infra analyst
@@ -145,12 +175,37 @@ class ServiceContainer:
         )
         assert common_nlp is not None
 
-        self.negation_detector = SpacyNegationDetector(nlp=common_nlp)
+        self.negation_detector = SpacyNegationDetector(
+            nlp_en=self.ner_service._models.get("en"),
+            nlp_tr=self.ner_service._models.get("tr"),
+        )
         self.risk_detector = RiskSignalDetector(nlp=common_nlp)
         self.power_calculator = PowerIndexCalculator(nlp=common_nlp)
+
+        # SBERT Embedding Cache (Faz 2.4) - Already initialized early
+
         self.topic_modeling_service = TopicModelingService(
-            prompt_registry=self.prompt_registry
+            prompt_registry=self.prompt_registry,
+            embedding_service=self.embedding_service,
         )
+
+        from ..nlp.semantic_shift import AzarbonyadSemanticShiftCalculator
+
+        self.semantic_shift_calculator = AzarbonyadSemanticShiftCalculator(
+            embedding_service=self.embedding_service
+        )
+
+        if logic_mode:
+            self.llm_position_estimator = None
+        else:
+            from ..ai.llm_position_estimator import CambridgeCoreLLMPositionEstimator
+
+            self.llm_position_estimator = CambridgeCoreLLMPositionEstimator(
+                client=self.infra_analyst,
+                prompt_registry=self.prompt_registry,
+                recovery_engine=self.recovery_engine,
+            )
+
         self.dependency_service = DependencyService()
 
         # ── Pipeline Stages ────────────────────────────────────────
@@ -260,8 +315,6 @@ class ServiceContainer:
         from ..ai.frame_detection.frame_lexicon_service import FrameLexiconService
         from ..ai.recovery import RecoveryEngine
 
-        self.recovery_engine = RecoveryEngine()
-
         self.frame_lexicon_service = FrameLexiconService(nlp=common_nlp)
 
         self.episodic_classifier = EpisodicThematicClassifier(nlp=common_nlp)
@@ -318,7 +371,81 @@ class ServiceContainer:
             dual_gate_layer=self.consensus_layer,
             anomaly_controller=self.anomaly_controller,
             finalize_stage=self.finalize_stage,
+            llm_position_estimator=self.llm_position_estimator,
+            semantic_shift_calculator=self.semantic_shift_calculator,
         )
+
+        # ── Phase 5 AI Deepening v2.0 Components ───────────────────
+        from bb_paxdata.application.services.baseline_fetcher import (
+            RollingWindowBaselineFetcher,
+        )
+        from bb_paxdata.application.services.dki_evaluator import DKIEvaluator
+        from bb_paxdata.application.services.model_evaluation_engine import (
+            ModelEvaluationEngine,
+        )
+        from bb_paxdata.application.services.phase5_event_publisher import (
+            Phase5EventPublisher,
+        )
+        from bb_paxdata.application.services.rag_service import (
+            RAGService,
+            RAGSynthesisClient,
+        )
+        from bb_paxdata.domain.services.forecasting import RiskForecaster
+        from bb_paxdata.infrastructure.db.session import SessionLocal
+        from bb_paxdata.infrastructure.retrieval.local_reranker import (
+            LocalCrossEncoderReranker,
+        )
+        from bb_paxdata.infrastructure.retrieval.meilisearch_keyword_retriever import (
+            MeilisearchKeywordRetriever,
+        )
+        from bb_paxdata.infrastructure.retrieval.pgvector_dense_retriever import (
+            PgvectorDenseRetriever,
+        )
+
+        class SimpleEventBus:
+            async def publish(
+                self, channel: str, event_type: str, payload: dict[str, Any]
+            ) -> None:
+                logger.info(f"Event published: {channel}/{event_type} - {payload}")
+
+        self.event_bus = SimpleEventBus()
+        self.event_publisher = Phase5EventPublisher(event_bus=self.event_bus)
+
+        self.dense_retriever = PgvectorDenseRetriever(
+            session_factory=SessionLocal,
+            embedding_service=self.embedding_service,
+        )
+        self.keyword_retriever = MeilisearchKeywordRetriever(
+            session_factory=SessionLocal,
+        )
+        self.local_reranker = LocalCrossEncoderReranker()
+        self.rag_synthesis_client = RAGSynthesisClient(ai_analyst=self.ai_analyst)
+
+        self.rag_service = RAGService(
+            keyword_retriever=self.keyword_retriever,
+            dense_retriever=self.dense_retriever,
+            reranker=self.local_reranker,
+            synthesis_client=self.rag_synthesis_client,
+            prompt_registry=self.prompt_registry,
+        )
+
+        self.baseline_fetcher = RollingWindowBaselineFetcher(
+            session_factory=SessionLocal,
+        )
+
+        self.dki_evaluator = DKIEvaluator(
+            ai_client=self.ai_analyst,
+            prompt_registry=self.prompt_registry,
+            audit_session_factory=SessionLocal,
+        )
+
+        self.model_evaluation_engine = ModelEvaluationEngine(
+            ai_client_factory=lambda model_name: self.ai_analyst,
+            embedding_service=self.embedding_service,
+            session_factory=SessionLocal,
+        )
+
+        self.risk_forecaster = RiskForecaster()
 
         logger.info("ServiceContainer hazır — tüm servisler aktif.")
 

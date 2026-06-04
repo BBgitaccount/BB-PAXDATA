@@ -1,9 +1,10 @@
 """Database engine, session factory, and lifecycle helpers."""
 
+import os as _os
 from collections.abc import AsyncGenerator, Generator
 from contextlib import contextmanager
 
-from sqlalchemy import create_engine
+from sqlalchemy import NullPool, create_engine
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_async_engine
 from sqlalchemy.orm import Session, sessionmaker
 
@@ -16,18 +17,83 @@ DATABASE_URL_SYNC = DATABASE_URL.replace("sqlite+aiosqlite", "sqlite").replace(
     "postgresql+asyncpg", "postgresql"
 )
 
+_is_postgres = "asyncpg" in DATABASE_URL
 
-engine = create_async_engine(DATABASE_URL, echo=False, future=True)
+# ── Primary async engine (API / FastAPI workers) ──────────────────────────────
+_engine_kwargs: dict = {
+    "echo": False,
+    "future": True,
+}
+
+if _is_postgres:
+    _engine_kwargs.update(
+        {
+            "pool_size": _settings.db_pool_size,  # default 5
+            "max_overflow": _settings.db_pool_size * 2,  # burst capacity
+            "pool_timeout": _settings.db_pool_timeout,  # default 30s
+            "pool_recycle": 1800,  # recycle connections every 30 min
+            "pool_pre_ping": True,  # validate connection before use
+        }
+    )
+
+engine = create_async_engine(DATABASE_URL, **_engine_kwargs)
 SessionLocal = async_sessionmaker(
     autocommit=False, autoflush=False, bind=engine, class_=AsyncSession
 )
 
+# ── NullPool engine for CLI workers (forked processes) ───────────────────────
+# CLI build commands run in a subprocess. Sharing the QueuePool across forks
+# causes "connection already closed" errors on asyncpg.
+engine_cli = create_async_engine(
+    DATABASE_URL,
+    poolclass=NullPool,
+    echo=False,
+    future=True,
+)
+SessionLocalCLI = async_sessionmaker(
+    autocommit=False, autoflush=False, bind=engine_cli, class_=AsyncSession
+)
+
+# ── Optional read-replica engine ─────────────────────────────────────────────
+# Set PAXDATA_DATABASE_REPLICA_URL to a PG read replica URL to enable.
+# Falls back to the primary engine if not configured.
+_REPLICA_URL = _os.getenv("PAXDATA_DATABASE_REPLICA_URL")
+if _REPLICA_URL and _is_postgres:
+    _replica_url = _REPLICA_URL.replace("postgresql://", "postgresql+asyncpg://", 1)
+    engine_replica = create_async_engine(
+        _replica_url,
+        pool_size=_settings.db_pool_size,
+        pool_pre_ping=True,
+        echo=False,
+        future=True,
+    )
+    SessionLocalReplica = async_sessionmaker(
+        autocommit=False, autoflush=False, bind=engine_replica, class_=AsyncSession
+    )
+else:
+    engine_replica = engine
+    SessionLocalReplica = SessionLocal
+
+# ── Sync engine (Alembic migrations, scripts) ────────────────────────────────
 engine_sync = create_engine(DATABASE_URL_SYNC, echo=False, future=True)
 SessionLocalSync = sessionmaker(autocommit=False, autoflush=False, bind=engine_sync)
 
 
+# ── Session providers ────────────────────────────────────────────────────────
+
+
 async def get_db() -> AsyncGenerator[AsyncSession, None]:
+    """FastAPI dependency — uses QueuePool primary engine."""
     async with SessionLocal() as db:
+        try:
+            yield db
+        finally:
+            await db.close()
+
+
+async def get_db_replica() -> AsyncGenerator[AsyncSession, None]:
+    """FastAPI dependency — uses read replica if configured."""
+    async with SessionLocalReplica() as db:
         try:
             yield db
         finally:
@@ -47,9 +113,16 @@ def get_db_session() -> Generator[Session, None, None]:
 async def init_db() -> None:
     from bb_paxdata.infrastructure.db import (
         country_models,  # noqa: F401
+        dki_table,  # noqa: F401
+        drift_events,  # noqa: F401
+        human_review_queue,  # noqa: F401
+        human_review_table,  # noqa: F401
         models,  # noqa: F401
+        sbi_table,  # noqa: F401
+        topic_models,  # noqa: F401
     )
     from bb_paxdata.infrastructure.db.country_models import Base as CountryBase
+    from bb_paxdata.infrastructure.db.models.outbox import OutboxEventORM  # noqa: F401
     from bb_paxdata.infrastructure.legacy_migration.models import (
         Base as PersistenceBase,
     )

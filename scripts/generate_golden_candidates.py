@@ -18,7 +18,7 @@ logger = structlog.get_logger(__name__)
 class GoldenCandidateGenerator:
     """Generates golden dataset candidates with stratified sampling."""
 
-    def __init__(self, db_path: str = "bb-paxdata.db"):
+    def __init__(self, db_path: str = "paxdata.db"):
         self.db_path = db_path
         self.logger = structlog.get_logger(__name__)
 
@@ -360,7 +360,7 @@ def main() -> None:
     import argparse
 
     parser = argparse.ArgumentParser(description="Generate golden dataset candidates")
-    parser.add_argument("--db", default="bb-paxdata.db", help="Database path")
+    parser.add_argument("--db", default="paxdata.db", help="Database path")
     parser.add_argument(
         "--output", default="golden_candidates.csv", help="Output CSV path"
     )

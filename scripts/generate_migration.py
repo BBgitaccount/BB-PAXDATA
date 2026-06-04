@@ -1,6 +1,6 @@
 import sqlite3
 
-DB_PATH = "c:\\Users\\THINKPAD\\Desktop\\BB-PAXDATA\\bb-paxdata.db"
+DB_PATH = "c:\\Users\\THINKPAD\\Desktop\\BB-PAXDATA\\paxdata.db"
 MIGRATION_PATH = "c:\\Users\\THINKPAD\\Desktop\\BB-PAXDATA\\alembic\\versions\\0762fd4c7846_add_all_strategic_views.py"
 
 conn = sqlite3.connect(DB_PATH)

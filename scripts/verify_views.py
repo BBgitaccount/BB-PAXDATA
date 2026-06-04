@@ -1,6 +1,6 @@
 import sqlite3
 
-DB_PATH = "c:\\Users\\THINKPAD\\Desktop\\BB-PAXDATA\\bb-paxdata.db"
+DB_PATH = "c:\\Users\\THINKPAD\\Desktop\\BB-PAXDATA\\paxdata.db"
 conn = sqlite3.connect(DB_PATH)
 cursor = conn.cursor()
 

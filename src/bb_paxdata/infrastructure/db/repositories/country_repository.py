@@ -9,7 +9,7 @@ from __future__ import annotations
 
 from collections.abc import Sequence
 
-from sqlalchemy import select
+from sqlalchemy import and_, or_, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from bb_paxdata.domain.models.bilateral_sentiment import BilateralSentiment
@@ -103,7 +103,7 @@ class BilateralSentimentRepository:
             row.affinity_score = sentiment.affinity_score
             row.power_weighted_score = sentiment.power_weighted_score
             row.diplomatic_distance = sentiment.diplomatic_distance
-            row.last_updated = sentiment.last_updated
+            row.last_updated = sentiment.last_updated.replace(tzinfo=None)
 
             # Phase 4 Extensions
             if sentiment.dyadic_metrics:
@@ -125,10 +125,19 @@ class BilateralSentimentRepository:
         """Persist Maoz dyadic metrics into bilateral_sentiments table."""
         # Find existing bilateral record for this pair and session
         # session_id here maps to panel_id in BilateralSentimentTable
+        # Match either orientation (A->B or B->A) to ensure updates regardless
         stmt = select(BilateralSentimentTable).where(
             BilateralSentimentTable.file_id == metrics.session_id,
-            BilateralSentimentTable.from_country == metrics.actor_a_id,
-            BilateralSentimentTable.to_country == metrics.actor_b_id,
+            or_(
+                and_(
+                    BilateralSentimentTable.from_country == metrics.actor_a_id,
+                    BilateralSentimentTable.to_country == metrics.actor_b_id,
+                ),
+                and_(
+                    BilateralSentimentTable.from_country == metrics.actor_b_id,
+                    BilateralSentimentTable.to_country == metrics.actor_a_id,
+                ),
+            ),
         )
         result = await session.execute(stmt)
         row = result.scalar_one_or_none()
@@ -138,6 +147,7 @@ class BilateralSentimentRepository:
             row.alliance_score = metrics.alliance_score
             row.structural_distance = metrics.structural_distance
             row.discourse_sentiment_delta = metrics.discourse_sentiment_delta
+            row.diplomatic_distance = float(metrics.diplomatic_distance or 0.0)
             row.maoz_diplomatic_distance = metrics.diplomatic_distance
             row.maoz_affinity_score = metrics.affinity_score
             await session.flush()

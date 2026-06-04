@@ -25,6 +25,7 @@ from .negation_cue import NegationCue
 from .power_index import PowerIndex
 from .risk_signal import RiskSignal
 from .sbi_models import SBIResult
+from .segment import Segment
 from .topic_synthesis import TopicSynthesis
 
 
@@ -99,6 +100,9 @@ class Analysis(BaseModel):
         default_factory=dict, description="Speaker ID -> PowerIndex"
     )
     sentence_count: int = Field(default=0, description="Cümle sayısı")
+    segments: list[Segment] = Field(
+        default_factory=list, description="Panel/sentence segments for network assembly"
+    )
 
     # ── AI Üretilmiş Çıktılar (KRİTİK: Tüm alanlar Optional) ──────
     ai_sentiment_score: float | None = Field(

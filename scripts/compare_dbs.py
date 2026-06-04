@@ -3,13 +3,12 @@ import sqlite3
 import sys
 
 # Ensure UTF-8 printing
-try:
-    sys.stdout.reconfigure(encoding="utf-8")
-except AttributeError:
-    pass
+reconfigure = getattr(sys.stdout, "reconfigure", None)
+if reconfigure is not None:
+    reconfigure(encoding="utf-8")
 
 db_old_path = r"C:\Users\THINKPAD\Desktop\Yazılım\BB-PAXDATA\bbdbda.db"
-db_new_path = r"c:\Users\THINKPAD\Desktop\BB-PAXDATA\bb-paxdata.db"
+db_new_path = r"c:\Users\THINKPAD\Desktop\BB-PAXDATA\paxdata.db"
 
 
 def inspect_db(name, path):

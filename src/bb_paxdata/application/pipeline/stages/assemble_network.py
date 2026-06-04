@@ -8,6 +8,7 @@ from decimal import Decimal
 import structlog
 from bb_paxdata.application.pipeline.stages.base import AssemblyStage
 from bb_paxdata.domain.models.analysis import Analysis
+from bb_paxdata.domain.models.bilateral_sentiment import BilateralSentiment
 from bb_paxdata.domain.models.segment import Segment
 from bb_paxdata.infrastructure.nlp.fischer_dna_service import (
     ActorConceptProfile,
@@ -39,17 +40,7 @@ class NetworkAssemblyStage(AssemblyStage):
         Immutable: returns new Analysis instance.
         """
         # --- 4.1 Fischer DNA Network Build ---
-        # Assuming analysis.segments is where segments are stored.
-        # Wait, Analysis model doesn't have segments?
-        # Let's check Analysis model again.
-
-        # Based on Phase 3, Analysis seems to be for a single sentence/segment.
-        # But DNA needs a collection of segments.
-        # If this stage runs at the end of a panel analysis, we need the segments.
-        # For now, we'll assume we have access to segments through a context or passed in.
-        # The prompt uses analysis.segments.
-
-        segments = getattr(analysis, "segments", []) or []
+        segments = analysis.segments or []
         profiles = self._extract_actor_profiles(segments)
 
         discourse_flow = self.fischer.build_network(
@@ -66,11 +57,61 @@ class NetworkAssemblyStage(AssemblyStage):
             pairwise_inputs=pairwise,
         )
 
+        dyadic_map = {
+            (metric.actor_a_id, metric.actor_b_id): metric for metric in dyadic_metrics
+        }
+        enriched_bilateral_metrics: list[BilateralSentiment] = []
+        seen_pairs: set[tuple[str, str]] = set()
+
+        for sentiment in analysis.bilateral_metrics or []:
+            dyadic = dyadic_map.get((sentiment.from_country, sentiment.to_country))
+            if dyadic is None:
+                dyadic = dyadic_map.get((sentiment.to_country, sentiment.from_country))
+
+            if dyadic is None:
+                enriched_bilateral_metrics.append(sentiment)
+                continue
+
+            seen_pairs.add((dyadic.actor_a_id, dyadic.actor_b_id))
+            enriched_bilateral_metrics.append(
+                sentiment.model_copy(
+                    update={
+                        "dyadic_metrics": dyadic,
+                        "diplomatic_distance": float(
+                            dyadic.diplomatic_distance
+                            if dyadic.diplomatic_distance is not None
+                            else sentiment.diplomatic_distance
+                        ),
+                        "affinity_score": float(
+                            dyadic.affinity_score
+                            if dyadic.affinity_score is not None
+                            else sentiment.affinity_score
+                        ),
+                    }
+                )
+            )
+
+        for dyadic in dyadic_metrics:
+            pair = (dyadic.actor_a_id, dyadic.actor_b_id)
+            if pair in seen_pairs:
+                continue
+
+            enriched_bilateral_metrics.append(
+                BilateralSentiment(
+                    panel_id=analysis.id,
+                    from_country=dyadic.actor_a_id,
+                    to_country=dyadic.actor_b_id,
+                    dyadic_metrics=dyadic,
+                    diplomatic_distance=float(dyadic.diplomatic_distance or 0.0),
+                    affinity_score=float(dyadic.affinity_score or 0.0),
+                )
+            )
+
         # Update analysis (immutable copy)
         enriched = analysis.model_copy(
             update={
                 "discourse_flow": discourse_flow,
-                "bilateral_metrics": dyadic_metrics,
+                "bilateral_metrics": enriched_bilateral_metrics,
             }
         )
 
@@ -117,9 +158,7 @@ class NetworkAssemblyStage(AssemblyStage):
         pairwise: dict[tuple[str, str], dict[str, Decimal | None]] = {}
 
         # Fetch existing bilateral data from Faz 3
-        # In this context, we might not have a full list yet.
-        # But the prompt implies we can look it up.
-        existing = getattr(analysis, "bilateral_sentiments", []) or []
+        existing = analysis.bilateral_metrics or []
         existing_map = {(b.from_country, b.to_country): b for b in existing}
 
         for i, a in enumerate(actor_ids):
@@ -152,7 +191,19 @@ class NetworkAssemblyStage(AssemblyStage):
 
     def _get_actor_sentiment(self, analysis: Analysis, actor_id: str) -> Decimal | None:
         """Extract effective sentiment for actor from Faz 1 results."""
-        # Implementation depends on how actor sentiment is aggregated in analysis.
-        # If analysis represents a session, it might have an actor_sentiments map.
-        # For now, return None as per prompt placeholder.
-        return None
+        # Aggregate per-segment sentence sentiment for the given actor.
+        actor_sentences: list[float] = []
+        for seg in analysis.segments or []:
+            if seg.primary_speaker_id != actor_id:
+                continue
+            for s in seg.sentences:
+                # Domain `Sentence.sentiment_score` may be None
+                val = getattr(s, "sentiment_score", None)
+                if val is not None:
+                    actor_sentences.append(float(val))
+
+        if not actor_sentences:
+            return None
+
+        avg = sum(actor_sentences) / len(actor_sentences)
+        return Decimal(str(avg))

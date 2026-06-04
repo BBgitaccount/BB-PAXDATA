@@ -50,6 +50,16 @@ class PromptVersion:
         return self.template_hash
 
     @property
+    def content(self) -> str:
+        """Alias for template for compatibility."""
+        return self.template
+
+    @property
+    def content_hash(self) -> str:
+        """Alias for template_hash for compatibility."""
+        return self.template_hash
+
+    @property
     def full_version_id(self) -> str:
         """prompt_id@version formatı — Analysis modeline damgalanır."""
         return f"{self.prompt_id}@{self.version}"
@@ -130,6 +140,8 @@ class PromptRegistry:
         Infrastructure katmanı uyumluluğu için async wrapper.
         version verilmezse aktifi döner.
         """
+        if "@" in name and version is None:
+            name, version = name.split("@", 1)
         if version:
             return self.get_version(name, version)
         return self.get_active(name)
@@ -282,6 +294,79 @@ Respond ONLY with a valid JSON object:
             model_name="gpt-4o",
             language="any",
             academic_ref="Tsytsarau et al. (2017) | LLM-as-a-Judge (Zheng et al. 2023)",
+        )
+    )
+
+    registry.register(
+        PromptVersion(
+            prompt_id="rag_synthesis",
+            version="v2.0",
+            template=(
+                "You are an expert AI Diplomatic Analyst. Use the following retrieved context sentences (total: {source_count}) to answer the user query.\n"
+                "If the retrieved context does not contain enough information to answer the query, prioritize the retrieved context but you may use general diplomatic knowledge to bridge the gaps, clearly indicating what is sourced from the context and what is inferred.\n\n"
+                "Retrieved Context:\n"
+                "{context}\n\n"
+                "User Query: {query}\n\n"
+                "Synthesized Diplomatic Analysis:"
+            ),
+            description="RAG synthesis prompt with source count and context",
+            is_active=True,
+            model_name="gpt-4o",
+            language="any",
+        )
+    )
+
+    registry.register(
+        PromptVersion(
+            prompt_id="frame_analysis",
+            version="v2.1",
+            template=(
+                "Analyze the following sentence in the context of international relations and determine its primary discourse frame (e.g. conflict, cooperation, trade, security).\n"
+                'Sentence: "{text}"\n'
+                'Response format: JSON with "frame" and "explanation".'
+            ),
+            description="Frame analysis prompt",
+            is_active=True,
+            model_name="gpt-4o",
+            language="any",
+        )
+    )
+
+    registry.register(
+        PromptVersion(
+            prompt_id="dki_judge",
+            version="v2.1",
+            template=(
+                "## ROLE & MISSION:\n"
+                "You are an expert AI Diplomatic Analyst acting as a quality judge for the BB-PAXDATA pipeline.\n"
+                "Evaluate the current statement analysis against the historical baseline metrics for the actor.\n\n"
+                "## TARGET TRANSCRIPT CONTENT:\n"
+                "Actor: {speaker_name} ({country})\n"
+                'Target Sentence: "{sentence_text}"\n\n'
+                "## PIPELINE ANALYSIS OUTPUT:\n"
+                "Assigned Sentiment: {pipeline_sentiment}\n"
+                "Assigned Risk Score: {pipeline_risk_score} (0-10)\n"
+                "Assigned Discourse Frame: {pipeline_frame}\n\n"
+                "## HISTORICAL BASELINE METRICS:\n"
+                "Baseline Sentiment Average: {historical_sentiment_avg}\n"
+                "Baseline Risk Average: {historical_risk_avg}\n"
+                "Primary Historical Frame: {historical_frame}\n\n"
+                "## EVALUATION CRITERIA:\n"
+                "1. Semantic Shift Check: Does the target statement represent an uncalibrated jump in stance?\n"
+                "2. Frame Consistency: Is the shift in frame logically supported by the sentence semantics?\n\n"
+                "## JSON OUTPUT FORMAT:\n"
+                "Provide the evaluation strictly in JSON format:\n"
+                "{{\n"
+                '  "semantic_shift_score": float (0.0 to 1.0),\n'
+                '  "is_consistent": boolean,\n'
+                '  "calibration_drift": float (-1.0 to 1.0),\n'
+                '  "reasoning": "Detailed textual explanation"\n'
+                "}}"
+            ),
+            description="LLM-as-a-Judge v2.1 prompt template",
+            is_active=True,
+            model_name="gpt-4o",
+            language="any",
         )
     )
 

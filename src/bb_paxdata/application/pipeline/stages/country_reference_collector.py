@@ -83,13 +83,16 @@ class CountryReferenceCollector:
         speaker_country: str,
         speaker_power_level: float = 0.5,
         speaker_id: str | None = None,
+        sentence_index: int = 0,
     ) -> CountryCollectResult:
         """
         Ana giriş noktası. COLLECT aşamasından asyncio.gather() ile çağrılır.
         Exception fırlatmaz; hata durumunda error field'lı CountryCollectResult döndürür.
         """
         try:
-            raw_mentions = await self._extract_mentions(text, speaker_country)
+            raw_mentions = await self._extract_mentions(
+                text, speaker_country, sentence_index=sentence_index
+            )
             if not raw_mentions:
                 return CountryCollectResult(panel_id=panel_id, references=())
 
@@ -128,7 +131,7 @@ class CountryReferenceCollector:
             return CountryCollectResult(panel_id=panel_id, error=str(exc))
 
     async def _extract_mentions(
-        self, text: str, speaker_country: str
+        self, text: str, speaker_country: str, sentence_index: int = 0
     ) -> list[tuple[int, str, float]]:
         """
         spaCy ile metinden ülke entity'lerini çıkarır.
@@ -149,7 +152,7 @@ class CountryReferenceCollector:
                     if ent.text.lower() == speaker_country.lower():
                         continue  # Konuşmacı kendi ülkesinden bahsediyorsa atla
                     sentiment = self._vader_score(sent.text)
-                    mentions.append((sent_idx, ent.text, sentiment))
+                    mentions.append((sentence_index + sent_idx, ent.text, sentiment))
 
         return mentions
 

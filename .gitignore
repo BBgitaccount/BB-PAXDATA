@@ -53,3 +53,22 @@ Desktop.ini
 
 # Graphify
 graphify-out/
+
+# Web Interface (React/Vite Frontend)
+src/bb_paxdata/interfaces/web/
+
+# Developer & Test Outputs (not needed by CLI)
+scratch/
+.deepeval/
+.pytest_cache/
+.coverage
+coverage.xml
+logs/
+
+# Repomix
+repomix-output.*
+
+# Node/Frontend dependencies
+node_modules/
+**/node_modules/
+npm-debug.log

@@ -56,7 +56,9 @@ class CountryReferenceTable(Base):
         Float, nullable=False, default=0.5
     )
     created_at: Mapped[datetime] = mapped_column(
-        DateTime, nullable=False, default=lambda: datetime.now(timezone.utc)
+        DateTime,
+        nullable=False,
+        default=lambda: datetime.now(timezone.utc).replace(tzinfo=None),
     )
 
     def to_domain(self) -> CountryReference:
@@ -92,7 +94,7 @@ class CountryReferenceTable(Base):
             reference_context=entity.reference_context.value,
             raw_sentiment_score=entity.raw_sentiment_score,
             speaker_power_level=entity.speaker_power_level,
-            created_at=entity.created_at,
+            created_at=entity.created_at.replace(tzinfo=None),
         )
 
 
@@ -122,6 +124,12 @@ class BilateralSentimentTable(Base):
         Float, nullable=False, default=0.0
     )
 
+    # Trager-related parameters persisted so domain defaults don't mask real values
+    power_level_a: Mapped[float] = mapped_column(Float, nullable=False, default=1.0)
+    power_level_b: Mapped[float] = mapped_column(Float, nullable=False, default=1.0)
+    demand_weight: Mapped[float] = mapped_column(Float, nullable=False, default=1.0)
+    risk_severity: Mapped[float] = mapped_column(Float, nullable=False, default=1.0)
+
     # Faz 4 new fields (using Numeric for precision where possible)
     vote_affinity: Mapped[Decimal | None] = mapped_column(Numeric(12, 6))
     alliance_score: Mapped[Decimal | None] = mapped_column(Numeric(12, 6))
@@ -134,7 +142,9 @@ class BilateralSentimentTable(Base):
     maoz_diplomatic_distance: Mapped[Decimal | None] = mapped_column(Numeric(12, 6))
     maoz_affinity_score: Mapped[Decimal | None] = mapped_column(Numeric(12, 6))
     last_updated: Mapped[datetime] = mapped_column(
-        DateTime, nullable=False, default=lambda: datetime.now(timezone.utc)
+        DateTime,
+        nullable=False,
+        default=lambda: datetime.now(timezone.utc).replace(tzinfo=None),
     )
 
     def to_domain(self) -> BilateralSentiment:
@@ -158,6 +168,10 @@ class BilateralSentimentTable(Base):
             power_weighted_score=self.power_weighted_score,
             diplomatic_distance=self.diplomatic_distance,
             last_updated=self.last_updated,
+            power_level_a=float(getattr(self, "power_level_a", 1.0) or 1.0),
+            power_level_b=float(getattr(self, "power_level_b", 1.0) or 1.0),
+            demand_weight=float(getattr(self, "demand_weight", 1.0) or 1.0),
+            risk_severity=float(getattr(self, "risk_severity", 1.0) or 1.0),
         )
 
     @classmethod
@@ -174,7 +188,11 @@ class BilateralSentimentTable(Base):
             affinity_score=entity.affinity_score,
             power_weighted_score=entity.power_weighted_score,
             diplomatic_distance=entity.diplomatic_distance,
-            last_updated=entity.last_updated,
+            power_level_a=entity.power_level_a,
+            power_level_b=entity.power_level_b,
+            demand_weight=entity.demand_weight,
+            risk_severity=entity.risk_severity,
+            last_updated=entity.last_updated.replace(tzinfo=None),
         )
 
 

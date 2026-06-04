@@ -1,8 +1,14 @@
 from collections.abc import Sequence
+from enum import Enum
 
 from pydantic import BaseModel, ConfigDict, Field
 
 from bb_paxdata.domain.enums.negation_type import NegationType
+
+
+class LanguageCode(str, Enum):
+    EN = "en"
+    TR = "tr"
 
 
 class NegationCue(BaseModel):
@@ -38,10 +44,18 @@ class NegationCue(BaseModel):
         default=1.0, ge=0.0, le=1.0, description="Scope detection güven skoru"
     )
 
+    # Turkish negation/advanced compatibility
+    language: LanguageCode = Field(
+        default=LanguageCode.EN, description="Detected language code"
+    )
+    scope_tokens: Sequence[str] = Field(
+        default_factory=tuple, description="Tokens in scope"
+    )
+
     # Safe property: scope var mı?
     @property
     def has_scope(self) -> bool:
-        return len(self.scope_token_indices) > 0
+        return len(self.scope_token_indices) > 0 or len(self.scope_tokens) > 0
 
     def with_scope(
         self,
@@ -62,3 +76,11 @@ class NegationCue(BaseModel):
         if focus_txt is not None:
             update_dict["focus_text"] = focus_txt
         return self.model_copy(update=update_dict)
+
+
+class NegationResult(BaseModel):
+    """Pydantic model containing the final results of a negation detection run."""
+
+    cues: list[NegationCue] = Field(default_factory=list)
+    has_negation: bool = Field(default=False)
+    dominant_scope: Sequence[str] = Field(default_factory=tuple)

@@ -36,6 +36,7 @@ class DiscourseNetworkRepository(BaseRepository[DiscourseNetworkEdgeTable]):
                 idf=edge.idf_score,
                 weight=edge.weight,
                 segment_id=edge.segment_source_id,
+                file_id=flow.session_id,
             )
             session.add(db_edge)
 

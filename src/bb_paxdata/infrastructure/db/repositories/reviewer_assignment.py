@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 from datetime import datetime, timezone
-from typing import Any, cast
+from typing import Any
 
 from sqlalchemy import and_, func, select, update
 
@@ -106,7 +106,7 @@ class ReviewerAssignmentRepository(BaseRepository[ReviewerAssignment]):
 
     async def reset_daily_counts(self) -> int:
         """Reset all daily counts to 0. Run once per day (midnight cron)."""
-        now = datetime.now(timezone.utc)
+        now = datetime.now(timezone.utc).replace(tzinfo=None)
         stmt = (
             update(ReviewerAssignment)
             .where(ReviewerAssignment.is_active == True)  # noqa: E712
@@ -151,7 +151,9 @@ class ReviewerAssignmentRepository(BaseRepository[ReviewerAssignment]):
         for assignment in assignments:
             rank = _PERMISSION_HIERARCHY.get(assignment.permission_level, 0)
             if rank >= required_rank:
-                return cast(str, assignment.reviewer_id)
+                reviewer_id = assignment.reviewer_id
+                assert isinstance(reviewer_id, str)
+                return reviewer_id
 
         return None
 

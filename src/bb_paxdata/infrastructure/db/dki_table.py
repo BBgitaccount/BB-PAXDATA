@@ -1,6 +1,6 @@
 from datetime import datetime, timezone
 
-from sqlalchemy import Boolean, DateTime, Float, ForeignKey, String
+from sqlalchemy import Boolean, DateTime, Float, String
 from sqlalchemy.orm import Mapped, mapped_column
 
 from bb_paxdata.infrastructure.db.base import Base
@@ -15,9 +15,7 @@ class DKIResultModel(Base):
     __tablename__ = "dki_results"
 
     id: Mapped[int] = mapped_column(primary_key=True, autoincrement=True)
-    analysis_id: Mapped[str] = mapped_column(
-        String(50), ForeignKey("analyses.id"), index=True
-    )
+    analysis_id: Mapped[str] = mapped_column(String(50), index=True)
     speaker_id: Mapped[str] = mapped_column(String(50), index=True)
     session_id: Mapped[str] = mapped_column(String(50), index=True)
 
@@ -33,7 +31,7 @@ class DKIResultModel(Base):
     # Metadata
     calculation_method: Mapped[str] = mapped_column(String(100), default="dki_v1.0")
     created_at: Mapped[datetime] = mapped_column(
-        DateTime(timezone=True), default_factory=lambda: datetime.now(timezone.utc)
+        DateTime(timezone=True), default=lambda: datetime.now(timezone.utc)
     )
 
     def __repr__(self) -> str:

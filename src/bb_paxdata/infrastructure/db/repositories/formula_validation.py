@@ -301,7 +301,7 @@ class FormulaValidationRepository(BaseRepository[FormulaValidationLog]):
 
         Raises ValueError if the log is already being reviewed.
         """
-        now = datetime.now(timezone.utc)
+        now = datetime.now(timezone.utc).replace(tzinfo=None)
         stmt = (
             update(FormulaValidationLog)
             .where(
@@ -358,7 +358,7 @@ class FormulaValidationRepository(BaseRepository[FormulaValidationLog]):
 
         Returns dict with new_log_id and audit_id.
         """
-        now = datetime.now(timezone.utc)
+        now = datetime.now(timezone.utc).replace(tzinfo=None)
 
         # 1. Get and validate current log
         current_log = await self.get_by_id(log_id)
@@ -465,7 +465,7 @@ class FormulaValidationRepository(BaseRepository[FormulaValidationLog]):
 
         Only allowed for admins or within 1 hour of the original action.
         """
-        now = datetime.now(timezone.utc)
+        now = datetime.now(timezone.utc).replace(tzinfo=None)
 
         # 1. Get the audit entry
         audit_stmt = select(FormulaValidationAudit).where(

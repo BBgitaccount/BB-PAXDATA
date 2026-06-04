@@ -2,7 +2,7 @@ import sqlite3
 
 
 def main():
-    conn = sqlite3.connect("bb-paxdata.db")
+    conn = sqlite3.connect("paxdata.db")
     cursor = conn.cursor()
 
     cursor.execute("SELECT version_num FROM alembic_version")

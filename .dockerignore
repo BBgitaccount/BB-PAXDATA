@@ -1,0 +1,49 @@
+# Ignore python virtual environments
+.venv/
+venv/
+ENV/
+
+# Ignore IDE settings and caches
+.idea/
+.vscode/
+.mypy_cache/
+.pytest_cache/
+.ruff_cache/
+.deepeval/
+
+# Ignore database files
+*.db
+*.sqlite
+*.sqlite3
+
+# Ignore git
+.git/
+
+# Ignore package manager modules and logs
+node_modules/
+npm-debug.log
+frontend/node_modules/
+
+# Ignore test coverage reports
+.coverage
+coverage.xml
+htmlcov/
+
+# Ignore build artifacts and python caches
+build/
+dist/
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+
+# Ignore local config files
+.env
+.env.local
+
+# Ignore local data, output and logs
+data/
+output/
+logs/
+scratch/
+repomix-output.xml

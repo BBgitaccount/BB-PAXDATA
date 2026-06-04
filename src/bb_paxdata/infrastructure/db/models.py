@@ -7,6 +7,7 @@ from datetime import datetime, timezone
 from enum import Enum
 from typing import TYPE_CHECKING, Any, TypeVar, cast
 
+from pgvector.sqlalchemy import Vector
 from sqlalchemy import (
     JSON,
     Boolean,
@@ -556,6 +557,9 @@ class Sentence(Base):
     entities_person: Mapped[dict[str, Any] | list[Any] | None] = mapped_column(
         JSON, nullable=True
     )
+    entities_org: Mapped[dict[str, Any] | list[Any] | None] = mapped_column(
+        JSON, nullable=True
+    )
     demand_type: Mapped[str | None] = mapped_column(Text, nullable=True)
     demand_weight: Mapped[float] = mapped_column(Float, default=0)
     demand_category: Mapped[DemandCategory | None] = mapped_column(
@@ -581,6 +585,9 @@ class Sentence(Base):
     logic_result: Mapped[str | None] = mapped_column(
         Text, nullable=True
     )  # 'PASS' | 'FAIL' | None
+    formula_inconsistency_score: Mapped[float] = mapped_column(Float, default=0.0)
+    discrepancy_score: Mapped[float] = mapped_column(Float, default=0.0)
+    embedding: Mapped[list[float] | None] = mapped_column(Vector(384), nullable=True)
 
     segment: Mapped[Segment] = relationship(back_populates="sentences")
     ai_demand_analyses: Mapped[list[AIDemandAnalysis]] = relationship(
@@ -2462,7 +2469,7 @@ class FormulaValidationAudit(Base):
 
     performed_by: Mapped[str] = mapped_column(String(100), nullable=False)
     performed_at: Mapped[datetime] = mapped_column(
-        DateTime, default=lambda: datetime.now(timezone.utc)
+        DateTime, default=lambda: datetime.now(timezone.utc).replace(tzinfo=None)
     )
     ip_address: Mapped[str | None] = mapped_column(String(45), nullable=True)
     justification: Mapped[str | None] = mapped_column(Text, nullable=True)
@@ -2537,11 +2544,11 @@ class ReviewerAssignment(Base):
     max_daily_reviews: Mapped[int] = mapped_column(Integer, default=50)
     current_daily_count: Mapped[int] = mapped_column(Integer, default=0)
     last_reset_at: Mapped[datetime] = mapped_column(
-        DateTime, default=lambda: datetime.now(timezone.utc)
+        DateTime, default=lambda: datetime.now(timezone.utc).replace(tzinfo=None)
     )
     is_active: Mapped[bool] = mapped_column(Boolean, default=True)
     created_at: Mapped[datetime] = mapped_column(
-        DateTime, default=lambda: datetime.now(timezone.utc)
+        DateTime, default=lambda: datetime.now(timezone.utc).replace(tzinfo=None)
     )
 
 
@@ -2656,3 +2663,26 @@ class TopicMapping(Base):
     topic_to: Mapped[str] = mapped_column(String(200), primary_key=True)
     wasserstein_distance: Mapped[float] = mapped_column(Float, nullable=False)
     mapping_confidence: Mapped[float] = mapped_column(Float, nullable=False)
+
+
+class DomainEvent(Base):
+    """Append-only domain event store (WORM). Never UPDATE or DELETE rows."""
+
+    __tablename__ = "domain_events"
+
+    event_id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    aggregate_type: Mapped[str] = mapped_column(String(64), nullable=False)
+    aggregate_id: Mapped[str] = mapped_column(String(128), nullable=False, index=True)
+    event_type: Mapped[str] = mapped_column(String(128), nullable=False)
+    event_version: Mapped[int] = mapped_column(Integer, default=1, nullable=False)
+    payload: Mapped[dict[str, Any]] = mapped_column(JSON, nullable=False)
+    actor_id: Mapped[str | None] = mapped_column(String(128), nullable=True)
+    correlation_id: Mapped[str | None] = mapped_column(String(64), nullable=True)
+    occurred_at: Mapped[datetime] = mapped_column(
+        DateTime, server_default=func.now(), nullable=False
+    )
+
+    __table_args__ = (
+        Index("ix_domain_events_aggregate", "aggregate_type", "aggregate_id"),
+        Index("ix_domain_events_type_time", "event_type", "occurred_at"),
+    )

@@ -1,0 +1,61 @@
+name: Graph-Native Architecture Diff
+
+on:
+  pull_request:
+    branches: [ main, master ]
+
+jobs:
+  graphify-diff:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      pull-requests: write
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Setup Node environment
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Run Graphify Diff and Regression Check
+        id: graphify_diff
+        run: |
+          echo "Running graphify diff between base and head..."
+          # Mock running graphify since it's an external CLI tool. 
+          # You can replace this with your actual graphify invocation command.
+          npx graphify diff origin/${{ github.event.pull_request.base.ref }} HEAD > graphify_diff_report.md || echo "Graphify diff failed" > graphify_diff_report.md
+          
+          # Regression check rules: looking for undesirable new dependencies or isolated nodes
+          # These can be customized based on what graphify diff outputs
+          if grep -qiE "CRITICAL_REGRESSION|Circular Dependency Detected|Isolated Node Created" graphify_diff_report.md; then
+            echo "has_regression=true" >> $GITHUB_OUTPUT
+            echo "🚨 Architectural regression detected!" >> graphify_diff_report.md
+          else
+            echo "has_regression=false" >> $GITHUB_OUTPUT
+          fi
+          
+          # Safely pass multiline output
+          EOF=$(dd if=/dev/urandom bs=15 count=1 status=none | base64)
+          echo "diff_report<<$EOF" >> $GITHUB_OUTPUT
+          cat graphify_diff_report.md >> $GITHUB_OUTPUT
+          echo "$EOF" >> $GITHUB_OUTPUT
+
+      - name: Comment PR with Architecture Diff
+        uses: thollander/actions-comment-pull-request@v2
+        if: always()
+        with:
+          message: |
+            ### 🏗️ Graphify Architecture Diff Report
+            
+            ${{ steps.graphify_diff.outputs.diff_report }}
+          comment_tag: graphify-diff
+          
+      - name: Enforce Architecture Rules (Fail on Regression)
+        if: steps.graphify_diff.outputs.has_regression == 'true'
+        run: |
+          echo "::error::Architectural regression detected! Please review the community diff and resolve unwanted dependencies."
+          exit 1

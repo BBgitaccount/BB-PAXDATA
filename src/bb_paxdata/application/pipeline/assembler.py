@@ -1,11 +1,11 @@
 from __future__ import annotations
 
-import logging
 import uuid
 from collections.abc import Sequence
 from datetime import datetime, timezone
 from typing import Any
 
+import structlog
 from bb_paxdata.application.pipeline.sbi_calculator import SBICalculator
 from bb_paxdata.domain.enums.signal_type import SignalType
 from bb_paxdata.domain.models.ai_analysis import AIAnalysisResult
@@ -24,7 +24,7 @@ from bb_paxdata.domain.models.topic import TopicResult
 from bb_paxdata.domain.models.topic_synthesis import TopicSynthesis
 from bb_paxdata.infrastructure.nlp.lodp_service import LODPService
 
-logger = logging.getLogger(__name__)
+logger = structlog.get_logger(__name__)
 
 
 class AnalysisAssembler:

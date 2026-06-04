@@ -6,6 +6,7 @@ import structlog
 from sklearn.metrics.pairwise import cosine_similarity
 
 from bb_paxdata.domain.models.dki import SegmentWindow, SemanticShiftResult
+from bb_paxdata.domain.ports.embedding_port import EmbeddingService
 
 logger = structlog.get_logger()
 
@@ -19,7 +20,12 @@ class AzarbonyadSemanticShiftCalculator:
     - Async wrapper around CPU-bound numpy operations.
     """
 
-    def __init__(self, model_name: str = "all-MiniLM-L6-v2") -> None:
+    def __init__(
+        self,
+        model_name: str = "all-MiniLM-L6-v2",
+        embedding_service: EmbeddingService | None = None,
+    ) -> None:
+        self._embedding_service = embedding_service
         self._model: Any = None
         try:
             from sentence_transformers import SentenceTransformer
@@ -95,12 +101,22 @@ class AzarbonyadSemanticShiftCalculator:
         # We will use the context-averaging approach:
         # Shift(w) = 1 - cos(avg_context_current(w), avg_context_historical(w))
 
-        per_word_shifts = await asyncio.to_thread(
-            self._compute_per_word_shifts,
-            current_text,
-            historical_combined,
-            intersection,
-        )
+        if self._embedding_service is not None:
+            # Compute embeddings using unified service
+            embeddings_current = await self._embedding_service.get_embeddings(
+                intersection
+            )
+            embeddings_historical = await self._embedding_service.get_embeddings(
+                intersection
+            )
+            per_word_shifts = self._compute_per_word_shifts_with_embeddings(
+                intersection, embeddings_current, embeddings_historical
+            )
+        else:
+            per_word_shifts = await asyncio.to_thread(
+                self._compute_per_word_shifts,
+                intersection,
+            )
 
         # 4. Weight by IDF
         idf = idf_reference or self._compute_idf(historical_texts, intersection)
@@ -123,9 +139,23 @@ class AzarbonyadSemanticShiftCalculator:
             historical_window_count=len(historical),
         )
 
-    def _compute_per_word_shifts(
-        self, current_text: str, historical_text: str, vocabulary: list[str]
+    def _compute_per_word_shifts_with_embeddings(
+        self,
+        vocabulary: list[str],
+        embeddings_current: np.ndarray,
+        embeddings_historical: np.ndarray,
     ) -> dict[str, float]:
+        """Compute shift per word using pre-computed embeddings."""
+        shifts = {}
+        for i, word in enumerate(vocabulary):
+            sim = cosine_similarity(
+                embeddings_current[i].reshape(1, -1),
+                embeddings_historical[i].reshape(1, -1),
+            )[0][0]
+            shifts[word] = float(1.0 - sim)
+        return shifts
+
+    def _compute_per_word_shifts(self, vocabulary: list[str]) -> dict[str, float]:
         """Compute shift per word based on context-averaging."""
         if self._model is None:
             # Mock implementation for tests/missing lib

@@ -30,19 +30,19 @@ except ImportError:
 
     class Counter:  # type: ignore
         def __init__(
-            self, name: str, documentation: str, *args: Any, **kwargs: Any
+            self, name: str, _documentation: str, *args: Any, **kwargs: Any
         ) -> None:
             pass
 
         def labels(self, **kwargs: Any) -> Any:
             return self
 
-        def inc(self, amount: float = 1) -> None:
+        def inc(self, _amount: float = 1) -> None:
             pass
 
     class Gauge:  # type: ignore
         def __init__(
-            self, name: str, documentation: str, *args: Any, **kwargs: Any
+            self, name: str, _documentation: str, *args: Any, **kwargs: Any
         ) -> None:
             pass
 
@@ -52,22 +52,22 @@ except ImportError:
         def set(self, value: float) -> None:
             pass
 
-        def inc(self, amount: float = 1) -> None:
+        def inc(self, _amount: float = 1) -> None:
             pass
 
-        def dec(self, amount: float = 1) -> None:
+        def dec(self, _amount: float = 1) -> None:
             pass
 
     class Histogram:  # type: ignore
         def __init__(
-            self, name: str, documentation: str, *args: Any, **kwargs: Any
+            self, name: str, _documentation: str, *args: Any, **kwargs: Any
         ) -> None:
             pass
 
         def labels(self, **kwargs: Any) -> Any:
             return self
 
-        def observe(self, amount: float) -> None:
+        def observe(self, _amount: float) -> None:
             pass
 
 
@@ -117,6 +117,20 @@ class MetricsCollector:
             "json_recovery_attempts_total",
             "JSON Recovery Denemesi",
             ["level", "result"],
+            registry=self._registry,
+        )
+
+        self._pipeline_stage_duration_seconds = Histogram(
+            "pipeline_stage_duration_seconds",
+            "Pipeline a\u015famalar\u0131n\u0131n \u00e7al\u0131\u015fma s\u00fcreleri (saniye)",
+            ["stage_name", "status"],
+            registry=self._registry,
+        )
+
+        self._pipeline_files_processed_total = Counter(
+            "pipeline_files_processed_total",
+            "Toplam i\u015flenen transkript dosyas\u0131",
+            ["status"],  # "success" | "skip" | "error"
             registry=self._registry,
         )
 
@@ -183,6 +197,27 @@ class MetricsCollector:
         """Record a JSON recovery attempt."""
         with self._lock:
             self._json_recovery_attempts_total.labels(level=level, result=result).inc()
+
+    def record_stage_duration(
+        self,
+        stage_name: str,
+        duration_seconds: float,
+        status: str,
+    ) -> None:
+        """Record the wall-clock execution time of a named pipeline stage."""
+        with self._lock:
+            self._pipeline_stage_duration_seconds.labels(
+                stage_name=stage_name, status=status
+            ).observe(duration_seconds)
+
+    def record_file_processed(self, status: str) -> None:
+        """Increment the total-files-processed counter.
+
+        Args:
+            status: One of 'success', 'skip', or 'error'.
+        """
+        with self._lock:
+            self._pipeline_files_processed_total.labels(status=status).inc()
 
     def start_http_server(self, port: int = 8000) -> None:
         """Prometheus scrape endpoint'ini başlat (opsiyonel, sadece local dev)."""

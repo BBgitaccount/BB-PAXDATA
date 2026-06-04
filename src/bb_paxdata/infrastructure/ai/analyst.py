@@ -207,7 +207,7 @@ class OllamaBackend(BaseAIBackend):
 
             return AIResponse(
                 content=content,
-                model_used=cast(str, payload["model"]),
+                model_used=payload["model"],
                 backend_used=BackendType.OLLAMA,
                 processing_time=time.time() - start_time,
             )
@@ -294,7 +294,7 @@ class AnthropicBackend(BaseAIBackend):
 
             return AIResponse(
                 content=content,
-                model_used=cast(str, payload["model"]),
+                model_used=payload["model"],
                 backend_used=BackendType.ANTHROPIC,
                 processing_time=time.time() - start_time,
                 tokens_used=data.get("usage", {}).get("input_tokens"),
@@ -473,3 +473,13 @@ class AIAnalyst:
                 health[backend_type.value] = False
 
         return health
+
+    async def generate(self, prompt: str, temperature: float = 0.0) -> str:
+        """Asynchronously generate a text completion from a prompt."""
+        import asyncio
+
+        loop = asyncio.get_event_loop()
+        response = await loop.run_in_executor(
+            None, lambda: self.analyze_text(text=prompt, backend=self.default_backend)
+        )
+        return json.dumps(response.content)

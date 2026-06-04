@@ -168,6 +168,10 @@ class BilateralSentiment(BaseModel):
                 "avg_sentiment": round(new_avg, 6),
                 "affinity_score": round(max(-1.0, min(1.0, new_affinity)), 6),
                 "interaction_count": self.interaction_count + 1,
+                "power_level_a": power_level,
+                "power_weighted_score": round(
+                    power_level * self.demand_weight * self.risk_severity, 6
+                ),
                 "last_updated": datetime.now(timezone.utc),
             }
         )

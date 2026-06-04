@@ -1,32 +1,37 @@
-from collections.abc import Sequence
 from typing import Any, Protocol
 
-from bb_paxdata.domain.models.negation_cue import NegationCue
+from bb_paxdata.domain.models.negation_cue import NegationResult
 
 
 class NegationDetectorProtocol(Protocol):
     """Domain katmanı negasyon detection servis arayüzü."""
 
-    async def detect(self, text: str, sentence_id: str) -> Sequence[NegationCue]:
+    async def detect(
+        self, text: str, sentence_id: str, language: str | None = None
+    ) -> NegationResult:
         """Verilen metindeki tüm negasyon cue'larını tespit et.
 
         Args:
             text: Analiz edilecek cümle metni.
             sentence_id: Cümle UUID (NegationCue.sentence_id için).
+            language: Dil ipucu (isteğe bağlı).
 
         Returns:
-            Sıralı NegationCue sequence'i (cue_start'a göre artan).
+            NegationResult nesnesi.
         """
         ...
 
-    async def detect_scope(self, cue: NegationCue, doc: Any) -> NegationCue:
+    async def detect_with_doc(
+        self, doc: Any, sentence_id: str, language: Any
+    ) -> NegationResult:
         """spaCy Doc objesi üzerinde cue'nun scope ve focus'unu belirle.
 
         Args:
-            cue: Scope'u belirlenecek cue (scope_token_indices henüz boş olabilir).
-            doc: spaCy Doc objesi (infrastructure katmanında import edilir).
+            doc: spaCy Doc objesi.
+            sentence_id: Cümle UUID.
+            language: Dil.
 
         Returns:
-            Scope ve focus bilgisi güncellenmiş NegationCue.
+            NegationResult nesnesi.
         """
         ...

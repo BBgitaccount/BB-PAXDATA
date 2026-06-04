@@ -1,6 +1,11 @@
 """Database infrastructure: ORM base, session, and table models."""
 
 from bb_paxdata.infrastructure.db.base import Base
+from bb_paxdata.infrastructure.db.model_evaluation import (
+    AuditEntry,
+    ModelEvaluationMetric,
+    ModelEvaluationRun,
+)
 from bb_paxdata.infrastructure.db.repositories import (
     AbstractUnitOfWork,
     AnalysisRepository,
@@ -30,4 +35,7 @@ __all__ = [
     "engine",
     "get_db",
     "init_db",
+    "ModelEvaluationRun",
+    "ModelEvaluationMetric",
+    "AuditEntry",
 ]

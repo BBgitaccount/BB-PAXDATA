@@ -1,0 +1,84 @@
+# Pipeline configuration variants for BB-PAXDATA.
+# Used for A/B testing and dynamic stage optimization.
+
+variants:
+  default:
+    stages:
+      - pre_process
+      - collect
+      - assemble
+      - detect
+      - dual_gate
+      - finalize
+    collect:
+      lazy_ai_risk_threshold: 0.5
+      lazy_ai_risk_formula: "max"
+      services:
+        - ner
+        - tokenizer
+        - ai_analyst
+        - country_collector
+        - negation_detector
+        - risk_detector
+        - power_calculator
+        - topic_modeling
+        - frame_pipeline
+        - lexicon_service
+        - episodic_classifier
+        - stance_calculator
+        - engagement_scorer
+        - llm_position_estimator
+        - semantic_shift_calculator
+    detect:
+      fail_fast_on_missing_ai: false
+    dual_gate:
+      context_window_size: 5
+
+  fast_mode:
+    stages:
+      - pre_process
+      - collect
+      - assemble
+      - detect
+      - finalize
+    collect:
+      lazy_ai_risk_threshold: 0.3
+      lazy_ai_risk_formula: "max"
+      services:
+        - ner
+        - tokenizer
+        - ai_analyst
+        - country_collector
+        - negation_detector
+        - risk_detector
+        - power_calculator
+    detect:
+      fail_fast_on_missing_ai: true
+    dual_gate:
+      context_window_size: 0
+
+  no_ai_mode:
+    stages:
+      - pre_process
+      - collect
+      - assemble
+      - detect
+      - finalize
+    collect:
+      lazy_ai_risk_threshold: 2.0
+      lazy_ai_risk_formula: "max"
+      services:
+        - ner
+        - tokenizer
+        - country_collector
+        - negation_detector
+        - risk_detector
+        - power_calculator
+        - lexicon_service
+        - episodic_classifier
+        - stance_calculator
+        - engagement_scorer
+    detect:
+      fail_fast_on_missing_ai: false
+    dual_gate:
+      context_window_size: 0

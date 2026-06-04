@@ -4,7 +4,8 @@ from bb_paxdata.infrastructure.container.service_container import ServiceContain
 
 @pytest.mark.asyncio
 async def test_pipeline_risk_power_integration():
-    container = ServiceContainer.get_instance()
+    ServiceContainer.reset_instance()
+    container = ServiceContainer.get_instance(logic_mode=True)
     pipeline = container.pipeline
 
     text = (

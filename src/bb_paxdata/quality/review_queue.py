@@ -41,9 +41,15 @@ class ReviewFlagger:
 
         # Check 1: High risk score
         risk_score = ai_output.get("AI_Risk_Skoru")
-        if risk_score is not None and risk_score >= 7:
+        from bb_paxdata.config.settings import get_settings
+
+        threshold = get_settings().risk_threshold / 10.0
+        if risk_score is not None and risk_score >= threshold:
             triggers.append(
-                {"type": "HIGH_RISK", "details": f"Risk score {risk_score} >= 7"}
+                {
+                    "type": "HIGH_RISK",
+                    "details": f"Risk score {risk_score} >= {threshold}",
+                }
             )
 
         # Check 2: Critical potential risk
@@ -179,6 +185,36 @@ class ReviewFlagger:
                 trigger_type=trigger_type,
                 review_id=review_entry.review_id,
             )
+
+            # Broadcast new flagged item event to connected WebSocket clients
+            try:
+                import asyncio
+
+                from bb_paxdata.interfaces.api.routers.ws.queue_ws import (
+                    manager as ws_manager,
+                )
+
+                try:
+                    loop = asyncio.get_running_loop()
+                except RuntimeError:
+                    loop = None
+
+                msg = {
+                    "event": "new_flagged_item",
+                    "sent_id": sent_id,
+                    "review_id": review_entry.review_id,
+                    "speaker_name": review_entry.speaker_name,
+                    "country": review_entry.country,
+                    "ai_risk_score": review_entry.ai_risk_score,
+                    "sentence_text": (
+                        context.get("text") if context else ai_output.get("text", "")
+                    ),
+                }
+
+                if loop and loop.is_running():
+                    loop.create_task(ws_manager.broadcast(msg))
+            except Exception as ws_ex:
+                self.logger.warning(f"Could not broadcast new flagged item: {ws_ex}")
 
             return review_entry
 

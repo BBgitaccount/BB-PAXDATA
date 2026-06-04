@@ -50,10 +50,149 @@ services:
     networks:
       - paxdata-net
 
+  redis:
+    image: redis:7-alpine
+    container_name: paxdata-redis
+    ports:
+      - "6379:6379"
+    restart: unless-stopped
+    networks:
+      - paxdata-net
+
+  api:
+    build:
+      context: .
+      dockerfile: Dockerfile.api
+    container_name: paxdata-api
+    environment:
+      - PAXDATA_DATABASE_MODE=postgresql
+      - PAXDATA_DATABASE_URL=postgresql+asyncpg://paxdata_user:paxdata_password@postgres:5432/paxdata_db
+      - PAXDATA_DATABASE_REPLICA_URL=postgresql+asyncpg://paxdata_user:paxdata_password@postgres:5432/paxdata_db
+      - PAXDATA_REDIS_URL=redis://redis:6379/0
+      - PAXDATA_ENVIRONMENT=development
+      - PAXDATA_DEBUG=true
+    ports:
+      - "8000:8000"
+    depends_on:
+      - postgres
+      - redis
+      - meilisearch
+    restart: unless-stopped
+    networks:
+      - paxdata-net
+
+  web:
+    build:
+      context: ./src/bb_paxdata/interfaces/web
+      dockerfile: Dockerfile
+    container_name: paxdata-web
+    environment:
+      - VITE_API_URL=http://localhost:8000
+    ports:
+      - "5173:5173"
+    depends_on:
+      - api
+    restart: unless-stopped
+    networks:
+      - paxdata-net
+
+  meilisearch:
+    image: getmeili/meilisearch:v1.8
+    container_name: paxdata-meilisearch
+    environment:
+      - MEILI_MASTER_KEY=paxdata-meilisearch-key
+      - MEILI_ENV=production
+    volumes:
+      - meilisearch_data:/meili_data
+    ports:
+      - "7700:7700"
+    restart: unless-stopped
+    networks:
+      - paxdata-net
+
+  minio:
+    image: minio/minio:RELEASE.2024-11-07T00-52-20Z
+    container_name: paxdata-minio
+    command: server /data --console-address ":9001"
+    environment:
+      - MINIO_ROOT_USER=paxdata_access_key
+      - MINIO_ROOT_PASSWORD=paxdata_secret_key
+    volumes:
+      - minio_data:/data
+    ports:
+      - "9000:9000"
+      - "9001:9001"
+    restart: unless-stopped
+    networks:
+      - paxdata-net
+
+  celery-worker-cpu:
+    build:
+      context: .
+      dockerfile: Dockerfile.api
+    container_name: paxdata-celery-worker-cpu
+    command: celery -A bb_paxdata.infrastructure.tasks.celery_app worker -Q ai_cpu --loglevel=info --concurrency=2
+    environment:
+      - PAXDATA_DATABASE_MODE=postgresql
+      - PAXDATA_DATABASE_URL=postgresql+asyncpg://paxdata_user:paxdata_password@postgres:5432/paxdata_db
+      - PAXDATA_REDIS_URL=redis://redis:6379/0
+    depends_on:
+      - postgres
+      - redis
+    networks:
+      - paxdata-net
+
+  celery-worker-io:
+    build:
+      context: .
+      dockerfile: Dockerfile.api
+    container_name: paxdata-celery-worker-io
+    command: celery -A bb_paxdata.infrastructure.tasks.celery_app worker -Q graph_io --loglevel=info --concurrency=4
+    environment:
+      - PAXDATA_DATABASE_MODE=postgresql
+      - PAXDATA_DATABASE_URL=postgresql+asyncpg://paxdata_user:paxdata_password@postgres:5432/paxdata_db
+      - PAXDATA_REDIS_URL=redis://redis:6379/0
+      - PAXDATA_MEILISEARCH_URL=http://meilisearch:7700
+    depends_on:
+      - postgres
+      - redis
+      - meilisearch
+    networks:
+      - paxdata-net
+
+  celery-beat:
+    build:
+      context: .
+      dockerfile: Dockerfile.api
+    container_name: paxdata-celery-beat
+    command: celery -A bb_paxdata.infrastructure.tasks.celery_app beat --loglevel=info
+    environment:
+      - PAXDATA_DATABASE_MODE=postgresql
+      - PAXDATA_DATABASE_URL=postgresql+asyncpg://paxdata_user:paxdata_password@postgres:5432/paxdata_db
+      - PAXDATA_REDIS_URL=redis://redis:6379/0
+    depends_on:
+      - postgres
+      - redis
+    networks:
+      - paxdata-net
+
+  flower:
+    image: mher/flower:2.0
+    container_name: paxdata-flower
+    command: celery --broker=redis://redis:6379/0 flower --port=5555
+    ports:
+      - "5555:5555"
+    depends_on:
+      - redis
+    networks:
+      - paxdata-net
+
 volumes:
   prometheus_data:
   grafana_data:
   postgres_data:
+  meilisearch_data:
+  minio_data:
 
 networks:
   paxdata-net:

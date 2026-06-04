@@ -14,30 +14,32 @@ from bb_paxdata.domain.enums import AIProvider, DatabaseMode, LogLevel
 
 class TestDefaultValues:
     def test_app_name_frozen(self) -> None:
-        s = Settings()
+        s = Settings(_env_file=None)
         with pytest.raises(Exception):  # ValidationError veya AttributeError
-            s.app_name = "HACKED"  # type: ignore[misc]
+            setattr(s, "app_name", "HACKED")
 
-    def test_sqlite_url_auto_generated(self) -> None:
-        s = Settings(database_path=Path("test.db"))
+    def test_sqlite_url_auto_generated(self, monkeypatch: pytest.MonkeyPatch) -> None:
+        monkeypatch.delenv("PAXDATA_DATABASE_URL", raising=False)
+        monkeypatch.delenv("PAXDATA_DATABASE_MODE", raising=False)
+        s = Settings(database_path=Path("test.db"), _env_file=None)
         assert s.database_url is not None
         assert "aiosqlite" in s.database_url
         assert s.is_async_db is True
 
     def test_default_ai_provider_is_ollama(self) -> None:
-        s = Settings()
+        s = Settings(_env_file=None)
         assert s.ai_provider == AIProvider.OLLAMA
 
 
 class TestPathResolution:
     def test_tilde_expanded(self) -> None:
-        s = Settings(legacy_db_path=Path("~/legacy.db"))
+        s = Settings(legacy_db_path=Path("~/legacy.db"), _env_file=None)
         assert s.legacy_db_path is not None
         assert not str(s.legacy_db_path).startswith("~")
         assert s.legacy_db_path.is_absolute()
 
     def test_relative_database_path_resolved(self) -> None:
-        s = Settings(database_path=Path("data/db.sqlite"))
+        s = Settings(database_path=Path("data/db.sqlite"), _env_file=None)
         assert s.database_path.is_absolute()
 
 
@@ -62,10 +64,12 @@ class TestValidation:
             Settings(database_mode=DatabaseMode.POSTGRESQL, database_url=None)
 
     def test_batch_size_bounds(self) -> None:
+        invalid_low: int = 0
+        invalid_high: int = 501
         with pytest.raises(Exception):
-            Settings(batch_size=0)
+            Settings(batch_size=invalid_low)
         with pytest.raises(Exception):
-            Settings(batch_size=501)
+            Settings(batch_size=invalid_high)
 
 
 class TestSingleton:

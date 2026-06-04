@@ -1,7 +1,7 @@
 import os
 import sqlite3
 
-db_path = "bb-paxdata.db"
+db_path = "paxdata.db"
 
 if not os.path.exists(db_path):
     print(f"Database {db_path} does not exist in current directory.")

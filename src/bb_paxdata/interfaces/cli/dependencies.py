@@ -6,7 +6,6 @@ from __future__ import annotations
 
 from collections.abc import AsyncGenerator
 from contextlib import asynccontextmanager
-from typing import cast
 
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_async_engine
 
@@ -33,8 +32,9 @@ def _get_database_url() -> str:
     Veritabanı URL'ini proje config/env'den okur.
     """
     settings = get_settings()
-    if settings.database_url:
-        return cast(str, settings.database_url)
+    db_url: str | None = settings.database_url
+    if db_url:
+        return db_url
     return "sqlite+aiosqlite:///./paxdata.db"
 
 

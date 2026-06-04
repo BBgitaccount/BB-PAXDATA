@@ -132,7 +132,9 @@ def migrate_run(
         transient=True,
     ) as progress:
         progress.add_task("Migration running...", total=None)
-        result: MigrationResult = asyncio.run(use_case.execute(dry_run=dry_run))
+        result: MigrationResult = asyncio.run(
+            use_case.execute(dry_run=dry_run, stop_on_error=stop_on_error)
+        )
 
     console.print(_build_result_table(result))
 

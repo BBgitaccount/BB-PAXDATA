@@ -6,7 +6,6 @@ import numpy as np
 import structlog
 
 from bb_paxdata.domain.models.dki import LLMPositionEstimate, PositionCalibration
-from bb_paxdata.infrastructure.ai.prompt_registry import PromptRegistry
 from bb_paxdata.infrastructure.ai.recovery import RecoveryEngine
 
 logger = structlog.get_logger()
@@ -33,7 +32,7 @@ class CambridgeCoreLLMPositionEstimator:
     def __init__(
         self,
         client: AIClient,
-        prompt_registry: PromptRegistry,
+        prompt_registry: Any,
         recovery_engine: RecoveryEngine,
         max_concurrent: int = 10,
     ) -> None:
@@ -56,9 +55,24 @@ class CambridgeCoreLLMPositionEstimator:
         if not prompt_version:
             # Fallback if not registered (should be registered in Phase 8 setup)
             template = self._get_default_template()
-            prompt_version = await self._registry.register(
-                self.PROMPT_ID, template, academic_ref="cambridge_core_2026"
-            )
+            if "domain.services" in type(self._registry).__module__:
+                from bb_paxdata.domain.services.prompt_registry import (
+                    PromptVersion as DomainPromptVersion,
+                )
+
+                prompt_version = DomainPromptVersion(
+                    prompt_id=self.PROMPT_ID,
+                    version=self.PROMPT_VERSION,
+                    template=template,
+                    description="Cambridge Core LLM positioning",
+                    is_active=True,
+                    academic_ref="cambridge_core_2026",
+                )
+                self._registry.register(prompt_version)
+            else:
+                prompt_version = await self._registry.register(
+                    self.PROMPT_ID, template, academic_ref="cambridge_core_2026"
+                )
 
         # 2. Sentencize text (simple split for now, assuming pre-cleaned)
         # In a real scenario, use spaCy or the provided sentences in Analysis.
@@ -67,10 +81,10 @@ class CambridgeCoreLLMPositionEstimator:
             sentences = [text]
 
         # 3. Gather sentence scores
-        tasks = [
-            self._score_sentence(s, policy_dimension, prompt_version.content)
-            for s in sentences
-        ]
+        content = getattr(
+            prompt_version, "content", getattr(prompt_version, "template", "")
+        )
+        tasks = [self._score_sentence(s, policy_dimension, content) for s in sentences]
         results = await asyncio.gather(*tasks)
 
         sentence_scores = [r for r in results if r is not None]
@@ -86,14 +100,21 @@ class CambridgeCoreLLMPositionEstimator:
         # 5. Build Result
         text_hash = hashlib.sha256(text.encode("utf-8")).hexdigest()[:16]
 
+        version_id = getattr(
+            prompt_version, "version_id", getattr(prompt_version, "full_version_id", "")
+        )
+        content_hash = getattr(
+            prompt_version, "content_hash", getattr(prompt_version, "template_hash", "")
+        )
+
         return LLMPositionEstimate(
             text_hash=text_hash,
             policy_dimension=policy_dimension,
             average_position=avg_pos,
             sentence_scores=sentence_scores,
             std_deviation=std_dev,
-            prompt_version=prompt_version.version_id,
-            prompt_sha256=prompt_version.content_hash,
+            prompt_version=version_id,
+            prompt_sha256=content_hash,
             model_name=getattr(self._client, "model_name", "unknown"),
             temperature=0.0,
         )

@@ -11,6 +11,7 @@ from umap import UMAP
 
 from bb_paxdata.domain.models.segment import Segment
 from bb_paxdata.domain.models.topic import TopicAssignment, TopicResult
+from bb_paxdata.domain.ports.embedding_port import EmbeddingService
 from bb_paxdata.domain.services.prompt_registry import PromptRegistry
 from bb_paxdata.domain.services.topic_modeling_protocol import TopicModelingProtocol
 
@@ -35,7 +36,9 @@ class TopicModelingService(TopicModelingProtocol):
         hdbscan_min_samples: int = 1,
         hdbscan_metric: str = "euclidean",
         prompt_registry: PromptRegistry | None = None,
+        embedding_service: EmbeddingService | None = None,
     ) -> None:
+        self._embedding_service = embedding_service
         self._embedding_model_name = embedding_model
         self._umap_params = {
             "n_neighbors": umap_n_neighbors,
@@ -184,6 +187,9 @@ class TopicModelingService(TopicModelingProtocol):
         """SBERT embedding with in-memory caching. Async thread pool."""
         if not docs:
             return np.empty((0, 0))
+
+        if self._embedding_service is not None:
+            return await self._embedding_service.get_embeddings(docs)
 
         if self._embedding_model is None:
             self._embedding_model = SentenceTransformer(self._embedding_model_name)

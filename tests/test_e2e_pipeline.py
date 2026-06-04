@@ -166,7 +166,7 @@ class TestPipelineIntegration:
 
     async def test_full_e2e_diplomatic_mixed_text(self):
         """Türkçe-İngilizce karma diplomatik metin tam pipeline'dan geçmeli."""
-        text = "NATO zirvesinde Türkiye ve ABD arasında diplomatik gerilim yaşandı."
+        text = "NATO zirvesinde Türkiye ve ABD arasında diplomatik gerilim yaşandı. We will not tolerate this."
         result = await self.pipeline.run(text)
 
         assert isinstance(result, PipelineResult)
@@ -222,5 +222,7 @@ class TestPipelineIntegration:
             assembler=self.container.assembler,
             fail_fast_on_missing_ai=True,
         )
-        result = await pipeline_strict.run("Test metni")
+        result = await pipeline_strict.run(
+            "We will not tolerate this. We will retaliate."
+        )
         assert any("MISSING_AI" in err for err in result.errors)

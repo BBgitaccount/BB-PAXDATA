@@ -97,16 +97,22 @@ def eval_sentence(
         "-L",
         help="LLM/AI çağrısı yapmadan kural tabanlı analiz yap (AI-free mod)",
     ),
+    variant: str = typer.Option(
+        "default",
+        "--variant",
+        "-V",
+        help="Çalıştırılacak pipeline varyantı (default, fast_mode, no_ai_mode vb.)",
+    ),
 ) -> None:
     """
     Tek bir cümleyi AnalysisPipeline üzerinden uçtan uca analiz eder.
     Hata ayıklama ve AI davranışını anlık incelemek için kullanılır.
     """
-    asyncio.run(_run_eval_sentence(text, verbose, logic_only))
+    asyncio.run(_run_eval_sentence(text, verbose, logic_only, variant))
 
 
 async def _run_eval_sentence(
-    text: str, verbose: bool, logic_only: bool = False
+    text: str, verbose: bool, logic_only: bool = False, variant: str = "default"
 ) -> None:
     from bb_paxdata.infrastructure.container.service_container import ServiceContainer
 
@@ -115,6 +121,7 @@ async def _run_eval_sentence(
         console.print(
             "[bold yellow]⚡ LOGIC-ONLY mod — LLM çağrısı yapılmayacak.[/bold yellow]"
         )
+    console.print(f"[cyan]Kullanılan Pipeline Varyantı:[/cyan] '{variant}'")
 
     try:
         ServiceContainer.reset_instance()
@@ -122,7 +129,7 @@ async def _run_eval_sentence(
         pipeline = container.pipeline
 
         # Analizi çalıştır
-        result = await pipeline.analyze_sentence(text)
+        result = await pipeline.run(text, metadata={"pipeline_variant": variant})
 
         if result.analysis:
             console.print(Panel("[green]Analiz Başarılı[/green]"))

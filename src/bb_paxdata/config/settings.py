@@ -42,9 +42,16 @@ class Settings(BaseSettings):
     database_mode: DatabaseMode = Field(default=DatabaseMode.SQLITE)
     database_url: str | None = Field(default=None)
     database_path: Path = Field(default=Path("paxdata.db"))
+    redis_url: str = Field(default="redis://localhost:6379/0")
     alembic_ini_path: Path = Field(default=Path("alembic.ini"))
     db_pool_size: int = Field(default=5, ge=1, le=50)
     db_pool_timeout: int = Field(default=30, ge=5, le=300)
+    database_replica_url: str | None = Field(
+        default=None,
+        description="PostgreSQL read replica URL for analytics queries",
+    )
+    meilisearch_url: str = Field(default="http://localhost:7700")
+    meilisearch_master_key: str = Field(default="paxdata-meilisearch-key")
 
     # ── AI / LLM ─────────────────────────────────────────────────────────
     ai_provider: AIProvider = Field(default=AIProvider.OLLAMA)
@@ -85,6 +92,9 @@ class Settings(BaseSettings):
     risk_ai_weight: float = Field(default=0.6, description="Risk Hesaplama AI Ağırlığı")
     risk_anomaly_weight: float = Field(
         default=0.4, description="Risk Hesaplama Anomali Ağırlığı"
+    )
+    risk_threshold: float = Field(
+        default=70.0, description="Kullanıcı kontrollü risk uyarı eşik değeri (0-100)"
     )
     risk_fallback_anomaly_weight: float = Field(
         default=1.0, description="AI devredışıyken anomali ağırlığı"
