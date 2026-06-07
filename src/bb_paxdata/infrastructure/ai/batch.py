@@ -121,6 +121,20 @@ class BatchProcessor:
         for chunk_result in chunk_results:
             all_results.extend(chunk_result)
 
+        try:
+            for res in all_results:
+                status = "success" if res.success else "error"
+                panel_id = "unknown"
+                if res.parsed and isinstance(res.parsed, dict):
+                    panel_id = res.parsed.get("panel_id", "unknown")
+                get_metrics().record_processed(
+                    task_type="batch_ai_analysis",
+                    panel_id=panel_id,
+                    status=status,
+                )
+        except Exception:
+            pass
+
         return all_results, stats
 
     async def _process_chunk(
@@ -168,8 +182,24 @@ class BatchProcessor:
                 if cached_result:
                     cached_result.from_cache = True
                     cached_results.append(cached_result)
+                    try:
+                        get_metrics().record_cache_operation(
+                            cache_type="diskcache",
+                            operation="get",
+                            result="hit",
+                        )
+                    except Exception:
+                        pass
                 else:
                     uncached_items.append(item)
+                    try:
+                        get_metrics().record_cache_operation(
+                            cache_type="diskcache",
+                            operation="get",
+                            result="miss",
+                        )
+                    except Exception:
+                        pass
             else:
                 uncached_items.append(item)
 

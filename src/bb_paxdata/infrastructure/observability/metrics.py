@@ -134,6 +134,52 @@ class MetricsCollector:
             registry=self._registry,
         )
 
+        # TASK-E01 Comparison Engine Metrics
+        self._comparison_delta_duration_seconds = Histogram(
+            "comparison_delta_duration_seconds",
+            "Time to compute delta (fetch + compute) for session comparison",
+            registry=self._registry,
+        )
+
+        self._comparison_narrative_duration_seconds = Histogram(
+            "comparison_narrative_duration_seconds",
+            "Time to generate LLM narrative for session comparison",
+            ["status"],  # "success" | "failed"
+            registry=self._registry,
+        )
+
+        self._comparison_total_duration_seconds = Histogram(
+            "comparison_total_duration_seconds",
+            "Total API response time for session comparison",
+            ["status"],  # "success" | "failed"
+            registry=self._registry,
+        )
+
+        self._comparison_llm_requests_total = Counter(
+            "comparison_llm_requests_total",
+            "Number of LLM calls for comparison narratives",
+            registry=self._registry,
+        )
+
+        self._comparison_llm_failures_total = Counter(
+            "comparison_llm_failures_total",
+            "Number of LLM failures for comparison narratives",
+            registry=self._registry,
+        )
+
+        self._comparison_sessions_compared_total = Counter(
+            "comparison_sessions_compared_total",
+            "Number of session comparisons performed",
+            ["status"],  # "success" | "failed"
+            registry=self._registry,
+        )
+
+        self._comparison_significant_changes_detected_total = Counter(
+            "comparison_significant_changes_detected_total",
+            "Number of significant changes detected in comparisons",
+            registry=self._registry,
+        )
+
     def record_ai_request(
         self,
         backend: str,
@@ -218,6 +264,50 @@ class MetricsCollector:
         """
         with self._lock:
             self._pipeline_files_processed_total.labels(status=status).inc()
+
+    # TASK-E01 Comparison Engine Metric Recording Methods
+    def record_comparison_delta_duration(self, duration_seconds: float) -> None:
+        """Record delta computation duration."""
+        with self._lock:
+            self._comparison_delta_duration_seconds.observe(duration_seconds)
+
+    def record_comparison_narrative_duration(
+        self, duration_seconds: float, status: str
+    ) -> None:
+        """Record LLM narrative generation duration."""
+        with self._lock:
+            self._comparison_narrative_duration_seconds.labels(status=status).observe(
+                duration_seconds
+            )
+
+    def record_comparison_total_duration(
+        self, duration_seconds: float, status: str
+    ) -> None:
+        """Record total comparison API response duration."""
+        with self._lock:
+            self._comparison_total_duration_seconds.labels(status=status).observe(
+                duration_seconds
+            )
+
+    def record_comparison_llm_request(self) -> None:
+        """Increment LLM request counter for comparison narratives."""
+        with self._lock:
+            self._comparison_llm_requests_total.inc()
+
+    def record_comparison_llm_failure(self) -> None:
+        """Increment LLM failure counter for comparison narratives."""
+        with self._lock:
+            self._comparison_llm_failures_total.inc()
+
+    def record_comparison_session_compared(self, status: str) -> None:
+        """Increment session comparison counter."""
+        with self._lock:
+            self._comparison_sessions_compared_total.labels(status=status).inc()
+
+    def record_comparison_significant_changes(self, count: int) -> None:
+        """Record number of significant changes detected."""
+        with self._lock:
+            self._comparison_significant_changes_detected_total.inc(count)
 
     def start_http_server(self, port: int = 8000) -> None:
         """Prometheus scrape endpoint'ini başlat (opsiyonel, sadece local dev)."""

@@ -4,8 +4,10 @@ from typing import Any
 from unittest.mock import Mock
 
 import pytest
-from bb_paxdata.domain.enums import AnomalySeverity, AnomalyType
-from bb_paxdata.domain.services.cross_anomaly_service import CrossAnomalyService
+from bb_paxdata.application.domain.enums import AnomalySeverity, AnomalyType
+from bb_paxdata.application.domain.services.cross_anomaly_service import (
+    CrossAnomalyService,
+)
 
 
 class TestCrossAnomalyService:

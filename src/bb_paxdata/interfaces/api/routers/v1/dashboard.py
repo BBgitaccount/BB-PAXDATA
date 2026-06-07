@@ -5,7 +5,7 @@ from fastapi import APIRouter, Depends, Query
 from sqlalchemy import case, func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from bb_paxdata.domain.services.drift_algorithms import (
+from bb_paxdata.application.domain.services.drift_algorithms import (
     calculate_entity_salience_half_life,
     estimate_sentiment_garch_volatility,
 )

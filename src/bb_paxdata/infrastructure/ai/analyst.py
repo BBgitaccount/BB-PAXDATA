@@ -1,20 +1,30 @@
+# DEPRECATED: Bu dosya artik aktif degil.
+# requests kutuphanesi burada hala mevcut ama aktif kod yolunda kullanilmiyor.
+# Tum AI cagrilari infrastructure/ai/anthropic.py vb. uzerinden yapılıyor.
 """AI Analyst service for diplomatic discourse analysis.
 
 This service provides AI-powered analysis capabilities by interfacing with
 various AI backends (Ollama, Anthropic, Gemini, Groq). It implements
 structured output generation, batch processing, and robust error recovery.
+
+DEPRECATED: The old sync implementation using requests.Session has been replaced
+with an async adapter that wraps modern AIClient implementations (anthropic, groq, gemini).
+This file now serves as a compatibility layer between the old interface and the new async clients.
 """
 
+import asyncio
 import hashlib
 import json
-import re
 import time
-from abc import ABC, abstractmethod
 from dataclasses import dataclass
 from enum import Enum
-from typing import Any, cast
+from typing import Any
 
-import requests
+from bb_paxdata.infrastructure.ai.recovery import (  # noqa: F401
+    RecoveryEngine,
+    RecoveryLevel,
+    RecoveryResult,
+)
 
 
 class BackendType(Enum):
@@ -24,6 +34,7 @@ class BackendType(Enum):
     ANTHROPIC = "anthropic"
     GEMINI = "gemini"
     GROQ = "groq"
+    DEEPSEEK = "deepseek"
 
 
 @dataclass
@@ -49,284 +60,12 @@ class AIResponse:
     cached: bool = False
 
 
-class JSONRecoveryEngine:
-    """Engine for recovering JSON from malformed AI responses."""
+class ModernAIAnalystAdapter:
+    """Adapter that wraps modern AIClient implementations with the old AIAnalyst interface.
 
-    @staticmethod
-    def recover_json(text: str) -> dict[str, Any] | None:
-        """Attempt to recover JSON from potentially malformed text.
-
-        Args:
-            text: Text that should contain JSON
-
-        Returns:
-            Parsed JSON dictionary or None if recovery fails
-        """
-        # Step 1: Strip markdown code blocks
-        json_text = re.sub(r"```json\s*", "", text)
-        json_text = re.sub(r"```\s*$", "", json_text)
-
-        # Step 2: Remove thinking tags
-        json_text = re.sub(r"<thinking>.*?</thinking>", "", json_text, flags=re.DOTALL)
-
-        # Step 3: Fix trailing commas
-        json_text = re.sub(r",\s*}", "}", json_text)
-        json_text = re.sub(r",\s*]", "]", json_text)
-
-        # Step 4: Normalize quotes
-        json_text = json_text.replace("'", '"')
-
-        # Step 5: Remove YAML block indicators
-        json_text = re.sub(
-            r"^---.*?---\s*", "", json_text, flags=re.MULTILINE | re.DOTALL
-        )
-
-        # Step 6: Try to extract JSON with regex
-        json_match = re.search(r"\{.*\}", json_text, re.DOTALL)
-        if json_match:
-            json_text = json_match.group(0)
-
-        try:
-            return cast(dict[str, Any], json.loads(json_text))
-        except json.JSONDecodeError:
-            # Last resort: try to salvage key-value pairs
-            return JSONRecoveryEngine._salvage_kv_pairs(json_text)
-
-    @staticmethod
-    def _salvage_kv_pairs(text: str) -> dict[str, Any]:
-        """Salvage key-value pairs from malformed JSON.
-
-        Args:
-            text: Text containing key-value pairs
-
-        Returns:
-            Dictionary with salvaged pairs
-        """
-        result = {}
-
-        # Simple pattern for key: value pairs
-        kv_pattern = r'"?([^"\s,{}:]+)"?\s*:\s*"?([^"\s,{}:]*)"?\s*[,}]'
-        matches = re.findall(kv_pattern, text)
-
-        for key, value in matches:
-            # Try to convert to appropriate type
-            if value.lower() in ["true", "false"]:
-                result[key] = value.lower() == "true"
-            elif value.isdigit():
-                result[key] = int(value)
-            elif re.match(r"^\d+\.\d+$", value):
-                result[key] = float(value)
-            else:
-                result[key] = value
-
-        return result
-
-
-class BaseAIBackend(ABC):
-    """Abstract base class for AI backends."""
-
-    def __init__(self, api_key: str | None = None, base_url: str | None = None):
-        """Initialize the backend.
-
-        Args:
-            api_key: API key for authentication
-            base_url: Base URL for the API
-        """
-        self.api_key = api_key
-        self.base_url = base_url
-        self.session = requests.Session()
-
-    @abstractmethod
-    def generate_response(self, request: AIRequest) -> AIResponse:
-        """Generate AI response for the given request.
-
-        Args:
-            request: AI request configuration
-
-        Returns:
-            AI response
-        """
-        pass
-
-    @abstractmethod
-    def get_available_models(self) -> list[str]:
-        """Get list of available models.
-
-        Returns:
-            List of model names
-        """
-        pass
-
-
-class OllamaBackend(BaseAIBackend):
-    """Ollama backend for local AI models."""
-
-    def __init__(self, base_url: str = "http://localhost:11434"):
-        """Initialize Ollama backend.
-
-        Args:
-            base_url: Ollama API base URL
-        """
-        super().__init__(base_url=base_url)
-
-    def generate_response(self, request: AIRequest) -> AIResponse:
-        """Generate response using Ollama API."""
-        start_time = time.time()
-
-        payload = {
-            "model": request.model or "gemma3:4b",
-            "messages": [
-                {
-                    "role": "system",
-                    "content": (
-                        "You are a diplomatic discourse analyst. "
-                        "Always respond with valid JSON."
-                    ),
-                },
-                {"role": "user", "content": self._build_prompt(request)},
-            ],
-            "format": "json",
-            "stream": False,
-            "options": {
-                "temperature": request.temperature,
-                "num_predict": request.max_tokens,
-            },
-        }
-
-        try:
-            response = self.session.post(
-                f"{self.base_url}/api/chat", json=cast(Any, payload), timeout=120
-            )
-            response.raise_for_status()
-
-            data = response.json()
-            content_str = data["message"]["content"]
-
-            # Parse JSON response
-            content = JSONRecoveryEngine.recover_json(content_str) or {}
-
-            return AIResponse(
-                content=content,
-                model_used=payload["model"],
-                backend_used=BackendType.OLLAMA,
-                processing_time=time.time() - start_time,
-            )
-
-        except Exception as e:
-            # Return error response
-            return AIResponse(
-                content={"error": str(e), "success": False},
-                model_used=request.model or "gemma3:4b",
-                backend_used=BackendType.OLLAMA,
-                processing_time=time.time() - start_time,
-            )
-
-    def get_available_models(self) -> list[str]:
-        """Get available Ollama models."""
-        try:
-            response = self.session.get(f"{self.base_url}/api/tags", timeout=30)
-            response.raise_for_status()
-            data = response.json()
-            return [model["name"] for model in data.get("models", [])]
-        except Exception:
-            return ["gemma3:4b"]  # Fallback
-
-    def _build_prompt(self, request: AIRequest) -> str:
-        """Build prompt for Ollama."""
-        prompt = request.text
-        if request.context:
-            prompt = f"Context: {request.context}\n\nText: {request.text}"
-
-        prompt += (
-            "\n\nAnalyze this diplomatic text and provide your response in JSON format."
-        )
-        return prompt
-
-
-class AnthropicBackend(BaseAIBackend):
-    """Anthropic Claude backend."""
-
-    def __init__(self, api_key: str):
-        """Initialize Anthropic backend.
-
-        Args:
-            api_key: Anthropic API key
-        """
-        super().__init__(
-            api_key=api_key, base_url="https://api.anthropic.com/v1/messages"
-        )
-
-    def generate_response(self, request: AIRequest) -> AIResponse:
-        """Generate response using Anthropic API."""
-        start_time = time.time()
-
-        headers: dict[str, str] = {
-            "x-api-key": self.api_key or "",
-            "content-type": "application/json",
-            "anthropic-version": "2023-06-01",
-        }
-
-        payload = {
-            "model": request.model or "claude-haiku-4-5-20251001",
-            "max_tokens": request.max_tokens,
-            "temperature": request.temperature,
-            "messages": [{"role": "user", "content": self._build_prompt(request)}],
-            "system": (
-                "You are a diplomatic discourse analyst. "
-                "Always respond with valid JSON. NO MARKDOWN."
-            ),
-        }
-
-        try:
-            response = self.session.post(
-                cast(str, self.base_url),
-                headers=headers,
-                json=cast(Any, payload),
-                timeout=120,
-            )
-            response.raise_for_status()
-
-            data = response.json()
-            content_str = data["content"][0]["text"]
-
-            # Parse JSON response
-            content = JSONRecoveryEngine.recover_json(content_str) or {}
-
-            return AIResponse(
-                content=content,
-                model_used=payload["model"],
-                backend_used=BackendType.ANTHROPIC,
-                processing_time=time.time() - start_time,
-                tokens_used=data.get("usage", {}).get("input_tokens"),
-            )
-
-        except Exception as e:
-            return AIResponse(
-                content={"error": str(e), "success": False},
-                model_used=request.model or "claude-haiku-4-5-20251001",
-                backend_used=BackendType.ANTHROPIC,
-                processing_time=time.time() - start_time,
-            )
-
-    def get_available_models(self) -> list[str]:
-        """Get available Anthropic models."""
-        return ["claude-haiku-4-5-20251001", "claude-sonnet-4-6", "claude-opus-4-6"]
-
-    def _build_prompt(self, request: AIRequest) -> str:
-        """Build prompt for Anthropic."""
-        prompt = request.text
-        if request.context:
-            prompt = f"Context: {request.context}\n\nText: {request.text}"
-
-        prompt += (
-            "\n\nAnalyze this diplomatic text and provide your response in "
-            "JSON format. Do NOT use markdown formatting."
-        )
-        return prompt
-
-
-class AIAnalyst:
-    """Main AI analyst service that coordinates multiple backends."""
+    This adapter provides backward compatibility while using async httpx-based clients
+    instead of the old sync requests.Session-based implementation.
+    """
 
     def __init__(
         self,
@@ -334,7 +73,7 @@ class AIAnalyst:
         api_key: str | None = None,
         base_url: str | None = None,
     ) -> None:
-        """Initialize AI analyst.
+        """Initialize the adapter with modern AI clients.
 
         Args:
             default_backend: Default backend to use
@@ -342,32 +81,43 @@ class AIAnalyst:
             base_url: Base URL for local backends
         """
         self.default_backend = default_backend
-        self.backends: dict[BackendType, BaseAIBackend] = {}
+        self.api_key = api_key
+        self.base_url = base_url
         self.cache: dict[str, AIResponse] = {}
+        self._clients: dict[BackendType, Any] = {}
+        self._backend_mapping = {
+            BackendType.OLLAMA: "local",
+            BackendType.ANTHROPIC: "api",
+            BackendType.GEMINI: "gemini",
+            BackendType.GROQ: "groq",
+            BackendType.DEEPSEEK: "deepseek",
+        }
 
-        # Initialize backends
-        self._initialize_backends(api_key, base_url)
+    def _get_client(self, backend: BackendType) -> Any:
+        """Get or create a modern AIClient for the given backend."""
+        if backend not in self._clients:
+            from bb_paxdata.infrastructure.ai.factory import AIClientFactory
 
-    def _initialize_backends(self, api_key: str | None, base_url: str | None) -> None:
-        """Initialize available backends."""
-        # Always initialize Ollama
-        self.backends[BackendType.OLLAMA] = OllamaBackend(
-            base_url or "http://localhost:11434"
-        )
+            backend_str = self._backend_mapping[backend]
+            api_key = self.api_key if backend != BackendType.OLLAMA else None
+            base_url = self.base_url if backend == BackendType.OLLAMA else None
 
-        # Initialize cloud backends if API key provided
-        if api_key:
-            self.backends[BackendType.ANTHROPIC] = AnthropicBackend(api_key)
-            # Add other cloud backends as needed
+            self._clients[backend] = AIClientFactory.create(
+                backend=backend_str,
+                api_key=api_key or "",
+                base_url=base_url,
+            )
 
-    def analyze_text(
+        return self._clients[backend]
+
+    async def analyze_text(
         self,
         text: str,
         context: str | None = None,
         backend: BackendType | None = None,
         model: str | None = None,
     ) -> AIResponse:
-        """Analyze text using AI.
+        """Analyze text using AI (async).
 
         Args:
             text: Text to analyze
@@ -380,9 +130,6 @@ class AIAnalyst:
         """
         backend = backend or self.default_backend
 
-        if backend not in self.backends:
-            raise ValueError(f"Backend {backend} not available")
-
         # Check cache
         cache_key = self._get_cache_key(text, context, backend, model)
         if cache_key in self.cache:
@@ -390,26 +137,70 @@ class AIAnalyst:
             cached_response.cached = True
             return cached_response
 
-        # Create request
-        request = AIRequest(text=text, context=context, model=model)
+        # Build prompt
+        prompt = text
+        if context:
+            prompt = f"Context: {context}\n\nText: {text}"
+        prompt += (
+            "\n\nAnalyze this diplomatic text and provide your response in JSON format."
+        )
 
-        # Generate response
-        response = self.backends[backend].generate_response(request)
+        # Get modern client and call it
+        client = self._get_client(backend)
+
+        from bb_paxdata.infrastructure.ai.base import CompletionOptions
+
+        options = CompletionOptions(
+            system_prompt="You are a diplomatic discourse analyst. Always respond with valid JSON.",
+            temperature=0.3,
+            max_tokens=1000,
+            json_mode=True,
+        )
+
+        if model:
+            # Note: Modern clients don't support dynamic model switching after creation
+            # This is a limitation of the new architecture
+            pass
+
+        start_time = time.time()
+        result = await client.complete(prompt, options)
+        processing_time = time.time() - start_time
+
+        parsed_content = result.parsed
+        if not parsed_content and result.content:
+            parsed_content = self._parse_ai_response(result.content)
+
+        # Convert CompletionResult to AIResponse for backward compatibility
+        response = AIResponse(
+            content=parsed_content or {"raw_content": result.content},
+            model_used=result.model,
+            backend_used=backend,
+            processing_time=processing_time,
+            tokens_used=result.tokens_used,
+            cached=False,
+        )
 
         # Cache response
-        if response.content.get("success", True):
+        if result.success:
             self.cache[cache_key] = response
 
         return response
 
-    def analyze_batch(
+    def _parse_ai_response(self, raw: str) -> dict[str, Any]:
+        """Route AI JSON recovery through the canonical RecoveryEngine."""
+        result = RecoveryEngine().recover(raw)
+        if result.success and result.data is not None:
+            return result.data
+        return {}
+
+    async def analyze_batch(
         self,
         texts: list[str],
         context: str | None = None,
         backend: BackendType | None = None,
         model: str | None = None,
     ) -> list[AIResponse]:
-        """Analyze multiple texts in batch.
+        """Analyze multiple texts in batch using asyncio.gather for parallel processing.
 
         Args:
             texts: List of texts to analyze
@@ -420,17 +211,13 @@ class AIAnalyst:
         Returns:
             List of AI responses
         """
-        responses = []
-
-        for text in texts:
-            response = self.analyze_text(text, context, backend, model)
-            responses.append(response)
-
-        return responses
+        # Use asyncio.gather for parallel processing instead of serial loop
+        tasks = [self.analyze_text(text, context, backend, model) for text in texts]
+        return await asyncio.gather(*tasks)
 
     def get_available_backends(self) -> list[BackendType]:
         """Get list of available backends."""
-        return list(self.backends.keys())
+        return list(self._backend_mapping.keys())
 
     def get_available_models(self, backend: BackendType) -> list[str]:
         """Get available models for a backend.
@@ -441,9 +228,15 @@ class AIAnalyst:
         Returns:
             List of model names
         """
-        if backend in self.backends:
-            return self.backends[backend].get_available_models()
-        return []
+        # Return default models for each backend
+        default_models = {
+            BackendType.OLLAMA: ["gemma3:4b"],
+            BackendType.ANTHROPIC: ["claude-haiku-4-5-20251001", "claude-sonnet-4-6"],
+            BackendType.GEMINI: ["gemini-2.5-flash"],
+            BackendType.GROQ: ["llama-3.3-70b-versatile"],
+            BackendType.DEEPSEEK: ["deepseek-chat"],
+        }
+        return default_models.get(backend, [])
 
     def clear_cache(self) -> None:
         """Clear the response cache."""
@@ -456,7 +249,7 @@ class AIAnalyst:
         key_data = f"{text}|{context or ''}|{backend.value}|{model or ''}"
         return hashlib.md5(key_data.encode()).hexdigest()
 
-    def health_check(self) -> dict[str, bool]:
+    async def health_check(self) -> dict[str, bool]:
         """Check health of all backends.
 
         Returns:
@@ -464,22 +257,29 @@ class AIAnalyst:
         """
         health = {}
 
-        for backend_type, backend in self.backends.items():
+        for backend_type in self._backend_mapping.keys():
             try:
-                # Try to get models as a simple health check
-                models = backend.get_available_models()
-                health[backend_type.value] = len(models) > 0
+                client = self._get_client(backend_type)
+                is_healthy = await client.health_check()
+                health[backend_type.value] = is_healthy
             except Exception:
                 health[backend_type.value] = False
 
         return health
 
     async def generate(self, prompt: str, temperature: float = 0.0) -> str:
-        """Asynchronously generate a text completion from a prompt."""
-        import asyncio
+        """Asynchronously generate a text completion from a prompt.
 
-        loop = asyncio.get_event_loop()
-        response = await loop.run_in_executor(
-            None, lambda: self.analyze_text(text=prompt, backend=self.default_backend)
-        )
+        Args:
+            prompt: The prompt to complete
+            temperature: Sampling temperature
+
+        Returns:
+            Generated text as JSON string
+        """
+        response = await self.analyze_text(text=prompt, backend=self.default_backend)
         return json.dumps(response.content)
+
+
+# Backward compatibility alias: AIAnalyst now points to the modern async adapter
+AIAnalyst = ModernAIAnalystAdapter

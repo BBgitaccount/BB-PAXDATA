@@ -7,8 +7,8 @@ from typing import TYPE_CHECKING
 import structlog
 from vaderSentiment.vaderSentiment import SentimentIntensityAnalyzer
 
-from bb_paxdata.domain.enums.sentiment_polarity import SentimentPolarity
-from bb_paxdata.domain.models.sentiment_result import (
+from bb_paxdata.application.domain.enums.sentiment_polarity import SentimentPolarity
+from bb_paxdata.application.domain.models.sentiment_result import (
     EnsembleSentiment,
     ModelSentiment,
 )

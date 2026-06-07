@@ -6,10 +6,10 @@ from uuid import UUID
 
 from pydantic import BaseModel, ConfigDict, Field
 
-from bb_paxdata.domain.enums.metric_type import MetricType
-from bb_paxdata.domain.enums.priority import Priority
-from bb_paxdata.domain.enums.review_status import ReviewStatus
-from bb_paxdata.domain.enums.review_type import ReviewType
+from bb_paxdata.application.domain.enums.metric_type import MetricType
+from bb_paxdata.application.domain.enums.priority import Priority
+from bb_paxdata.application.domain.enums.review_status import ReviewStatus
+from bb_paxdata.application.domain.enums.review_type import ReviewType
 
 if TYPE_CHECKING:
     pass

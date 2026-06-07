@@ -4,8 +4,8 @@ from dataclasses import dataclass, field
 from typing import TYPE_CHECKING, Any
 
 if TYPE_CHECKING:
-    from bb_paxdata.domain.models.ai_analysis import AIAnalysisResult
-    from bb_paxdata.domain.models.analysis import Analysis
+    from bb_paxdata.application.domain.models.ai_analysis import AIAnalysisResult
+    from bb_paxdata.application.domain.models.analysis import Analysis
 
 
 @dataclass
@@ -24,3 +24,4 @@ class PipelineResult:
     success: bool = True
     errors: list[str] = field(default_factory=list)
     stage: str = "completed"  # Hata durumunda hangi aşamada kaldığı
+    extra_data: dict[str, Any] = field(default_factory=dict)

@@ -6,7 +6,7 @@ from decimal import Decimal
 
 import structlog
 
-from bb_paxdata.domain.models.discourse_network import DyadicMetrics
+from bb_paxdata.application.domain.models.discourse_flow import DyadicMetrics
 
 logger = structlog.get_logger()
 

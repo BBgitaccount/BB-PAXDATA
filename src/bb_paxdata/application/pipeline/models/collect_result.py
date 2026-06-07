@@ -8,18 +8,25 @@ from __future__ import annotations
 from collections.abc import Sequence
 from typing import Any
 
-from bb_paxdata.domain.models.ai_analysis import AIAnalysisResult
-from bb_paxdata.domain.models.country_reference import CountryReference
-from bb_paxdata.domain.models.dki import LLMPositionEstimate, SemanticShiftResult
-from bb_paxdata.domain.models.frame_annotation import (
+from bb_paxdata.application.domain.models.ai_analysis import AIAnalysisResult
+from bb_paxdata.application.domain.models.appraisal_vector import (
+    AppraisalDocumentResult,
+    AppraisalVector,
+)
+from bb_paxdata.application.domain.models.country_reference import CountryReference
+from bb_paxdata.application.domain.models.dki import (
+    LLMPositionEstimate,
+    SemanticShiftResult,
+)
+from bb_paxdata.application.domain.models.frame_annotation import (
     CueMatch,
     FrameDetectionResult,
     FrameSalienceResult,
 )
-from bb_paxdata.domain.models.negation_cue import NegationCue
-from bb_paxdata.domain.models.power_index import PowerIndex
-from bb_paxdata.domain.models.risk_signal import RiskSignal
-from bb_paxdata.domain.models.topic import TopicResult
+from bb_paxdata.application.domain.models.negation_cue import NegationCue
+from bb_paxdata.application.domain.models.power_index import PowerIndex
+from bb_paxdata.application.domain.models.risk_signal import RiskSignal
+from bb_paxdata.application.domain.models.topic import TopicResult
 from pydantic import BaseModel, ConfigDict, Field
 
 
@@ -70,5 +77,9 @@ class CollectResult(BaseModel):
     # Phase 8 DKI Components
     llm_position: LLMPositionEstimate | None = None
     semantic_shift: SemanticShiftResult | None = None
+
+    # TASK-A03 Appraisal Theory Vector
+    appraisal_vector: AppraisalVector | None = None
+    appraisal_document: AppraisalDocumentResult | None = None
 
     errors: list[str] = Field(default_factory=list)

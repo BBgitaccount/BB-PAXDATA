@@ -16,6 +16,7 @@ from bb_paxdata.interfaces.graphql.types import (
     CreateAnalysisInput,
     SentenceType,
 )
+from strawberry.extensions import MaxAliasesLimiter, QueryDepthLimiter
 
 
 @strawberry.type
@@ -86,8 +87,8 @@ schema = strawberry.Schema(
     subscription=Subscription,
     extensions=[
         # Kötü niyetli nested query saldırısını engeller
-        strawberry.extensions.QueryDepthLimiter(max_depth=10),
+        QueryDepthLimiter(max_depth=10),
         # Karmaşık sorguların kaynak tüketimini sınırlar
-        strawberry.extensions.MaxAliasesExtension(max_aliases=15),
+        MaxAliasesLimiter(max_alias_count=15),
     ],
 )

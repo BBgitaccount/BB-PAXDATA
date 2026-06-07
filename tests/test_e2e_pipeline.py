@@ -6,16 +6,20 @@
 from unittest.mock import MagicMock
 
 import pytest
+from bb_paxdata.application.domain.models.ai_analysis import AIAnalysisResult
+from bb_paxdata.application.domain.models.analysis import Analysis
+from bb_paxdata.application.domain.services.ai_analyst import AIAnalyst
+from bb_paxdata.application.domain.services.cross_anomaly_service import (
+    CrossAnomalyService,
+)
+from bb_paxdata.application.domain.services.prompt_registry import (
+    build_default_registry,
+)
 from bb_paxdata.application.pipeline.analysis_pipeline import (
     AnalysisPipeline,
     PipelineResult,
 )
 from bb_paxdata.application.pipeline.assembler import AnalysisAssembler
-from bb_paxdata.domain.models.ai_analysis import AIAnalysisResult
-from bb_paxdata.domain.models.analysis import Analysis
-from bb_paxdata.domain.services.ai_analyst import AIAnalyst
-from bb_paxdata.domain.services.cross_anomaly_service import CrossAnomalyService
-from bb_paxdata.domain.services.prompt_registry import build_default_registry
 
 
 class TestAnalysisModel:
@@ -75,7 +79,9 @@ class TestCrossAnomalyService:
 
     async def test_returns_anomaly_result_not_analysis(self):
         """detect() Analysis mutate etmemeli, AnomalyResult döndürmeli."""
-        from bb_paxdata.domain.services.cross_anomaly_service import AnomalyResult
+        from bb_paxdata.application.domain.services.cross_anomaly_service import (
+            AnomalyResult,
+        )
 
         a = Analysis(source_text="Test", ai_sentiment_score=-0.8, ai_risk_score=0.85)
         result = await self.service.detect(a)
@@ -226,3 +232,30 @@ class TestPipelineIntegration:
             "We will not tolerate this. We will retaliate."
         )
         assert any("MISSING_AI" in err for err in result.errors)
+
+
+class TestBatchProcessorIntegration:
+    """BatchProcessor integration and fallback tests."""
+
+    @pytest.mark.asyncio
+    async def test_analyze_texts_batch_fallback(self):
+        from bb_paxdata.application.domain.services.ai_analyst import AIAnalyst
+        from bb_paxdata.infrastructure.ai.batch import BatchProcessor
+        from bb_paxdata.infrastructure.ai.factory import AIClientFactory
+
+        registry = build_default_registry()
+        client = AIClientFactory.create("local", base_url="http://localhost:11434")
+        batch_processor = BatchProcessor(client=client)
+
+        analyst = AIAnalyst(registry=registry, batch_processor=batch_processor)
+
+        texts = [
+            "NATO zirvesinde Türkiye ve ABD arasında diplomatik gerilim yaşandı.",
+            "We will never accept this ultimatum.",
+        ]
+
+        # Should successfully execute batch processing (or trigger fallback seamlessly)
+        results = await analyst.analyze_texts(texts)
+        assert len(results) == 2
+        for r in results:
+            assert r.prompt_version is not None

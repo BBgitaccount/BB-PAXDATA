@@ -6,7 +6,8 @@ from collections.abc import Sequence
 from sqlalchemy import delete, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from bb_paxdata.domain.models.discourse_network import DiscourseFlow, NetworkEdge
+from bb_paxdata.application.domain.models.discourse_flow import NetworkEdge
+from bb_paxdata.application.domain.models.discourse_network import DiscourseFlow
 from bb_paxdata.infrastructure.db.discourse_network_table import (
     DiscourseNetworkEdgeTable,
 )

@@ -6,8 +6,8 @@ from typing import Any
 
 import structlog
 
-from bb_paxdata.domain.enums.anomaly_type import AnomalyType
-from bb_paxdata.domain.models.analysis import Analysis
+from bb_paxdata.application.domain.enums.anomaly_type import AnomalyType
+from bb_paxdata.application.domain.models.analysis import Analysis
 
 logger = structlog.get_logger(__name__)
 

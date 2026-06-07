@@ -14,9 +14,10 @@ if TYPE_CHECKING:
     from spacy.language import Language
 
 import spacy
+import spacy.tokens
 import structlog
-from bb_paxdata.domain.models.frame_annotation import ResolvedEntity
-from bb_paxdata.domain.models.segment import Segment
+from bb_paxdata.application.domain.models.frame_annotation import ResolvedEntity
+from bb_paxdata.application.domain.models.segment import Segment
 
 logger = structlog.get_logger(__name__)
 

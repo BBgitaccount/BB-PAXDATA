@@ -1,3 +1,5 @@
+from contextlib import asynccontextmanager
+
 from fastapi import FastAPI, Request, Response
 from fastapi.middleware.cors import CORSMiddleware
 from prometheus_client import CONTENT_TYPE_LATEST, generate_latest
@@ -8,6 +10,7 @@ from slowapi.util import get_remote_address
 from bb_paxdata.config.settings import get_settings
 from bb_paxdata.infrastructure.observability.metrics import get_metrics
 from bb_paxdata.interfaces.api.routers.v1 import (
+    compare,
     dashboard,
     database,
     discourse,
@@ -23,11 +26,23 @@ settings = get_settings()
 
 limiter = Limiter(key_func=get_remote_address)
 
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    yield
+    from bb_paxdata.infrastructure.container.service_container import ServiceContainer
+
+    container = ServiceContainer._instance
+    if container is not None:
+        await container.aclose()
+
+
 app = FastAPI(
     title="BB-PAXDATA HITL API",
     description="Human-in-the-Loop ve Formül Doğrulama REST Servisi",
     version=settings.version,
     debug=settings.debug,
+    lifespan=lifespan,
 )
 
 # Register SlowAPI rate limiter state and handler
@@ -51,6 +66,7 @@ app.include_router(discourse.router, prefix="/api/v1")
 app.include_router(database.router, prefix="/api/v1")
 app.include_router(prompts.router, prefix="/api/v1")
 app.include_router(search.router, prefix="/api/v1")
+app.include_router(compare.router, prefix="/api/v1")
 app.include_router(queue_ws.router, prefix="/api")
 app.include_router(graphql_router, prefix="/graphql")
 

@@ -5,7 +5,10 @@ from typing import Any, Protocol
 import numpy as np
 import structlog
 
-from bb_paxdata.domain.models.dki import LLMPositionEstimate, PositionCalibration
+from bb_paxdata.application.domain.models.dki import (
+    LLMPositionEstimate,
+    PositionCalibration,
+)
 from bb_paxdata.infrastructure.ai.recovery import RecoveryEngine
 
 logger = structlog.get_logger()
@@ -56,7 +59,7 @@ class CambridgeCoreLLMPositionEstimator:
             # Fallback if not registered (should be registered in Phase 8 setup)
             template = self._get_default_template()
             if "domain.services" in type(self._registry).__module__:
-                from bb_paxdata.domain.services.prompt_registry import (
+                from bb_paxdata.application.domain.services.prompt_registry import (
                     PromptVersion as DomainPromptVersion,
                 )
 

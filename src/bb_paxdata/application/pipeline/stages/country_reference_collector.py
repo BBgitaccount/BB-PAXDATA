@@ -19,13 +19,13 @@ import asyncio
 from typing import TYPE_CHECKING, Any
 
 import structlog
+from bb_paxdata.application.domain.enums.country_enums import ReferenceContext
+from bb_paxdata.application.domain.models.country_reference import CountryReference
 from bb_paxdata.application.pipeline.models.collect_result import CountryCollectResult
-from bb_paxdata.domain.enums.country_enums import ReferenceContext
-from bb_paxdata.domain.models.country_reference import CountryReference
 
 if TYPE_CHECKING:
     import spacy
-    from bb_paxdata.domain.services.protocols import AIAnalystProtocol
+    from bb_paxdata.application.domain.services.protocols import AIAnalystProtocol
     from bb_paxdata.infrastructure.ai.prompt_registry import PromptRegistry
     from bb_paxdata.infrastructure.ai.recovery import RecoveryEngine
     from bb_paxdata.quality.evaluator import QualityEvaluator

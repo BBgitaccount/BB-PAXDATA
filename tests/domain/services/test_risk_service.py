@@ -3,10 +3,10 @@
 from unittest.mock import Mock
 
 import pytest
-from bb_paxdata.domain.enums import RiskLevel
-from bb_paxdata.domain.models.segment import Segment
-from bb_paxdata.domain.models.sentence import Sentence
-from bb_paxdata.domain.services.risk_service import RiskService
+from bb_paxdata.application.domain.enums import RiskLevel
+from bb_paxdata.application.domain.models.segment import Segment
+from bb_paxdata.application.domain.models.sentence import Sentence
+from bb_paxdata.application.domain.services.risk_service import RiskService
 
 
 class TestRiskService:
@@ -157,7 +157,7 @@ class TestRiskService:
     async def test_classify_risk_severity(self) -> None:
         """Test risk severity classification."""
         assert self.service._classify_risk_severity(9.0) == RiskLevel.CRITICAL
-        assert self.service._classify_risk_severity(7.0) == RiskLevel.CRITICAL
+        assert self.service._classify_risk_severity(7.0) == RiskLevel.HIGH
         assert self.service._classify_risk_severity(5.0) == RiskLevel.HIGH
         assert self.service._classify_risk_severity(3.0) == RiskLevel.MEDIUM
         assert self.service._classify_risk_severity(1.0) == RiskLevel.LOW

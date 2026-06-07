@@ -8,8 +8,8 @@ Validation of automated framing via consistency and salience checks.]
 
 import structlog
 
-from bb_paxdata.domain.enums.frame_type import FrameType
-from bb_paxdata.domain.models.analysis import Analysis
+from bb_paxdata.application.domain.enums.frame_type import FrameType
+from bb_paxdata.application.domain.models.analysis import Analysis
 from bb_paxdata.quality.metrics.base import MetricResult
 
 logger = structlog.get_logger(__name__)

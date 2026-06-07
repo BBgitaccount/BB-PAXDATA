@@ -3,7 +3,10 @@ import asyncio
 import numpy as np
 import structlog
 
-from bb_paxdata.domain.models.dki import DynamicPositionResult, SpeakerTrajectory
+from bb_paxdata.application.domain.models.dki import (
+    DynamicPositionResult,
+    SpeakerTrajectory,
+)
 
 logger = structlog.get_logger()
 

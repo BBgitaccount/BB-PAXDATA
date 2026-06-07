@@ -1,11 +1,11 @@
 # tests/unit/application/test_episodic_thematic.py
 import pytest
 import spacy
+from bb_paxdata.application.domain.enums.frame_type import FrameType
+from bb_paxdata.application.domain.models.segment import Segment
 from bb_paxdata.application.pipeline.frame.episodic_themetic_classifier import (
     EpisodicThematicClassifier,
 )
-from bb_paxdata.domain.enums.frame_type import FrameType
-from bb_paxdata.domain.models.segment import Segment
 
 
 @pytest.fixture
@@ -20,7 +20,7 @@ def classifier(nlp):
 
 @pytest.mark.asyncio
 async def test_classify_episodic(classifier):
-    from bb_paxdata.domain.models.sentence import Sentence
+    from bb_paxdata.application.domain.models.sentence import Sentence
 
     sentences = [
         Sentence(
@@ -36,7 +36,7 @@ async def test_classify_episodic(classifier):
 
 @pytest.mark.asyncio
 async def test_classify_thematic(classifier):
-    from bb_paxdata.domain.models.sentence import Sentence
+    from bb_paxdata.application.domain.models.sentence import Sentence
 
     sentences = [
         Sentence(

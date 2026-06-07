@@ -8,7 +8,7 @@ import logging
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from bb_paxdata.domain.models.calibration import CalibrationReport
+from bb_paxdata.application.domain.models.calibration import CalibrationReport
 from bb_paxdata.infrastructure.db.human_review_table import CalibrationReportORM
 
 logger = logging.getLogger(__name__)

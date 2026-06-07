@@ -3,9 +3,9 @@
 from unittest.mock import Mock, patch
 
 import pytest
-from bb_paxdata.domain.enums import SentimentCategory
-from bb_paxdata.domain.models.sentence import Sentence
-from bb_paxdata.domain.services.sentiment_service import SentimentService
+from bb_paxdata.application.domain.enums import SentimentCategory
+from bb_paxdata.application.domain.models.sentence import Sentence
+from bb_paxdata.application.domain.services.sentiment_service import SentimentService
 
 
 class TestSentimentService:

@@ -8,8 +8,8 @@ from collections import defaultdict
 from dataclasses import dataclass, field
 
 import structlog
-from bb_paxdata.domain.models.topic_synthesis import TopicSynthesis
-from bb_paxdata.domain.services.country_repositories import (
+from bb_paxdata.application.domain.models.topic_synthesis import TopicSynthesis
+from bb_paxdata.application.domain.services.country_repositories import (
     ICountryReferenceRepository,
     ITopicSynthesisRepository,
 )
@@ -90,7 +90,7 @@ class AggregatePanelTopicsUseCase:
             for ref in references:
                 country = ref.speaker_country
                 if country and country.lower() != "unknown":
-                    analysis_id = str(ref.panel_id)
+                    analysis_id = ref.panel_id
                     for topic, score in input_data.topic_scores_by_analysis.get(
                         analysis_id, {}
                     ).items():

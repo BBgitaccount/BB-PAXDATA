@@ -2,8 +2,8 @@ from fastapi import APIRouter, Depends
 from sqlalchemy import func, select, text
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from bb_paxdata.application.domain.enums import DatabaseMode
 from bb_paxdata.config.settings import get_settings
-from bb_paxdata.domain.enums import DatabaseMode
 from bb_paxdata.infrastructure.db.discourse_network_table import (
     DiscourseNetworkEdgeTable,
 )

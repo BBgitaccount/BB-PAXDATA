@@ -1,6 +1,7 @@
 from decimal import Decimal
 
-from bb_paxdata.domain.models.discourse_network import DiscourseFlow, NetworkEdge
+from bb_paxdata.application.domain.models.discourse_flow import NetworkEdge
+from bb_paxdata.application.domain.models.discourse_network import DiscourseFlow
 from bb_paxdata.infrastructure.nlp.fischer_dna_service import FischerDNAService
 from bb_paxdata.infrastructure.nlp.maoz_dyadic_service import MaozDyadicService
 

@@ -1,12 +1,16 @@
 import structlog
-from bb_paxdata.domain.models.analysis import Analysis
-from bb_paxdata.domain.models.dki import (
+from bb_paxdata.application.domain.models.analysis import Analysis
+from bb_paxdata.application.domain.models.appraisal_vector import EngagementType
+from bb_paxdata.application.domain.models.dki import (
     DKIComponents,
     DKIResult,
     SegmentWindow,
     SpeakerTrajectory,
 )
-from bb_paxdata.domain.services.protocols import (
+from bb_paxdata.application.domain.services.bayesian_position_tracker import (
+    calculate_signal_strength,
+)
+from bb_paxdata.application.domain.services.protocols import (
     DynamicPositionTracker,
     SemanticShiftCalculator,
 )
@@ -122,7 +126,65 @@ class DKIAssembler:
                     # We'll use 1.0 if not explicitly available.
                     pass
 
-        # 4. Compute DKI
+        # 4. Compute Signal Strength from real data (FINDING M-05)
+        # Extract HedgingResult, SpeechActClassification, and AppraisalVector from Analysis
+        signal_strength = 0.5  # Default neutral value
+
+        # Extract hedging penalty
+        hedging_penalty = 0.0
+        if analysis.hedging_result is not None:
+            hedging_penalty = analysis.hedging_result.score
+        else:
+            self._logger.warning(
+                "HedgingResult not found in Analysis, using neutral fallback (0.0)",
+                analysis_id=analysis.id,
+            )
+
+        # Extract speech act score
+        speech_act_score = 0.5  # Default neutral
+        if analysis.speech_act is not None:
+            # Map speech act type to score [0, 1]
+            # DECLARATIVE = 0.9, INTERROGATIVE = 0.5, IMPERATIVE = 0.3
+            speech_act_type = analysis.speech_act.primary_type
+            if speech_act_type == "DECLARATIVE":
+                speech_act_score = 0.9
+            elif speech_act_type == "INTERROGATIVE":
+                speech_act_score = 0.5
+            elif speech_act_type == "IMPERATIVE":
+                speech_act_score = 0.3
+        else:
+            self._logger.warning(
+                "SpeechActClassification not found in Analysis, using neutral fallback (0.5)",
+                analysis_id=analysis.id,
+            )
+
+        # Extract graduation score and engagement type from AppraisalVector
+        graduation_score = 0.5  # Default neutral
+        is_monogloss = True  # Default MONOGLOSS
+        if analysis.appraisal_vector is not None:
+            graduation_score = analysis.appraisal_vector.graduation_force
+            is_monogloss = (
+                analysis.appraisal_vector.engagement_type == EngagementType.MONOGLOSS
+            )
+        else:
+            self._logger.warning(
+                "AppraisalVector not found in Analysis, using neutral fallbacks (graduation=0.5, engagement=MONOGLOSS)",
+                analysis_id=analysis.id,
+            )
+
+        # Compute signal strength using corrected formula (FINDING M-03)
+        signal_strength = calculate_signal_strength(
+            speech_act_score=speech_act_score,
+            graduation_score=graduation_score,
+            is_monogloss=is_monogloss,
+            hedging_penalty=hedging_penalty,
+        )
+
+        # Add signal_strength to trajectory points for Bayesian tracking
+        for pt in trajectory_points:
+            pt["signal_strength"] = signal_strength
+
+        # 5. Compute DKI
         # Formula: DKI = (Δθᵢ/Δt) × SemanticShift × βⱼ
         raw_product = velocity * semantic_shift * debate_loading
 
@@ -141,5 +203,5 @@ class DKIAssembler:
             anomaly_flag=abs(raw_product) > self._dki_threshold,
         )
 
-        # 5. Return updated Analysis (Immutable)
+        # 6. Return updated Analysis (Immutable)
         return analysis.model_copy(update={"dki_result": dki_result})

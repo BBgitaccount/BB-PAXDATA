@@ -6,7 +6,7 @@ from typing import Any, Callable, Sequence, cast
 
 import numpy as np
 import structlog
-from bb_paxdata.domain.services.protocols.few_shot_protocols import (
+from bb_paxdata.application.domain.services.protocols.few_shot_protocols import (
     EmbeddingCacheProtocol,
     ExampleStoreProtocol,
     HumanReviewExample,

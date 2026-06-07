@@ -1,6 +1,6 @@
 import pytest
-from bb_paxdata.domain.models.bilateral_sentiment import BilateralSentiment
-from bb_paxdata.domain.models.power_index import PowerIndex
+from bb_paxdata.application.domain.models.bilateral_sentiment import BilateralSentiment
+from bb_paxdata.application.domain.models.power_index import PowerIndex
 
 
 @pytest.mark.asyncio

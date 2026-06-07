@@ -11,7 +11,7 @@ from typing import Any, Callable, Sequence
 
 import numpy as np
 import structlog
-from bb_paxdata.domain.services.protocols import AIAnalystProtocol
+from bb_paxdata.application.domain.services.protocols import AIAnalystProtocol
 from bb_paxdata.infrastructure.db.model_evaluation import (
     ModelEvaluationMetric,
     ModelEvaluationRun,

@@ -6,29 +6,37 @@ Persistence işlemlerini koordine eder ve nihai PipelineResult üretir.
 from __future__ import annotations
 
 from collections.abc import Sequence
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Any
 
 import structlog
 from bb_paxdata.application.pipeline.models.pipeline_result import PipelineResult
+from bb_paxdata.application.pipeline.stages.base import BaseFinalizeStage
 
 if TYPE_CHECKING:
+    from bb_paxdata.application.domain.models.analysis import Analysis
+    from bb_paxdata.application.domain.models.country_reference import CountryReference
     from bb_paxdata.application.pipeline.models.collect_result import CollectResult
-    from bb_paxdata.domain.models.analysis import Analysis
-    from bb_paxdata.domain.models.country_reference import CountryReference
-    from bb_paxdata.domain.services.country_repositories import (
-        ICountryReferenceRepository,
+    from bb_paxdata.infrastructure.db.repositories.unit_of_work import (
+        AbstractUnitOfWork,
     )
     from sqlalchemy.ext.asyncio import AsyncSession
 
 logger = structlog.get_logger(__name__)
 
 
-class FinalizeStage:
+class FinalizeStage(BaseFinalizeStage):
     def __init__(
         self,
-        country_ref_repo: ICountryReferenceRepository,
+        unit_of_work: AbstractUnitOfWork,
     ) -> None:
-        self._country_ref_repo = country_ref_repo
+        self._unit_of_work = unit_of_work
+
+    async def process(self, session: Any, analysis: Analysis) -> Analysis:
+        """
+        BaseFinalizeStage abstract method implementation.
+        Not used by this concrete finalize stage.
+        """
+        raise NotImplementedError("This stage uses run() instead of process()")
 
     async def run(
         self,
@@ -42,9 +50,7 @@ class FinalizeStage:
         Nihai sonuçları DB'ye yazar (opsiyonel) ve zarfı döndürür.
         """
         if session:
-            await self._persist_country_references(
-                collect_result.country_references, session
-            )
+            await self._persist_country_references(collect_result.country_references)
 
         return PipelineResult(
             analysis=analysis,
@@ -54,12 +60,16 @@ class FinalizeStage:
             success=success,
             errors=errors,
             stage="completed" if success else "completed_with_errors",
+            extra_data=(
+                {"appraisal_vector": collect_result.appraisal_vector}
+                if hasattr(collect_result, "appraisal_vector")
+                else {}
+            ),
         )
 
     async def _persist_country_references(
         self,
         references: Sequence[CountryReference],
-        session: AsyncSession,
     ) -> None:
         """
         COLLECT aşamasından gelen CountryReference entity'lerini DB'ye yazar.
@@ -68,13 +78,13 @@ class FinalizeStage:
             return
 
         try:
-            # Note: The repository should use the provided session.
-            self._country_ref_repo._session = session
-            await self._country_ref_repo.save_batch(list(references))
-            logger.info(
-                "finalize_stage.country_references_persisted",
-                count=len(references),
-            )
+            async with self._unit_of_work:
+                await self._unit_of_work.country_references.save_batch(list(references))
+                await self._unit_of_work.commit()
+                logger.info(
+                    "finalize_stage.country_references_persisted",
+                    count=len(references),
+                )
         except Exception as exc:
             logger.error("finalize_stage.country_persistence_failed", error=str(exc))
             # Hata persistence katmanında kalsın, pipeline sonucunu etkilemesin?

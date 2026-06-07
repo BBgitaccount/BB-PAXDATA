@@ -7,7 +7,7 @@ from uuid import UUID
 
 from pydantic import BaseModel, ConfigDict, Field
 
-from bb_paxdata.domain.enums.pipeline_stage import PipelineStage
+from bb_paxdata.application.domain.enums.pipeline_stage import PipelineStage
 
 if TYPE_CHECKING:
     pass

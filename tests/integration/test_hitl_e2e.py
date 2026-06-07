@@ -1,11 +1,11 @@
 import pytest
+from bb_paxdata.application.domain.models.human_review import AgreementStatus
 from bb_paxdata.application.services.calibration_service import CalibrationService
 from bb_paxdata.application.services.few_shot_injector import FewShotInjector
 from bb_paxdata.application.use_cases.submit_human_review import (
     SubmitHumanReviewCommand,
     SubmitHumanReviewUseCase,
 )
-from bb_paxdata.domain.models.human_review import AgreementStatus
 from bb_paxdata.infrastructure.db import models as m
 from bb_paxdata.infrastructure.db.base import Base
 from bb_paxdata.infrastructure.db.repositories.unit_of_work import SqlAlchemyUnitOfWork

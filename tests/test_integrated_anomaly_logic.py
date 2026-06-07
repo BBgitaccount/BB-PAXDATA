@@ -1,6 +1,6 @@
 import pytest
-from bb_paxdata.domain.models.analysis import Analysis
-from bb_paxdata.domain.services.cross_anomaly_service import (
+from bb_paxdata.application.domain.models.analysis import Analysis
+from bb_paxdata.application.domain.services.cross_anomaly_service import (
     EntityFlipRule,
     ToneDriftRule,
 )

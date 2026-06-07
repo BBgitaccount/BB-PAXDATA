@@ -1,6 +1,7 @@
+import re
 from typing import Any, Optional
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, model_validator
 
 
 class KpiStatsResponse(BaseModel):
@@ -234,3 +235,119 @@ class TemporalDriftResponse(BaseModel):
     dki: list[DkiHistoryItemResponse]
     drift_events: list[DriftEventItemResponse]
     speakers: list[str]
+
+
+# Comparison schemas for TASK-E01
+_LANG_CODE_RE = re.compile(r"^[a-z]{2}(-[A-Z]{2})?$")  # ISO 639-1 with optional region
+
+
+class CompareSessionsRequest(BaseModel):
+    session_a_id: str = Field(..., min_length=1, max_length=200)
+    session_b_id: str = Field(..., min_length=1, max_length=200)
+    sbi_threshold: float = Field(0.15, ge=0.0, le=1.0)
+    dki_threshold: float = Field(0.15, ge=0.0, le=1.0)
+    risk_threshold: float = Field(0.10, ge=0.0, le=1.0)
+    hedging_threshold: float = Field(0.10, ge=0.0, le=1.0)
+    include_narrative: bool = Field(True)
+    narrative_language: str = Field("en", min_length=2, max_length=5)
+
+    @model_validator(mode="after")
+    def validate_fields(self) -> "CompareSessionsRequest":
+        if self.session_a_id == self.session_b_id:
+            raise ValueError("session_a_id and session_b_id must differ")
+        if not _LANG_CODE_RE.match(self.narrative_language):
+            raise ValueError(
+                "narrative_language must be ISO 639-1 format (e.g. 'en', 'tr', 'fr')"
+            )
+        return self
+
+
+class SignificantChangeResponse(BaseModel):
+    dimension: str
+    speaker_id: Optional[str] = None
+    raw_delta: Optional[float] = None
+    normalized_delta: Optional[float] = None
+
+
+class SpeechActDeltaResponse(BaseModel):
+    speaker_id: str
+    distribution_a: dict[str, float]
+    distribution_b: dict[str, float]
+    delta_distribution: dict[str, float]
+    most_changed_type: Optional[str] = None
+    change_magnitude: float = 0.0
+
+
+class NarrativeLayerDeltaResponse(BaseModel):
+    speaker_id: str
+    layer_weights_a: dict[str, float]
+    layer_weights_b: dict[str, float]
+    delta_weights: dict[str, float]
+    dominant_layer_change: Optional[tuple[str, float]] = None
+
+
+class AnalysisDeltaResponse(BaseModel):
+    session_a_id: str
+    session_b_id: str
+    comparison_timestamp: str
+
+    delta_sbi: dict[str, float] = Field(default_factory=dict)
+    delta_sbi_normalized: dict[str, float] = Field(default_factory=dict)
+    delta_sbi_significant: dict[str, bool] = Field(default_factory=dict)
+
+    delta_dki: dict[str, float] = Field(default_factory=dict)
+    delta_dki_normalized: dict[str, float] = Field(default_factory=dict)
+    delta_dki_significant: dict[str, bool] = Field(default_factory=dict)
+
+    delta_risk: Optional[float] = None
+    delta_risk_normalized: Optional[float] = None
+    delta_risk_significant: bool = False
+
+    delta_hedging: dict[str, float] = Field(default_factory=dict)
+    delta_hedging_normalized: dict[str, float] = Field(default_factory=dict)
+    delta_hedging_significant: dict[str, bool] = Field(default_factory=dict)
+
+    delta_speech_act: dict[str, SpeechActDeltaResponse] = Field(default_factory=dict)
+    delta_narrative: dict[str, NarrativeLayerDeltaResponse] = Field(
+        default_factory=dict
+    )
+
+    significant_changes: list[SignificantChangeResponse] = Field(default_factory=list)
+
+    speakers_in_a: list[str] = Field(default_factory=list)
+    speakers_in_b: list[str] = Field(default_factory=list)
+    common_speakers: list[str] = Field(default_factory=list)
+    speakers_only_in_a: list[str] = Field(default_factory=list)
+    speakers_only_in_b: list[str] = Field(default_factory=list)
+
+    most_drifted_speaker: Optional[str] = None
+    most_drifted_dimension: str = ""
+    total_significant_changes: int = 0
+
+
+class ContrastReportResponse(BaseModel):
+    report_id: str
+    delta: AnalysisDeltaResponse
+
+    narrative_summary: Optional[str] = None
+    narrative_summary_skipped: bool = False
+    narrative_summary_failed: bool = False
+    narrative_summary_model: str = ""
+    narrative_summary_timestamp: Optional[str] = None
+
+    most_drifted_speaker: Optional[str] = None
+    most_drifted_dimension: str = ""
+
+    key_insights: list[str] = Field(default_factory=list)
+    risk_assessment: Optional[str] = None
+    risk_level_changed: bool = False
+    recommendation: Optional[str] = None
+
+    generated_at: str
+
+
+class CompareSessionsResponse(BaseModel):
+    success: bool
+    contrast_report: Optional[ContrastReportResponse] = None
+    analysis_delta: Optional[AnalysisDeltaResponse] = None
+    errors: list[str] = Field(default_factory=list)

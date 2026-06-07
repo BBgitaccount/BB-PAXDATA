@@ -15,16 +15,16 @@ Tests cover:
 from __future__ import annotations
 
 import pytest
-from bb_paxdata.domain.enums import (
+from bb_paxdata.application.domain.enums import (
     RiskLevel,
 )
-from bb_paxdata.domain.enums.negation_type import NegationType
-from bb_paxdata.domain.enums.signal_type import SignalType
-from bb_paxdata.domain.models.analysis import Analysis
-from bb_paxdata.domain.models.negation_cue import NegationCue
-from bb_paxdata.domain.models.risk_signal import RiskSignal
-from bb_paxdata.domain.models.segment import Segment
-from bb_paxdata.domain.models.sentence import Sentence
+from bb_paxdata.application.domain.enums.negation_type import NegationType
+from bb_paxdata.application.domain.enums.signal_type import SignalType
+from bb_paxdata.application.domain.models.analysis import Analysis
+from bb_paxdata.application.domain.models.negation_cue import NegationCue
+from bb_paxdata.application.domain.models.risk_signal import RiskSignal
+from bb_paxdata.application.domain.models.segment import Segment
+from bb_paxdata.application.domain.models.sentence import Sentence
 from pydantic import ValidationError
 
 # ─── Factory helpers for models with required positional fields ───
@@ -414,7 +414,7 @@ class TestAnalysisImmutableUpdatePattern:
 
 class TestAnalysisSentenceAlias:
     def test_sentence_analysis_alias(self):
-        from bb_paxdata.domain.models.analysis import SentenceAnalysis
+        from bb_paxdata.application.domain.models.analysis import SentenceAnalysis
 
         a = SentenceAnalysis(source_text="alias test")
         assert isinstance(a, Analysis)

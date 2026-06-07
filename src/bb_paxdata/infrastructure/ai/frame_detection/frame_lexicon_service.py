@@ -16,8 +16,8 @@ if TYPE_CHECKING:
 import asyncio
 
 import structlog
-from bb_paxdata.domain.enums.frame_type import FrameType
-from bb_paxdata.domain.models.frame_annotation import CueMatch
+from bb_paxdata.application.domain.enums.frame_type import FrameType
+from bb_paxdata.application.domain.models.frame_annotation import CueMatch
 from spacy.tokens import Doc, Token
 
 logger = structlog.get_logger(__name__)

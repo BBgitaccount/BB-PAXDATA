@@ -1,6 +1,6 @@
 import pytest
 import spacy
-from bb_paxdata.domain.enums.signal_type import SignalType
+from bb_paxdata.application.domain.enums.signal_type import SignalType
 from bb_paxdata.infrastructure.nlp.risk_signal_detector import RiskSignalDetector
 
 

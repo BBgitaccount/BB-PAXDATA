@@ -3,15 +3,15 @@
 from unittest.mock import Mock
 
 import pytest
-from bb_paxdata.domain.enums import (
+from bb_paxdata.application.domain.enums import (
     AppraisalAttitude,
     AudienceType,
     EvidenceType,
     FrameType,
 )
-from bb_paxdata.domain.enums.topic_category import TopicCategory
-from bb_paxdata.domain.models.sentence import Sentence
-from bb_paxdata.domain.services.framing_service import FramingService
+from bb_paxdata.application.domain.enums.topic_category import TopicCategory
+from bb_paxdata.application.domain.models.sentence import Sentence
+from bb_paxdata.application.domain.services.framing_service import FramingService
 
 
 class TestFramingService:

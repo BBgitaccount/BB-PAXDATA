@@ -112,7 +112,7 @@ def _mark_event_processed(event_id: str) -> None:
     """OutboxEvent'i processed=True olarak günceller."""
     from datetime import datetime, timezone
 
-    from bb_paxdata.infrastructure.db.models.outbox import OutboxEventORM
+    from bb_paxdata.infrastructure.db.models import OutboxEventORM
     from bb_paxdata.infrastructure.db.session import get_db_session
 
     with get_db_session() as session:
@@ -125,7 +125,7 @@ def _mark_event_processed(event_id: str) -> None:
 
 def _move_to_dead_letter(event_id: str, payload: dict, reason: str) -> None:
     """Event'i dead_letter_events tablosuna taşır."""
-    from bb_paxdata.infrastructure.db.models.outbox import (
+    from bb_paxdata.infrastructure.db.models import (
         DeadLetterEventORM,
         OutboxEventORM,
     )

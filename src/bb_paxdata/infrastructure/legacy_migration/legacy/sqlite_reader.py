@@ -4,7 +4,10 @@ import json
 import sqlite3
 from datetime import datetime
 
-from bb_paxdata.domain.entities.legacy import LegacyAnalyticIndex, LegacyTranscript
+from bb_paxdata.application.domain.entities.legacy import (
+    LegacyAnalyticIndex,
+    LegacyTranscript,
+)
 
 
 class LegacySQLiteReader:

@@ -6,8 +6,18 @@
 from __future__ import annotations
 
 import logging
+import threading
 from typing import Any, cast
 
+from ...application.domain.enums import AIProvider
+from ...application.domain.services.ai_analyst import AIAnalyst
+from ...application.domain.services.appraisal_service import get_appraisal_service
+from ...application.domain.services.cross_anomaly_service import CrossAnomalyService
+from ...application.domain.services.dependency import DependencyService
+from ...application.domain.services.language_detector import LanguageDetector
+from ...application.domain.services.ner_service import SpacyNERService
+from ...application.domain.services.prompt_registry import build_default_registry
+from ...application.domain.services.tokenizer_service import SpacyTokenizerService
 from ...application.pipeline.analysis_pipeline import AnalysisPipeline
 from ...application.pipeline.assembler import AnalysisAssembler
 from ...application.pipeline.sbi_calculator import SBICalculator
@@ -16,17 +26,11 @@ from ...application.pipeline.stages.country_reference_collector import (
 )
 from ...application.pipeline.stages.finalize_stage import FinalizeStage
 from ...config.settings import get_settings
-from ...domain.enums import AIProvider
-from ...domain.services.ai_analyst import AIAnalyst
-from ...domain.services.cross_anomaly_service import CrossAnomalyService
-from ...domain.services.dependency import DependencyService
-from ...domain.services.language_detector import LanguageDetector
-from ...domain.services.ner_service import SpacyNERService
-from ...domain.services.prompt_registry import build_default_registry
-from ...domain.services.tokenizer_service import SpacyTokenizerService
 from ..ai.analyst import AIAnalyst as InfraAIAnalyst
 from ..ai.analyst import BackendType
-from ..db.repositories.country_repository import CountryReferenceRepository
+from ..db.repositories.unit_of_work import SqlAlchemyUnitOfWork
+from ..event_bus.simple_event_bus import SimpleEventBus
+from ..nlp.maoz_dyadic_service import MaozDyadicService
 from ..nlp.negation_detector import SpacyNegationDetector
 from ..nlp.power_index_calculator import PowerIndexCalculator
 from ..nlp.risk_signal_detector import RiskSignalDetector
@@ -49,6 +53,7 @@ class ServiceContainer:
     """
 
     _instance: ServiceContainer | None = None
+    _lock: threading.Lock = threading.Lock()
 
     def __init__(self, logic_mode: bool = False, ai_limit: int | None = None) -> None:
         self._logic_mode = logic_mode
@@ -60,7 +65,13 @@ class ServiceContainer:
 
         # ── Ortak Araçlar ──────────────────────────────────────────
         self.language_detector = LanguageDetector()
+        import httpx
+
+        from ..ai.fail_check import AIFailCheck
         from ..ai.recovery import RecoveryEngine
+
+        self._http_client = httpx.AsyncClient(timeout=30.0)
+        self.fail_check = AIFailCheck(http_client=self._http_client)
 
         self.recovery_engine = RecoveryEngine()
 
@@ -80,6 +91,17 @@ class ServiceContainer:
         self.ner_service = SpacyNERService(language_detector=self.language_detector)
         self.tokenizer_service = SpacyTokenizerService(
             language_detector=self.language_detector
+        )
+        self.appraisal_service = get_appraisal_service()
+        self.maoz_dyadic_service = MaozDyadicService()
+
+        from bb_paxdata.application.domain.services.speech_act_classifier import (
+            SpeechActClassifierService,
+        )
+        from bb_paxdata.application.protocols import SpeechActClassifierProtocol
+
+        self.speech_act_classifier: SpeechActClassifierProtocol = (
+            SpeechActClassifierService(model_name="deberta-v3-small")
         )
 
         # ── Prompt Registry + AI Analyst ───────────────────────────
@@ -143,11 +165,22 @@ class ServiceContainer:
                 base_url=base_url,
             )
 
+            from bb_paxdata.infrastructure.ai.batch import BatchProcessor
+
+            raw_client = self.infra_analyst._get_client(
+                self.infra_analyst.default_backend
+            )
+            self.batch_processor = BatchProcessor(
+                client=raw_client,
+                recovery_engine=self.recovery_engine,
+            )
+
             _real_analyst = AIAnalyst(
                 registry=self.prompt_registry,
                 language_detector=self.language_detector,
                 few_shot_injector=self.few_shot_injector,
                 infra_analyst=self.infra_analyst,
+                batch_processor=self.batch_processor,
             )
 
             # AI limit varsa wrapper ile sar
@@ -173,7 +206,13 @@ class ServiceContainer:
         common_nlp = self.ner_service._models.get("en") or self.ner_service._models.get(
             "tr"
         )
-        assert common_nlp is not None
+        if common_nlp is None:
+            raise RuntimeError(
+                "SpaCy NLP modeli yüklenemedi. "
+                "'en_core_web_sm' veya 'tr_core_news_md' modellerinden en az biri "
+                "kurulu ve erişilebilir olmalıdır. "
+                "Kurulum için: python -m spacy download en_core_web_sm"
+            )
 
         self.negation_detector = SpacyNegationDetector(
             nlp_en=self.ner_service._models.get("en"),
@@ -208,10 +247,48 @@ class ServiceContainer:
 
         self.dependency_service = DependencyService()
 
+        # ── Presupposition Extraction (TASK-A06) ─────────────────────
+        from ...application.domain.lexicons.presupposition_triggers import (
+            PresuppositionLexicon,
+        )
+        from ...application.domain.services.presupposition_service import (
+            PresuppositionService,
+        )
+        from ...application.domain.services.presupposition_verifier import (
+            PresuppositionVerifier,
+        )
+
+        # Create AI client for presupposition verification
+        from ..ai.factory import AIClientFactory
+        from ..cache.disk import DiskCacheBackend
+
+        presupposition_ai_client = AIClientFactory.from_settings(get_settings())
+
+        # Create cache backend
+        presupposition_cache = DiskCacheBackend()
+
+        # Create verifier
+        self.presupposition_verifier = PresuppositionVerifier(
+            ai_client=presupposition_ai_client,
+            cache=presupposition_cache,
+            use_cache=True,
+        )
+
+        # Create service
+        self.presupposition_service = PresuppositionService(
+            verifier=self.presupposition_verifier,
+            lexicon=PresuppositionLexicon.load_default(),
+            negation_detector=self.negation_detector,
+            llm_confidence_threshold=get_settings().presupposition.llm_confidence_threshold,
+            use_llm_verification=get_settings().presupposition.use_llm_verification,
+        )
+
         # ── Pipeline Stages ────────────────────────────────────────
         # Note: CountryReferenceCollector needs a spacy model.
         # For the container, we use the default 'en' model from NER service.
-        from bb_paxdata.domain.services.actor_resolver import NER_GPE as resolver_gpe
+        from bb_paxdata.application.domain.services.actor_resolver import (
+            NER_GPE as resolver_gpe,
+        )
 
         extended_gpe = set(resolver_gpe) | {
             "Turkey",
@@ -286,7 +363,7 @@ class ServiceContainer:
             # recovery_engine and prompt_registry could be injected here if needed
         )
         self.finalize_stage = FinalizeStage(
-            country_ref_repo=CountryReferenceRepository(None)
+            unit_of_work=SqlAlchemyUnitOfWork(SessionLocal)
         )
 
         # ── SBI Servisleri (Faz 7) ───────────────────────────────
@@ -324,11 +401,18 @@ class ServiceContainer:
 
         # FrameDetectionPipeline needs multiple sub-protocols (simplified here for container)
         # In a real setup, these would be separate classes.
+        from bb_paxdata.infrastructure.ai.frame_detection.five_w_one_h_extractor import (
+            LLMFiveWOneHExtractor,
+        )
+
+        self.five_w_one_h_extractor = LLMFiveWOneHExtractor(
+            llm_client=cast(Any, self.ai_analyst), recovery=self.recovery_engine
+        )
         self.frame_pipeline = FrameDetectionPipeline(
             concept_extractor=None,
             coreference_resolver=None,
             embedding_matcher=None,
-            five_w_one_h_extractor=None,
+            five_w_one_h_extractor=self.five_w_one_h_extractor,
             llm_client=cast(Any, self.ai_analyst),
             topic_service=self.topic_modeling_service,
             recovery_engine=self.recovery_engine,
@@ -373,9 +457,14 @@ class ServiceContainer:
             finalize_stage=self.finalize_stage,
             llm_position_estimator=self.llm_position_estimator,
             semantic_shift_calculator=self.semantic_shift_calculator,
+            appraisal_service=self.appraisal_service,
         )
 
         # ── Phase 5 AI Deepening v2.0 Components ───────────────────
+        from bb_paxdata.application.domain.services.colbert_embedding_service import (
+            RAGatoulleColBERTService,
+        )
+        from bb_paxdata.application.domain.services.forecasting import RiskForecaster
         from bb_paxdata.application.services.baseline_fetcher import (
             RollingWindowBaselineFetcher,
         )
@@ -390,8 +479,10 @@ class ServiceContainer:
             RAGService,
             RAGSynthesisClient,
         )
-        from bb_paxdata.domain.services.forecasting import RiskForecaster
         from bb_paxdata.infrastructure.db.session import SessionLocal
+        from bb_paxdata.infrastructure.retrieval.colbert_retriever import (
+            ColBERTDenseRetriever,
+        )
         from bb_paxdata.infrastructure.retrieval.local_reranker import (
             LocalCrossEncoderReranker,
         )
@@ -402,19 +493,34 @@ class ServiceContainer:
             PgvectorDenseRetriever,
         )
 
-        class SimpleEventBus:
-            async def publish(
-                self, channel: str, event_type: str, payload: dict[str, Any]
-            ) -> None:
-                logger.info(f"Event published: {channel}/{event_type} - {payload}")
-
         self.event_bus = SimpleEventBus()
         self.event_publisher = Phase5EventPublisher(event_bus=self.event_bus)
 
-        self.dense_retriever = PgvectorDenseRetriever(
-            session_factory=SessionLocal,
-            embedding_service=self.embedding_service,
+        # Feature-flagged dense retriever factory (TASK-E03)
+        from bb_paxdata.application.domain.services.protocols.rag_protocols import (
+            DenseRetrieverProtocol,
         )
+
+        settings = get_settings()
+        self.dense_retriever: DenseRetrieverProtocol
+        if settings.use_colbert:
+            colbert_service = RAGatoulleColBERTService(
+                index_path=settings.colbert_index_path
+            )
+            colbert_service.load_index(index_name=settings.colbert_index_name)
+            self.dense_retriever = ColBERTDenseRetriever(
+                colbert_service=colbert_service
+            )
+            logger.info(
+                f"ColBERT dense retriever enabled with index at {settings.colbert_index_path}"
+            )
+        else:
+            self.dense_retriever = PgvectorDenseRetriever(
+                session_factory=SessionLocal,
+                embedding_service=self.embedding_service,
+            )
+            logger.info("Pgvector dense retriever enabled (SBERT cosine)")
+
         self.keyword_retriever = MeilisearchKeywordRetriever(
             session_factory=SessionLocal,
         )
@@ -453,7 +559,7 @@ class ServiceContainer:
     def get_instance(
         cls, logic_mode: bool = False, ai_limit: int | None = None
     ) -> ServiceContainer:
-        """Thread-unsafe singleton (production'da threading.Lock ekle).
+        """Thread-safe singleton — Double-Checked Locking pattern ile korunuyor.
 
         Args:
             logic_mode: True ise LogicOnlyAIAnalyst kullanılır.
@@ -461,8 +567,14 @@ class ServiceContainer:
                         İlk çağrıda belirlenir; sonraki çağrılarda görmezden gelinir.
         """
         if cls._instance is None:
-            cls._instance = cls(logic_mode=logic_mode, ai_limit=ai_limit)
+            with cls._lock:
+                if cls._instance is None:
+                    cls._instance = cls(logic_mode=logic_mode, ai_limit=ai_limit)
         return cls._instance
+
+    async def aclose(self) -> None:
+        """Close HTTP client and any other resource connections."""
+        await self._http_client.aclose()
 
     @classmethod
     def reset_instance(cls) -> None:

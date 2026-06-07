@@ -122,7 +122,7 @@ async def init_db() -> None:
         topic_models,  # noqa: F401
     )
     from bb_paxdata.infrastructure.db.country_models import Base as CountryBase
-    from bb_paxdata.infrastructure.db.models.outbox import OutboxEventORM  # noqa: F401
+    from bb_paxdata.infrastructure.db.models import OutboxEventORM  # noqa: F401
     from bb_paxdata.infrastructure.legacy_migration.models import (
         Base as PersistenceBase,
     )

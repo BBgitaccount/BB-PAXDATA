@@ -10,8 +10,11 @@ if TYPE_CHECKING:
     from bb_paxdata.application.consensus.dual_gate import ConsensusResult
     from bb_paxdata.infrastructure.ai.prompt_registry import PromptRegistry
 
-from bb_paxdata.domain.models.analysis import Analysis as AnalysisDomain
-from bb_paxdata.domain.models.analysis import SentenceAnalysis
+from bb_paxdata.application.domain.models.analysis import Analysis as AnalysisDomain
+from bb_paxdata.application.domain.models.analysis import SentenceAnalysis
+from bb_paxdata.application.domain.services.compare_sessions_protocols import (
+    IAnalysisRepository,
+)
 from bb_paxdata.infrastructure.db.models import (
     AICache,
     AIFailAnalysis,
@@ -36,10 +39,26 @@ except ImportError:
 logger = structlog.get_logger(__name__)
 
 
-class AnalysisRepository(BaseRepository[AISentenceAnalysis]):
+class AnalysisRepository(BaseRepository[AISentenceAnalysis], IAnalysisRepository):
     """Async repository for AISentenceAnalysis ORM model."""
 
     model_class = AISentenceAnalysis
+
+    async def get_by_session(self, session_id: str) -> list[AnalysisDomain]:
+        """Get all analyses for a session."""
+        stmt = select(self.model_class).where(self.model_class.file_id == session_id)
+        result = await self._session.execute(stmt)
+        rows = result.scalars().all()
+        return [row.to_domain() for row in rows]
+
+    async def get_by_speaker(self, speaker_id: str) -> list[AnalysisDomain]:
+        """Get all analyses for a speaker across sessions."""
+        stmt = select(self.model_class).where(
+            self.model_class.speaker_name == speaker_id
+        )
+        result = await self._session.execute(stmt)
+        rows = result.scalars().all()
+        return [row.to_domain() for row in rows]
 
     async def get_failures(self, file_id: str | None = None) -> list[AnalysisDomain]:
         """Get analysis failures."""
@@ -80,7 +99,9 @@ class AnalysisRepository(BaseRepository[AISentenceAnalysis]):
         consensus: ConsensusResult | None = None,
     ) -> None:
         """Save sentence analysis (supports domain model or ORM model)."""
-        from bb_paxdata.domain.models.analysis import Analysis as AnalysisDomain
+        from bb_paxdata.application.domain.models.analysis import (
+            Analysis as AnalysisDomain,
+        )
 
         if isinstance(analysis, AnalysisDomain):
             sent_id = analysis.sentence_id
@@ -110,7 +131,7 @@ class AnalysisRepository(BaseRepository[AISentenceAnalysis]):
 
     async def save_validation_log(self, validation: Any) -> None:
         """Save validation log."""
-        from bb_paxdata.domain.models.validation_result import (
+        from bb_paxdata.application.domain.models.validation_result import (
             ValidationResult as ValidationDomain,
         )
 

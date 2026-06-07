@@ -1,6 +1,6 @@
 from uuid import uuid4
 
-from bb_paxdata.domain.enums import PipelineStage
+from bb_paxdata.application.domain.enums import PipelineStage
 from bb_paxdata.infrastructure.ai.prompt_registry import AcademicRefTrace, PromptVersion
 
 

@@ -9,7 +9,7 @@ from typing import Any
 from sqlalchemy import and_, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from bb_paxdata.domain.models.human_review import (
+from bb_paxdata.application.domain.models.human_review import (
     AgreementStatus,
     HumanReview,
     RiskLevel,

@@ -1,4 +1,4 @@
-from bb_paxdata.domain.enums.frame_type import FrameType
+from bb_paxdata.application.domain.enums.frame_type import FrameType
 
 
 def test_frame_type_academic_values():

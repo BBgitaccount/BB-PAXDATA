@@ -59,6 +59,7 @@ src/bb_paxdata/interfaces/web/
 
 # Developer & Test Outputs (not needed by CLI)
 scratch/
+.prompts/
 .deepeval/
 .pytest_cache/
 .coverage
@@ -72,3 +73,8 @@ repomix-output.*
 node_modules/
 **/node_modules/
 npm-debug.log
+
+#cline
+.clinerules
+graphify_mcp_server.py
+

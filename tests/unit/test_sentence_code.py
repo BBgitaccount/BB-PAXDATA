@@ -1,6 +1,6 @@
-from bb_paxdata.domain.models.analysis import Analysis
-from bb_paxdata.domain.models.sentence import Sentence
-from bb_paxdata.domain.utils.hash import generate_sentence_code
+from bb_paxdata.application.domain.models.analysis import Analysis
+from bb_paxdata.application.domain.models.sentence import Sentence
+from bb_paxdata.application.domain.utils.hash import generate_sentence_code
 
 
 def test_generate_sentence_code():

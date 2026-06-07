@@ -10,7 +10,7 @@ import structlog
 from sqlalchemy import func, select
 from sqlalchemy.orm import joinedload
 
-from bb_paxdata.domain.models.analysis import SegmentInsight
+from bb_paxdata.application.domain.models.analysis import SegmentInsight
 from bb_paxdata.infrastructure.db.models import AISegmentInsight, Segment
 from bb_paxdata.infrastructure.db.repositories.base import BaseRepository
 
@@ -40,7 +40,9 @@ class SegmentRepository(BaseRepository[Segment]):
 
     async def add(self, entity: Any) -> Segment:
         """Add a segment (supports domain model or ORM model)."""
-        from bb_paxdata.domain.models.segment import Segment as SegmentDomain
+        from bb_paxdata.application.domain.models.segment import (
+            Segment as SegmentDomain,
+        )
 
         if isinstance(entity, SegmentDomain):
             orm = Segment.from_domain(entity)

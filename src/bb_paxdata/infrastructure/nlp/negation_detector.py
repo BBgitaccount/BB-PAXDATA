@@ -5,7 +5,7 @@ from typing import Any
 import spacy
 from spacy.language import Language
 
-from bb_paxdata.domain.models.negation import (
+from bb_paxdata.application.domain.models.negation import (
     LanguageCode,
     NegationCue,
     NegationResult,

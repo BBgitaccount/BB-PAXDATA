@@ -7,7 +7,7 @@ import logging
 from dataclasses import dataclass
 from typing import Any
 
-from bb_paxdata.domain.models.human_review import (
+from bb_paxdata.application.domain.models.human_review import (
     AgreementStatus,
     HumanReview,
     RiskLevel,

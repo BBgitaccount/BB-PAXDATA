@@ -11,11 +11,11 @@ from dataclasses import dataclass
 from enum import Enum
 from typing import Any
 
-import requests
+import httpx
 import structlog
 
+from ...application.domain.enums import AIProvider, ValidationCheckType
 from ...config.settings import get_settings
-from ...domain.enums import AIProvider, ValidationCheckType
 
 logger = structlog.get_logger(__name__)
 
@@ -59,8 +59,9 @@ class FailCheckResult:
 class AIFailCheck:
     """AI fail check and validation service."""
 
-    def __init__(self) -> None:
+    def __init__(self, http_client: httpx.AsyncClient) -> None:
         """Initialize the fail check service."""
+        self._http_client = http_client
         # Validation thresholds
         self.thresholds = {
             "sentiment_tolerance": 0.35,
@@ -774,19 +775,11 @@ Return ONLY this JSON:
                 ],
             }
             try:
-                import asyncio
-
-                loop = asyncio.get_event_loop()
-
-                def post() -> requests.Response:
-                    return requests.post(
-                        "https://api.anthropic.com/v1/messages",
-                        headers=headers,
-                        json=payload,
-                        timeout=120,
-                    )
-
-                resp = await loop.run_in_executor(None, post)
+                resp = await self._http_client.post(
+                    "https://api.anthropic.com/v1/messages",
+                    headers=headers,
+                    json=payload,
+                )
                 resp.raise_for_status()
                 content = resp.json()["content"][0]["text"]
                 if isinstance(content, str):
@@ -795,8 +788,11 @@ Return ONLY this JSON:
                         content = "{" + content
                     return content
                 return None
-            except Exception as e:
+            except httpx.HTTPError as e:
                 logger.error(f"Anthropic API call failed: {e}")
+                return None
+            except Exception as e:
+                logger.error(f"Anthropic processing failed: {e}")
                 return None
 
         elif provider == AIProvider.GEMINI:
@@ -811,26 +807,21 @@ Return ONLY this JSON:
                 },
             }
             try:
-                import asyncio
-
-                loop = asyncio.get_event_loop()
-
-                def post() -> requests.Response:
-                    return requests.post(
-                        url,
-                        headers={"Content-Type": "application/json"},
-                        json=payload,
-                        timeout=120,
-                    )
-
-                resp = await loop.run_in_executor(None, post)
+                resp = await self._http_client.post(
+                    url,
+                    headers={"Content-Type": "application/json"},
+                    json=payload,
+                )
                 resp.raise_for_status()
                 text = resp.json()["candidates"][0]["content"]["parts"][0]["text"]
                 if isinstance(text, str):
                     return text.strip()
                 return None
-            except Exception as e:
+            except httpx.HTTPError as e:
                 logger.error(f"Gemini API call failed: {e}")
+                return None
+            except Exception as e:
+                logger.error(f"Gemini processing failed: {e}")
                 return None
 
         elif provider == AIProvider.GROQ:
@@ -849,26 +840,21 @@ Return ONLY this JSON:
                 "response_format": {"type": "json_object"},
             }
             try:
-                import asyncio
-
-                loop = asyncio.get_event_loop()
-
-                def post() -> requests.Response:
-                    return requests.post(
-                        "https://api.groq.com/openai/v1/chat/completions",
-                        headers=headers,
-                        json=payload,
-                        timeout=120,
-                    )
-
-                resp = await loop.run_in_executor(None, post)
+                resp = await self._http_client.post(
+                    "https://api.groq.com/openai/v1/chat/completions",
+                    headers=headers,
+                    json=payload,
+                )
                 resp.raise_for_status()
                 content = resp.json()["choices"][0]["message"]["content"]
                 if isinstance(content, str):
                     return content.strip()
                 return None
-            except Exception as e:
+            except httpx.HTTPError as e:
                 logger.error(f"Groq API call failed: {e}")
+                return None
+            except Exception as e:
+                logger.error(f"Groq processing failed: {e}")
                 return None
 
         else:  # OLLAMA
@@ -888,14 +874,7 @@ Return ONLY this JSON:
             }
             url = f"{settings.ollama_base_url}/api/chat"
             try:
-                import asyncio
-
-                loop = asyncio.get_event_loop()
-
-                def post() -> requests.Response:
-                    return requests.post(url, json=payload, timeout=120)
-
-                resp = await loop.run_in_executor(None, post)
+                resp = await self._http_client.post(url, json=payload)
                 resp.raise_for_status()
                 content = resp.json()["message"]["content"]
                 if isinstance(content, str):
@@ -905,8 +884,11 @@ Return ONLY this JSON:
                     ).strip()
                     return content
                 return None
-            except Exception as e:
+            except httpx.HTTPError as e:
                 logger.error(f"Ollama API call failed: {e}")
+                return None
+            except Exception as e:
+                logger.error(f"Ollama processing failed: {e}")
                 return None
 
     def safe_parse_json_object(self, raw: str) -> dict[str, Any] | None:

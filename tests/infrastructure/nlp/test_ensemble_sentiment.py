@@ -1,5 +1,5 @@
 import pytest
-from bb_paxdata.domain.enums.sentiment_polarity import SentimentPolarity
+from bb_paxdata.application.domain.enums.sentiment_polarity import SentimentPolarity
 from bb_paxdata.infrastructure.nlp.ensemble_sentiment_service import (
     EnsembleSentimentService,
 )

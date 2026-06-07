@@ -2,13 +2,13 @@
 from unittest.mock import AsyncMock
 
 import pytest
+from bb_paxdata.application.domain.enums.country_enums import ReferenceContext
+from bb_paxdata.application.domain.models.bilateral_sentiment import BilateralSentiment
+from bb_paxdata.application.domain.models.country_reference import CountryReference
 from bb_paxdata.application.use_cases.aggregate_bilateral_sentiment import (
     AggregateBilateralSentimentInput,
     AggregateBilateralSentimentUseCase,
 )
-from bb_paxdata.domain.enums.country_enums import ReferenceContext
-from bb_paxdata.domain.models.bilateral_sentiment import BilateralSentiment
-from bb_paxdata.domain.models.country_reference import CountryReference
 
 
 def _make_ref(

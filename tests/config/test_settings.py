@@ -3,13 +3,13 @@ from __future__ import annotations
 from pathlib import Path
 
 import pytest
+from bb_paxdata.application.domain.enums import AIProvider, DatabaseMode, LogLevel
 from bb_paxdata.config.settings import (
     Settings,
     get_settings,
     override_settings,
     reset_settings,
 )
-from bb_paxdata.domain.enums import AIProvider, DatabaseMode, LogLevel
 
 
 class TestDefaultValues:

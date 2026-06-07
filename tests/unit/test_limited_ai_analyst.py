@@ -1,7 +1,7 @@
 from unittest.mock import AsyncMock, MagicMock
 
 import pytest
-from bb_paxdata.domain.models.ai_analysis import AIAnalysisResult
+from bb_paxdata.application.domain.models.ai_analysis import AIAnalysisResult
 from bb_paxdata.infrastructure.nlp.limited_ai_analyst import LimitedAIAnalyst
 
 

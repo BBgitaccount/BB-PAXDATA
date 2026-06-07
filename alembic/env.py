@@ -1,5 +1,6 @@
 """Alembic migration environment (SQLite batch mode, SQLAlchemy 2.0)."""
 
+import os
 import sys
 from logging.config import fileConfig
 
@@ -9,7 +10,7 @@ from sqlalchemy.engine import Connection
 from alembic import context
 
 # ── PATH AYARI ─────────────────────────────────────────────
-sys.path.insert(0, r"C:\Users\THINKPAD\Desktop\BB-PAXDATA\src")
+sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "src"))
 
 # ── METADATA IMPORT ────────────────────────────────────────
 import bb_paxdata.infrastructure.db.dki_table
@@ -18,6 +19,7 @@ import bb_paxdata.infrastructure.db.human_review_queue
 import bb_paxdata.infrastructure.db.human_review_table
 import bb_paxdata.infrastructure.db.model_evaluation
 import bb_paxdata.infrastructure.db.models
+import bb_paxdata.infrastructure.db.models.gat_embedding_table
 import bb_paxdata.infrastructure.db.sbi_table
 import bb_paxdata.infrastructure.db.topic_models  # noqa: F401
 from bb_paxdata.infrastructure.db.base import Base

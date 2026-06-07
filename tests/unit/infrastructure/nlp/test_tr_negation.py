@@ -1,6 +1,6 @@
 import pytest
 import spacy
-from bb_paxdata.domain.models.negation import LanguageCode, NegationType
+from bb_paxdata.application.domain.models.negation import LanguageCode, NegationType
 from bb_paxdata.infrastructure.nlp.negation_detector import SpacyNegationDetector
 
 

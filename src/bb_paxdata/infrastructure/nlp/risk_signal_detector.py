@@ -8,8 +8,8 @@ if TYPE_CHECKING:
 
 from spacy.tokens import Doc, Token
 
-from bb_paxdata.domain.enums.signal_type import SignalType
-from bb_paxdata.domain.models.risk_signal import RiskSignal
+from bb_paxdata.application.domain.enums.signal_type import SignalType
+from bb_paxdata.application.domain.models.risk_signal import RiskSignal
 
 
 class RiskSignalDetector:

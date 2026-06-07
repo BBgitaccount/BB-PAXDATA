@@ -5,7 +5,7 @@ from __future__ import annotations
 from collections.abc import Callable
 
 import pytest
-from bb_paxdata.domain.models.sentence import Sentence
+from bb_paxdata.application.domain.models.sentence import Sentence
 from bb_paxdata.infrastructure.db.repositories.sentence import SentenceRepository
 from bb_paxdata.infrastructure.db.repositories.unit_of_work import SqlAlchemyUnitOfWork
 from sqlalchemy.ext.asyncio import AsyncSession

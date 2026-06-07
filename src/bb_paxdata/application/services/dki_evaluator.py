@@ -8,9 +8,9 @@ import time
 from typing import Any, Callable
 
 import structlog
-from bb_paxdata.domain.services.prompt_registry import PromptRegistry
-from bb_paxdata.domain.services.protocols import AIAnalystProtocol
-from bb_paxdata.domain.services.protocols.judge_protocols import (
+from bb_paxdata.application.domain.services.prompt_registry import PromptRegistry
+from bb_paxdata.application.domain.services.protocols import AIAnalystProtocol
+from bb_paxdata.application.domain.services.protocols.judge_protocols import (
     BaselineMetrics,
     JudgeProtocol,
     JudgeVerdict,

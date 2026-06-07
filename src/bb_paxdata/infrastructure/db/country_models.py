@@ -21,10 +21,12 @@ from sqlalchemy.dialects.sqlite import JSON
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column
 
 if TYPE_CHECKING:
-    from bb_paxdata.domain.models.bilateral_sentiment import BilateralSentiment
-    from bb_paxdata.domain.models.country_reference import CountryReference
-    from bb_paxdata.domain.models.discourse_flow import DiscourseFlow
-    from bb_paxdata.domain.models.topic_synthesis import TopicSynthesis
+    from bb_paxdata.application.domain.models.bilateral_sentiment import (
+        BilateralSentiment,
+    )
+    from bb_paxdata.application.domain.models.country_reference import CountryReference
+    from bb_paxdata.application.domain.models.discourse_flow import DiscourseFlow
+    from bb_paxdata.application.domain.models.topic_synthesis import TopicSynthesis
 
 
 class Base(DeclarativeBase):
@@ -62,10 +64,10 @@ class CountryReferenceTable(Base):
     )
 
     def to_domain(self) -> CountryReference:
-        from bb_paxdata.domain.enums.country_enums import (
+        from bb_paxdata.application.domain.enums.country_enums import (
             ReferenceContext,
         )
-        from bb_paxdata.domain.models.country_reference import (
+        from bb_paxdata.application.domain.models.country_reference import (
             CountryReference,
         )
 
@@ -148,10 +150,10 @@ class BilateralSentimentTable(Base):
     )
 
     def to_domain(self) -> BilateralSentiment:
-        from bb_paxdata.domain.enums.country_enums import (
+        from bb_paxdata.application.domain.enums.country_enums import (
             RelationshipType,
         )
-        from bb_paxdata.domain.models.bilateral_sentiment import (
+        from bb_paxdata.application.domain.models.bilateral_sentiment import (
             BilateralSentiment,
         )
 
@@ -218,10 +220,20 @@ class DiscourseFlowTable(Base):
         Integer, nullable=False, default=0
     )
     cooperative_count: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
+    narrative_layer: Mapped[str | None] = mapped_column(String(50), nullable=True)
+    narrative_target_actor: Mapped[str | None] = mapped_column(
+        String(100), nullable=True
+    )
+    narrative_salience: Mapped[float] = mapped_column(
+        Float, nullable=False, default=0.0
+    )
 
     def to_domain(self) -> DiscourseFlow:
-        from bb_paxdata.domain.enums.country_enums import EdgeType
-        from bb_paxdata.domain.models.discourse_flow import (
+        from bb_paxdata.application.domain.enums.country_enums import (
+            EdgeType,
+            NarrativeLayer,
+        )
+        from bb_paxdata.application.domain.models.discourse_flow import (
             DiscourseFlow,
         )
 
@@ -235,6 +247,11 @@ class DiscourseFlowTable(Base):
             sentiment_toward=self.sentiment_toward,
             confrontational_count=self.confrontational_count,
             cooperative_count=self.cooperative_count,
+            narrative_layer=(
+                NarrativeLayer(self.narrative_layer) if self.narrative_layer else None
+            ),
+            narrative_target_actor=self.narrative_target_actor,
+            narrative_salience=self.narrative_salience,
         )
 
     @classmethod
@@ -249,6 +266,11 @@ class DiscourseFlowTable(Base):
             sentiment_toward=entity.sentiment_toward,
             confrontational_count=entity.confrontational_count,
             cooperative_count=entity.cooperative_count,
+            narrative_layer=(
+                entity.narrative_layer.value if entity.narrative_layer else None
+            ),
+            narrative_target_actor=entity.narrative_target_actor,
+            narrative_salience=entity.narrative_salience,
         )
 
 
@@ -268,7 +290,7 @@ class TopicMatrixTable(Base):
     topic_details: Mapped[dict[str, Any] | None] = mapped_column(JSON, nullable=True)
 
     def to_domain(self) -> TopicSynthesis:
-        from bb_paxdata.domain.models.topic_synthesis import (
+        from bb_paxdata.application.domain.models.topic_synthesis import (
             TopicSynthesis,
         )
 

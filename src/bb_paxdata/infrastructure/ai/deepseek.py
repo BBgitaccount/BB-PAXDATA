@@ -188,7 +188,7 @@ class DeepSeekClient(AIClient):
                 headers=headers,
                 timeout=10.0,
             )
-            return bool(response.status_code == 200)
+            return response.status_code == 200
         except Exception as e:
             logger.warning("DeepSeek health check failed", error=str(e))
             return False

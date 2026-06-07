@@ -1,7 +1,7 @@
 """
 AIAnomalyController — LLM-as-a-Judge semantik anomali denetçisi.
 
-Deterministik CrossAnomalyServiceImpl sonuçlarını semantik olarak
+Deterministik CrossAnomalyService sonuçlarını semantik olarak
 doğrular, false positive'leri filtreler ve derin semantik anomalileri
 yakalar.
 """
@@ -12,12 +12,12 @@ import asyncio
 import logging
 from typing import TYPE_CHECKING, Any
 
-from bb_paxdata.domain.models.anomaly import (
+from bb_paxdata.application.domain.models.anomaly import (
     AnomalyResult,
     AnomalyValidationDecision,
     AnomalyValidationResult,
 )
-from bb_paxdata.domain.models.sentence import Sentence
+from bb_paxdata.application.domain.models.sentence import Sentence
 from bb_paxdata.infrastructure.ai.base import CompletionOptions
 
 if TYPE_CHECKING:

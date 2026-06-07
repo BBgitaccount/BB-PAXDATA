@@ -164,7 +164,7 @@ class OllamaClient(AIClient):
                 f"{self._base_url}/api/tags",
                 timeout=10.0,
             )
-            return bool(response.status_code == 200)
+            return response.status_code == 200
         except Exception as e:
             logger.warning("Ollama health check failed", error=str(e))
             return False

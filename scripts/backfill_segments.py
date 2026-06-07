@@ -8,9 +8,9 @@ from sqlalchemy.orm import joinedload
 # Add src to python path
 sys.path.insert(0, str(Path(__file__).parent.parent / "src"))
 
+from bb_paxdata.application.domain.services.framing_service import FramingService
+from bb_paxdata.application.domain.services.ner_service import SpacyNERService
 from bb_paxdata.config.settings import get_settings
-from bb_paxdata.domain.services.framing_service import FramingService
-from bb_paxdata.domain.services.ner_service import SpacyNERService
 from bb_paxdata.infrastructure.db.models import Segment, Sentence
 from bb_paxdata.infrastructure.db.segment_enrichment_gateway import (
     SegmentEnrichmentGateway,
@@ -65,7 +65,7 @@ async def backfill():
                 # dominant_frame backfill
                 if s.dominant_frame is None:
                     try:
-                        from bb_paxdata.domain.models.sentence import (
+                        from bb_paxdata.application.domain.models.sentence import (
                             Sentence as SentenceDomainModel,
                         )
 

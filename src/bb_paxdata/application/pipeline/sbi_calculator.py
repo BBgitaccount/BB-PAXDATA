@@ -6,11 +6,11 @@ from typing import TYPE_CHECKING, Any
 
 import numpy as np
 import structlog
-from bb_paxdata.domain.models.sbi_models import (
+from bb_paxdata.application.domain.models.sbi_models import (
     SBIResult,
     SpeakerPosition,
 )
-from bb_paxdata.domain.services.sbi_protocols import (
+from bb_paxdata.application.domain.services.sbi_protocols import (
     EngagementScorerProtocol,
     StanceDensityProtocol,
     WordfishProtocol,
@@ -19,7 +19,10 @@ from bb_paxdata.domain.services.sbi_protocols import (
 from sklearn.feature_extraction.text import CountVectorizer
 
 if TYPE_CHECKING:
-    from bb_paxdata.domain.models.analysis import Analysis
+    from bb_paxdata.application.domain.models.analysis import Analysis
+    from bb_paxdata.application.domain.ports.i_gat_embedding_repository import (
+        IGATEmbeddingRepository,
+    )
 
 logger = structlog.get_logger(__name__)
 
@@ -30,6 +33,9 @@ class SBICalculator:
 
     Integrates multiple NLP services to produce a composite latent position
     and engagement profile for each speaker.
+
+    (M-05) IGATEmbeddingRepository injected via constructor — domain service
+    does NOT query DB directly. Clean Architecture DIP preserved.
     """
 
     def __init__(
@@ -39,19 +45,24 @@ class SBICalculator:
         engagement: EngagementScorerProtocol,
         wordscores: WordscoresProtocol | None = None,
         weights: tuple[float, float, float] = (0.6, 0.25, 0.15),
+        gat_repo: IGATEmbeddingRepository | None = None,
     ):
         self.wordfish = wordfish
         self.stance = stance
         self.engagement = engagement
         self.wordscores = wordscores
         self.weights = weights
+        self._gat_repo = gat_repo
 
-    async def compute(self, analyses: Sequence[Analysis]) -> SBIResult:
+    async def compute(
+        self, analyses: Sequence[Analysis], session_id: str = "session_default"
+    ) -> SBIResult:
         """
         Orchestrate parallel computation of SBI components.
 
         Args:
             analyses: Sequence of Analysis objects representing speaker contributions.
+            session_id: Session identifier for the speaker positions.
 
         Returns:
             SBIResult containing SpeakerPosition for each unique speaker.
@@ -133,7 +144,7 @@ class SBICalculator:
 
             pos = SpeakerPosition(
                 speaker_id=sid,
-                session_id="session_default",  # Can be extracted from metadata if available
+                session_id=session_id,
                 wordfish_theta=theta,
                 stance_density=stance,
                 engagement_score=engagement,

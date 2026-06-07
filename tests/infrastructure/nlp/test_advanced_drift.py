@@ -1,4 +1,4 @@
-from bb_paxdata.domain.services.drift_algorithms import (
+from bb_paxdata.application.domain.services.drift_algorithms import (
     calculate_entity_salience_half_life,
     calculate_lexical_entropy,
     calculate_mtld,

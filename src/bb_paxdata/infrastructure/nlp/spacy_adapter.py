@@ -7,7 +7,7 @@ if TYPE_CHECKING:
 
 from spacy.tokens import Doc
 
-from bb_paxdata.domain.models.sentence import Sentence
+from bb_paxdata.application.domain.models.sentence import Sentence
 from bb_paxdata.infrastructure.nlp.negation_detector import SpacyNegationDetector
 
 

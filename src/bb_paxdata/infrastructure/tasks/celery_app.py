@@ -14,6 +14,7 @@ app = Celery(
         "bb_paxdata.infrastructure.tasks.graph_tasks",
         "bb_paxdata.infrastructure.webhooks.tasks",
         "bb_paxdata.infrastructure.export.tasks",
+        "bb_paxdata.infrastructure.tasks.consensus_tasks",  # CORRECTED (E05-M-05)
     ],
 )
 

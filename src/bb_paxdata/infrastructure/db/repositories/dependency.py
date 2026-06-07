@@ -7,7 +7,10 @@ from typing import cast
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from bb_paxdata.domain.models.dependency import ActorActionMatrix, DependencyTriple
+from bb_paxdata.application.domain.models.dependency import (
+    ActorActionMatrix,
+    DependencyTriple,
+)
 from bb_paxdata.infrastructure.db.models import (
     ActorActionMatrixORM,
     DependencyTripleORM,

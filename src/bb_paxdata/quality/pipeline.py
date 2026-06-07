@@ -9,7 +9,7 @@ from sqlalchemy.orm import Session
 
 from tests.fixtures.golden_dataset import GoldenDataset
 
-from ..domain.services.temporal import TemporalAnalyzer
+from ..application.domain.services.temporal import TemporalAnalyzer
 from .data_contract import DataContractValidator, ValidationResult
 from .evaluator import QualityEvaluator, QualityReport
 from .review_queue import ReviewFlagger, ReviewQueueManager

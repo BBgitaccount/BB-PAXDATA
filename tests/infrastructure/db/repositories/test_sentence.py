@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from bb_paxdata.domain.models.sentence import Sentence
+from bb_paxdata.application.domain.models.sentence import Sentence
 from bb_paxdata.infrastructure.db.repositories.sentence import SentenceRepository
 from sqlalchemy.ext.asyncio import AsyncSession
 

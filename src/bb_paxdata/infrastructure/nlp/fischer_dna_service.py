@@ -9,7 +9,8 @@ from decimal import Decimal
 import structlog
 from pydantic import BaseModel
 
-from bb_paxdata.domain.models.discourse_network import DiscourseFlow, NetworkEdge
+from bb_paxdata.application.domain.models.discourse_flow import NetworkEdge
+from bb_paxdata.application.domain.models.discourse_network import DiscourseFlow
 
 logger = structlog.get_logger()
 
@@ -135,6 +136,6 @@ class FischerDNAService:
 
         return {
             "veto_player_count": float(len(veto_players)),
-            "ideological_polarization_index": float(ideological_polarization_index),
-            "policy_stability_score": float(policy_stability_score),
+            "ideological_polarization_index": ideological_polarization_index,
+            "policy_stability_score": policy_stability_score,
         }

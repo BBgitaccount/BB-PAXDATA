@@ -1,8 +1,8 @@
 from datetime import datetime, timezone
 
 import pytest
-from bb_paxdata.domain.models.calibration import CalibrationReport
-from bb_paxdata.domain.models.human_review import (
+from bb_paxdata.application.domain.models.calibration import CalibrationReport
+from bb_paxdata.application.domain.models.human_review import (
     AgreementStatus,
     HumanReview,
     RiskLevel,

@@ -3,8 +3,10 @@ import tempfile
 from pathlib import Path
 
 import pytest
-from bb_paxdata.domain.services.cross_anomaly_service import CrossAnomalyService
-from bb_paxdata.domain.services.rule_registry import RuleRegistry
+from bb_paxdata.application.domain.services.cross_anomaly_service import (
+    CrossAnomalyService,
+)
+from bb_paxdata.application.domain.services.rule_registry import RuleRegistry
 
 
 @pytest.fixture

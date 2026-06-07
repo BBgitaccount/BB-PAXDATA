@@ -12,13 +12,13 @@ import asyncio
 from typing import TYPE_CHECKING, Final
 
 import structlog
-from bb_paxdata.domain.enums.frame_type import FrameType
-from bb_paxdata.domain.models.frame_annotation import (
+from bb_paxdata.application.domain.enums.frame_type import FrameType
+from bb_paxdata.application.domain.models.frame_annotation import (
     CueMatch,
     FrameAnnotation,
     FrameSalienceResult,
 )
-from bb_paxdata.domain.models.segment import Segment
+from bb_paxdata.application.domain.models.segment import Segment
 from bb_paxdata.infrastructure.ai.frame_detection.frame_lexicon_service import (
     FrameLexiconService,
 )

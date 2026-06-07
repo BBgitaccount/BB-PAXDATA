@@ -6,7 +6,7 @@ from typing import Any, Callable, Sequence
 
 import numpy as np
 import structlog
-from bb_paxdata.domain.services.protocols.rag_protocols import (
+from bb_paxdata.application.domain.services.protocols.rag_protocols import (
     DenseRetrieverProtocol,
     RAGQueryRequest,
     RetrievedContext,

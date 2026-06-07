@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import os
 from datetime import datetime, timedelta, timezone
-from typing import Any, cast
+from typing import Any
 
 try:
     import jwt
@@ -44,7 +44,7 @@ def create_jwt(
     token = jwt.encode(payload, _SECRET_KEY, algorithm=_ALGORITHM)
     if isinstance(token, bytes):
         return token.decode("utf-8")
-    return cast(str, token)
+    return token
 
 
 def decode_jwt(token: str) -> dict[str, Any]:

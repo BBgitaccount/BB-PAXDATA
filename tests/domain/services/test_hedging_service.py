@@ -1,7 +1,7 @@
 """Unit tests for HedgingService."""
 
-from bb_paxdata.domain.enums import HedgeType
-from bb_paxdata.domain.services.hedging_service import HedgingService
+from bb_paxdata.application.domain.enums import HedgeType
+from bb_paxdata.application.domain.services.hedging_service import HedgingService
 
 
 class TestHedgingService:

@@ -1,8 +1,8 @@
 # tests/domain/test_country_models.py
 import pytest
-from bb_paxdata.domain.enums.country_enums import RelationshipType
-from bb_paxdata.domain.models.bilateral_sentiment import BilateralSentiment
-from bb_paxdata.domain.models.topic_synthesis import TopicSynthesis
+from bb_paxdata.application.domain.enums.country_enums import RelationshipType
+from bb_paxdata.application.domain.models.bilateral_sentiment import BilateralSentiment
+from bb_paxdata.application.domain.models.topic_synthesis import TopicSynthesis
 
 
 def test_bilateral_sentiment_immutability() -> None:

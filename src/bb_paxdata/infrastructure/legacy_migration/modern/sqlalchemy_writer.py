@@ -1,6 +1,9 @@
 from __future__ import annotations
 
-from bb_paxdata.domain.entities.legacy import LegacyAnalyticIndex, LegacyTranscript
+from bb_paxdata.application.domain.entities.legacy import (
+    LegacyAnalyticIndex,
+    LegacyTranscript,
+)
 from bb_paxdata.infrastructure.legacy_migration.models import (
     AnalyticModel,
     TranscriptModel,

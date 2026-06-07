@@ -1,8 +1,10 @@
 import pytest
-from bb_paxdata.domain.enums.negation_type import NegationType
-from bb_paxdata.domain.models.analysis import Analysis
-from bb_paxdata.domain.models.negation_cue import NegationCue
-from bb_paxdata.domain.services.cross_anomaly_service import SentimentRiskDivergenceRule
+from bb_paxdata.application.domain.enums.negation_type import NegationType
+from bb_paxdata.application.domain.models.analysis import Analysis
+from bb_paxdata.application.domain.models.negation_cue import NegationCue
+from bb_paxdata.application.domain.services.cross_anomaly_service import (
+    SentimentRiskDivergenceRule,
+)
 
 
 @pytest.mark.asyncio

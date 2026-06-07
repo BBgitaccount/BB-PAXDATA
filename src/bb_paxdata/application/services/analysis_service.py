@@ -52,8 +52,6 @@ async def run_sentence_analysis(
         ),
         "ai_diplomatic_tone": getattr(analysis, "ai_diplomatic_tone", "neutral"),
         "coherence_score": getattr(analysis, "coherence_score", 1.0),
-        "framing": (
-            str(analysis.framing) if getattr(analysis, "framing", None) else None
-        ),
+        "framing": (analysis.framing if getattr(analysis, "framing", None) else None),
         "logic_result": "FAIL" if getattr(analysis, "anomaly_flags", None) else "PASS",
     }

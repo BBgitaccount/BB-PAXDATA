@@ -7,6 +7,9 @@ from datetime import datetime, timezone
 from enum import Enum
 from typing import TYPE_CHECKING, Any, TypeVar, cast
 
+if TYPE_CHECKING:
+    from bb_paxdata.application.domain.models.argument import ArgumentGraph
+
 from pgvector.sqlalchemy import Vector
 from sqlalchemy import (
     JSON,
@@ -25,29 +28,29 @@ from sqlalchemy import (
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 from sqlalchemy.sql.sqltypes import Enum as SQLEnum
 
-from bb_paxdata.domain.enums.demand_category import DemandCategory
-from bb_paxdata.domain.enums.relationship_type import RelationshipType
-from bb_paxdata.domain.enums.risk_level import RiskLevel
+from bb_paxdata.application.domain.enums.demand_category import DemandCategory
+from bb_paxdata.application.domain.enums.relationship_type import RelationshipType
+from bb_paxdata.application.domain.enums.risk_level import RiskLevel
 from bb_paxdata.infrastructure.db.base import Base
 from bb_paxdata.infrastructure.db.discourse_network_table import (
     DiscourseNetworkEdgeTable,
 )
 
 if TYPE_CHECKING:
-    from bb_paxdata.domain.enums import (
+    from bb_paxdata.application.domain.enums import (
         EvidenceType,
         LogLevel,
     )
-    from bb_paxdata.domain.models.analysis import Analysis
-    from bb_paxdata.domain.models.demand import Demand
-    from bb_paxdata.domain.models.metadata import Metadata
-    from bb_paxdata.domain.models.relationship import Relationship
-    from bb_paxdata.domain.models.segment import Segment as SegmentDomain
-    from bb_paxdata.domain.models.sentence import Sentence as SentenceDomain
-    from bb_paxdata.domain.models.speaker import Speaker as SpeakerDomain
-    from bb_paxdata.domain.models.topic import Topic
-    from bb_paxdata.domain.models.transcript import Transcript
-    from bb_paxdata.domain.models.validation_result import ValidationResult
+    from bb_paxdata.application.domain.models.analysis import Analysis
+    from bb_paxdata.application.domain.models.demand import Demand
+    from bb_paxdata.application.domain.models.metadata import Metadata
+    from bb_paxdata.application.domain.models.relationship import Relationship
+    from bb_paxdata.application.domain.models.segment import Segment as SegmentDomain
+    from bb_paxdata.application.domain.models.sentence import Sentence as SentenceDomain
+    from bb_paxdata.application.domain.models.speaker import Speaker as SpeakerDomain
+    from bb_paxdata.application.domain.models.topic import Topic
+    from bb_paxdata.application.domain.models.transcript import Transcript
+    from bb_paxdata.application.domain.models.validation_result import ValidationResult
 
 E = TypeVar("E", bound=Enum)
 
@@ -143,7 +146,7 @@ class File(Base):
     )
 
     def to_domain(self) -> Transcript:
-        from bb_paxdata.domain.models.transcript import Transcript
+        from bb_paxdata.application.domain.models.transcript import Transcript
 
         return Transcript(
             id=self.file_id,
@@ -255,8 +258,14 @@ class SpeakerProfile(Base):
     segments: Mapped[list[Segment]] = relationship(back_populates="speaker")
 
     def to_domain(self) -> SpeakerDomain:
-        from bb_paxdata.domain.enums import BlocType, InfluenceTier, SpeakerRole
-        from bb_paxdata.domain.models.speaker import Speaker as SpeakerDomainModel
+        from bb_paxdata.application.domain.enums import (
+            BlocType,
+            InfluenceTier,
+            SpeakerRole,
+        )
+        from bb_paxdata.application.domain.models.speaker import (
+            Speaker as SpeakerDomainModel,
+        )
 
         desc_parts: list[str] = []
         if self.title:
@@ -293,7 +302,7 @@ class SpeakerProfile(Base):
 
     @classmethod
     def from_domain(cls, model: Any) -> SpeakerProfile:
-        from bb_paxdata.domain.models.metadata import Metadata
+        from bb_paxdata.application.domain.models.metadata import Metadata
 
         if isinstance(model, Metadata):
             cf = model.custom_fields or {}
@@ -423,13 +432,15 @@ class Segment(Base):
         return self.seg_id
 
     def to_domain(self) -> SegmentDomain:
-        from bb_paxdata.domain.enums import (
+        from bb_paxdata.application.domain.enums import (
             AudienceType,
             EvidenceType,
             FrameType,
             TopicCategory,
         )
-        from bb_paxdata.domain.models.segment import Segment as SegmentDomainModel
+        from bb_paxdata.application.domain.models.segment import (
+            Segment as SegmentDomainModel,
+        )
 
         return SegmentDomainModel(
             id=self.seg_id,
@@ -606,7 +617,7 @@ class Sentence(Base):
         return self.seg_id
 
     def to_domain(self) -> SentenceDomain:
-        from bb_paxdata.domain.enums import (
+        from bb_paxdata.application.domain.enums import (
             AppraisalAttitude,
             AudienceType,
             EvidenceType,
@@ -614,7 +625,9 @@ class Sentence(Base):
             SentimentCategory,
             TopicCategory,
         )
-        from bb_paxdata.domain.models.sentence import Sentence as SentenceDomainModel
+        from bb_paxdata.application.domain.models.sentence import (
+            Sentence as SentenceDomainModel,
+        )
 
         ev_raw = _evidence_list(self.evidence_types)
         evidence_enums: list[EvidenceType] | None = None
@@ -747,7 +760,7 @@ class Word(Base):
     is_named_entity: Mapped[bool] = mapped_column(Boolean, default=False)
 
     def to_domain(self) -> Metadata:
-        from bb_paxdata.domain.models.metadata import Metadata
+        from bb_paxdata.application.domain.models.metadata import Metadata
 
         return Metadata(
             id=f"word:{self.word_id}",
@@ -815,7 +828,7 @@ class CountryReference(Base):
     context_snippet: Mapped[str | None] = mapped_column(Text, nullable=True)
 
     def to_domain(self) -> Metadata:
-        from bb_paxdata.domain.models.metadata import Metadata
+        from bb_paxdata.application.domain.models.metadata import Metadata
 
         return Metadata(
             id=f"country_ref:{self.ref_id}",
@@ -876,7 +889,7 @@ class CountryStat(Base):
     )
 
     def to_domain(self) -> Metadata:
-        from bb_paxdata.domain.models.metadata import Metadata
+        from bb_paxdata.application.domain.models.metadata import Metadata
 
         return Metadata(
             id=f"country_stat:{self.country}:{self.file_id}",
@@ -931,8 +944,8 @@ class TopicMatrix(Base):
     dominant_frame: Mapped[str | None] = mapped_column(Text, nullable=True)
 
     def to_domain(self) -> Topic:
-        from bb_paxdata.domain.enums import TopicCategory
-        from bb_paxdata.domain.models.topic import Topic as TopicModel
+        from bb_paxdata.application.domain.enums import TopicCategory
+        from bb_paxdata.application.domain.models.topic import Topic as TopicModel
 
         cat = _try_enum(TopicCategory, self.topic) or TopicCategory.NONE
         return TopicModel(
@@ -1000,8 +1013,8 @@ class CountryPairSentiment(Base):
     diplomatic_distance: Mapped[float] = mapped_column(Float, default=0)
 
     def to_domain(self) -> Relationship:
-        from bb_paxdata.domain.enums import RelationshipType
-        from bb_paxdata.domain.models.relationship import (
+        from bb_paxdata.application.domain.enums import RelationshipType
+        from bb_paxdata.application.domain.models.relationship import (
             Relationship as RelationshipModel,
         )
 
@@ -1095,8 +1108,8 @@ class DemandRecord(Base):
     diplo_compound: Mapped[float] = mapped_column(Float, default=0)
 
     def to_domain(self) -> Demand:
-        from bb_paxdata.domain.enums import DemandCategory, DemandType
-        from bb_paxdata.domain.models.demand import Demand as DemandModel
+        from bb_paxdata.application.domain.enums import DemandCategory, DemandType
+        from bb_paxdata.application.domain.models.demand import Demand as DemandModel
 
         dt = _try_enum(DemandType, self.demand_type) or DemandType.INTENTION
         dc = (
@@ -1199,7 +1212,7 @@ class PatternRecord(Base):
     )
 
     def to_domain(self) -> Metadata:
-        from bb_paxdata.domain.models.metadata import Metadata
+        from bb_paxdata.application.domain.models.metadata import Metadata
 
         return Metadata(
             id=f"pattern:{self.pattern_id}",
@@ -1262,7 +1275,7 @@ class FileDynamics(Base):
     )
 
     def to_domain(self) -> Metadata:
-        from bb_paxdata.domain.models.metadata import Metadata
+        from bb_paxdata.application.domain.models.metadata import Metadata
 
         return Metadata(
             id=f"panel_dyn:{self.dyn_id}",
@@ -1311,7 +1324,14 @@ class FileDynamics(Base):
 
 class DiscourseNetworkEdge(Base):
     __tablename__ = "discourse_network_edges_legacy"
-    __table_args__ = (Index("idx_net_from", "from_country"),)
+    __table_args__ = (
+        Index("idx_net_from", "from_country"),
+        Index("idx_net_to", "to_country"),
+        Index("idx_net_predicate", "predicate"),  # NEW: Query by action
+        Index("idx_net_bilateral", "from_country", "to_country"),  # NEW: Composite
+        CheckConstraint("weight >= 0", name="ck_weight_non_negative"),
+        {"comment": "Bilateral discourse relationships enriched with SRL semantics"},
+    )
 
     edge_id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
     file_id: Mapped[str | None] = mapped_column(
@@ -1324,15 +1344,67 @@ class DiscourseNetworkEdge(Base):
     edge_type: Mapped[str | None] = mapped_column(Text, nullable=True)
     power_source: Mapped[int] = mapped_column(Integer, default=0)
 
+    # === SRL Enrichment Fields (Phase 2+) ===
+    predicate: Mapped[str | None] = mapped_column(
+        Text,
+        nullable=True,
+        comment='Extracted predicate/verb from SRL frame (e.g., "reject", "support")',
+    )
+    arg1_entity: Mapped[str | None] = mapped_column(
+        Text, nullable=True, comment="ARG1/Patient entity text (target of action)"
+    )
+    arg0_entity: Mapped[str | None] = mapped_column(  # NEW: Also store actor
+        Text, nullable=True, comment="ARG0/Agent entity text (actor performing action)"
+    )
+    srl_frame_json: Mapped[str | None] = mapped_column(  # NEW: Full frame serialization
+        Text, nullable=True, comment="Complete SRL frame as JSON for advanced queries"
+    )
+    srl_confidence: Mapped[float | None] = mapped_column(  # NEW: Quality score
+        Float, nullable=True, comment="SRL extraction confidence score (0-1)"
+    )
+    is_negated: Mapped[bool | None] = mapped_column(  # NEW: Negation flag
+        Boolean,
+        nullable=True,
+        default=False,
+        comment="True if action was negated in source text",
+    )
+    srl_extracted_at: Mapped[datetime | None] = mapped_column(  # NEW: Audit trail
+        DateTime,
+        nullable=True,
+        default=func.now(),
+        comment="Timestamp when SRL enrichment was applied",
+    )
+
     def to_domain(self) -> Metadata:
-        from bb_paxdata.domain.models.metadata import Metadata
+        """Enhanced domain mapping with SRL fields."""
+        from bb_paxdata.application.domain.models.metadata import Metadata
+
+        custom_fields = {
+            "from_country": self.from_country,
+            "to_country": self.to_country,
+            "weight": self.weight,
+            "edge_type": self.edge_type,
+            # SRL enrichments
+            "predicate": self.predicate,
+            "arg0_entity": self.arg0_entity,
+            "arg1_entity": self.arg1_entity,
+            "is_negated": self.is_negated,
+            "srl_confidence": self.srl_confidence,
+        }
+
+        # Parse JSON frame if present
+        if self.srl_frame_json:
+            try:
+                custom_fields["srl_frame"] = json.loads(self.srl_frame_json)
+            except json.JSONDecodeError:
+                pass
 
         return Metadata(
             id=f"discourse_edge:{self.edge_id}",
             entity_id=str(self.edge_id),
             entity_type="discourse_network_edge",
-            title=f"Discourse Edge {self.edge_id}",
-            description=f"{self.from_country} -> {self.to_country}",
+            title=f"{self.from_country} → {self.to_country}: {self.predicate or 'unknown'}",
+            description=f"Bilateral edge: {self.from_country} [{self.predicate}] {self.to_country}",
             category=None,
             subcategory=None,
             source=None,
@@ -1345,23 +1417,30 @@ class DiscourseNetworkEdge(Base):
             processing_version=None,
             access_level=None,
             expires_at=None,
-            custom_fields={
-                "from_country": self.from_country,
-                "to_country": self.to_country,
-                "weight": self.weight,
-                "edge_type": self.edge_type,
-            },
+            custom_fields=custom_fields,
         )
 
     @classmethod
     def from_domain(cls, model: Metadata) -> DiscourseNetworkEdge:
         cf = model.custom_fields or {}
-        return cls(
+        instance = cls(
             from_country=str(cf["from_country"]),
             to_country=str(cf["to_country"]),
             weight=float(cf.get("weight") or 1),
             edge_type=cf.get("edge_type"),
         )
+        if "predicate" in cf:
+            instance.predicate = cf.get("predicate")
+            instance.arg0_entity = cf.get("arg0_entity")
+            instance.arg1_entity = cf.get("arg1_entity")
+            instance.is_negated = cf.get("is_negated", False)
+            instance.srl_confidence = cf.get("srl_confidence")
+            if "srl_frame" in cf:
+                instance.srl_frame_json = json.dumps(
+                    cf.get("srl_frame"), ensure_ascii=False
+                )
+            instance.srl_extracted_at = datetime.utcnow()
+        return instance
 
 
 class AISentenceAnalysis(Base):
@@ -1494,12 +1573,25 @@ class AISentenceAnalysis(Base):
     processed_at: Mapped[datetime | None] = mapped_column(
         DateTime, server_default=func.now(), nullable=True
     )
+    speech_act_json: Mapped[dict | None] = mapped_column(JSON, nullable=True)
+
+    @property
+    def speech_act_domain(self):
+        if self.speech_act_json is None:
+            return None
+        from bb_paxdata.application.domain.models.speech_act import (
+            SpeechActClassification,
+        )
+
+        return SpeechActClassification.model_validate(self.speech_act_json)
 
     sentence: Mapped[Sentence | None] = relationship(back_populates="ai_analysis")
 
     def to_domain(self) -> Analysis:
-        from bb_paxdata.domain.enums import RiskLevel
-        from bb_paxdata.domain.models.analysis import Analysis as AnalysisModel
+        from bb_paxdata.application.domain.enums import RiskLevel
+        from bb_paxdata.application.domain.models.analysis import (
+            Analysis as AnalysisModel,
+        )
 
         rl = (
             _try_enum(RiskLevel, self.risk_level)
@@ -1533,6 +1625,7 @@ class AISentenceAnalysis(Base):
             detailed_findings=None,
             recommendations=[],
             framing=self.framing or self.ai_frame_type,
+            speech_act=self.speech_act_domain,
         )
 
     @classmethod
@@ -1559,6 +1652,7 @@ class AISentenceAnalysis(Base):
             anomaly_detected_subtype=(
                 consensus.ai_result.detected_subtype if consensus else None
             ),
+            speech_act_json=model.speech_act.model_dump() if model.speech_act else None,
         )
 
 
@@ -1590,7 +1684,7 @@ class AIValidationLog(Base):
     )
 
     def to_domain(self) -> ValidationResult:
-        from bb_paxdata.domain.models.validation_result import (
+        from bb_paxdata.application.domain.models.validation_result import (
             ValidationResult as VR,
         )
 
@@ -1682,7 +1776,7 @@ class AISegmentInsight(Base):
     segment: Mapped[Segment] = relationship(back_populates="ai_insight")
 
     def to_domain(self) -> Metadata:
-        from bb_paxdata.domain.models.metadata import Metadata
+        from bb_paxdata.application.domain.models.metadata import Metadata
 
         return Metadata(
             id=f"ai_seg_insight:{self.insight_id}",
@@ -1728,7 +1822,7 @@ class AICache(Base):
     )
 
     def to_domain(self) -> Metadata:
-        from bb_paxdata.domain.models.metadata import Metadata
+        from bb_paxdata.application.domain.models.metadata import Metadata
 
         return Metadata(
             id=f"ai_cache:{self.hash}",
@@ -1790,7 +1884,7 @@ class AIContextualFlag(Base):
     )
 
     def to_domain(self) -> Metadata:
-        from bb_paxdata.domain.models.metadata import Metadata
+        from bb_paxdata.application.domain.models.metadata import Metadata
 
         return Metadata(
             id=f"ai_flag:{self.flag_id}",
@@ -1880,7 +1974,7 @@ class AIDemandAnalysis(Base):
     demand_record: Mapped[DemandRecord | None] = relationship()
 
     def to_domain(self) -> Metadata:
-        from bb_paxdata.domain.models.metadata import Metadata
+        from bb_paxdata.application.domain.models.metadata import Metadata
 
         return Metadata(
             id=f"ai_demand:{self.ai_demand_id}",
@@ -1935,7 +2029,7 @@ class AIPanelSynthesis(Base):
     )
 
     def to_domain(self) -> Metadata:
-        from bb_paxdata.domain.models.metadata import Metadata
+        from bb_paxdata.application.domain.models.metadata import Metadata
 
         return Metadata(
             id=f"ai_panel_synth:{self.synthesis_id}",
@@ -2045,7 +2139,7 @@ class AIFailAnalysis(Base):
     )
 
     def to_domain(self) -> Metadata:
-        from bb_paxdata.domain.models.metadata import Metadata
+        from bb_paxdata.application.domain.models.metadata import Metadata
 
         return Metadata(
             id=f"ai_fail:{self.fail_id}",
@@ -2105,7 +2199,7 @@ class AIFailPattern(Base):
     last_seen_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
 
     def to_domain(self) -> Metadata:
-        from bb_paxdata.domain.models.metadata import Metadata
+        from bb_paxdata.application.domain.models.metadata import Metadata
 
         return Metadata(
             id=f"ai_fail_pattern:{self.pattern_id}",
@@ -2160,7 +2254,7 @@ class AIFailAnomalyCross(Base):
     )
 
     def to_domain(self) -> Metadata:
-        from bb_paxdata.domain.models.metadata import Metadata
+        from bb_paxdata.application.domain.models.metadata import Metadata
 
         return Metadata(
             id=f"ai_fail_cross:{self.cross_id}",
@@ -2208,7 +2302,7 @@ class AIFailCache(Base):
     )
 
     def to_domain(self) -> Metadata:
-        from bb_paxdata.domain.models.metadata import Metadata
+        from bb_paxdata.application.domain.models.metadata import Metadata
 
         return Metadata(
             id=f"ai_fail_cache:{self.hash}",
@@ -2392,7 +2486,7 @@ class FormulaValidationLog(Base):
     )
 
     def to_domain(self) -> Metadata:
-        from bb_paxdata.domain.models.metadata import Metadata
+        from bb_paxdata.application.domain.models.metadata import Metadata
 
         return Metadata(
             id=f"formula_val:{self.log_id}",
@@ -2486,7 +2580,7 @@ class FormulaValidationAudit(Base):
     )
 
     def to_domain(self) -> Metadata:
-        from bb_paxdata.domain.models.metadata import Metadata
+        from bb_paxdata.application.domain.models.metadata import Metadata
 
         return Metadata(
             id=f"formula_audit:{self.audit_id}",
@@ -2686,3 +2780,162 @@ class DomainEvent(Base):
         Index("ix_domain_events_aggregate", "aggregate_type", "aggregate_id"),
         Index("ix_domain_events_type_time", "event_type", "occurred_at"),
     )
+
+
+import uuid  # noqa: E402
+
+
+class OutboxEventORM(Base):
+    __tablename__ = "outbox_events"
+
+    id: Mapped[str] = mapped_column(
+        String(36), primary_key=True, default=lambda: str(uuid.uuid4())
+    )
+    event_type: Mapped[str] = mapped_column(String(100), nullable=False, index=True)
+    aggregate_id: Mapped[str] = mapped_column(
+        String(36), nullable=False, index=True
+    )  # analysis_id, segment_id vb.
+    payload: Mapped[dict[str, Any]] = mapped_column(JSON, nullable=False)
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), default=lambda: datetime.now(timezone.utc)
+    )
+    processed: Mapped[bool] = mapped_column(Boolean, default=False, index=True)
+    attempts: Mapped[int] = mapped_column(Integer, default=0)
+    last_attempt_at: Mapped[datetime | None] = mapped_column(
+        DateTime(timezone=True), nullable=True
+    )
+    next_attempt_at: Mapped[datetime | None] = mapped_column(
+        DateTime(timezone=True), nullable=True
+    )
+
+
+class DeadLetterEventORM(Base):
+    """
+    MaxRetry aşımı veya kalıcı hata sonucu işlenemeyen event'ler buraya taşınır.
+    Manuel inceleme ve yeniden işleme için korunur.
+    """
+
+    __tablename__ = "dead_letter_events"
+
+    id: Mapped[str] = mapped_column(
+        String(36), primary_key=True, default=lambda: str(uuid.uuid4())
+    )
+    original_event_id: Mapped[str] = mapped_column(
+        String(36), nullable=False, index=True
+    )
+    event_type: Mapped[str] = mapped_column(String(100), nullable=False)
+    payload: Mapped[dict[str, Any]] = mapped_column(JSON, nullable=False)
+    failure_reason: Mapped[str] = mapped_column(Text, nullable=False)
+    moved_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), default=lambda: datetime.now(timezone.utc)
+    )
+    resolved: Mapped[bool] = mapped_column(Boolean, default=False)
+
+
+class ArgumentGraphNode(Base):
+    __tablename__ = "argument_graph_nodes"
+    __table_args__ = (
+        Index("idx_arg_node_graph", "graph_id"),
+        Index("idx_arg_node_speaker", "speaker"),
+        Index("idx_arg_node_type", "node_type"),
+    )
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    graph_id: Mapped[str] = mapped_column(Text, nullable=False, index=True)
+    segment_id: Mapped[str] = mapped_column(Text, nullable=False)
+    text: Mapped[str] = mapped_column(Text, nullable=False)
+    node_type: Mapped[str] = mapped_column(Text, nullable=False)
+    speaker: Mapped[str] = mapped_column(Text, nullable=False)
+    timestamp: Mapped[float] = mapped_column(Float, nullable=False)
+    confidence: Mapped[float] = mapped_column(Float, default=1.0)
+    stance: Mapped[str | None] = mapped_column(Text, nullable=True)
+    depth: Mapped[int] = mapped_column(Integer, default=0)
+    predicate: Mapped[str | None] = mapped_column(Text, nullable=True)
+    is_negated: Mapped[bool] = mapped_column(Boolean, default=False)
+    metadata_json: Mapped[dict | list | None] = mapped_column(JSON, nullable=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
+
+
+class ArgumentGraphEdge(Base):
+    __tablename__ = "argument_graph_edges"
+    __table_args__ = (
+        Index("idx_edge_graph", "graph_id"),
+        Index("idx_edge_source_target", "source_id", "target_id"),
+        Index("idx_edge_type", "relation_type"),
+    )
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    graph_id: Mapped[str] = mapped_column(Text, nullable=False, index=True)
+    edge_id: Mapped[str] = mapped_column(Text, nullable=False, unique=True)
+    source_id: Mapped[str] = mapped_column(Text, nullable=False)
+    target_id: Mapped[str] = mapped_column(Text, nullable=False)
+    relation_type: Mapped[str] = mapped_column(Text, nullable=False)
+    confidence: Mapped[float] = mapped_column(Float, default=1.0)
+    weight: Mapped[float] = mapped_column(Float, default=1.0)
+    is_cross_speaker: Mapped[bool] = mapped_column(Boolean, default=False)
+    evidence_snippet: Mapped[str | None] = mapped_column(Text, nullable=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
+
+
+class ArgumentGraphMetadata(Base):
+    __tablename__ = "argument_graphs_metadata"
+    __table_args__ = (Index("idx_arg_meta_doc", "document_id"),)
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    graph_id: Mapped[str] = mapped_column(Text, unique=True, nullable=False)
+    document_id: Mapped[str | None] = mapped_column(Text, nullable=True)
+    root_claim_ids: Mapped[dict | list | None] = mapped_column(JSON, nullable=True)
+    total_nodes: Mapped[int] = mapped_column(Integer, default=0)
+    total_edges: Mapped[int] = mapped_column(Integer, default=0)
+    max_depth: Mapped[int] = mapped_column(Integer, default=0)
+    graph_density: Mapped[float] = mapped_column(Float, default=0.0)
+    claim_count: Mapped[int] = mapped_column(Integer, default=0)
+    attack_count: Mapped[int] = mapped_column(Integer, default=0)
+    support_count: Mapped[int] = mapped_column(Integer, default=0)
+    model_version: Mapped[str] = mapped_column(Text, nullable=True)
+    processing_time_ms: Mapped[float] = mapped_column(Float, default=0.0)
+    graph_snapshot_json: Mapped[dict | list | None] = mapped_column(JSON, nullable=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
+    updated_at: Mapped[datetime] = mapped_column(
+        DateTime, default=datetime.utcnow, onupdate=datetime.utcnow
+    )
+
+    def to_domain(self) -> ArgumentGraph:
+        from bb_paxdata.application.domain.models.argument import ArgumentGraph
+
+        if isinstance(self.graph_snapshot_json, dict):
+            try:
+                # full json snapshot'tan deserialize eder
+                return ArgumentGraph(**self.graph_snapshot_json, skip_validation=True)
+            except Exception as e:
+                import logging
+
+                logger = logging.getLogger(__name__)
+                logger.error(f"Failed to deserialize graph snapshot: {e}")
+
+        return ArgumentGraph(
+            graph_id=self.graph_id,
+            document_id=self.document_id,
+            root_claim_ids=self.root_claim_ids or [],
+            total_nodes=self.total_nodes,
+            total_edges=self.total_edges,
+            skip_validation=True,
+        )
+
+    @classmethod
+    def from_domain(cls, graph: ArgumentGraph) -> ArgumentGraphMetadata:
+        return cls(
+            graph_id=graph.graph_id,
+            document_id=graph.document_id,
+            root_claim_ids=graph.root_claim_ids,
+            total_nodes=graph.total_nodes,
+            total_edges=graph.total_edges,
+            max_depth=graph.max_depth,
+            graph_density=graph.graph_density,
+            claim_count=graph.claim_count,
+            attack_count=graph.attack_count,
+            support_count=graph.support_count,
+            model_version=graph.model_version,
+            processing_time_ms=graph.processing_time_ms,
+            graph_snapshot_json=graph.model_dump(),
+        )

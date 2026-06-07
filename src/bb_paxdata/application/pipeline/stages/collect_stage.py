@@ -11,14 +11,44 @@ from enum import Enum
 from typing import TYPE_CHECKING, Any, cast
 
 import structlog
+from bb_paxdata.application.domain.models.segment import Segment
+from bb_paxdata.application.domain.services.risk_scoring import (
+    DeterministicRiskScorer,
+    RiskFormula,
+)
 from bb_paxdata.application.pipeline.models.collect_result import (
     CollectResult,
     CountryCollectResult,
 )
-from bb_paxdata.domain.models.segment import Segment
-from bb_paxdata.domain.services.risk_scoring import DeterministicRiskScorer, RiskFormula
 
 if TYPE_CHECKING:
+    from bb_paxdata.application.domain.models.appraisal_vector import (
+        AppraisalVector,
+    )
+    from bb_paxdata.application.domain.models.dki import SegmentWindow
+    from bb_paxdata.application.domain.services.negation_detector_protocol import (
+        NegationDetectorProtocol,
+    )
+    from bb_paxdata.application.domain.services.power_calculator_protocol import (
+        PowerCalculatorProtocol,
+    )
+    from bb_paxdata.application.domain.services.protocols import (
+        AIAnalystProtocol,
+        LLMPositionEstimator,
+        NERServiceProtocol,
+        SemanticShiftCalculator,
+        TokenizerProtocol,
+    )
+    from bb_paxdata.application.domain.services.risk_detector_protocol import (
+        RiskSignalDetectorProtocol,
+    )
+    from bb_paxdata.application.domain.services.sbi_protocols import (
+        EngagementScorerProtocol,
+        StanceDensityProtocol,
+    )
+    from bb_paxdata.application.domain.services.topic_modeling_protocol import (
+        TopicModelingProtocol,
+    )
     from bb_paxdata.application.pipeline.frame.episodic_themetic_classifier import (
         EpisodicThematicClassifier,
     )
@@ -26,28 +56,7 @@ if TYPE_CHECKING:
     from bb_paxdata.application.pipeline.stages.country_reference_collector import (
         CountryReferenceCollector,
     )
-    from bb_paxdata.domain.models.dki import SegmentWindow
-    from bb_paxdata.domain.services.negation_detector_protocol import (
-        NegationDetectorProtocol,
-    )
-    from bb_paxdata.domain.services.power_calculator_protocol import (
-        PowerCalculatorProtocol,
-    )
-    from bb_paxdata.domain.services.protocols import (
-        AIAnalystProtocol,
-        LLMPositionEstimator,
-        NERServiceProtocol,
-        SemanticShiftCalculator,
-        TokenizerProtocol,
-    )
-    from bb_paxdata.domain.services.risk_detector_protocol import (
-        RiskSignalDetectorProtocol,
-    )
-    from bb_paxdata.domain.services.sbi_protocols import (
-        EngagementScorerProtocol,
-        StanceDensityProtocol,
-    )
-    from bb_paxdata.domain.services.topic_modeling_protocol import TopicModelingProtocol
+    from bb_paxdata.application.protocols import AppraisalServiceProtocol
     from bb_paxdata.infrastructure.ai.frame_detection.frame_detection_pipeline import (
         FrameDetectionPipeline,
     )
@@ -77,6 +86,7 @@ class _LocalResults:
     engagement_score: float
     country_references: tuple
     errors: list[str]
+    appraisal_vector: AppraisalVector | None = None
 
 
 @dataclass
@@ -112,6 +122,7 @@ class CollectStage:
         engagement_scorer: EngagementScorerProtocol,
         llm_position_estimator: LLMPositionEstimator | None = None,
         semantic_shift_calculator: SemanticShiftCalculator | None = None,
+        appraisal_service: AppraisalServiceProtocol | None = None,
     ) -> None:
         self._ner_service = ner_service
         self._tokenizer_service = tokenizer_service
@@ -129,6 +140,7 @@ class CollectStage:
         self._engagement_scorer = engagement_scorer
         self._llm_position_estimator = llm_position_estimator
         self._semantic_shift_calculator = semantic_shift_calculator
+        self._appraisal_service = appraisal_service
 
     async def run(
         self,
@@ -191,7 +203,9 @@ class CollectStage:
             )
             # If AI is disabled via config, ensure the status reflects "disabled" instead of "bypassed"
             if services_config is not None and "ai_analyst" not in services_config:
-                from bb_paxdata.domain.models.ai_analysis import AIAnalysisResult
+                from bb_paxdata.application.domain.models.ai_analysis import (
+                    AIAnalysisResult,
+                )
 
                 heavy.raw_ai = AIAnalysisResult(
                     prompt_version="disabled",
@@ -208,6 +222,41 @@ class CollectStage:
                 historical_segments=historical_segments,
                 local_results=local,
                 services_config=services_config,
+            )
+
+        # ── APPRAISAL SENTENCE-LEVEL AGGREGATION ──
+        appraisal_document = None
+        if (
+            self._appraisal_service is not None
+            and local.appraisal_vector is None
+            and local.tokenizer
+            and "sentences" in local.tokenizer
+        ):
+            from bb_paxdata.application.domain.models.appraisal_vector import (
+                AppraisalDocumentResult,
+            )
+
+            sentences = local.tokenizer["sentences"]
+            vectors = []
+            loop = asyncio.get_running_loop()
+            for i, s_text in enumerate(sentences):
+                vector = await loop.run_in_executor(
+                    None,
+                    self._appraisal_service.analyze,
+                    s_text,
+                    f"{panel_id}-s{i}",
+                    None,
+                    None,
+                )
+                vectors.append((f"{panel_id}-s{i}", vector))
+            appraisal_document = AppraisalDocumentResult(vectors=vectors)
+        elif self._appraisal_service is not None and local.appraisal_vector is not None:
+            from bb_paxdata.application.domain.models.appraisal_vector import (
+                AppraisalDocumentResult,
+            )
+
+            appraisal_document = AppraisalDocumentResult(
+                vectors=[(panel_id, local.appraisal_vector)]
             )
 
         # ── MERGE & RETURN ──
@@ -229,6 +278,8 @@ class CollectStage:
             engagement_score=local.engagement_score,
             llm_position=heavy.llm_position,
             semantic_shift=heavy.semantic_shift,
+            appraisal_vector=local.appraisal_vector,
+            appraisal_document=appraisal_document,
             errors=all_errors,
         )
 
@@ -255,6 +306,14 @@ class CollectStage:
                 return await coro_factory()
             except Exception as exc:
                 return exc
+
+        async def _run_appraisal_coro():
+            if self._appraisal_service is None:
+                return None
+            loop = asyncio.get_running_loop()
+            return await loop.run_in_executor(
+                None, self._appraisal_service.analyze, text, panel_id, None, None
+            )
 
         results = await asyncio.gather(
             _run("ner", lambda: self._ner_service.extract(text, language=language)),
@@ -298,6 +357,7 @@ class CollectStage:
                     sentence_index=sentence_index,
                 ),
             ),
+            _run("appraisal_service", _run_appraisal_coro),
             return_exceptions=False,
         )
 
@@ -305,18 +365,19 @@ class CollectStage:
         raw_tokenizer = self._safe_extract(results[1], {})
 
         neg_res = self._safe_extract(results[2], None)
-        from bb_paxdata.domain.models.negation import NegationResult
+        from bb_paxdata.application.domain.models.negation import NegationResult
 
         if isinstance(neg_res, NegationResult):
-            negation_cues = neg_res.cues
+            negation_cues = tuple(neg_res.cues)
         else:
-            negation_cues = neg_res or ()
+            negation_cues = tuple(neg_res) if neg_res else ()
         risk_signals = self._safe_extract(results[3], ())
         raw_power = self._safe_extract(results[4], None)
         frame_cues = self._safe_extract(results[5], [])
         stance_density = self._safe_extract(results[6], 0.0)
         engagement_score = self._safe_extract(results[7], 0.0)
         country_result = results[8]
+        appraisal_vector = self._safe_extract(results[9], None)
 
         # Error aggregation
         errors = []
@@ -332,6 +393,7 @@ class CollectStage:
                     6: "STANCE",
                     7: "ENGAGEMENT",
                     8: "COUNTRY",
+                    9: "APPRAISAL",
                 }
                 errors.append(f"[COLLECT/{name_map.get(idx, 'LOCAL')}] {val}")
 
@@ -356,6 +418,7 @@ class CollectStage:
             engagement_score=engagement_score,
             country_references=country_references,
             errors=errors,
+            appraisal_vector=appraisal_vector,
         )
 
     # ───────────────────────────────────────────────
@@ -384,7 +447,7 @@ class CollectStage:
     # ───────────────────────────────────────────────
     def _build_bypass_results(self, reason: str) -> _HeavyResults:
         """Construct placeholder results when AI is bypassed."""
-        from bb_paxdata.domain.models.ai_analysis import AIAnalysisResult
+        from bb_paxdata.application.domain.models.ai_analysis import AIAnalysisResult
 
         return _HeavyResults(
             raw_ai=AIAnalysisResult(
@@ -428,8 +491,8 @@ class CollectStage:
         services_config: list[str] | None,
     ) -> _HeavyResults:
         """Run all LLM/AI services concurrently."""
-        from bb_paxdata.domain.models.ai_analysis import AIAnalysisResult
-        from bb_paxdata.domain.models.sentence import Sentence
+        from bb_paxdata.application.domain.models.ai_analysis import AIAnalysisResult
+        from bb_paxdata.application.domain.models.sentence import Sentence
 
         async def _wrap_none(coro_or_none) -> Any:
             if coro_or_none is None:

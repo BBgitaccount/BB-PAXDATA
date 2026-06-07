@@ -1,4 +1,4 @@
-from bb_paxdata.domain.enums.hedge_type import HedgeType
+from bb_paxdata.application.domain.enums.hedge_type import HedgeType
 
 
 def test_hedge_type_values():

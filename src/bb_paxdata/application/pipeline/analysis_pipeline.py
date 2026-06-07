@@ -10,9 +10,13 @@ from typing import TYPE_CHECKING, Any
 import structlog
 
 if TYPE_CHECKING:
+    from bb_paxdata.application.protocols import AppraisalServiceProtocol
     from sqlalchemy.ext.asyncio import AsyncSession
 
 from bb_paxdata.application.consensus.dual_gate import DualGateConsensusLayer
+from bb_paxdata.application.domain.models.anomaly import AnomalyResult, RuleIndicator
+from bb_paxdata.application.domain.models.dki import SegmentWindow
+from bb_paxdata.application.domain.models.sentence import Sentence
 from bb_paxdata.application.pipeline.configurator import PipelineConfigurator
 from bb_paxdata.application.pipeline.dki_assembler import DKIAssembler
 from bb_paxdata.application.pipeline.frame.episodic_themetic_classifier import (
@@ -21,9 +25,6 @@ from bb_paxdata.application.pipeline.frame.episodic_themetic_classifier import (
 from bb_paxdata.application.pipeline.frame.frame_assembler import FrameAssembler
 from bb_paxdata.application.pipeline.models.pipeline_result import PipelineResult
 from bb_paxdata.application.pipeline.sbi_calculator import SBICalculator
-from bb_paxdata.domain.models.anomaly import AnomalyResult, RuleIndicator
-from bb_paxdata.domain.models.dki import SegmentWindow
-from bb_paxdata.domain.models.sentence import Sentence
 from bb_paxdata.infrastructure.ai.anomaly_controller import AIAnomalyController
 from bb_paxdata.infrastructure.ai.frame_detection.frame_detection_pipeline import (
     FrameDetectionPipeline,
@@ -32,23 +33,23 @@ from bb_paxdata.infrastructure.ai.frame_detection.frame_lexicon_service import (
     FrameLexiconService,
 )
 
-from ...domain.exceptions import MissingAIOutputException
-from ...domain.models.analysis import Analysis
-from ...domain.services.language_detector import LanguageDetector
-from ...domain.services.negation_detector_protocol import NegationDetectorProtocol
-from ...domain.services.power_calculator_protocol import PowerCalculatorProtocol
-from ...domain.services.protocols import (
+from ..domain.exceptions import MissingAIOutputException
+from ..domain.models.analysis import Analysis
+from ..domain.services.language_detector import LanguageDetector
+from ..domain.services.negation_detector_protocol import NegationDetectorProtocol
+from ..domain.services.power_calculator_protocol import PowerCalculatorProtocol
+from ..domain.services.protocols import (
     AIAnalystProtocol,
     AnomalyServiceProtocol,
     NERServiceProtocol,
     TokenizerProtocol,
 )
-from ...domain.services.risk_detector_protocol import RiskSignalDetectorProtocol
-from ...domain.services.sbi_protocols import (
+from ..domain.services.risk_detector_protocol import RiskSignalDetectorProtocol
+from ..domain.services.sbi_protocols import (
     EngagementScorerProtocol,
     StanceDensityProtocol,
 )
-from ...domain.services.topic_modeling_protocol import TopicModelingProtocol
+from ..domain.services.topic_modeling_protocol import TopicModelingProtocol
 from .assembler import AnalysisAssembler
 from .stages.collect_stage import CollectStage
 from .stages.country_reference_collector import CountryReferenceCollector
@@ -103,6 +104,7 @@ class AnalysisPipeline:
         config_variant: str = "default",
         llm_position_estimator: Any | None = None,
         semantic_shift_calculator: Any | None = None,
+        appraisal_service: AppraisalServiceProtocol | None = None,
     ):
         self.ner_service = ner_service
         self.tokenizer_service = tokenizer_service
@@ -135,7 +137,19 @@ class AnalysisPipeline:
             engagement_scorer,
             llm_position_estimator=llm_position_estimator,
             semantic_shift_calculator=semantic_shift_calculator,
+            appraisal_service=appraisal_service,
         )
+        from bb_paxdata.application.domain.services.narrative_salience_tracker import (
+            NarrativeSalienceTracker,
+        )
+        from bb_paxdata.application.pipeline.stages.narrative_classifier_stage import (
+            NarrativeClassifierStage,
+        )
+
+        self.narrative_stage = NarrativeClassifierStage(
+            tracker=NarrativeSalienceTracker()
+        )
+
         self.dual_gate_layer = dual_gate_layer
         self.anomaly_controller = anomaly_controller
         self.finalize_stage = finalize_stage
@@ -250,11 +264,35 @@ class AnalysisPipeline:
                 if ai_result is None:
                     # COLLECT aşamasında bir hata olmuş olmalı;
                     # fallback olarak boş bir AIAnalysisResult üret
-                    from bb_paxdata.domain.models.ai_analysis import AIAnalysisResult
+                    from bb_paxdata.application.domain.models.ai_analysis import (
+                        AIAnalysisResult,
+                    )
 
                     ai_result = AIAnalysisResult(
                         prompt_version="missing",
                         error="AI result was None in COLLECT stage",
+                    )
+
+                if (
+                    hasattr(collect_result, "appraisal_vector")
+                    and collect_result.appraisal_vector is not None
+                ):
+                    sanction_count = 0
+                    if collect_result.appraisal_document is not None:
+                        sanction_count = (
+                            collect_result.appraisal_document.judgment_sanction_count
+                        )
+                    elif collect_result.appraisal_vector.is_negative_judgment_sanction:
+                        sanction_count = 1
+
+                    dominant_axis = collect_result.appraisal_vector.dominant_axis
+
+                    ai_result = ai_result.model_copy(
+                        update={
+                            "appraisal_vector": collect_result.appraisal_vector,
+                            "appraisal_judgment_sanction_count": sanction_count,
+                            "dominant_appraisal_axis": dominant_axis,
+                        }
                     )
 
                 analysis = self.assembler.assemble(
@@ -285,6 +323,17 @@ class AnalysisPipeline:
                         ),  # Proxy
                     }
                 )
+
+                if (
+                    collect_result.frame_detection
+                    and collect_result.frame_detection.five_w_one_h
+                ):
+                    analysis = self.assembler._merge_speech_act_into_analysis(
+                        analysis, collect_result.frame_detection.five_w_one_h
+                    )
+
+                # Strategic Narrative Stage (TASK-A05)
+                analysis = self.narrative_stage.process_analysis(analysis)
 
                 # Phase 8: Attach DKI (Immutable copy chain)
                 if self.dki_assembler:
@@ -440,6 +489,11 @@ class AnalysisPipeline:
             success=len(errors) == 0,
             errors=errors,
             stage="completed" if len(errors) == 0 else "completed_with_errors",
+            extra_data=(
+                {"appraisal_vector": collect_result.appraisal_vector}
+                if hasattr(collect_result, "appraisal_vector")
+                else {}
+            ),
         )
 
     async def analyze_sentence(

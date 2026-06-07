@@ -1,7 +1,7 @@
 import logging
 
-from bb_paxdata.domain.models.analysis import Analysis
-from bb_paxdata.domain.services.prompt_registry import PromptRegistry
+from bb_paxdata.application.domain.models.analysis import Analysis
+from bb_paxdata.application.domain.services.prompt_registry import PromptRegistry
 
 logger = logging.getLogger(__name__)
 

@@ -7,7 +7,7 @@ import numpy as np
 from redis.asyncio import Redis
 from redis.exceptions import ConnectionError, TimeoutError
 
-from bb_paxdata.domain.ports.embedding_port import EmbeddingService
+from bb_paxdata.application.domain.ports.embedding_port import EmbeddingService
 from bb_paxdata.infrastructure.cache.redis_embedding_schema import (
     EmbeddingCacheKey,
     EmbeddingSerializer,

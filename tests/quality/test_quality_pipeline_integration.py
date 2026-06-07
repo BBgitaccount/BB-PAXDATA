@@ -6,8 +6,10 @@ from typing import Any
 from unittest.mock import AsyncMock, MagicMock, Mock, patch
 
 import pytest
-from bb_paxdata.domain.services.duplicate_protection import DuplicateProtectionService
-from bb_paxdata.domain.services.temporal import DriftEvent, TemporalAnalyzer
+from bb_paxdata.application.domain.services.duplicate_protection import (
+    DuplicateProtectionService,
+)
+from bb_paxdata.application.domain.services.temporal import DriftEvent, TemporalAnalyzer
 from bb_paxdata.quality.data_contract import DataContractValidator
 from bb_paxdata.quality.evaluator import QualityEvaluator, QualityReport
 from bb_paxdata.quality.review_queue import ReviewFlagger, ReviewQueueManager
@@ -537,3 +539,83 @@ class TestQualityPipelineIntegration:
             # Should have reasonable scores
             assert summary["overall_mean_score"] >= 0.5
             assert summary["overall_mean_score"] <= 1.0
+
+    def test_illocutionary_drift_multi_speaker_isolation(
+        self, temporal_analyzer: TemporalAnalyzer
+    ):
+        speaker_data = {
+            "speaker_01": {"name": "Ambassador A", "country": "US"},
+            "speaker_02": {"name": "Ambassador B", "country": "TR"},
+        }
+        sentence_data = [
+            # Speaker 01: COMMISSIVE -> DIRECTIVE (should trigger)
+            {
+                "speaker_id": "speaker_01",
+                "global_sent_order": 1,
+                "AI_Speech_Act": "COMMISSIVE",
+                "AI_Speech_Act_Modifier": None,
+            },
+            {
+                "speaker_id": "speaker_01",
+                "global_sent_order": 2,
+                "AI_Speech_Act": "COMMISSIVE",
+                "AI_Speech_Act_Modifier": None,
+            },
+            {
+                "speaker_id": "speaker_01",
+                "global_sent_order": 3,
+                "AI_Speech_Act": "COMMISSIVE",
+                "AI_Speech_Act_Modifier": None,
+            },
+            {
+                "speaker_id": "speaker_01",
+                "global_sent_order": 4,
+                "AI_Speech_Act": "COMMISSIVE",
+                "AI_Speech_Act_Modifier": None,
+            },
+            {
+                "speaker_id": "speaker_01",
+                "global_sent_order": 5,
+                "AI_Speech_Act": "DIRECTIVE",
+                "AI_Speech_Act_Modifier": "strongly",
+            },
+            # Speaker 02: ASSERTIVE only (should not leak into speaker_01's drift)
+            {
+                "speaker_id": "speaker_02",
+                "global_sent_order": 6,
+                "AI_Speech_Act": "ASSERTIVE",
+                "AI_Speech_Act_Modifier": None,
+            },
+            {
+                "speaker_id": "speaker_02",
+                "global_sent_order": 7,
+                "AI_Speech_Act": "ASSERTIVE",
+                "AI_Speech_Act_Modifier": None,
+            },
+            {
+                "speaker_id": "speaker_02",
+                "global_sent_order": 8,
+                "AI_Speech_Act": "ASSERTIVE",
+                "AI_Speech_Act_Modifier": None,
+            },
+            {
+                "speaker_id": "speaker_02",
+                "global_sent_order": 9,
+                "AI_Speech_Act": "ASSERTIVE",
+                "AI_Speech_Act_Modifier": None,
+            },
+            {
+                "speaker_id": "speaker_02",
+                "global_sent_order": 10,
+                "AI_Speech_Act": "ASSERTIVE",
+                "AI_Speech_Act_Modifier": None,
+            },
+        ]
+        drifts = temporal_analyzer.analyze_panel_drift(
+            panel_data={"panel_id": "test_drift_panel"},
+            speaker_data=speaker_data,
+            sentence_data=sentence_data,
+        )
+        illocutionary = [d for d in drifts if d.drift_type == "ILLOCUTIONARY"]
+        assert len(illocutionary) == 1
+        assert all(d.speaker_id == "speaker_01" for d in illocutionary)

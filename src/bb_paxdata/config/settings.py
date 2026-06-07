@@ -3,10 +3,56 @@ from __future__ import annotations
 from pathlib import Path
 from typing import Any
 
-from pydantic import Field, SecretStr, field_validator, model_validator
+from pydantic import BaseModel, Field, SecretStr, field_validator, model_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
-from bb_paxdata.domain.enums import AIProvider, DatabaseMode, LogLevel
+from bb_paxdata.application.domain.enums import AIProvider, DatabaseMode, LogLevel
+
+
+class PresuppositionConfig(BaseModel):
+    """
+    Configuration for presupposition extraction (TASK-A06).
+    """
+
+    trigger_specificity_overrides: dict[str, float] = Field(
+        default_factory=lambda: {
+            "regret": 0.90,
+            "acknowledge": 0.85,
+            "fail": 0.82,
+            "manage": 0.80,
+            "realize": 0.70,
+            "still": 0.68,
+            "again": 0.65,
+            "know": 0.60,
+            "start": 0.50,
+            "stop": 0.50,
+            "continue": 0.55,
+        },
+        description="Trigger-specific specificity weights for confidence calculation",
+    )
+    default_specificity: float = Field(
+        default=0.50,
+        ge=0.0,
+        le=1.0,
+        description="Default specificity for triggers not in overrides",
+    )
+    llm_confidence_threshold: float = Field(
+        default=0.85,
+        ge=0.0,
+        le=1.0,
+        description="Threshold for LLM verification of low-confidence candidates",
+    )
+    batch_size: int = Field(
+        default=20, ge=1, le=100, description="Batch size for LLM verification"
+    )
+    cache_ttl_seconds: int | None = Field(
+        default=None,
+        description="Cache TTL in seconds (None = no TTL, LRU eviction only)",
+    )
+    use_llm_verification: bool = Field(
+        default=True,
+        description="Whether to use LLM verification for low-confidence candidates",
+    )
 
 
 class Settings(BaseSettings):
@@ -86,9 +132,6 @@ class Settings(BaseSettings):
     )
 
     # ── Metodoloji ve Eşikler ─────────────────────────────────────────────
-    turkish_char_ratio_threshold: float = Field(
-        default=0.025, description="Dil Tespit Eşiği"
-    )
     risk_ai_weight: float = Field(default=0.6, description="Risk Hesaplama AI Ağırlığı")
     risk_anomaly_weight: float = Field(
         default=0.4, description="Risk Hesaplama Anomali Ağırlığı"
@@ -98,6 +141,42 @@ class Settings(BaseSettings):
     )
     risk_fallback_anomaly_weight: float = Field(
         default=1.0, description="AI devredışıyken anomali ağırlığı"
+    )
+
+    # ── Presupposition Extraction (TASK-A06) ───────────────────────────────
+    presupposition: PresuppositionConfig = Field(
+        default_factory=PresuppositionConfig,
+        description="Presupposition extraction configuration",
+    )
+
+    # ── Comparison Engine (TASK-E01) ────────────────────────────────────────
+    comparison_narrative_enabled: bool = Field(
+        default=True,
+        description="Enable LLM narrative generation for session comparisons",
+    )
+    comparison_narrative_model: str = Field(
+        default="gpt-4o-mini",
+        description="LLM model for comparison narrative generation",
+    )
+    comparison_narrative_max_tokens: int = Field(
+        default=1000,
+        ge=100,
+        le=4000,
+        description="Max tokens for comparison narrative generation",
+    )
+
+    # ── ColBERT RAG (TASK-E03) ───────────────────────────────────────────────
+    use_colbert: bool = Field(
+        default=False,
+        description="Feature flag: enables ColBERT PLAID late-interaction retrieval. Requires colbert_index_path to contain a pre-built PLAID index.",
+    )
+    colbert_index_path: Path = Field(
+        default=Path(".colbert_index"),
+        description="Filesystem path to the ragatouille PLAID index directory.",
+    )
+    colbert_index_name: str = Field(
+        default="bb_paxdata_rag",
+        description="Subdirectory name of the active PLAID index within colbert_index_path.",
     )
 
     # ── Validators ────────────────────────────────────────────────────────

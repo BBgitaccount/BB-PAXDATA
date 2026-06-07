@@ -4,7 +4,9 @@ from pathlib import Path
 from unittest.mock import Mock, patch
 
 import pytest
-from bb_paxdata.domain.services.duplicate_protection import DuplicateProtectionService
+from bb_paxdata.application.domain.services.duplicate_protection import (
+    DuplicateProtectionService,
+)
 from bb_paxdata.infrastructure.db.models import File
 
 

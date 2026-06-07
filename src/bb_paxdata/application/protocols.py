@@ -10,7 +10,7 @@ from typing import Any, Protocol
 
 from pydantic import BaseModel, Field
 
-from ..domain.enums import (
+from .domain.enums import (
     AnomalySeverity,
     AnomalyType,
     AppraisalAttitude,
@@ -22,7 +22,12 @@ from ..domain.enums import (
     SentimentCategory,
     TopicCategory,
 )
-from ..domain.models import Analysis, RiskSignal, Segment, Sentence
+from .domain.models.appraisal_vector import AppraisalVector
+from .domain.models.risk_signal import RiskSignal
+from .domain.models.segment import Segment
+from .domain.models.sentence import Sentence
+from .domain.models.srl import SRLFrame
+from .domain.ports.speech_act_port import SpeechActClassifierProtocol
 
 
 # Result models for service outputs
@@ -115,6 +120,34 @@ class AnomalyResult(BaseModel):
     )
 
 
+from typing import Optional, runtime_checkable  # noqa: E402
+
+
+@runtime_checkable
+class AppraisalServiceProtocol(Protocol):
+    """Protocol for appraisal theory vector services."""
+
+    def analyze(
+        self,
+        text: str,
+        segment_id: Optional[str] = None,
+        srl_frame: Optional[SRLFrame] = None,
+        hedging_detected_markers: Optional[list[str]] = None,
+    ) -> AppraisalVector:
+        """Analyze appraisal theory vectors in text.
+
+        Args:
+            text: The text to analyze
+            segment_id: Optional segment ID
+            srl_frame: Optional SRL frame from semantic role labeling
+            hedging_detected_markers: Optional list of detected hedging markers
+
+        Returns:
+            AppraisalVector containing affect, judgment, appreciation, graduation, and engagement
+        """
+        ...
+
+
 # Service Protocols
 class SentimentServiceProtocol(Protocol):
     """Protocol for sentiment analysis services."""
@@ -197,21 +230,6 @@ class TopicServiceProtocol(Protocol):
         ...
 
 
-class CrossAnomalyServiceProtocol(Protocol):
-    """Protocol for cross-anomaly detection services."""
-
-    def detect_anomalies(self, analysis: Analysis) -> list[AnomalyResult]:
-        """Detect cross-anomalies in analysis results.
-
-        Args:
-            analysis: The analysis results to check for anomalies
-
-        Returns:
-            List of detected anomalies
-        """
-        ...
-
-
 class NERServiceProtocol(Protocol):
     """Protocol for Named Entity Recognition services."""
 
@@ -270,8 +288,8 @@ class BaseService(ABC):
 
 __all__ = [
     "AnomalyResult",
+    "AppraisalServiceProtocol",
     "BaseService",
-    "CrossAnomalyServiceProtocol",
     "FrameResult",
     "FramingServiceProtocol",
     "HedgingResult",
@@ -281,6 +299,7 @@ __all__ = [
     "RiskServiceProtocol",
     "SentimentResult",
     "SentimentServiceProtocol",
+    "SpeechActClassifierProtocol",
     "TokenizerServiceProtocol",
     "TopicAnalysis",
     "TopicServiceProtocol",

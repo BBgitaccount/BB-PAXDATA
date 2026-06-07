@@ -19,7 +19,7 @@ import logging
 import threading
 from typing import Any
 
-from bb_paxdata.domain.models.ai_analysis import AIAnalysisResult
+from bb_paxdata.application.domain.models.ai_analysis import AIAnalysisResult
 from bb_paxdata.infrastructure.nlp.logic_only_analyst import LogicOnlyAIAnalyst
 
 logger = logging.getLogger(__name__)

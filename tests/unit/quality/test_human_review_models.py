@@ -1,8 +1,8 @@
 from uuid import uuid4
 
 import pytest
-from bb_paxdata.domain.enums import Priority, ReviewStatus, ReviewType
-from bb_paxdata.domain.utils.hash import compute_audit_hash
+from bb_paxdata.application.domain.enums import Priority, ReviewStatus, ReviewType
+from bb_paxdata.application.domain.utils.hash import compute_audit_hash
 from bb_paxdata.quality.human_review import (
     HumanReviewRequest,
     HumanReviewResult,

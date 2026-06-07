@@ -10,7 +10,7 @@ from typing import Final
 
 import numpy as np
 import structlog
-from bb_paxdata.domain.models.frame_annotation import (
+from bb_paxdata.application.domain.models.frame_annotation import (
     BiasSeverity,
     BiasSignal,
     FiveWOneH,
@@ -19,14 +19,16 @@ from bb_paxdata.domain.models.frame_annotation import (
     PerspectiveCluster,
     ResolvedEntity,
 )
-from bb_paxdata.domain.models.segment import Segment
-from bb_paxdata.domain.services.frame_detection import (
+from bb_paxdata.application.domain.models.segment import Segment
+from bb_paxdata.application.domain.services.frame_detection import (
     ConceptExtractorProtocol,
     CoreferenceResolverProtocol,
     EmbeddingFrameMatcherProtocol,
     FiveWOneHExtractorProtocol,
 )
-from bb_paxdata.domain.services.topic_modeling_protocol import TopicModelingProtocol
+from bb_paxdata.application.domain.services.topic_modeling_protocol import (
+    TopicModelingProtocol,
+)
 from bb_paxdata.infrastructure.ai.clients.llm_client_protocol import LLMClientProtocol
 from bb_paxdata.infrastructure.ai.recovery import RecoveryEngine
 from sklearn.metrics.pairwise import cosine_similarity

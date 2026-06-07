@@ -8,7 +8,7 @@ if TYPE_CHECKING:
 
 from spacy.tokens import Doc, Token
 
-from bb_paxdata.domain.models.power_index import PowerIndex
+from bb_paxdata.application.domain.models.power_index import PowerIndex
 
 
 class PowerIndexCalculator:

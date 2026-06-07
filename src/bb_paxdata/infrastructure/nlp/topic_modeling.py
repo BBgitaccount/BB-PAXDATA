@@ -9,11 +9,13 @@ from hdbscan import HDBSCAN
 from sentence_transformers import SentenceTransformer
 from umap import UMAP
 
-from bb_paxdata.domain.models.segment import Segment
-from bb_paxdata.domain.models.topic import TopicAssignment, TopicResult
-from bb_paxdata.domain.ports.embedding_port import EmbeddingService
-from bb_paxdata.domain.services.prompt_registry import PromptRegistry
-from bb_paxdata.domain.services.topic_modeling_protocol import TopicModelingProtocol
+from bb_paxdata.application.domain.models.segment import Segment
+from bb_paxdata.application.domain.models.topic import TopicAssignment, TopicResult
+from bb_paxdata.application.domain.ports.embedding_port import EmbeddingService
+from bb_paxdata.application.domain.services.prompt_registry import PromptRegistry
+from bb_paxdata.application.domain.services.topic_modeling_protocol import (
+    TopicModelingProtocol,
+)
 
 logger = logging.getLogger(__name__)
 

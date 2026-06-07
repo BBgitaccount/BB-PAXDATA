@@ -11,7 +11,7 @@ import logging
 from dataclasses import dataclass
 from enum import Enum
 
-from bb_paxdata.domain.models.anomaly import (
+from bb_paxdata.application.domain.models.anomaly import (
     AnomalyResult,
     AnomalyValidationDecision,
     AnomalyValidationResult,
@@ -127,13 +127,13 @@ class DualGateConsensusLayer:
         - Deterministik & AI uyuşuyorsa bonus eklenir
         - Çelişki durumunda penaltı uygulanır
         """
-        base = float(ai.coherence_score)
+        base = ai.coherence_score
         if det.has_anomaly and ai.decision == AnomalyValidationDecision.CONFIRMED:
             # Her iki kapı da uyuştu → yüksek güven
-            return float(min(1.0, base * 1.1))
+            return min(1.0, base * 1.1)
         if det.has_anomaly and ai.decision == AnomalyValidationDecision.DISMISSED:
             # Çelişki → güven düşer
-            return float(base * 0.7)
+            return base * 0.7
         if ai.decision == AnomalyValidationDecision.INCONCLUSIVE:
             return 0.5  # Belirsiz durum ortada
         return base

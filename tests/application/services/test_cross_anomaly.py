@@ -1,7 +1,9 @@
 import pytest
-from bb_paxdata.domain.models.analysis import Analysis
-from bb_paxdata.domain.models.segment import Segment
-from bb_paxdata.domain.services.cross_anomaly_service import SentimentRiskDivergenceRule
+from bb_paxdata.application.domain.models.analysis import Analysis
+from bb_paxdata.application.domain.models.segment import Segment
+from bb_paxdata.application.domain.services.cross_anomaly_service import (
+    SentimentRiskDivergenceRule,
+)
 from bb_paxdata.infrastructure.nlp.cross_anomaly_service_impl import (
     CrossAnomalyServiceImpl,
 )

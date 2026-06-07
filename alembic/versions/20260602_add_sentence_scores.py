@@ -29,26 +29,27 @@ def upgrade() -> None:
 
     cols = [c["name"] for c in inspector.get_columns("sentences")]
 
+    # Use direct add_column to avoid batch_alter_table's copy-and-rename which breaks SQLite views
     if "formula_inconsistency_score" not in cols:
-        with op.batch_alter_table("sentences", schema=None) as batch_op:
-            batch_op.add_column(
-                sa.Column(
-                    "formula_inconsistency_score",
-                    sa.Float(),
-                    nullable=False,
-                    server_default=sa.text("0.0"),
-                )
-            )
+        op.add_column(
+            "sentences",
+            sa.Column(
+                "formula_inconsistency_score",
+                sa.Float(),
+                nullable=False,
+                server_default=sa.text("0.0"),
+            ),
+        )
     if "discrepancy_score" not in cols:
-        with op.batch_alter_table("sentences", schema=None) as batch_op:
-            batch_op.add_column(
-                sa.Column(
-                    "discrepancy_score",
-                    sa.Float(),
-                    nullable=False,
-                    server_default=sa.text("0.0"),
-                )
-            )
+        op.add_column(
+            "sentences",
+            sa.Column(
+                "discrepancy_score",
+                sa.Float(),
+                nullable=False,
+                server_default=sa.text("0.0"),
+            ),
+        )
 
 
 def downgrade() -> None:
@@ -56,10 +57,9 @@ def downgrade() -> None:
     inspector = sa.inspect(conn)
     if "sentences" not in inspector.get_table_names():
         return
+
     cols = [c["name"] for c in inspector.get_columns("sentences")]
     if "discrepancy_score" in cols:
-        with op.batch_alter_table("sentences", schema=None) as batch_op:
-            batch_op.drop_column("discrepancy_score")
+        op.drop_column("sentences", "discrepancy_score")
     if "formula_inconsistency_score" in cols:
-        with op.batch_alter_table("sentences", schema=None) as batch_op:
-            batch_op.drop_column("formula_inconsistency_score")
+        op.drop_column("sentences", "formula_inconsistency_score")

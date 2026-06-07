@@ -4,7 +4,7 @@ from __future__ import annotations
 import logging
 from typing import Any, Sequence
 
-from bb_paxdata.domain.services.protocols.rag_protocols import (
+from bb_paxdata.application.domain.services.protocols.rag_protocols import (
     RerankerProtocol,
     RetrievedContext,
 )

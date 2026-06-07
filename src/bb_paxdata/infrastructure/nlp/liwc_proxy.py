@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import re
 
-from bb_paxdata.domain.models.sentiment_result import LIWCScores
+from bb_paxdata.application.domain.models.sentiment_result import LIWCScores
 
 # LIWC2015 lexicon proxy — Türkçe/İngilizce diplomatik metinler için
 # Faz 1'de basit keyword listeleri; Faz 5'te BERTopic ile zenginleştirilecek

@@ -67,7 +67,7 @@ async def seed_panel_speaker_segment(session: AsyncSession) -> None:
         )
     )
     await session.flush()
-    from bb_paxdata.domain.models.segment import Segment as SegmentDomain
+    from bb_paxdata.application.domain.models.segment import Segment as SegmentDomain
 
     seg = SegmentDomain(
         id="seg1",

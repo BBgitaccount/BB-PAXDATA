@@ -11,11 +11,14 @@ from __future__ import annotations
 from unittest.mock import AsyncMock, MagicMock
 
 import pytest
+from bb_paxdata.application.domain.enums.signal_type import SignalType
+from bb_paxdata.application.domain.models.ai_analysis import AIAnalysisResult
+from bb_paxdata.application.domain.models.risk_signal import RiskSignal
+from bb_paxdata.application.domain.services.risk_scoring import (
+    DeterministicRiskScorer,
+    RiskFormula,
+)
 from bb_paxdata.application.pipeline.stages.collect_stage import CollectStage
-from bb_paxdata.domain.enums.signal_type import SignalType
-from bb_paxdata.domain.models.ai_analysis import AIAnalysisResult
-from bb_paxdata.domain.models.risk_signal import RiskSignal
-from bb_paxdata.domain.services.risk_scoring import DeterministicRiskScorer, RiskFormula
 
 # ───────────────────────────────────────────────────────────────────
 # HELPERS — Mock factory
@@ -296,8 +299,8 @@ class TestCollectStageLazyAIEvaluation:
         Negation bulunduğunda risk skoru %30 azalır ve bypass tetiklenebilir.
         Başlangıçta threshold üzerinde olan skor, negation sonrası altında kalmalı.
         """
-        from bb_paxdata.domain.enums.negation_type import NegationType
-        from bb_paxdata.domain.models.negation_cue import NegationCue
+        from bb_paxdata.application.domain.enums.negation_type import NegationType
+        from bb_paxdata.application.domain.models.negation_cue import NegationCue
 
         # Skor = 0.6 * 1.0 = 0.6 (threshold 0.5 üzeri → AI olmalı)
         # Negation dampening 0.3 → 0.6 * (1-0.3) = 0.42 < 0.5 → bypass

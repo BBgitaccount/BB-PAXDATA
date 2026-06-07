@@ -10,7 +10,7 @@ from typing import Any
 
 import structlog
 import typer
-from bb_paxdata.domain.services.analysis_trigger import (
+from bb_paxdata.application.domain.services.analysis_trigger import (
     AnalysisTriggerService,
     rebuild_network_for_file,
 )
@@ -524,7 +524,9 @@ async def update_speaker_profiles(session: Any) -> None:
         if words:
             sp.lexical_diversity = len(set(words)) / len(words)
 
-            from bb_paxdata.domain.services.sentiment_service import SentimentService
+            from bb_paxdata.application.domain.services.sentiment_service import (
+                SentimentService,
+            )
 
             diplo_words_cnt = sum(
                 1 for w in words if w in SentimentService.DIPLO_LEXICON
@@ -576,7 +578,7 @@ async def update_speaker_profiles(session: Any) -> None:
 
 
 async def backfill_segment_events(session: Any) -> None:
-    from bb_paxdata.domain.services.linguistic_helpers import (
+    from bb_paxdata.application.domain.services.linguistic_helpers import (
         classify_speech_act,
         get_frame_distribution,
         get_vad_vector,

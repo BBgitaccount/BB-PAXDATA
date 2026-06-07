@@ -12,11 +12,16 @@ from collections.abc import Sequence
 from sqlalchemy import and_, or_, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from bb_paxdata.domain.models.bilateral_sentiment import BilateralSentiment
-from bb_paxdata.domain.models.country_reference import CountryReference
-from bb_paxdata.domain.models.discourse_flow import DiscourseFlow
-from bb_paxdata.domain.models.discourse_network import DyadicMetrics
-from bb_paxdata.domain.models.topic_synthesis import TopicSynthesis
+from bb_paxdata.application.domain.models.bilateral_sentiment import BilateralSentiment
+from bb_paxdata.application.domain.models.country_reference import CountryReference
+from bb_paxdata.application.domain.models.discourse_flow import (
+    DiscourseFlow,
+    DyadicMetrics,
+)
+from bb_paxdata.application.domain.models.topic_synthesis import TopicSynthesis
+from bb_paxdata.application.domain.services.compare_sessions_protocols import (
+    IDiscourseFlowRepository,
+)
 from bb_paxdata.infrastructure.db.country_models import (
     BilateralSentimentTable,
     CountryReferenceTable,
@@ -181,7 +186,9 @@ class BilateralSentimentRepository:
         """Query aggregates from BilateralSentimentTable and populate/overwrite CountryPairSentiment."""
         from sqlalchemy import delete, func
 
-        from bb_paxdata.domain.enums.relationship_type import RelationshipType
+        from bb_paxdata.application.domain.enums.relationship_type import (
+            RelationshipType,
+        )
         from bb_paxdata.infrastructure.db.models import CountryPairSentiment
 
         # Clear existing entries in country_pair_sentiment table
@@ -239,11 +246,18 @@ class BilateralSentimentRepository:
         await self._session.flush()
 
 
-class DiscourseFlowRepository:
+class DiscourseFlowRepository(IDiscourseFlowRepository):
     """IDiscourseFlowRepository Protocol'ünün SQLAlchemy implementasyonu."""
 
     def __init__(self, session: AsyncSession) -> None:
         self._session = session
+
+    async def get_by_session(self, session_id: str) -> list[DiscourseFlow]:
+        """Get all discourse flows for a session."""
+        result = await self._session.execute(
+            select(DiscourseFlowTable).where(DiscourseFlowTable.file_id == session_id)
+        )
+        return [row.to_domain() for row in result.scalars().all()]
 
     async def save(self, flow: DiscourseFlow) -> None:
         row = DiscourseFlowTable.from_domain(flow)

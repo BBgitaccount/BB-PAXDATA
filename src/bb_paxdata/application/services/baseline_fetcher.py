@@ -5,7 +5,9 @@ from collections import Counter
 from typing import Any, Callable
 
 import numpy as np
-from bb_paxdata.domain.services.protocols.judge_protocols import BaselineMetrics
+from bb_paxdata.application.domain.services.protocols.judge_protocols import (
+    BaselineMetrics,
+)
 from sqlalchemy import select
 
 

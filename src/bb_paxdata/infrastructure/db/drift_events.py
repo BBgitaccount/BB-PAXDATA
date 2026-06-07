@@ -1,11 +1,23 @@
 """Drift events model for temporal analysis."""
 
-from typing import TYPE_CHECKING, Literal
+from typing import TYPE_CHECKING, Literal, get_args
 
-from sqlalchemy import Integer, String, Text
-from sqlalchemy.orm import Mapped, mapped_column
+_DRIFT_TYPE_V1 = Literal["SENTIMENT", "TOPIC", "LEXICAL", "TONE", "RISK"]
+_DRIFT_TYPE_V2 = Literal[
+    "SENTIMENT", "TOPIC", "LEXICAL", "TONE", "RISK", "ILLOCUTIONARY"
+]
 
-from bb_paxdata.infrastructure.db.base import Base
+
+def normalize_drift_type(value: str) -> _DRIFT_TYPE_V2:
+    if value in get_args(_DRIFT_TYPE_V2):
+        return value  # type: ignore[return-value]
+    return "RISK"  # Safe fallback for legacy rows
+
+
+from sqlalchemy import Integer, String, Text  # noqa: E402
+from sqlalchemy.orm import Mapped, mapped_column  # noqa: E402
+
+from bb_paxdata.infrastructure.db.base import Base  # noqa: E402
 
 if TYPE_CHECKING:
     pass
@@ -19,9 +31,7 @@ class DriftEvent(Base):
     id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
     speaker_id: Mapped[str] = mapped_column(String, nullable=False)
     panel_id: Mapped[str] = mapped_column(String, nullable=False)
-    drift_type: Mapped[Literal["SENTIMENT", "TOPIC", "LEXICAL", "TONE", "RISK"]] = (
-        mapped_column(String, nullable=False)
-    )
+    drift_type: Mapped[_DRIFT_TYPE_V2] = mapped_column(String, nullable=False)
     start_position: Mapped[int] = mapped_column(
         Integer, nullable=False
     )  # global_sent_order

@@ -11,7 +11,7 @@ from __future__ import annotations
 import logging
 import re
 
-from bb_paxdata.domain.models.ai_analysis import AIAnalysisResult
+from bb_paxdata.application.domain.models.ai_analysis import AIAnalysisResult
 
 logger = logging.getLogger(__name__)
 
@@ -290,7 +290,9 @@ class LogicOnlyAIAnalyst:
         LLM çağrısı YAPILMAZ — tamamen deterministik.
         """
         tokens = _tokenize(text)
-        from bb_paxdata.domain.services.sentiment_service import SentimentService
+        from bb_paxdata.application.domain.services.sentiment_service import (
+            SentimentService,
+        )
 
         sentiment_service = SentimentService()
         sentiment_score = sentiment_service.negation_aware_diplo(text)

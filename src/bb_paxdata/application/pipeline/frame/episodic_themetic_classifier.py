@@ -13,8 +13,8 @@ from dataclasses import dataclass
 from typing import TYPE_CHECKING, Final
 
 import structlog
-from bb_paxdata.domain.enums.frame_type import FrameType
-from bb_paxdata.domain.models.segment import Segment
+from bb_paxdata.application.domain.enums.frame_type import FrameType
+from bb_paxdata.application.domain.models.segment import Segment
 from spacy.tokens import Doc
 
 if TYPE_CHECKING:

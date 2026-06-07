@@ -122,7 +122,7 @@ class AnthropicClient(AIClient):
             content = raw_response.get("content", [{}])[0].get("text", "")
 
             # Remove the prefill "{" if we added it
-            if options.json_mode and content.startswith("{"):
+            if options.json_mode and not content.startswith("{"):
                 content = "{" + content
 
             # Calculate tokens
@@ -195,7 +195,7 @@ class AnthropicClient(AIClient):
                 headers=headers,
                 timeout=10.0,
             )
-            return bool(response.status_code == 200)
+            return response.status_code == 200
         except Exception as e:
             logger.warning("Anthropic health check failed", error=str(e))
             return False

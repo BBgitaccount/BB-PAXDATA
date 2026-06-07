@@ -6,10 +6,9 @@ import time
 from typing import AsyncIterator, Sequence
 
 import structlog
-from bb_paxdata.application.services.rag_context_assembler import RAGContextAssembler
-from bb_paxdata.domain.services.prompt_registry import PromptRegistry
-from bb_paxdata.domain.services.protocols import AIAnalystProtocol
-from bb_paxdata.domain.services.protocols.rag_protocols import (
+from bb_paxdata.application.domain.services.prompt_registry import PromptRegistry
+from bb_paxdata.application.domain.services.protocols import AIAnalystProtocol
+from bb_paxdata.application.domain.services.protocols.rag_protocols import (
     DenseRetrieverProtocol,
     KeywordRetrieverProtocol,
     RAGQueryRequest,
@@ -18,6 +17,7 @@ from bb_paxdata.domain.services.protocols.rag_protocols import (
     RerankerProtocol,
     RetrievedContext,
 )
+from bb_paxdata.application.services.rag_context_assembler import RAGContextAssembler
 from tenacity import (
     retry,
     retry_if_exception_type,

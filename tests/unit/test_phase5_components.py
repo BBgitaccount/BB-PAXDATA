@@ -5,6 +5,15 @@ from unittest.mock import AsyncMock, MagicMock
 
 import numpy as np
 import pytest
+from bb_paxdata.application.domain.models.forecast import TimeSlice
+from bb_paxdata.application.domain.services.forecasting import RiskForecaster
+from bb_paxdata.application.domain.services.prompt_registry import (
+    build_default_registry,
+)
+from bb_paxdata.application.domain.services.protocols.rag_protocols import (
+    RAGQueryRequest,
+    RetrievedContext,
+)
 from bb_paxdata.application.services.baseline_fetcher import (
     RollingWindowBaselineFetcher,
 )
@@ -18,13 +27,6 @@ from bb_paxdata.application.services.model_evaluation_engine import (
     ModelEvaluationEngine,
 )
 from bb_paxdata.application.services.rag_service import RAGService
-from bb_paxdata.domain.models.forecast import TimeSlice
-from bb_paxdata.domain.services.forecasting import RiskForecaster
-from bb_paxdata.domain.services.prompt_registry import build_default_registry
-from bb_paxdata.domain.services.protocols.rag_protocols import (
-    RAGQueryRequest,
-    RetrievedContext,
-)
 from bb_paxdata.infrastructure.db import models as m
 from bb_paxdata.infrastructure.db.base import Base
 from bb_paxdata.infrastructure.db.model_evaluation import (
@@ -318,7 +320,9 @@ async def test_dki_evaluator(test_session_factory):
         audit_session_factory=test_session_factory,
     )
 
-    from bb_paxdata.domain.services.protocols.judge_protocols import BaselineMetrics
+    from bb_paxdata.application.domain.services.protocols.judge_protocols import (
+        BaselineMetrics,
+    )
 
     baseline = BaselineMetrics(
         historical_sentiment_avg=0.1,

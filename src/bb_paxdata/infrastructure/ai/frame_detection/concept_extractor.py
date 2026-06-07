@@ -7,7 +7,7 @@ Universität Göttingen. Target Concept Extraction stage.]
 
 
 import structlog
-from bb_paxdata.domain.models.segment import Segment
+from bb_paxdata.application.domain.models.segment import Segment
 from bb_paxdata.infrastructure.ai.clients.llm_client_protocol import LLMClientProtocol
 from bb_paxdata.infrastructure.ai.recovery import RecoveryEngine
 from pydantic import BaseModel, Field

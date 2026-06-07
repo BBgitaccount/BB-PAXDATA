@@ -1,5 +1,5 @@
 import structlog
-from bb_paxdata.domain.models.dki import (
+from bb_paxdata.application.domain.models.dki import (
     DynamicPositionResult,
     PositionCalibration,
     SemanticShiftResult,

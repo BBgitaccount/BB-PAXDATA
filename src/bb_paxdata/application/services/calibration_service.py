@@ -8,8 +8,11 @@ from collections import Counter
 from datetime import datetime, timedelta, timezone
 from typing import Any
 
-from bb_paxdata.domain.models.calibration import CalibrationReport
-from bb_paxdata.domain.models.human_review import AgreementStatus, HumanReview
+from bb_paxdata.application.domain.models.calibration import CalibrationReport
+from bb_paxdata.application.domain.models.human_review import (
+    AgreementStatus,
+    HumanReview,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -19,8 +22,21 @@ DISAGREEMENT_RATE_ALERT = 0.30
 
 
 class CalibrationService:
-    def __init__(self, uow_factory: Any) -> None:
+    def __init__(self, uow_factory: Any = None, metric: str | None = None) -> None:
         self._uow_factory = uow_factory
+        self.metric = metric
+
+    def apply_platt_scaling(self, raw_confidence: float) -> float:
+        """Applies Platt scaling sigmoid function to calibrate confidence scores."""
+        import math
+
+        # Sigmoid: 1 / (1 + exp(- (A * x + B)))
+        # Map 0.5 to ~0.5, 0.75 to ~0.73, etc. using A=4.0, B=-2.0
+        val = 4.0 * raw_confidence - 2.0
+        try:
+            return 1.0 / (1.0 + math.exp(-val))
+        except OverflowError:
+            return 0.0 if val < 0 else 1.0
 
     async def run_weekly_calibration(
         self, prompt_version: str, days_back: int = 7

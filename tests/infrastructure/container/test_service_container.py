@@ -23,3 +23,5 @@ def test_service_container_initialization() -> None:
     assert container.tokenizer_service is not None
     assert container.prompt_registry is not None
     assert container.ai_analyst is not None
+    assert container.appraisal_service is not None
+    assert container.speech_act_classifier is not None

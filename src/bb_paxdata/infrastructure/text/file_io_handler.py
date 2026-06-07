@@ -6,7 +6,7 @@ from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
 
-from bb_paxdata.domain.enums.demand_category import DemandCategory
+from bb_paxdata.application.domain.enums.demand_category import DemandCategory
 
 SPEAKER_COUNTRY_MAP = {
     "Abdul Hamid": "PS",

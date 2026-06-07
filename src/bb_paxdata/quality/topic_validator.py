@@ -2,7 +2,7 @@
 import pandas as pd
 import pandera.pandas as pa
 
-from bb_paxdata.domain.models.topic import TopicResult
+from bb_paxdata.application.domain.models.topic import TopicResult
 
 
 class TopicDistributionSchema(pa.DataFrameModel):

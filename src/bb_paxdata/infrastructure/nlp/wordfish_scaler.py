@@ -4,7 +4,7 @@ import numpy as np
 import structlog
 from scipy.optimize import minimize
 
-from bb_paxdata.domain.models.sbi_models import WordfishParams
+from bb_paxdata.application.domain.models.sbi_models import WordfishParams
 
 logger = structlog.get_logger(__name__)
 

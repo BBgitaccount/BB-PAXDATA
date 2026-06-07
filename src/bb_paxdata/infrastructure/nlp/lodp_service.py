@@ -4,8 +4,8 @@ import math
 from collections import Counter
 from typing import Final
 
-from bb_paxdata.domain.models.lodp_result import LODPResult
-from bb_paxdata.domain.models.segment import Segment
+from bb_paxdata.application.domain.models.lodp_result import LODPResult
+from bb_paxdata.application.domain.models.segment import Segment
 
 
 class LODPService:

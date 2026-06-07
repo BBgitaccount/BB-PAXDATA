@@ -1,7 +1,7 @@
 # tests/infrastructure/nlp/test_fischer_dna.py
 from decimal import Decimal
 
-from bb_paxdata.domain.models.discourse_network import DiscourseFlow
+from bb_paxdata.application.domain.models.discourse_network import DiscourseFlow
 from bb_paxdata.infrastructure.nlp.fischer_dna_service import (
     ActorConceptProfile,
     FischerDNAService,

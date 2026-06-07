@@ -6,22 +6,22 @@ from datetime import datetime, timezone
 from typing import Any
 
 import structlog
-from bb_paxdata.application.pipeline.sbi_calculator import SBICalculator
-from bb_paxdata.domain.enums.signal_type import SignalType
-from bb_paxdata.domain.models.ai_analysis import AIAnalysisResult
-from bb_paxdata.domain.models.analysis import Analysis
-from bb_paxdata.domain.models.bilateral_sentiment import BilateralSentiment
-from bb_paxdata.domain.models.frame_annotation import (
+from bb_paxdata.application.domain.enums.signal_type import SignalType
+from bb_paxdata.application.domain.models.ai_analysis import AIAnalysisResult
+from bb_paxdata.application.domain.models.analysis import Analysis
+from bb_paxdata.application.domain.models.bilateral_sentiment import BilateralSentiment
+from bb_paxdata.application.domain.models.frame_annotation import (
     FrameDetectionResult,
     FrameSalienceResult,
 )
-from bb_paxdata.domain.models.negation_cue import NegationCue
-from bb_paxdata.domain.models.power_index import PowerIndex
-from bb_paxdata.domain.models.risk_signal import RiskSignal
-from bb_paxdata.domain.models.sbi_models import SBIResult
-from bb_paxdata.domain.models.segment import Segment
-from bb_paxdata.domain.models.topic import TopicResult
-from bb_paxdata.domain.models.topic_synthesis import TopicSynthesis
+from bb_paxdata.application.domain.models.negation_cue import NegationCue
+from bb_paxdata.application.domain.models.power_index import PowerIndex
+from bb_paxdata.application.domain.models.risk_signal import RiskSignal
+from bb_paxdata.application.domain.models.sbi_models import SBIResult
+from bb_paxdata.application.domain.models.segment import Segment
+from bb_paxdata.application.domain.models.topic import TopicResult
+from bb_paxdata.application.domain.models.topic_synthesis import TopicSynthesis
+from bb_paxdata.application.pipeline.sbi_calculator import SBICalculator
 from bb_paxdata.infrastructure.nlp.lodp_service import LODPService
 
 logger = structlog.get_logger(__name__)
@@ -76,7 +76,6 @@ class AnalysisAssembler:
             negation_cues=negation_cues,
             risk_signals=risk_signals,
             power_indices=power_indices or {},
-            sentence_count=tokenizer_result.get("sentence_count", 0),
             # ── AI Alanları (AIAnalysisResult'tan güvenli aktarım) ──
             ai_sentiment_score=ai_result.sentiment_score,
             ai_risk_score=ai_result.risk_score,
@@ -106,10 +105,10 @@ class AnalysisAssembler:
                     panel_id=metadata.get("panel_id", "default"),
                     country=metadata.get("speaker_country", "unknown"),
                     topic_scores=primary_assign.topic_scores,
-                    topic_label=topic_result.topic_keywords.get(
-                        primary_assign.primary_topic, {}
-                    ).get(
-                        "label", primary_assign.primary_topic
+                    topic_label=str(
+                        topic_result.topic_keywords.get(
+                            primary_assign.primary_topic, {}
+                        ).get("label", primary_assign.primary_topic)
                     ),  # label alanı yoksa primary_topic
                     topic_keywords=topic_result.topic_keywords.get(
                         primary_assign.primary_topic, {}
@@ -141,6 +140,28 @@ class AnalysisAssembler:
             f"Assembly tamamlandı: id={analysis.id}, " f"language={analysis.language}"
         )
         return analysis
+
+    def _merge_speech_act_into_analysis(
+        self, analysis: Analysis, five_w_one_h: Any
+    ) -> Analysis:
+        """Merges speech_act information from FiveWOneH into Analysis and child segments/sentences."""
+        if not five_w_one_h or not getattr(five_w_one_h, "speech_act", None):
+            return analysis
+
+        speech_act = five_w_one_h.speech_act
+        updated_segments = []
+        for segment in analysis.segments:
+            updated_sentences = []
+            for sentence in segment.sentences:
+                if getattr(sentence, "speech_act", None) is None:
+                    sentence = sentence.model_copy(update={"speech_act": speech_act})
+                updated_sentences.append(sentence)
+            segment = segment.model_copy(update={"sentences": updated_sentences})
+            updated_segments.append(segment)
+
+        return analysis.model_copy(
+            update={"speech_act": speech_act, "segments": updated_segments}
+        )
 
     def _map_topics_to_nodes(
         self,

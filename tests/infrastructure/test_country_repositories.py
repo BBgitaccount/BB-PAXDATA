@@ -3,9 +3,9 @@ from collections.abc import AsyncIterator
 
 import pytest
 import pytest_asyncio
-from bb_paxdata.domain.enums.country_enums import ReferenceContext
-from bb_paxdata.domain.models.bilateral_sentiment import BilateralSentiment
-from bb_paxdata.domain.models.country_reference import CountryReference
+from bb_paxdata.application.domain.enums.country_enums import ReferenceContext
+from bb_paxdata.application.domain.models.bilateral_sentiment import BilateralSentiment
+from bb_paxdata.application.domain.models.country_reference import CountryReference
 from bb_paxdata.infrastructure.db.country_models import Base
 from bb_paxdata.infrastructure.db.repositories.country_repository import (
     BilateralSentimentRepository,

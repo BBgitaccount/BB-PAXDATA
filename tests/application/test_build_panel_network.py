@@ -2,11 +2,11 @@
 from unittest.mock import AsyncMock
 
 import pytest
+from bb_paxdata.application.domain.models.bilateral_sentiment import BilateralSentiment
 from bb_paxdata.application.use_cases.build_panel_network import (
     BuildPanelNetworkInput,
     BuildPanelNetworkUseCase,
 )
-from bb_paxdata.domain.models.bilateral_sentiment import BilateralSentiment
 
 
 def _make_sentiment(
@@ -40,7 +40,7 @@ async def test_creates_flows_from_sentiments() -> None:
     assert output.succeeded
 
     saved_flows = flow_repo.save_batch.call_args[0][0]
-    from bb_paxdata.domain.enums.country_enums import EdgeType
+    from bb_paxdata.application.domain.enums.country_enums import EdgeType
 
     cooperative = [f for f in saved_flows if f.edge_type == EdgeType.COOPERATIVE]
     confrontational = [

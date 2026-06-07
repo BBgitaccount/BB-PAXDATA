@@ -23,7 +23,7 @@ class SentenceRepository(BaseRepository[Sentence]):
 
     async def add(self, entity: Any) -> Sentence:
         """Add a sentence (supports domain model or ORM model)."""
-        from bb_paxdata.domain.models.sentence import (
+        from bb_paxdata.application.domain.models.sentence import (
             Sentence as SentenceDomain,
         )
 

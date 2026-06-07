@@ -5,7 +5,7 @@ from bb_paxdata.application.consensus.dual_gate import (
     ConsensusLevel,
     DualGateConsensusLayer,
 )
-from bb_paxdata.domain.models.anomaly import AnomalyValidationDecision
+from bb_paxdata.application.domain.models.anomaly import AnomalyValidationDecision
 
 
 def make_det(has_anomaly: bool):

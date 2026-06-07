@@ -3,8 +3,10 @@ from __future__ import annotations
 
 from typing import Sequence
 
-from bb_paxdata.domain.services.prompt_registry import PromptRegistry
-from bb_paxdata.domain.services.protocols.rag_protocols import RetrievedContext
+from bb_paxdata.application.domain.services.prompt_registry import PromptRegistry
+from bb_paxdata.application.domain.services.protocols.rag_protocols import (
+    RetrievedContext,
+)
 
 
 class RAGContextAssembler:

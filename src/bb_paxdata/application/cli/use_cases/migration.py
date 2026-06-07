@@ -5,8 +5,11 @@ from dataclasses import dataclass, field
 from typing import Any, Protocol
 
 import structlog
+from bb_paxdata.application.domain.entities.legacy import (
+    LegacyAnalyticIndex,
+    LegacyTranscript,
+)
 from bb_paxdata.config.settings import Settings
-from bb_paxdata.domain.entities.legacy import LegacyAnalyticIndex, LegacyTranscript
 
 logger = structlog.get_logger()
 

@@ -5,8 +5,8 @@ import numpy as np
 import structlog
 from sklearn.metrics.pairwise import cosine_similarity
 
-from bb_paxdata.domain.models.dki import SegmentWindow, SemanticShiftResult
-from bb_paxdata.domain.ports.embedding_port import EmbeddingService
+from bb_paxdata.application.domain.models.dki import SegmentWindow, SemanticShiftResult
+from bb_paxdata.application.domain.ports.embedding_port import EmbeddingService
 
 logger = structlog.get_logger()
 

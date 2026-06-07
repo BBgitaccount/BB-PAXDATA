@@ -5,7 +5,7 @@ Unit tests for DependencyService.
 from unittest.mock import MagicMock
 
 import pytest
-from bb_paxdata.domain.services.dependency import DependencyService
+from bb_paxdata.application.domain.services.dependency import DependencyService
 
 
 class TestDependencyService:
