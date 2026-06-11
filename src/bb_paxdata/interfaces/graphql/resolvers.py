@@ -188,7 +188,7 @@ async def resolve_submit_verdict(
         sentence_index=s.sent_order or 0,
         text=s.text or "",
         risk_score=float(s.risk_score or 0.0),
-        sentiment_score=float(s.vader_compound or 0.0),
+        sentiment_score=s.vader_compound or 0.0,
         power_level=float(s.power_level or 0.0),
         uncertainty_score=getattr(s, "uncertainty_score", 0.0),
     )

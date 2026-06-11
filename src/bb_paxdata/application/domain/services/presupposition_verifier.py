@@ -192,7 +192,7 @@ class PresuppositionVerifier:
         Key: sha256(trigger_word|trigger_type|segment_id)[:16]
         """
         raw = f"{candidate.trigger_word}|{candidate.trigger_type.value}|{candidate.segment_id}"
-        return hashlib.sha256(raw.encode()).hexdigest()[:16]
+        return hashlib.sha256(raw.encode()).hexdigest()
 
     def _build_prompt(self, candidate: PresuppositionCandidate) -> str:
         """

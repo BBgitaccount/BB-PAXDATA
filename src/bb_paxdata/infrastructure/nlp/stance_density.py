@@ -241,7 +241,7 @@ class StanceDensityCalculator:
         )
 
         return DetailedStanceScore(
-            float(density),
+            density,
             length_skew=round(length_skew, 4),
             punctuation_spike=round(punctuation_spike, 4),
             extemporaneous_flag=extemporaneous_flag,

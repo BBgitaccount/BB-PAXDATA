@@ -59,9 +59,9 @@ class LanguageRouter:
         ),
         "en": LanguageConfig(
             spacy_model="en_core_web_sm",
-            sentiment_lexicon="DIPLO_LEXICON",
-            negation_words="NEGATION_WORDS",
-            stopwords="STOPWORDS",
+            sentiment_lexicon="DIPLO_LEXICON_EN",
+            negation_words="NEGATION_WORDS_EN",
+            stopwords="STOPWORDS_EN",
         ),
     }
 

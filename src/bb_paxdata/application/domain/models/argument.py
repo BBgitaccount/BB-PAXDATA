@@ -193,7 +193,7 @@ class ArgumentNode(BaseModel):
     @property
     def text_hash(self) -> str:
         """Deterministic hash for deduplication."""
-        return hashlib.sha256(self.text.lower().encode()).hexdigest()[:16]
+        return hashlib.sha256(self.text.lower().encode()).hexdigest()
 
     @property
     def is_root_claim(self) -> bool:
@@ -332,7 +332,7 @@ class ArgumentPath(BaseModel):
     """
 
     path_id: str = Field(
-        default_factory=lambda: f"path_{hashlib.md5(str(datetime.now().timestamp()).encode()).hexdigest()[:8]}"
+        default_factory=lambda: f"path_{hashlib.sha256(str(datetime.now().timestamp()).encode()).hexdigest()}"
     )
     nodes: list[ArgumentNode] = Field(default_factory=list)
     edges: list[ArgumentEdge] = Field(default_factory=list)
@@ -377,11 +377,11 @@ class ArgumentGraph(BaseModel):
     - Computed analytics (density, depth, balance)
     """
 
-    model_config = ConfigDict(validate_assignment=True)
+    model_config = ConfigDict(validate_assignment=False)
 
     # === Core Structure ===
     graph_id: str = Field(
-        default_factory=lambda: f"arg_{hashlib.md5(str(datetime.now().timestamp()).encode()).hexdigest()[:12]}",
+        default_factory=lambda: f"arg_{uuid.uuid4().hex}",
         description="Unique graph identifier",
     )
     document_id: str | None = Field(
@@ -423,7 +423,7 @@ class ArgumentGraph(BaseModel):
     rebuttal_count: int = Field(default=0, ge=0)
 
     # === Performance Optimization ===
-    skip_validation: bool = Field(default=False, exclude=True)
+    skip_validation: bool = Field(default=True, exclude=True)
 
     # === Internal Indexes (for O(1) lookups) ===
     _node_index: dict[str, ArgumentNode] = PrivateAttr(default_factory=dict)
@@ -436,10 +436,17 @@ class ArgumentGraph(BaseModel):
 
     @model_validator(mode="after")
     def validate_graph_structure(self) -> ArgumentGraph:
-        """Comprehensive graph validation (DAG, Referential Integrity)."""
-        if self.skip_validation:
-            return self
+        """Lightweight initialization validation. Full validation via validate()."""
+        # Only rebuild indexes on init, skip heavy validation
+        self._rebuild_indexes()
+        return self
 
+    def validate_graph(self) -> ArgumentGraph:
+        """Explicit full validation (DAG, Referential Integrity, Analytics).
+
+        Call this method when you need to ensure graph integrity after construction
+        or modifications. For large graphs, this is expensive.
+        """
         self._rebuild_indexes()
 
         node_ids = set(self._node_index.keys())
@@ -610,6 +617,25 @@ class ArgumentGraph(BaseModel):
     def get_node(self, segment_id: str) -> ArgumentNode | None:
         return self._node_index.get(segment_id)
 
+    def get_subgraph(self, segment_ids: set[str]) -> ArgumentGraph:
+        """Create a new subgraph containing only the specified nodes and their connecting edges."""
+        node_set = set(segment_ids) & set(self._node_index.keys())
+        sub_nodes = [self._node_index[nid] for nid in node_set]
+        sub_edges = [
+            edge
+            for edge in self.edges
+            if edge.source_id in node_set and edge.target_id in node_set
+        ]
+        sub_roots = [rid for rid in self.root_claim_ids if rid in node_set]
+        return ArgumentGraph(
+            nodes=sub_nodes,
+            edges=sub_edges,
+            root_claim_ids=sub_roots,
+            document_id=self.document_id,
+            model_version=self.model_version,
+            skip_validation=True,
+        )
+
     def get_neighbors(self, segment_id: str) -> list[tuple[ArgumentNode, ArgumentEdge]]:
         neighbors = []
         for neighbor_id, edge in self._adjacency_list.get(segment_id, []):
@@ -673,7 +699,7 @@ class ArgumentGraph(BaseModel):
             for neighbor_id, _ in self._adjacency_list.get(node_id, []):
                 if color.get(neighbor_id) == GRAY:
                     cycle_start = path.index(neighbor_id)
-                    cycles.append(path[cycle_start:] + [neighbor_id])
+                    cycles.append([*path[cycle_start:], neighbor_id])
                 elif color.get(neighbor_id) == WHITE:
                     dfs(neighbor_id)
             path.pop()
@@ -798,24 +824,6 @@ class ArgumentGraph(BaseModel):
                         new_stance = ArgumentStance.NEUTRAL
                     self._node_index[pred_id].stance = new_stance
                     queue.append(pred_id)
-
-    def get_subgraph(self, node_ids: set[str]) -> ArgumentGraph:
-        node_set = set(node_ids) & set(self._node_index.keys())
-        sub_nodes = [self._node_index[nid] for nid in node_set]
-        sub_edges = [
-            edge
-            for edge in self.edges
-            if edge.source_id in node_set and edge.target_id in node_set
-        ]
-        sub_roots = [rid for rid in self.root_claim_ids if rid in node_set]
-        return ArgumentGraph(
-            nodes=sub_nodes,
-            edges=sub_edges,
-            root_claim_ids=sub_roots,
-            document_id=self.document_id,
-            model_version=self.model_version,
-            skip_validation=True,
-        )
 
     def serialize_to_frontend(self) -> dict:
         if not self.root_claim_ids:

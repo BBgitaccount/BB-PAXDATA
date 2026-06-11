@@ -1,12 +1,14 @@
 from __future__ import annotations
 
 from abc import abstractmethod
+from collections.abc import Sequence
 from typing import TYPE_CHECKING, Protocol, runtime_checkable
 
 if TYPE_CHECKING:
     import numpy as np
 
-    from ..models.sbi_models import SBIResult, SpeakerPosition, WordfishParams
+    from ..models.analysis import Analysis
+    from ..models.sbi_models import SBIResult, WordfishParams
 
 
 @runtime_checkable
@@ -62,13 +64,24 @@ class EngagementScorerProtocol(Protocol):
 
 @runtime_checkable
 class SBICalculatorProtocol(Protocol):
-    """Protocol for composite SBI calculation."""
+    """Protocol for composite Speaker-Based Index orchestration.
+
+    Matches the concrete implementation in
+    src/bb_paxdata/application/pipeline/sbi_calculator.py.
+    """
 
     @abstractmethod
     async def compute(
         self,
-        speaker_data: list[SpeakerPosition],
-        weights: tuple[float, float, float] = (0.6, 0.25, 0.15),
+        analyses: Sequence[Analysis],
+        session_id: str = "session_default",
     ) -> SBIResult:
-        """Compute the composite Speaker-Based Index."""
+        """Orchestrate Wordfish + Stance + Engagement and return SBIResult.
+
+        Args:
+            analyses: Per-speaker sentence-level Analysis objects.
+            session_id: Session identifier written to SpeakerPosition records.
+        Returns:
+            SBIResult containing a SpeakerPosition for each unique speaker.
+        """
         ...

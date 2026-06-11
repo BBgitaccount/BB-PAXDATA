@@ -22,7 +22,9 @@ rich            = "^13.7"
 structlog       = "24.2"
 pandas          = "^2.2"
 pandera         = ">=0.20.0"
-spacy           = ">=3.7.0,<3.8.0"
+spacy           = ">=3.8.0,<3.9.0"
+en-core-web-sm = { url = "https://github.com/explosion/spacy-models/releases/download/en_core_web_sm-3.8.0/en_core_web_sm-3.8.0-py3-none-any.whl" }
+tr-core-news-md = { url = "https://huggingface.co/turkish-nlp-suite/tr_core_news_md/resolve/main/tr_core_news_md-1.0-py3-none-any.whl" }
 vaderSentiment  = "^3.3"
 langdetect      = "^1.0"
 networkx        = "^3.0"
@@ -58,13 +60,13 @@ pyarrow = "^19.0"
 aiohttp = "^3.14.0"
 transformers = ">=4.48.0,<5.0.0"
 ragatouille = { version = ">=0.0.8,<0.1.0" }
+torch = "^2.3.0"
+torch-geometric = { version = "^2.6.0", optional = true }
+torch-scatter = { version = "^2.1.2", optional = true }
+torch-sparse = { version = "^0.6.18", optional = true }
 
-# (M-01) PyTorch Geometric with CUDA 11.8 support for production/GPU environments
-# Temporarily disabled due to version conflicts - will re-enable after resolution
-# torch = { version = "2.3.0+cu118", source = "pytorch-cu118", optional = true }
-# torch-geometric = { version = "2.6.0", source = "pyg-cu118", optional = true }
-# torch-scatter = { version = "2.1.2", source = "pyg-cu118", optional = true }
-# torch-sparse = { version = "0.6.18", source = "pyg-cu118", optional = true }
+[tool.poetry.extras]
+graph = ["torch-geometric", "torch-scatter", "torch-sparse"]
 
 # (M-01) PyTorch source definitions
 [[tool.poetry.source]]

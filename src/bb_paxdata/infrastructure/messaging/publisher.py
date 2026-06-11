@@ -7,7 +7,7 @@ from bb_paxdata.config.settings import get_settings
 logger = logging.getLogger(__name__)
 
 
-class EventPublisher:
+class RedisEventPublisher:
     """Publishes asynchronous events to Redis channels to trigger background tasks."""
 
     def __init__(self, redis_url: str):
@@ -34,13 +34,13 @@ class EventPublisher:
             logger.error(f"Failed to publish event '{event_type}' to Redis: {e}")
 
 
-_publisher: EventPublisher | None = None
+_publisher: RedisEventPublisher | None = None
 
 
-def get_publisher() -> EventPublisher:
-    """Retrieve the global EventPublisher instance."""
+def get_publisher() -> RedisEventPublisher:
+    """Retrieve the global RedisEventPublisher instance."""
     global _publisher
     if _publisher is None:
         settings = get_settings()
-        _publisher = EventPublisher(redis_url=settings.redis_url)
+        _publisher = RedisEventPublisher(redis_url=settings.redis_url)
     return _publisher

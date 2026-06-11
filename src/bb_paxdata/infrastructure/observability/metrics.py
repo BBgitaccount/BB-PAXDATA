@@ -5,11 +5,11 @@ Provides thread-safe prometheus metric collection and a singleton interface.
 
 import threading
 import time
-from collections.abc import Iterator
+from collections.abc import Generator
 from contextlib import contextmanager
-from typing import Any
+from typing import TYPE_CHECKING, Any
 
-try:
+if TYPE_CHECKING:
     from prometheus_client import (
         CollectorRegistry,
         Counter,
@@ -21,54 +21,67 @@ try:
     )
 
     _prometheus_available = True
-except ImportError:
-    _prometheus_available = False
+else:
+    try:
+        from prometheus_client import (
+            CollectorRegistry,
+            Counter,
+            Gauge,
+            Histogram,
+        )
+        from prometheus_client import (
+            start_http_server as _start_http_server,
+        )
 
-    # Dummy implementations for type hinting and no-op
-    class CollectorRegistry:  # type: ignore
-        pass
+        _prometheus_available = True
+    except ImportError:
+        _prometheus_available = False
 
-    class Counter:  # type: ignore
-        def __init__(
-            self, name: str, _documentation: str, *args: Any, **kwargs: Any
-        ) -> None:
+        # Dummy implementations for type hinting and no-op
+        class CollectorRegistry:  # type: ignore
             pass
 
-        def labels(self, **kwargs: Any) -> Any:
-            return self
+        class Counter:  # type: ignore
+            def __init__(
+                self, name: str, _documentation: str, *args: Any, **kwargs: Any
+            ) -> None:
+                pass
 
-        def inc(self, _amount: float = 1) -> None:
-            pass
+            def labels(self, **kwargs: Any) -> Any:
+                return self
 
-    class Gauge:  # type: ignore
-        def __init__(
-            self, name: str, _documentation: str, *args: Any, **kwargs: Any
-        ) -> None:
-            pass
+            def inc(self, _amount: float = 1) -> None:
+                pass
 
-        def labels(self, **kwargs: Any) -> Any:
-            return self
+        class Gauge:  # type: ignore
+            def __init__(
+                self, name: str, _documentation: str, *args: Any, **kwargs: Any
+            ) -> None:
+                pass
 
-        def set(self, value: float) -> None:
-            pass
+            def labels(self, **kwargs: Any) -> Any:
+                return self
 
-        def inc(self, _amount: float = 1) -> None:
-            pass
+            def set(self, value: float) -> None:
+                pass
 
-        def dec(self, _amount: float = 1) -> None:
-            pass
+            def inc(self, _amount: float = 1) -> None:
+                pass
 
-    class Histogram:  # type: ignore
-        def __init__(
-            self, name: str, _documentation: str, *args: Any, **kwargs: Any
-        ) -> None:
-            pass
+            def dec(self, _amount: float = 1) -> None:
+                pass
 
-        def labels(self, **kwargs: Any) -> Any:
-            return self
+        class Histogram:  # type: ignore
+            def __init__(
+                self, name: str, _documentation: str, *args: Any, **kwargs: Any
+            ) -> None:
+                pass
 
-        def observe(self, _amount: float) -> None:
-            pass
+            def labels(self, **kwargs: Any) -> Any:
+                return self
+
+            def observe(self, _amount: float) -> None:
+                pass
 
 
 class MetricsCollector:
@@ -326,7 +339,7 @@ class MetricsCollector:
 @contextmanager
 def track_ai_request(
     collector: MetricsCollector, backend: str, model: str
-) -> Iterator[None]:
+) -> Generator[None, None, None]:
     """
     Context manager to track the duration of an AI backend request.
 

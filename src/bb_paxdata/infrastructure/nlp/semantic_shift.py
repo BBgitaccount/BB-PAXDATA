@@ -132,7 +132,7 @@ class AzarbonyadSemanticShiftCalculator:
             aggregate_shift /= total_weight
 
         return SemanticShiftResult(
-            aggregate_shift=float(aggregate_shift),
+            aggregate_shift=aggregate_shift,
             per_word_shifts=per_word_shifts,
             idf_weights_used=idf,
             vocabulary_overlap_ratio=overlap_ratio,

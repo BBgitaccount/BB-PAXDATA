@@ -39,17 +39,36 @@ def get_compare_use_case(
     """Dependency provider for CompareSessionsUseCase."""
 
     # Import here to avoid circular imports
-    from bb_paxdata.application.domain.services.ai_analyst import AIAnalyst
     from bb_paxdata.config.settings import settings
+    from bb_paxdata.infrastructure.ai.factory import AIClientFactory
 
-    llm_service = (
-        AIAnalyst(
-            model=getattr(settings, "COMPARISON_NARRATIVE_MODEL", "gpt-4o-mini"),
-            max_tokens=getattr(settings, "COMPARISON_NARRATIVE_MAX_TOKENS", 1000),
+    llm_service = None
+    if getattr(settings, "COMPARISON_NARRATIVE_ENABLED", True):
+        backend = getattr(settings, "ai_backend", "local")
+        model = getattr(settings, "COMPARISON_NARRATIVE_MODEL", "gpt-4o-mini")
+
+        # Get API key based on backend
+        api_key = ""
+        if backend == "api":
+            api_key = getattr(settings, "anthropic_api_key", "")
+        elif backend == "gemini":
+            api_key = getattr(settings, "gemini_api_key", "")
+        elif backend == "groq":
+            api_key = getattr(settings, "groq_api_key", "")
+        elif backend == "deepseek":
+            api_key = getattr(settings, "deepseek_api_key", "")
+
+        # Get base URL for local backend
+        base_url = None
+        if backend == "local":
+            base_url = getattr(settings, "ollama_base_url", None)
+
+        llm_service = AIClientFactory.create(
+            backend=backend,
+            api_key=api_key,
+            model=model,
+            base_url=base_url,
         )
-        if getattr(settings, "COMPARISON_NARRATIVE_ENABLED", True)
-        else None
-    )
 
     return CompareSessionsUseCase(
         sbi_repository=SBIRepository(db),

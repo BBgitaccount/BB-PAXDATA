@@ -1,5 +1,5 @@
 import re
-from typing import Any, Optional
+from typing import Any
 
 from pydantic import BaseModel, Field, model_validator
 
@@ -53,59 +53,59 @@ class FailQueueItemResponse(BaseModel):
     status: str
     actual_value: float
     expected_constraint: str
-    details: Optional[dict[str, Any]] = None
-    human_verdict: Optional[str] = None
-    human_note: Optional[str] = None
+    details: dict[str, Any] | None = None
+    human_verdict: str | None = None
+    human_note: str | None = None
     log_version: int
-    reviewer_id: Optional[str] = None
-    sentence_text: Optional[str] = None
-    sent_id: Optional[str] = None
-    seg_id: Optional[str] = None
-    file_id: Optional[str] = None
-    speaker_name: Optional[str] = None
-    country: Optional[str] = None
+    reviewer_id: str | None = None
+    sentence_text: str | None = None
+    sent_id: str | None = None
+    seg_id: str | None = None
+    file_id: str | None = None
+    speaker_name: str | None = None
+    country: str | None = None
     power_level: int
-    ai_risk_score: Optional[int] = None
-    ai_emotion_category: Optional[str] = None
-    ai_diplomatic_tone: Optional[str] = None
-    review_id: Optional[int] = None
-    review_status: Optional[str] = None
-    trigger_type: Optional[str] = None
+    ai_risk_score: int | None = None
+    ai_emotion_category: str | None = None
+    ai_diplomatic_tone: str | None = None
+    review_id: int | None = None
+    review_status: str | None = None
+    trigger_type: str | None = None
     priority_score: float
-    created_at: Optional[str] = None
+    created_at: str | None = None
 
 
 class SpeakerContext(BaseModel):
     name: str
     country: str
-    role: Optional[str] = None
+    role: str | None = None
     power_level: int
-    influence_tier: Optional[str] = None
-    bloc: Optional[str] = None
+    influence_tier: str | None = None
+    bloc: str | None = None
 
 
 class PanelContext(BaseModel):
     file_id: str
-    panel_number: Optional[int] = None
-    date: Optional[str] = None
-    theme: Optional[str] = None
+    panel_number: int | None = None
+    date: str | None = None
+    theme: str | None = None
 
 
 class TripletContextResponse(BaseModel):
-    prev: Optional[str] = None
-    current: Optional[str] = None
-    next: Optional[str] = None
-    speaker: Optional[SpeakerContext] = None
-    panel: Optional[PanelContext] = None
+    prev: str | None = None
+    current: str | None = None
+    next: str | None = None
+    speaker: SpeakerContext | None = None
+    panel: PanelContext | None = None
 
 
 class VerdictPayload(BaseModel):
     log_id: int
     verdict: str = Field(..., pattern="^(CONFIRMED_PASS|CONFIRMED_FAIL|CORRECTED)$")
-    corrected_value: Optional[float] = None
-    note: Optional[str] = None
-    confidence: Optional[str] = Field("MEDIUM", pattern="^(LOW|MEDIUM|HIGH)$")
-    justification: Optional[str] = None
+    corrected_value: float | None = None
+    note: str | None = None
+    confidence: str | None = Field("MEDIUM", pattern="^(LOW|MEDIUM|HIGH)$")
+    justification: str | None = None
     reviewer_id: str
 
 
@@ -119,25 +119,25 @@ class SimilarCaseResponse(BaseModel):
     log_id: int
     entity_id: str
     actual_value: float
-    human_verdict: Optional[str] = None
-    human_note: Optional[str] = None
-    sentence_text: Optional[str] = None
-    country: Optional[str] = None
-    speaker_name: Optional[str] = None
+    human_verdict: str | None = None
+    human_note: str | None = None
+    sentence_text: str | None = None
+    country: str | None = None
+    speaker_name: str | None = None
 
 
 class AuditEntryResponse(BaseModel):
     audit_id: int
     log_id: int
     action_type: str
-    previous_verdict: Optional[str] = None
+    previous_verdict: str | None = None
     new_verdict: str
-    previous_value: Optional[float] = None
-    new_value: Optional[float] = None
+    previous_value: float | None = None
+    new_value: float | None = None
     performed_by: str
     performed_at: str
-    justification: Optional[str] = None
-    review_status: Optional[str] = None
+    justification: str | None = None
+    review_status: str | None = None
 
 
 class DiscourseNode(BaseModel):
@@ -169,23 +169,23 @@ class DatabaseStatsResponse(BaseModel):
 class AnomalyTimelineItemResponse(BaseModel):
     fail_id: int
     sent_id: str
-    file_id: Optional[str] = None
-    speaker_name: Optional[str] = None
-    country: Optional[str] = None
+    file_id: str | None = None
+    speaker_name: str | None = None
+    country: str | None = None
     check_type: str
-    formula_value: Optional[str] = None
-    ai_value: Optional[str] = None
-    discrepancy_score: Optional[float] = None
-    original_sentence: Optional[str] = None
-    fail_reason: Optional[str] = None
-    fail_category: Optional[str] = None
-    anomaly_types: Optional[str] = None
-    processed_at: Optional[str] = None
-    negation_type: Optional[str] = None
-    negation_scope: Optional[str] = None
-    linguistic_marker: Optional[str] = None
-    contextual_factor: Optional[str] = None
-    temporal_factor: Optional[str] = None
+    formula_value: str | None = None
+    ai_value: str | None = None
+    discrepancy_score: float | None = None
+    original_sentence: str | None = None
+    fail_reason: str | None = None
+    fail_category: str | None = None
+    anomaly_types: str | None = None
+    processed_at: str | None = None
+    negation_type: str | None = None
+    negation_scope: str | None = None
+    linguistic_marker: str | None = None
+    contextual_factor: str | None = None
+    temporal_factor: str | None = None
 
 
 class GarchResultResponse(BaseModel):
@@ -222,14 +222,14 @@ class DriftEventItemResponse(BaseModel):
     start_position: int
     end_position: int
     severity: str
-    before_state: Optional[str] = None
-    after_state: Optional[str] = None
+    before_state: str | None = None
+    after_state: str | None = None
     confidence: float
     algorithm: str
 
 
 class TemporalDriftResponse(BaseModel):
-    selected_speaker: Optional[str] = None
+    selected_speaker: str | None = None
     garch: GarchResultResponse
     half_life: HalfLifeResultResponse
     dki: list[DkiHistoryItemResponse]
@@ -264,9 +264,9 @@ class CompareSessionsRequest(BaseModel):
 
 class SignificantChangeResponse(BaseModel):
     dimension: str
-    speaker_id: Optional[str] = None
-    raw_delta: Optional[float] = None
-    normalized_delta: Optional[float] = None
+    speaker_id: str | None = None
+    raw_delta: float | None = None
+    normalized_delta: float | None = None
 
 
 class SpeechActDeltaResponse(BaseModel):
@@ -274,7 +274,7 @@ class SpeechActDeltaResponse(BaseModel):
     distribution_a: dict[str, float]
     distribution_b: dict[str, float]
     delta_distribution: dict[str, float]
-    most_changed_type: Optional[str] = None
+    most_changed_type: str | None = None
     change_magnitude: float = 0.0
 
 
@@ -283,7 +283,7 @@ class NarrativeLayerDeltaResponse(BaseModel):
     layer_weights_a: dict[str, float]
     layer_weights_b: dict[str, float]
     delta_weights: dict[str, float]
-    dominant_layer_change: Optional[tuple[str, float]] = None
+    dominant_layer_change: tuple[str, float] | None = None
 
 
 class AnalysisDeltaResponse(BaseModel):
@@ -299,8 +299,8 @@ class AnalysisDeltaResponse(BaseModel):
     delta_dki_normalized: dict[str, float] = Field(default_factory=dict)
     delta_dki_significant: dict[str, bool] = Field(default_factory=dict)
 
-    delta_risk: Optional[float] = None
-    delta_risk_normalized: Optional[float] = None
+    delta_risk: float | None = None
+    delta_risk_normalized: float | None = None
     delta_risk_significant: bool = False
 
     delta_hedging: dict[str, float] = Field(default_factory=dict)
@@ -320,7 +320,7 @@ class AnalysisDeltaResponse(BaseModel):
     speakers_only_in_a: list[str] = Field(default_factory=list)
     speakers_only_in_b: list[str] = Field(default_factory=list)
 
-    most_drifted_speaker: Optional[str] = None
+    most_drifted_speaker: str | None = None
     most_drifted_dimension: str = ""
     total_significant_changes: int = 0
 
@@ -329,25 +329,25 @@ class ContrastReportResponse(BaseModel):
     report_id: str
     delta: AnalysisDeltaResponse
 
-    narrative_summary: Optional[str] = None
+    narrative_summary: str | None = None
     narrative_summary_skipped: bool = False
     narrative_summary_failed: bool = False
     narrative_summary_model: str = ""
-    narrative_summary_timestamp: Optional[str] = None
+    narrative_summary_timestamp: str | None = None
 
-    most_drifted_speaker: Optional[str] = None
+    most_drifted_speaker: str | None = None
     most_drifted_dimension: str = ""
 
     key_insights: list[str] = Field(default_factory=list)
-    risk_assessment: Optional[str] = None
+    risk_assessment: str | None = None
     risk_level_changed: bool = False
-    recommendation: Optional[str] = None
+    recommendation: str | None = None
 
     generated_at: str
 
 
 class CompareSessionsResponse(BaseModel):
     success: bool
-    contrast_report: Optional[ContrastReportResponse] = None
-    analysis_delta: Optional[AnalysisDeltaResponse] = None
+    contrast_report: ContrastReportResponse | None = None
+    analysis_delta: AnalysisDeltaResponse | None = None
     errors: list[str] = Field(default_factory=list)

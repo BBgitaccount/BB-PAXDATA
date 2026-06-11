@@ -1,5 +1,4 @@
 import difflib
-from typing import Dict, List, Optional
 
 from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel, Field
@@ -16,19 +15,19 @@ class PromptVersionResponse(BaseModel):
     version_id: str
     content: str
     content_hash: str
-    academic_ref: Optional[str] = None
+    academic_ref: str | None = None
     created_at: str
 
 
 class PromptListResponse(BaseModel):
-    prompts: Dict[str, List[PromptVersionResponse]]
+    prompts: dict[str, list[PromptVersionResponse]]
 
 
 class PromptDiffResponse(BaseModel):
     name: str
     from_version: str
     to_version: str
-    unified_diff: List[str]
+    unified_diff: list[str]
     added_lines: int
     removed_lines: int
 
@@ -67,7 +66,7 @@ async def list_all_prompts():
     return PromptListResponse(prompts={})
 
 
-@router.get("/{name}/versions", response_model=List[PromptVersionResponse])
+@router.get("/{name}/versions", response_model=list[PromptVersionResponse])
 async def list_prompt_versions(name: str):
     """Belirli bir promptun tüm versiyonlarını listeler."""
     registry = get_prompt_registry()

@@ -1,5 +1,5 @@
 from enum import Enum
-from typing import Literal, Optional
+from typing import Literal
 
 from pydantic import BaseModel, ConfigDict, Field
 
@@ -62,7 +62,7 @@ class FiveWOneH(BaseModel):
     where: list[str] = Field(default_factory=list)
     why: list[str] = Field(default_factory=list)
     how: list[str] = Field(default_factory=list)
-    speech_act: Optional[SpeechActClassification] = Field(default=None)
+    speech_act: SpeechActClassification | None = Field(default=None)
 
 
 class PerspectiveCluster(BaseModel):

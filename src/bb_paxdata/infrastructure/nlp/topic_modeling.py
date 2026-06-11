@@ -204,7 +204,7 @@ class TopicModelingService(TopicModelingProtocol):
             embeddings = await asyncio.to_thread(
                 self._embedding_model.encode, missing_docs, show_progress_bar=False
             )
-            for doc, emb in zip(missing_docs, embeddings):
+            for doc, emb in zip(missing_docs, embeddings):  # type: ignore[arg-type]
                 self._embedding_cache[doc] = emb
 
         # Construct final embeddings array in the order of input 'docs'
@@ -234,6 +234,8 @@ class TopicModelingService(TopicModelingProtocol):
 
         def _fit() -> tuple[BERTopic, list[int], np.ndarray]:
             topics, probs = topic_model.fit_transform(docs, embeddings)
+            if probs is None:
+                raise RuntimeError("Failed to compute topic probabilities")
             return topic_model, topics, probs
 
         return await asyncio.to_thread(_fit)

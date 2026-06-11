@@ -1,5 +1,3 @@
-from typing import Optional
-
 from pydantic import BaseModel, ConfigDict, Field
 
 from bb_paxdata.application.domain.models.appraisal_vector import AppraisalVector
@@ -46,7 +44,7 @@ class PowerIndex(BaseModel):
     # Normalized (z-score benzeri, 0-1 arası)
     normalized_score: float | None = Field(default=None, ge=0.0, le=1.0)
 
-    appraisal_vector: Optional[AppraisalVector] = Field(
+    appraisal_vector: AppraisalVector | None = Field(
         default=None, description="Appraisal vector"
     )
 

@@ -2,12 +2,13 @@
 # AÇIKLAMA: Servis arayüzleri — structural typing (Protocol)
 # Taşınan ve absolute importlara dönüştürülen eski protocols.py içeriği.
 
-from dataclasses import dataclass
 from typing import Any, Protocol, runtime_checkable
 
-from bb_paxdata.application.domain.enums import RiskLevel
 from bb_paxdata.application.domain.models.ai_analysis import AIAnalysisResult
 from bb_paxdata.application.domain.models.analysis import Analysis
+from bb_paxdata.application.domain.models.anomaly import (
+    AnomalyResult as _CanonicalAnomalyResult,
+)
 from bb_paxdata.application.domain.models.calibration import CalibrationReport
 from bb_paxdata.application.domain.models.dki import (
     DynamicPositionResult,
@@ -18,6 +19,9 @@ from bb_paxdata.application.domain.models.dki import (
     SpeakerTrajectory,
 )
 from bb_paxdata.application.domain.models.human_review import HumanReview
+
+# Re-export canonical AnomalyResult for backward compatibility
+AnomalyResult = _CanonicalAnomalyResult
 
 
 @runtime_checkable
@@ -61,16 +65,6 @@ class LLMPositionEstimator(Protocol):
     ) -> PositionCalibration:
         """Compute calibration drift between LLM and Wordfish positions."""
         ...
-
-
-@dataclass(frozen=True)
-class AnomalyResult:
-    """CrossAnomalyService.detect() metodunun dönüş tipi."""
-
-    score: float  # [0.0, 1.0]
-    flags: list[str]  # Tetiklenen kural mesajları
-    risk_level: RiskLevel
-    triggered_count: int = 0
 
 
 @runtime_checkable

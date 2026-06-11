@@ -4,8 +4,6 @@
 # ============================================================
 
 
-from typing import Optional
-
 from pydantic import BaseModel, Field, computed_field
 
 from bb_paxdata.application.domain.models.appraisal_vector import AppraisalVector
@@ -30,7 +28,7 @@ class AIAnalysisResult(BaseModel):
     # Audit trail alanları — AnalysisAssembler tarafından Analysis modeline aktarılır
     prompt_version: str = Field(description="prompt_id@version formatı")
     prompt_hash: str | None = Field(
-        default=None, description="SHA256 hash (ilk 16 karakter)"
+        default=None, description="SHA256 hash (tam 64 karakter)"
     )
     model_name: str = Field(default="", description="Kullanılan AI modeli")
 
@@ -39,11 +37,11 @@ class AIAnalysisResult(BaseModel):
     parse_error: str | None = None
 
     # === TASK-A02 Entegrasyonu ===
-    argument_graph: Optional[ArgumentGraph] = Field(
+    argument_graph: ArgumentGraph | None = Field(
         default=None,
         description="Peldszus & Stede (2013) argumentation structure graph",
     )
-    argument_quality_score: Optional[float] = Field(
+    argument_quality_score: float | None = Field(
         default=None,
         ge=0.0,
         le=1.0,
@@ -52,7 +50,7 @@ class AIAnalysisResult(BaseModel):
     key_claims_extracted: list[str] = Field(
         default_factory=list, description="Top-N most important claims identified"
     )
-    controversy_level: Optional[float] = Field(
+    controversy_level: float | None = Field(
         default=None,
         ge=0.0,
         le=1.0,
@@ -60,13 +58,13 @@ class AIAnalysisResult(BaseModel):
     )
 
     # === TASK-A03 Entegrasyonu ===
-    appraisal_vector: Optional[AppraisalVector] = Field(
+    appraisal_vector: AppraisalVector | None = Field(
         default=None, description="Appraisal theory evaluation vector"
     )
     appraisal_judgment_sanction_count: int = Field(
         default=0, ge=0, description="Total negative social sanction judgments"
     )
-    dominant_appraisal_axis: Optional[str] = Field(
+    dominant_appraisal_axis: str | None = Field(
         default=None,
         description="Dominant appraisal axis (AFFECT, JUDGMENT, APPRECIATION)",
     )

@@ -60,7 +60,16 @@ def verify_webhook_signature(
         if abs(now - ts) > tolerance_seconds:
             return False
 
-        signed_payload = f"{ts_str}.{raw_body.decode('utf-8')}"
+        # Parse and re-serialize JSON with same parameters as sender to ensure consistency
+        # This handles whitespace, unicode normalization, and encoding differences
+        try:
+            payload = json.loads(raw_body.decode("utf-8"))
+            serialized_body = json.dumps(payload, sort_keys=True, ensure_ascii=False)
+        except (json.JSONDecodeError, UnicodeDecodeError):
+            # If JSON parsing fails, fall back to raw body (for backward compatibility)
+            serialized_body = raw_body.decode("utf-8")
+
+        signed_payload = f"{ts_str}.{serialized_body}"
         expected_sig = hmac.new(
             secret.encode("utf-8"),
             signed_payload.encode("utf-8"),

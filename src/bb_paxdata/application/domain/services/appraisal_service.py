@@ -4,12 +4,12 @@ import threading
 from collections import OrderedDict
 from typing import Any, Optional
 
-from ....infrastructure.nlp.appraisal_config import get_appraisal_config
-from ....infrastructure.nlp.shared_lexicons import (
+from ...protocols import AppraisalServiceProtocol, BaseService
+from ..lexicon.appraisal_config import get_appraisal_config
+from ..lexicon.shared_lexicons import (
     GRADUATION_FORCE_DOWN,
     GRADUATION_FORCE_UP,
 )
-from ...protocols import AppraisalServiceProtocol, BaseService
 from ..models.appraisal_vector import (
     AffectType,
     AppraisalVector,
@@ -188,9 +188,9 @@ class AppraisalService(BaseService, AppraisalServiceProtocol):
     def analyze(
         self,
         text: str,
-        segment_id: Optional[str] = None,
-        srl_frame: Optional[SRLFrame] = None,
-        hedging_detected_markers: Optional[list[str]] = None,
+        segment_id: str | None = None,
+        srl_frame: SRLFrame | None = None,
+        hedging_detected_markers: list[str] | None = None,
     ) -> AppraisalVector:
         """Analyze appraisal theory vectors in text, with LRU caching."""
         cache_key = self._cache_key(text, srl_frame, hedging_detected_markers)
@@ -215,8 +215,8 @@ class AppraisalService(BaseService, AppraisalServiceProtocol):
     def _cache_key(
         self,
         text: str,
-        srl_frame: Optional[SRLFrame],
-        hedging_markers: Optional[list[str]],
+        srl_frame: SRLFrame | None,
+        hedging_markers: list[str] | None,
     ) -> str:
         """Create a short SHA-256 hash representation key for caching."""
         text_norm = text.strip().lower()
@@ -232,9 +232,9 @@ class AppraisalService(BaseService, AppraisalServiceProtocol):
     def _run_analysis(
         self,
         text: str,
-        segment_id: Optional[str],
-        srl_frame: Optional[SRLFrame],
-        hedging_detected_markers: Optional[list[str]],
+        segment_id: str | None,
+        srl_frame: SRLFrame | None,
+        hedging_detected_markers: list[str] | None,
     ) -> AppraisalVector:
         """Perform lexicon matching and compute the Appraisal Vector."""
         text_lower = text.strip().lower()
@@ -249,7 +249,7 @@ class AppraisalService(BaseService, AppraisalServiceProtocol):
 
         # 1. AFFECT detection
         affect_score = 0.0
-        affect_type: Optional[AffectType] = None
+        affect_type: AffectType | None = None
         affect_triggers: list[str] = []
         best_affect_score = 0.0
 
@@ -272,7 +272,7 @@ class AppraisalService(BaseService, AppraisalServiceProtocol):
 
         # 2. JUDGMENT detection
         judgment_score = 0.0
-        judgment_type: Optional[JudgmentType] = None
+        judgment_type: JudgmentType | None = None
         judgment_is_sanction = False
         judgment_triggers: list[str] = []
         best_judgment_score = 0.0
@@ -297,7 +297,7 @@ class AppraisalService(BaseService, AppraisalServiceProtocol):
 
         # 3. APPRECIATION detection
         appreciation_score = 0.0
-        appreciation_type: Optional[AppreciationType] = None
+        appreciation_type: AppreciationType | None = None
         appreciation_triggers: list[str] = []
         best_appreciation_score = 0.0
 
@@ -325,7 +325,7 @@ class AppraisalService(BaseService, AppraisalServiceProtocol):
 
         # 4. GRADUATION detection
         graduation_force = 0.0
-        graduation_force_direction: Optional[str] = None
+        graduation_force_direction: str | None = None
 
         force_up_hits = 0
         force_down_hits = 0

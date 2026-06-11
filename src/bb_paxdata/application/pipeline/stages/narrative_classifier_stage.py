@@ -1,5 +1,5 @@
 # src/bb_paxdata/application/pipeline/stages/narrative_classifier_stage.py
-from typing import Any, Dict, List, Optional
+from typing import Any
 
 import structlog
 from bb_paxdata.application.domain.enums.country_enums import NarrativeLayer
@@ -57,7 +57,7 @@ class NarrativeClassifierStage:
             ],
         }
 
-    def classify_segment_layer(self, text: str) -> Optional[NarrativeLayer]:
+    def classify_segment_layer(self, text: str) -> NarrativeLayer | None:
         """Returns None if no narrative layer signal is detected (FINDING P-06)."""
         normalized_text = text.lower()
         scores = {layer: 0 for layer in NarrativeLayer}
@@ -73,8 +73,8 @@ class NarrativeClassifierStage:
         return max(scores, key=lambda k: scores[k])
 
     def extract_narrative_target(
-        self, text: str, entities: List[Dict[str, Any]], self_actor: str
-    ) -> Optional[str]:
+        self, text: str, entities: list[dict[str, Any]], self_actor: str
+    ) -> str | None:
         """Resolves target of the narrative, prioritizing named entities (GPE/ORG) from NER."""
         for ent in entities:
             ent_label = ent.get("label", "")

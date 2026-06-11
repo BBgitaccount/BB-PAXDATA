@@ -625,13 +625,12 @@ class FormulaAuditor:
 
             # Recalculate risk score for sentence
             detected_signals = [sig for sig in RISK_SIGNALS if sig in stxt]
-            risk_val = float(
-                min(
-                    10.0,
-                    sum(RISK_SIGNAL_WEIGHTS.get(sig, 1) for sig in detected_signals),
-                )
+            risk_val = min(
+                10.0,
+                sum(RISK_SIGNAL_WEIGHTS.get(sig, 1) for sig in detected_signals),
             )
             risk_scores.append(risk_val)
+
             power_levels.append(speaker_power)
 
         avg_power = sum(power_levels) / len(power_levels)

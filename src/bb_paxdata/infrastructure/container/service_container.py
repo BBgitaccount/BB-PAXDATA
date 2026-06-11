@@ -29,7 +29,9 @@ from ...config.settings import get_settings
 from ..ai.analyst import AIAnalyst as InfraAIAnalyst
 from ..ai.analyst import BackendType
 from ..db.repositories.unit_of_work import SqlAlchemyUnitOfWork
+from ..db.session import SessionLocal
 from ..event_bus.simple_event_bus import SimpleEventBus
+from ..nlp.gat_embedding_service import GATEmbeddingService
 from ..nlp.maoz_dyadic_service import MaozDyadicService
 from ..nlp.negation_detector import SpacyNegationDetector
 from ..nlp.power_index_calculator import PowerIndexCalculator
@@ -126,10 +128,6 @@ class ServiceContainer:
             from bb_paxdata.application.services.few_shot_injector import (
                 FewShotInjector,
             )
-            from bb_paxdata.infrastructure.db.repositories.unit_of_work import (
-                SqlAlchemyUnitOfWork,
-            )
-            from bb_paxdata.infrastructure.db.session import SessionLocal
 
             def uow_factory() -> SqlAlchemyUnitOfWork:
                 return SqlAlchemyUnitOfWork(SessionLocal)
@@ -228,6 +226,9 @@ class ServiceContainer:
             embedding_service=self.embedding_service,
         )
 
+        # ── GAT Embedding Service (TASK-E02) ───────────────────────
+        self.gat_embedding_service = GATEmbeddingService()
+
         from ..nlp.semantic_shift import AzarbonyadSemanticShiftCalculator
 
         self.semantic_shift_calculator = AzarbonyadSemanticShiftCalculator(
@@ -248,7 +249,7 @@ class ServiceContainer:
         self.dependency_service = DependencyService()
 
         # ── Presupposition Extraction (TASK-A06) ─────────────────────
-        from ...application.domain.lexicons.presupposition_triggers import (
+        from ...application.domain.lexicon.presupposition_triggers import (
             PresuppositionLexicon,
         )
         from ...application.domain.services.presupposition_service import (
@@ -282,6 +283,27 @@ class ServiceContainer:
             llm_confidence_threshold=get_settings().presupposition.llm_confidence_threshold,
             use_llm_verification=get_settings().presupposition.use_llm_verification,
         )
+
+        # ── Demand Analysis Services (BLOAT-5) ─────────────────────
+        from ...application.domain.services.assertiveness_detector import (
+            AssertivenessDetector,
+        )
+        from ...application.domain.services.conditional_detector import (
+            ConditionalDetector,
+        )
+        from ...application.domain.services.demand_network_service import (
+            DemandNetworkService,
+        )
+        from ...application.domain.services.fulfillment_tracker import (
+            FulfillmentTracker,
+        )
+        from ...application.domain.services.temporal import TemporalAnalyzer
+
+        self.assertiveness_detector = AssertivenessDetector()
+        self.conditional_detector = ConditionalDetector()
+        self.demand_network_service = DemandNetworkService()
+        self.fulfillment_tracker = FulfillmentTracker()
+        self.temporal_analyzer = TemporalAnalyzer()
 
         # ── Pipeline Stages ────────────────────────────────────────
         # Note: CountryReferenceCollector needs a spacy model.
@@ -479,7 +501,6 @@ class ServiceContainer:
             RAGService,
             RAGSynthesisClient,
         )
-        from bb_paxdata.infrastructure.db.session import SessionLocal
         from bb_paxdata.infrastructure.retrieval.colbert_retriever import (
             ColBERTDenseRetriever,
         )
@@ -509,7 +530,7 @@ class ServiceContainer:
             )
             colbert_service.load_index(index_name=settings.colbert_index_name)
             self.dense_retriever = ColBERTDenseRetriever(
-                colbert_service=colbert_service
+                colbert_service=colbert_service, session_factory=SessionLocal
             )
             logger.info(
                 f"ColBERT dense retriever enabled with index at {settings.colbert_index_path}"
@@ -576,7 +597,22 @@ class ServiceContainer:
         """Close HTTP client and any other resource connections."""
         await self._http_client.aclose()
 
+        # Close all AI backend clients in infra_analyst
+        if hasattr(self, "infra_analyst") and hasattr(self.infra_analyst, "_clients"):
+            for client in self.infra_analyst._clients.values():
+                if hasattr(client, "_client"):
+                    await client._client.aclose()
+
+        # Close presupposition verifier's AI client
+        if (
+            hasattr(self, "presupposition_verifier")
+            and hasattr(self.presupposition_verifier, "_ai_client")
+            and hasattr(self.presupposition_verifier._ai_client, "_client")
+        ):
+            await self.presupposition_verifier._ai_client._client.aclose()
+
     @classmethod
     def reset_instance(cls) -> None:
         """Singleton'ı sıfırlar (test ve mod değişikliği için)."""
-        cls._instance = None
+        with cls._lock:
+            cls._instance = None

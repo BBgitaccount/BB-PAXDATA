@@ -5,7 +5,8 @@ import hashlib
 import inspect
 import json
 import time
-from typing import Any, Callable
+from collections.abc import Callable
+from typing import Any
 
 import structlog
 from bb_paxdata.application.domain.services.prompt_registry import PromptRegistry
@@ -65,7 +66,7 @@ class DKIEvaluator(JudgeProtocol):
             "historical_frame": baseline.historical_frame_mode,
         }
         prompt_text = prompt_template.content.format(**payload)
-        prompt_hash = hashlib.sha256(prompt_text.encode()).hexdigest()[:16]
+        prompt_hash = hashlib.sha256(prompt_text.encode()).hexdigest()
 
         t0 = time.perf_counter()
 
@@ -87,7 +88,7 @@ class DKIEvaluator(JudgeProtocol):
 
         inference_time_ms = (time.perf_counter() - t0) * 1000
         response_text = raw_response.raw_output or raw_response.summary or "{}"
-        response_hash = hashlib.sha256(response_text.encode()).hexdigest()[:16]
+        response_hash = hashlib.sha256(response_text.encode()).hexdigest()
 
         # Parse & validate JSON response from raw_output
         try:

@@ -6,7 +6,9 @@ import subprocess
 import sys
 from typing import Any
 
-from bb_paxdata.infrastructure.tasks.celery_app import app
+from bb_paxdata.infrastructure.tasks.celery_app import get_celery_app
+
+app = get_celery_app()
 
 logger = logging.getLogger(__name__)
 
@@ -30,11 +32,11 @@ def analyze_sentence_task(
     """
     from bb_paxdata.application.services.analysis_service import run_sentence_analysis
     from bb_paxdata.infrastructure.db.session import SessionLocalCLI
-    from bb_paxdata.infrastructure.events.publisher import EventPublisher
+    from bb_paxdata.infrastructure.events.publisher import WORMEventPublisher
 
     async def _run():
         async with SessionLocalCLI() as db:
-            publisher = EventPublisher(db)
+            publisher = WORMEventPublisher(db)
             result = await run_sentence_analysis(sent_id, text, context)
             await publisher.emit(
                 aggregate_type="AISentenceAnalysis",

@@ -1,7 +1,7 @@
 # src/bb_paxdata/application/services/rag_context_assembler.py
 from __future__ import annotations
 
-from typing import Sequence
+from collections.abc import Sequence
 
 from bb_paxdata.application.domain.services.prompt_registry import PromptRegistry
 from bb_paxdata.application.domain.services.protocols.rag_protocols import (

@@ -2,6 +2,11 @@ from enum import Enum
 
 
 class PressureTier(str, Enum):
+    CRITICAL = "CRITICAL"
+    HIGH = "HIGH"
+    MEDIUM = "MEDIUM"
+    LOW = "LOW"
+
     HIGH_PRESSURE = "HIGH_PRESSURE"
     MEDIUM_PRESSURE = "MEDIUM_PRESSURE"
     LOW_PRESSURE = "LOW_PRESSURE"

@@ -1,15 +1,16 @@
-from typing import Annotated, Any, AsyncGenerator, cast
+from collections.abc import AsyncGenerator
+from typing import Annotated, Any
 
 from fastapi import Depends, HTTPException, status
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from bb_paxdata.config.settings import get_settings
-from bb_paxdata.infrastructure.auth.jwt_auth import decode_jwt
 from bb_paxdata.infrastructure.auth.rbac import check_formula_permission
 from bb_paxdata.infrastructure.cache.redis import RedisCacheBackend
 from bb_paxdata.infrastructure.container.service_container import ServiceContainer
 from bb_paxdata.infrastructure.db.session import SessionLocal
+from bb_paxdata.interfaces.http.auth.jwt_service import JWTService
 
 security = HTTPBearer()
 settings = get_settings()
@@ -40,8 +41,8 @@ async def get_current_reviewer(
     """JWT token'ı çözümler ve aktif reviewer bilgilerini döner."""
     token = credentials.credentials
     try:
-        payload = decode_jwt(token)
-        return cast(dict[str, Any], payload)
+        payload = JWTService.verify_access_token(token)
+        return payload
     except ValueError as e:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,

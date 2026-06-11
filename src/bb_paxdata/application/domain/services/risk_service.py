@@ -18,7 +18,7 @@ from ...protocols import (
     RiskAssessment,
     RiskServiceProtocol,
 )
-from ..enums import RiskLevel, SignalType
+from ..enums import DemandType, PressureTier, RiskLevel, SignalType
 from ..models.risk_signal import RiskSignal
 from ..models.segment import Segment
 from ..models.sentence import Sentence
@@ -436,3 +436,75 @@ class RiskService(BaseService, RiskServiceProtocol):
             severity=severity,
             confidence=confidence,
         )
+
+    def compute_compliance_likelihood(
+        self, demand_type: DemandType, power_level: float, risk_score: float
+    ) -> float:
+        """Calculate likelihood of compliance for a demand.
+
+        Args:
+            demand_type: Type of demand
+            power_level: Speaker's power level (0-10)
+            risk_score: Risk score (0-10)
+
+        Returns:
+            Compliance likelihood (0-1)
+        """
+        if demand_type == DemandType.OBLIGATORY:
+            base = 0.3  # Zorunlu talepler düşük uyum
+        elif demand_type == DemandType.CALL_TO_ACTION:
+            base = 0.5
+        else:
+            base = 0.7
+
+        # Güç dengesi uyumu etkiler
+        power_factor = min(1.0, power_level / 10.0)
+        risk_factor = max(0.0, 1.0 - risk_score / 10.0)
+
+        return base * power_factor * risk_factor
+
+    def compute_pressure_level(
+        self, demand_weight: float, power_level: float, risk_score: float
+    ) -> PressureTier:
+        """Calculate pressure level of a demand.
+
+        Args:
+            demand_weight: Weight of the demand (0-1)
+            power_level: Speaker's power level (0-10)
+            risk_score: Risk score (0-10)
+
+        Returns:
+            Pressure tier
+        """
+        pressure_score = (demand_weight * power_level) / 10.0 + risk_score
+
+        if pressure_score >= 8.0:
+            return PressureTier.CRITICAL
+        elif pressure_score >= 6.0:
+            return PressureTier.HIGH
+        elif pressure_score >= 4.0:
+            return PressureTier.MEDIUM
+        else:
+            return PressureTier.LOW
+
+    def compute_risk_implication(
+        self, risk_score: float, demand_type: DemandType, pressure_level: PressureTier
+    ) -> str:
+        """Calculate risk implication of a demand.
+
+        Args:
+            risk_score: Risk score (0-10)
+            demand_type: Type of demand
+            pressure_level: Pressure tier
+
+        Returns:
+            Risk implication string
+        """
+        if risk_score >= 8.0 and pressure_level == PressureTier.CRITICAL:
+            return "critical_security_risk"
+        elif risk_score >= 6.0:
+            return "high_tension_risk"
+        elif risk_score >= 4.0:
+            return "moderate_diplomatic_risk"
+        else:
+            return "low_risk"

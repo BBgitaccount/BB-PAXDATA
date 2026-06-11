@@ -11,8 +11,9 @@ Note: -1.0 is used as a sentinel value when the normal prototype is unavailable
 from __future__ import annotations
 
 from datetime import datetime, timezone
-from typing import Annotated
+from typing import Annotated, Any
 
+import numpy as np
 from pydantic import BaseModel, ConfigDict, Field, field_validator
 
 # ── Constants ──────────────────────────────────────────────────────────────────
@@ -44,16 +45,18 @@ class GATEmbedding(BaseModel):
         computed_at: UTC timestamp of embedding computation.
     """
 
-    model_config = ConfigDict(frozen=True, strict=True)
+    model_config = ConfigDict(
+        frozen=True,
+        strict=True,
+        arbitrary_types_allowed=True,
+    )
 
     actor_id: str = Field(..., min_length=1, description="Speaker/Country entity ID")
     session_id: str = Field(..., min_length=1, description="Analysis session ID")
 
     embedding: Annotated[
-        list[float],
+        np.ndarray,
         Field(
-            min_length=EMBEDDING_DIM,
-            max_length=EMBEDDING_DIM,
             description=f"{EMBEDDING_DIM}-dimensional GAT output vector (L2-normalized)",
         ),
     ]
@@ -101,11 +104,35 @@ class GATEmbedding(BaseModel):
             )
         return fv
 
+    @field_validator("embedding", mode="before")
+    @classmethod
+    def _validate_embedding_shape_and_type(cls, v: Any) -> np.ndarray:
+        """Validate and convert embedding to numpy array with correct shape."""
+        if isinstance(v, np.ndarray):
+            arr = v
+        elif isinstance(v, list):
+            arr = np.array(v, dtype=np.float32)
+        else:
+            raise TypeError(
+                f"embedding must be np.ndarray or list[float], got {type(v).__name__}"
+            )
+
+        if arr.ndim != 1:
+            raise ValueError(f"embedding must be 1-dimensional, got {arr.ndim}D")
+        if arr.shape[0] != EMBEDDING_DIM:
+            raise ValueError(
+                f"embedding must have {EMBEDDING_DIM} dimensions, got {arr.shape[0]}"
+            )
+        if arr.dtype != np.float32:
+            arr = arr.astype(np.float32)
+
+        return arr
+
     @field_validator("embedding")
     @classmethod
-    def _validate_embedding_non_degenerate(cls, v: list[float]) -> list[float]:
+    def _validate_embedding_non_degenerate(cls, v: np.ndarray) -> np.ndarray:
         """Reject near-zero embedding vectors (degenerate model output)."""
-        norm_sq = sum(x * x for x in v)
+        norm_sq = float(np.sum(v * v))
         if norm_sq < 1e-12:
             raise ValueError(
                 f"Embedding vector is near-zero (norm²={norm_sq:.2e}). "

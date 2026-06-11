@@ -2,7 +2,8 @@
 from __future__ import annotations
 
 import hashlib
-from typing import Any, Callable, Sequence, cast
+from collections.abc import Callable, Sequence
+from typing import Any, cast
 
 import numpy as np
 import structlog

@@ -9,6 +9,7 @@ from __future__ import annotations
 import json
 from collections.abc import Sequence
 
+import numpy as np
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -25,7 +26,7 @@ class GATEmbeddingRepository(IGATEmbeddingRepository):
     """SQLAlchemy implementation of the GAT embedding repository port.
 
     Conversion notes:
-        - embedding_json (JSON string in table) ↔ embedding (list[float] in domain)
+        - embedding_bytes (binary numpy array in table) ↔ embedding (np.ndarray in domain)
         - characteristic_concepts_json (JSON string) ↔ characteristic_concepts (list[str])
         - anomaly_score is stored directly as float
     """
@@ -61,7 +62,7 @@ class GATEmbeddingRepository(IGATEmbeddingRepository):
         return GATEmbeddingTable(
             actor_id=domain.actor_id,
             session_id=domain.session_id,
-            embedding_json=json.dumps(domain.embedding),
+            embedding_bytes=domain.embedding.tobytes(),
             characteristic_concepts_json=(
                 json.dumps(domain.characteristic_concepts)
                 if domain.characteristic_concepts
@@ -73,7 +74,7 @@ class GATEmbeddingRepository(IGATEmbeddingRepository):
 
     @staticmethod
     def _to_domain(row: GATEmbeddingTable) -> GATEmbedding:
-        embedding = json.loads(row.embedding_json)
+        embedding = np.frombuffer(row.embedding_bytes, dtype=np.float32)
         characteristic_concepts: list[str] = []
         if row.characteristic_concepts_json:
             characteristic_concepts = json.loads(row.characteristic_concepts_json)

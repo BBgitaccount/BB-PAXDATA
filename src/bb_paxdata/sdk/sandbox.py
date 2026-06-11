@@ -3,12 +3,59 @@ from __future__ import annotations
 
 import json
 import pathlib
+import platform
 import subprocess
 import sys
 import textwrap
+import warnings
 from dataclasses import dataclass
 
 SANDBOX_TIMEOUT_SECONDS = 10
+SANDBOX_MEMORY_LIMIT_MB = 512
+SANDBOX_CPU_LIMIT_SECONDS = 5
+
+
+def _limit_resources_unix() -> None:
+    """Set resource limits for subprocess on Unix systems."""
+    try:
+        import resource
+    except ImportError:
+        return
+
+    setrlimit = getattr(resource, "setrlimit", None)
+    if not setrlimit:
+        return
+
+    rlimit_as = getattr(resource, "RLIMIT_AS", None)
+    rlimit_cpu = getattr(resource, "RLIMIT_CPU", None)
+    resource_error = getattr(resource, "error", Exception)
+
+    # Memory limit: 512MB
+    if rlimit_as is not None:
+        try:
+            setrlimit(
+                rlimit_as,
+                (
+                    SANDBOX_MEMORY_LIMIT_MB * 1024 * 1024,
+                    SANDBOX_MEMORY_LIMIT_MB * 1024 * 1024,
+                ),
+            )
+        except (ValueError, resource_error):
+            warnings.warn(
+                "Failed to set memory limit for sandbox subprocess", stacklevel=2
+            )
+
+    # CPU time limit: 5 seconds
+    if rlimit_cpu is not None:
+        try:
+            setrlimit(
+                rlimit_cpu,
+                (SANDBOX_CPU_LIMIT_SECONDS, SANDBOX_CPU_LIMIT_SECONDS),
+            )
+        except (ValueError, resource_error):
+            warnings.warn(
+                "Failed to set CPU limit for sandbox subprocess", stacklevel=2
+            )
 
 
 @dataclass
@@ -62,6 +109,17 @@ def run_plugin_in_sandbox(
     )
 
     try:
+        # Platform-specific resource limiting
+        preexec_fn = None
+        if platform.system() != "Windows":
+            preexec_fn = _limit_resources_unix
+        else:
+            warnings.warn(
+                "Resource limits for sandbox subprocess are not available on Windows. "
+                "Consider using Docker-based plugin isolation or nsjail for production.",
+                stacklevel=2,
+            )
+
         proc = subprocess.run(
             [sys.executable, "-c", bootstrap],
             input=json.dumps({"text": text, "context": context}),
@@ -69,6 +127,7 @@ def run_plugin_in_sandbox(
             text=True,
             timeout=timeout,
             check=False,
+            preexec_fn=preexec_fn,
         )
 
         if proc.returncode != 0:

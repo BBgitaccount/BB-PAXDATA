@@ -6,7 +6,11 @@ from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
 
+import structlog
+
 from bb_paxdata.application.domain.enums.demand_category import DemandCategory
+
+logger = structlog.get_logger(__name__)
 
 SPEAKER_COUNTRY_MAP = {
     "Abdul Hamid": "PS",
@@ -788,8 +792,15 @@ def resolve_country(speaker_name: str) -> str:
 
     lower_cache = _SPEAKER_COUNTRY_LOWER_CACHE
     norm_cache = _SPEAKER_COUNTRY_NORM_CACHE
-    assert lower_cache is not None
-    assert norm_cache is not None
+    if lower_cache is None or norm_cache is None:
+        logger.error(
+            "Speaker country cache not initialized",
+            lower_cache_is_none=lower_cache is None,
+            norm_cache_is_none=norm_cache is None,
+        )
+        # Fallback to direct map lookup without caching
+        lower_cache = {}
+        norm_cache = {}
 
     # First check SPEAKER_COUNTRY_MAP
     clean_name = re.sub(r"\s*\(.*\)$|\s*\[.*\]$", "", speaker_name).strip()

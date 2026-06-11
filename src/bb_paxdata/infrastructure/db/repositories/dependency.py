@@ -2,8 +2,6 @@
 Repository for Dependency Triples and Actor-Action Matrix.
 """
 
-from typing import cast
-
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -45,7 +43,7 @@ class DependencyRepository:
         )
         self.session.add(orm_triple)
         await self.session.flush()
-        return cast(int, orm_triple.triple_id)
+        return orm_triple.triple_id
 
     async def upsert_actor_action_matrix(self, matrix: ActorActionMatrix) -> None:
         """Upsert an actor-action matrix entry."""

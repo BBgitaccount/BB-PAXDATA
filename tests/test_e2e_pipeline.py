@@ -104,7 +104,7 @@ class TestAnalysisAssembler:
             summary="Acil toplantı",
             key_claims=["Kritik durum"],
             prompt_version="diplomatic_analysis@v2.1",
-            prompt_hash="a1b2c3d4e5f6a7b8",
+            prompt_hash="a1b2c3d4e5f6a7b8a1b2c3d4e5f6a7b8a1b2c3d4e5f6a7b8a1b2c3d4e5f6a7b8",
             model_name="gpt-4o",
         )
         result = self.assembler.assemble(
@@ -122,7 +122,10 @@ class TestAnalysisAssembler:
         assert result.ai_sentiment_score == -0.6
         assert result.ai_risk_score == 0.75
         assert result.prompt_version == "diplomatic_analysis@v2.1"
-        assert result.prompt_hash == "a1b2c3d4e5f6a7b8"
+        assert (
+            result.prompt_hash
+            == "a1b2c3d4e5f6a7b8a1b2c3d4e5f6a7b8a1b2c3d4e5f6a7b8a1b2c3d4e5f6a7b8"
+        )
         assert result.language == "tr"
 
 
@@ -147,7 +150,7 @@ class TestPromptRegistry:
     async def test_prompt_hash_present(self):
         result = await self.analyst.analyze("Test metni")
         assert result.prompt_hash is not None
-        assert len(result.prompt_hash) == 16  # SHA256'nın ilk 16 karakteri
+        assert len(result.prompt_hash) == 64  # SHA256'nın tamamı
 
     def test_rollback_changes_active_version(self):
         self.registry.activate("diplomatic_analysis", "v1.0")

@@ -10,7 +10,7 @@ def nominal_distance(v1: Any, v2: Any) -> float:
 
 def interval_distance(v1: Any, v2: Any) -> float:
     try:
-        return float((float(v1) - float(v2)) ** 2)
+        return (float(v1) - float(v2)) ** 2
     except (ValueError, TypeError):
         return 1.0  # Fallback to nominal if not numeric
 

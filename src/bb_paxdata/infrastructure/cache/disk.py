@@ -41,7 +41,7 @@ class DiskCacheBackend(CacheBackend):
 
             async with aiofiles.open(path, encoding="utf-8") as f:
                 content = await f.read()
-                return str(content) if content is not None else None
+                return content if content is not None else None
         content = await asyncio.to_thread(path.read_text, encoding="utf-8")
         return content
 

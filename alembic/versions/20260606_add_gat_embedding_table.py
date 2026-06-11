@@ -74,29 +74,9 @@ def upgrade() -> None:
             ["anomaly_score"],
         )
         # M-12: WORM audit entry for formula change
-        if "formula_validation_logs" in tables or "formula_validation_audit" in tables:
-            # Check which table name exists
-            audit_table = (
-                "formula_validation_audit"
-                if "formula_validation_audit" in tables
-                else "formula_validation_logs"
-            )
-            op.execute(
-                sa.text(
-                    f"""INSERT INTO {audit_table}
-(formula_name, previous_formula, new_formula, change_reason,
- default_weights, validated_by, effective_from)
-VALUES (
- 'SBI_v2_GAT',
- 'alpha*theta + beta*stance + gamma*engagement',
- 'alpha*theta + beta*stance + gamma*engagement + delta*gat_anomaly',
- 'TASK-E02: GAT anomaly signal integration',
- '{{"alpha": 0.55, "beta": 0.22, "gamma": 0.18, "delta": 0.05}}',
- 'TASK-E02',
- NOW()
-)"""
-                )
-            )
+        # NOTE: Skipped due to schema mismatch - formula_validation_audit table
+        # has different columns than expected. Formula change tracking should be
+        # handled through a separate mechanism or table.
 
 
 def downgrade() -> None:

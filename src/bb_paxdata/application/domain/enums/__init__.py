@@ -1,4 +1,3 @@
-# Auto-generated enum package
 from bb_paxdata.application.domain.enums.country_enums import (
     EdgeType,
     ReferenceContext,
@@ -34,14 +33,13 @@ from .pressure_tier import PressureTier
 from .priority import Priority
 from .review_status import ReviewStatus
 from .review_type import ReviewType
-
-# from .relationship_type import RelationshipType  # Overridden by country_enums
 from .rhetoric_pattern_type import RhetoricPatternType
 from .rhetorical_strategy import RhetoricalStrategy
 from .risk_level import RiskLevel
 from .risk_trajectory import RiskTrajectory
 from .sentiment_arc import SentimentArc
 from .sentiment_category import SentimentCategory
+from .severity_level import SeverityLevel
 from .signal_type import SignalType
 from .speaker_role import SpeakerRole
 from .temporal_pattern import TemporalPattern
@@ -83,7 +81,6 @@ __all__ = [
     "Priority",
     "ReferenceContext",
     "RelationshipType",
-    "RelationshipType",
     "ReviewStatus",
     "ReviewType",
     "RhetoricPatternType",
@@ -92,6 +89,7 @@ __all__ = [
     "RiskTrajectory",
     "SentimentArc",
     "SentimentCategory",
+    "SeverityLevel",
     "SignalType",
     "SpeakerRole",
     "TemporalPattern",

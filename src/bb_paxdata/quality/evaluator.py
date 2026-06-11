@@ -92,6 +92,36 @@ class QualityEvaluator:
         # Initialize deepeval metrics
         self.deepeval_metrics: dict[str, DeepEvalMetric] = self._init_deepeval_metrics()
 
+    async def _compute_ensemble_reference(self, text: str) -> float | None:
+        """Compute an independent ensemble sentiment score for the given text.
+
+        Calls EnsembleSentimentService (VADER + mock BERT + mock Flair majority
+        voting) and returns the ensemble final_score in [-1.0, 1.0].
+
+        Used by validate() when criteria includes "sentiment_cross_check" to
+        cross-verify AI_Duygu_Skoru against an ensemble reference that is
+        independent of the LLM pipeline.
+
+        Returns:
+            float ensemble score, or None if the service raises an exception.
+
+        Note:
+            In Phase 1, BERT and Flair are mock implementations (both delegate
+            to VADER with no added noise). Full multi-model ensemble activates
+            in Phase 5. Until then, this method still exercises ModelSentiment
+            creation and validates the service wiring.
+        """
+        try:
+            result = await self.ensemble_sentiment.analyze(text)
+            return result.final_score
+        except Exception as exc:
+            self.logger.warning(
+                "ensemble_reference_failed",
+                error=str(exc),
+                text_preview=text[:80] if text else "",
+            )
+            return None
+
     async def validate(self, output: Any, criteria: list[str] | None = None) -> bool:
         """
         AI çıktısını belirli kriterlere göre doğrular (ground-truth olmadan).
@@ -115,6 +145,42 @@ class QualityEvaluator:
                 return False
             if isinstance(output, dict) and not output:
                 return False
+
+        # Ensemble cross-check: use EnsembleSentimentService as an independent
+        # reference to detect large divergence from the AI's sentiment score.
+        if criteria and "sentiment_cross_check" in criteria:
+            raw_text: str | None = None
+            if isinstance(output, dict):
+                raw_text = output.get("text") or output.get("raw_text")
+            elif isinstance(output, list) and output:
+                first = output[0]
+                raw_text = (
+                    first.get("text") or first.get("raw_text")
+                    if isinstance(first, dict)
+                    else None
+                )
+
+            if raw_text:
+                ensemble_score = await self._compute_ensemble_reference(raw_text)
+                ai_score: float | None = None
+                if isinstance(output, dict):
+                    ai_score = output.get("AI_Duygu_Skoru")
+                elif isinstance(output, list) and output:
+                    first = output[0]
+                    ai_score = (
+                        first.get("AI_Duygu_Skoru") if isinstance(first, dict) else None
+                    )
+
+                if ensemble_score is not None and ai_score is not None:
+                    diff = abs(float(ai_score) - ensemble_score)
+                    if diff > 0.5:  # half-scale divergence threshold
+                        self.logger.warning(
+                            "sentiment_ensemble_divergence",
+                            ai_score=ai_score,
+                            ensemble_score=round(ensemble_score, 4),
+                            diff=round(diff, 4),
+                        )
+                        return False
 
         return True
 

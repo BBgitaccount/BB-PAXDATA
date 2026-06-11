@@ -276,13 +276,18 @@ class SRLPipeline:
 
         for model_id in models_to_try:
             try:
-                logger.info(f"Loading SRL model: {model_id}")
+                logger.info(
+                    f"Loading SRL model: {model_id} "
+                    "(first run will download ~400 MB; subsequent runs use local cache)"
+                )
 
                 # Determine device and dtype
                 device = self._resolve_device()
                 torch_dtype = self._resolve_torch_dtype()
 
-                # Load pipeline with optimizations
+                # Load pipeline with optimizations.
+                # aggregation_strategy='simple' merges BIO spans (B-ARG0 + I-ARG0 -> ARG0)
+                # local_files_only=False allows first-time download then caches in HF_HOME
                 self._pipeline = pipeline(
                     task="token-classification",
                     model=model_id,
@@ -296,12 +301,15 @@ class SRLPipeline:
                     self._pipeline.model, "quantize"
                 ):
                     logger.info("Applying INT8 quantization to SRL model")
-                    self._pipeline.model.quantize(bits=8)
+                    self._pipeline.model.quantize(bits=8)  # type: ignore
 
                 self._model_loaded = True
                 self.config.model_name = model_id  # Update active model
 
-                logger.info(f"SRL model loaded successfully: {model_id}")
+                logger.info(
+                    f"SRL model loaded successfully: {model_id} | "
+                    f"device={self.config.device}"
+                )
                 return
 
             except Exception as e:
@@ -446,6 +454,22 @@ class SRLPipeline:
             f"{last_exception!s}"
         )
 
+    @staticmethod
+    def _normalize_label(raw_label: str) -> str:
+        """
+        Normalize BIO-prefixed labels to clean role names.
+
+        Examples::
+
+            "B-ARG0" -> "ARG0"
+            "I-ARG1" -> "ARG1"
+            "B-V"    -> "V"
+            "ARG0"   -> "ARG0"   (already clean, no-op)
+        """
+        if raw_label.startswith(("B-", "I-", "E-", "S-")):
+            return raw_label[2:]
+        return raw_label
+
     def _parse_predictions(
         self, raw_predictions: list[dict], original_text: str
     ) -> list[SRLFrame]:
@@ -453,7 +477,9 @@ class SRLPipeline:
         Parse HuggingFace token classification output into structured SRL frames.
 
         Handles:
-        - BIO tagging scheme (Begin-Inside-Outside)
+        - BIO tagging scheme (Begin-Inside-Outside); B-/I- prefixes are stripped
+          by ``_normalize_label`` so the code works regardless of whether
+          ``aggregation_strategy='simple'`` already collapsed spans.
         - Verb-centric frame grouping
         - Character offset alignment
         - Confidence filtering
@@ -462,17 +488,16 @@ class SRLPipeline:
         if not isinstance(raw_predictions, list):
             raw_predictions = [raw_predictions]
 
-        # Group predictions by verb (predicate)
-        verbs = [
-            p
-            for p in raw_predictions
-            if p.get("entity_group") == "V" or p.get("entity") == "V"
-        ]
+        def _get_group(entity: dict) -> str:
+            """Return the normalised label regardless of output format."""
+            raw = entity.get("entity_group") or entity.get("entity") or ""
+            return self._normalize_label(raw)
+
+        # Group predictions by verb predicate
+        verbs = [p for p in raw_predictions if _get_group(p) == "V"]
 
         for verb_pred in verbs:
             verb_text = verb_pred["word"].strip().lower()
-            verb_pred["start"]
-            verb_pred["end"]
             verb_confidence = verb_pred.get("score", 1.0)
 
             # Skip low-confidence verbs
@@ -480,7 +505,7 @@ class SRLPipeline:
                 continue
 
             # Initialize frame data
-            frame_data = {
+            frame_data: dict = {
                 "verb": verb_text,
                 "arg0": None,
                 "arg1": None,
@@ -493,16 +518,13 @@ class SRLPipeline:
                 "frame_confidence": verb_confidence,
             }
 
-            # Match arguments to this verb based on proximity
+            # Map all argument entities to this frame.
+            # Simple heuristic: each argument role is assigned once (first occurrence).
             for entity in raw_predictions:
-                group = entity.get("entity_group") or entity.get("entity") or ""
+                group = _get_group(entity)
                 if group == "V":
                     continue
 
-                # Simple heuristic: arguments belong to nearest preceding verb
-                entity["start"]
-
-                # Map entity groups to frame fields
                 try:
                     span = SRLSpan(
                         text=entity["word"],
@@ -549,7 +571,7 @@ class SRLPipeline:
         import hashlib
 
         normalized = " ".join(text.lower().split())
-        return hashlib.sha256(normalized.encode()).hexdigest()[:16]
+        return hashlib.sha256(normalized.encode()).hexdigest()
 
     def extract_batch(
         self, texts: list[str], max_workers: int = 4

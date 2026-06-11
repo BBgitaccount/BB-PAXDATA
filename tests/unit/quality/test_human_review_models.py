@@ -20,7 +20,7 @@ def test_metric_override_immutable():
     with pytest.raises(
         Exception
     ):  # Pydantic v2 raises ValidationError or similar on mutation if frozen
-        override.confidence = 1.0
+        setattr(override, "confidence", 1.0)
 
 
 def test_human_review_request_model():

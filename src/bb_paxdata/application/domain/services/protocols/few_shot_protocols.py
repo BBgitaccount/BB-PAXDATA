@@ -1,7 +1,8 @@
 # src/bb_paxdata/domain/services/protocols/few_shot_protocols.py
 from __future__ import annotations
 
-from typing import Protocol, Sequence
+from collections.abc import Sequence
+from typing import Protocol
 
 from pydantic import BaseModel, ConfigDict, Field
 

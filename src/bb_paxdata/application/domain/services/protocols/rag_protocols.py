@@ -1,7 +1,8 @@
 # src/bb_paxdata/domain/services/protocols/rag_protocols.py
 from __future__ import annotations
 
-from typing import AsyncIterator, Protocol, Sequence
+from collections.abc import AsyncIterator, Sequence
+from typing import Protocol
 
 from pydantic import BaseModel, ConfigDict, Field
 

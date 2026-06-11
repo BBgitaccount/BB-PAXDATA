@@ -68,13 +68,25 @@ logs/
 
 # Repomix
 repomix-output.*
+.repomixignore
 
 # Node/Frontend dependencies
 node_modules/
 **/node_modules/
 npm-debug.log
 
-#cline
+# cline
 .clinerules
 graphify_mcp_server.py
 
+# continue
+.continueignore
+
+# agents
+AGENTS.md
+.agents/
+.prompts
+
+# frontend
+frontend/
+dashboards/

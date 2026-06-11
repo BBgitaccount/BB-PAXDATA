@@ -1,6 +1,6 @@
 from collections.abc import Sequence
 from datetime import datetime, timezone
-from typing import Any, Optional
+from typing import Any
 
 from pydantic import BaseModel, Field
 
@@ -131,7 +131,7 @@ class Sentence(BaseModel):
     consensus_result: Any | None = Field(
         default=None, description="DualGateConsensusLayer sonucu"
     )
-    speech_act: Optional[SpeechActClassification] = Field(
+    speech_act: SpeechActClassification | None = Field(
         default=None, description="Speech act classification of the sentence"
     )
 

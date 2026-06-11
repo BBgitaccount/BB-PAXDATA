@@ -6,7 +6,7 @@ Centralized settings with environment variable support and validation.
 from __future__ import annotations
 
 import os
-from typing import Literal
+from typing import Literal, cast
 
 from pydantic import BaseModel, Field, field_validator
 
@@ -166,9 +166,15 @@ class ArgumentMiningPipelineConfig(BaseModel):
                 confidence_threshold=float(os.getenv("ARGMINING_REL_THRESHOLD", "0.65"))
             ),
             edu_segmentation=EDUSegmentationConfig(
-                method=os.getenv("ARGMINING_EDU_METHOD", "hybrid")
+                method=cast(
+                    Literal["rst", "spacy", "hybrid"],
+                    os.getenv("ARGMINING_EDU_METHOD", "hybrid"),
+                )
             ),
-            device=os.getenv("ARGMINING_DEVICE", "auto"),
+            device=cast(
+                Literal["auto", "cpu", "cuda", "mps"],
+                os.getenv("ARGMINING_DEVICE", "auto"),
+            ),
             enable_cache=os.getenv("ARGMINING_CACHE", "true").lower() == "true",
             validate_dag_on_build=os.getenv("ARGMINING_VALIDATE_DAG", "true").lower()
             == "true",

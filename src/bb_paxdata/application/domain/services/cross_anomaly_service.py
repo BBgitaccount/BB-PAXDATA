@@ -9,6 +9,8 @@ import logging
 from pathlib import Path
 from typing import Any
 
+from bb_paxdata.application.domain.models.anomaly import AnomalyResult
+from bb_paxdata.application.domain.models.negation_cue import NegationCue
 from bb_paxdata.application.domain.models.rule_anomaly import RuleHealthReport
 from bb_paxdata.application.domain.ports.anomaly_rule import AnomalyRule
 from bb_paxdata.application.domain.services.rule_registry import RuleRegistry
@@ -18,10 +20,20 @@ from ...protocols import AnomalyResult as LegacyAnomalyResult
 from ..enums import AnomalySeverity, AnomalyType, NegationType, RiskLevel
 from ..enums.country_enums import NarrativeLayer
 from ..models.analysis import Analysis
-from ..models.negation_cue import NegationCue
-from .protocols import AnomalyResult
 
 logger = logging.getLogger(__name__)
+
+# Graceful degradation for vaderSentiment
+try:
+    from vaderSentiment.vaderSentiment import SentimentIntensityAnalyzer as _VADER
+
+    _VADER_AVAILABLE = True
+except ImportError:
+    _VADER_AVAILABLE = False
+    logger.warning(
+        "vaderSentiment kurulu değil; SentimentRiskDivergenceRule, ToneDriftRule, "
+        "ve EntityFlipRule devre dışı kalacak."
+    )
 
 
 class SentimentRiskDivergenceRule:
@@ -34,11 +46,15 @@ class SentimentRiskDivergenceRule:
     THRESHOLD = 0.1
 
     def __init__(self) -> None:
-        from vaderSentiment.vaderSentiment import SentimentIntensityAnalyzer
-
-        self._vader = SentimentIntensityAnalyzer()
+        if not _VADER_AVAILABLE:
+            self._vader = None
+        else:
+            self._vader = _VADER()
 
     def evaluate(self, analysis: Analysis) -> tuple[bool, float, str]:
+        if self._vader is None:
+            return False, 0.0, ""
+
         if not analysis.has_ai_output:
             return False, 0.0, ""
 
@@ -190,15 +206,65 @@ class CheapTalkAnomalyRule:
         return False, 0.0, ""
 
 
+class TopicDiversityAnomalyRule:
+    """Discourse fragmentation anomaly via BERTopic topic distribution entropy.
+
+    High Shannon entropy in P(topic | doc) indicates a speaker is mixing many
+    unrelated topics in a single utterance — a known rhetorical evasion and
+    plausible-deniability signal (Vague Demand Plausible Deniability pattern).
+
+    Threshold tuned empirically: entropy > 2.0 bits with CRITICAL risk ≥ 0.6
+    produces a reliable signal without noise from routine multi-issue speeches.
+
+    Reference:
+        - AnomalyType.VAGUE_DEMAND_PLAUSIBLE_DENIABILITY
+        - TopicSynthesis.topic_diversity (Shannon entropy, base-2)
+    """
+
+    DIVERSITY_THRESHOLD: float = 2.0  # bits; tunes recall vs precision
+    RISK_AMPLIFIER: float = 0.35  # contribution to anomaly score
+
+    def evaluate(self, analysis: Analysis) -> tuple[bool, float, str]:
+        if not analysis.has_ai_output:
+            return False, 0.0, ""
+
+        ts = analysis.topic_synthesis
+        if ts is None:
+            return False, 0.0, ""
+
+        diversity = ts.topic_diversity
+        if diversity <= self.DIVERSITY_THRESHOLD:
+            return False, 0.0, ""
+
+        risk = analysis.effective_risk
+        score = min(
+            1.0,
+            (diversity / (self.DIVERSITY_THRESHOLD * 2))
+            * self.RISK_AMPLIFIER
+            * (1 + risk),
+        )
+
+        return (
+            True,
+            round(score, 4),
+            f"TOPIC_DIVERSITY_ANOMALY: Shannon_H={diversity:.3f} bits "
+            f"> threshold={self.DIVERSITY_THRESHOLD}, risk={risk:.2f}",
+        )
+
+
 class ToneDriftRule:
     def __init__(self, sigma_multiplier: float = 2.0, min_sentences: int = 3):
-        from vaderSentiment.vaderSentiment import SentimentIntensityAnalyzer
-
-        self._vader = SentimentIntensityAnalyzer()
+        if not _VADER_AVAILABLE:
+            self._vader = None
+        else:
+            self._vader = _VADER()
         self.sigma_multiplier = sigma_multiplier
         self.min_sentences = min_sentences
 
     def evaluate(self, analysis: Analysis) -> tuple[bool, float, str]:
+        if self._vader is None:
+            return False, 0.0, ""
+
         sentences = analysis.sentences
         if not sentences or len(sentences) < self.min_sentences:
             return False, 0.0, ""
@@ -233,13 +299,17 @@ class ToneDriftRule:
 
 class EntityFlipRule:
     def __init__(self, flip_threshold: float = 1.0):
-        from vaderSentiment.vaderSentiment import SentimentIntensityAnalyzer
-
-        self._vader = SentimentIntensityAnalyzer()
+        if not _VADER_AVAILABLE:
+            self._vader = None
+        else:
+            self._vader = _VADER()
         self.flip_threshold = flip_threshold
         self.entity_types = {"GPE", "PERSON"}
 
     def evaluate(self, analysis: Analysis) -> tuple[bool, float, str]:
+        if self._vader is None:
+            return False, 0.0, ""
+
         sentences = analysis.sentences
         entities = analysis.entities
         if not sentences or len(sentences) < 2 or not entities:
@@ -362,6 +432,7 @@ class CrossAnomalyService:
             NegativeSentimentRule(),
             PowerAsymmetryAnomalyRule(),
             CheapTalkAnomalyRule(),
+            TopicDiversityAnomalyRule(),
             ToneDriftRule(),
             EntityFlipRule(),
             StrategicNarrativeClashRule(),

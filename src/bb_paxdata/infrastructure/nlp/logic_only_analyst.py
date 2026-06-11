@@ -278,6 +278,15 @@ class LogicOnlyAIAnalyst:
     PROMPT_VERSION = "logic_only@1.0"
     MODEL_NAME = "rule_based_nlp"
 
+    async def generate(self, prompt: str, temperature: float = 0.0) -> str:
+        """LLMClientProtocol'u karşılamak için stub.
+
+        Logic-only modda LLM çağrısı yapılmaz.  LLMFiveWOneHExtractor ve
+        benzeri bileşenler bu metodu çağırdığında boş JSON döner; RecoveryEngine
+        başarısız sayar ve ilgili servis varsayılan/boş değere düşer.
+        """
+        return "{}"
+
     async def analyze(
         self,
         text: str,

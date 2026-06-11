@@ -1,6 +1,5 @@
 # src/bb_paxdata/domain/services/narrative_salience_tracker.py
 import math
-from typing import Optional
 
 import structlog
 
@@ -24,7 +23,7 @@ class NarrativeSalienceTracker:
         self._log = logger.bind(service="narrative_salience_tracker")
 
     def calculate_speech_act_modifier(
-        self, speech_act: Optional[SpeechActClassification]
+        self, speech_act: SpeechActClassification | None
     ) -> float:
         """Computes speech act multiplier Omega(d).
 
@@ -58,8 +57,8 @@ class NarrativeSalienceTracker:
     def compute_salience(
         self,
         base_frequency: int,
-        frame_salience: Optional[FrameSalienceResult],
-        speech_act: Optional[SpeechActClassification],
+        frame_salience: FrameSalienceResult | None,
+        speech_act: SpeechActClassification | None,
     ) -> float:
         """Calculates normalized salience score: Freq * FrameAlignment * SpeechActModifier."""
         if base_frequency <= 0:

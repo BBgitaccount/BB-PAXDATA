@@ -83,6 +83,9 @@ class Settings(BaseSettings):
     debug: bool = Field(default=False)
     log_level: LogLevel = Field(default=LogLevel.INFO)
     environment: str = Field(default="production")  # production | staging | test
+    cors_allowed_origins: list[str] = Field(
+        default=["*"], description="CORS allowed origins"
+    )
 
     # ── Veritabanı ────────────────────────────────────────────────────────
     database_mode: DatabaseMode = Field(default=DatabaseMode.SQLITE)
@@ -97,7 +100,16 @@ class Settings(BaseSettings):
         description="PostgreSQL read replica URL for analytics queries",
     )
     meilisearch_url: str = Field(default="http://localhost:7700")
-    meilisearch_master_key: str = Field(default="paxdata-meilisearch-key")
+    meilisearch_master_key: str = Field(
+        default="", description="Master key for Meilisearch (required in production)"
+    )
+    metrics_token: str = Field(
+        default="", description="Token required to access /metrics endpoint"
+    )
+    jwt_secret_key: str = Field(
+        default="dev-secret-change-in-production",
+        description="JWT secret key for authentication (must be changed in production)",
+    )
 
     # ── AI / LLM ─────────────────────────────────────────────────────────
     ai_provider: AIProvider = Field(default=AIProvider.OLLAMA)
@@ -231,6 +243,29 @@ class Settings(BaseSettings):
                     f"AI provider '{self.ai_provider.value}' seçildi fakat API key boş.",
                     stacklevel=2,
                 )
+        return self
+
+    @model_validator(mode="after")
+    def _validate_jwt_secret(self) -> Settings:
+        """Production'da JWT secret key'in güvenli olduğunu doğrular."""
+        if (
+            self.environment == "production"
+            and self.jwt_secret_key == "dev-secret-change-in-production"
+        ):
+            raise ValueError(
+                "JWT_SECRET_KEY must be set in production environment. "
+                "Current value is the insecure default."
+            )
+        return self
+
+    @model_validator(mode="after")
+    def _validate_meilisearch_key(self) -> Settings:
+        """Production'da Meilisearch master key'in tanımlı olduğunu doğrular."""
+        if self.environment == "production" and not self.meilisearch_master_key:
+            raise ValueError(
+                "MEILISERCH_MASTER_KEY must be set in production environment. "
+                "This is required to secure Meilisearch access."
+            )
         return self
 
     # ── Properties ────────────────────────────────────────────────────────

@@ -33,7 +33,7 @@ class SegmentLoader(DataLoader):
 
             mapping: dict[str, list[SegmentType]] = {aid: [] for aid in analysis_ids}
             for seg in segments:
-                mapping[str(seg.file_id)].append(
+                mapping[seg.file_id].append(
                     SegmentType(
                         id=strawberry.ID(seg.seg_id),
                         segment_index=seg.seq_order or 0,
@@ -67,13 +67,13 @@ class SentenceLoader(DataLoader):
 
             mapping: dict[str, list[SentenceType]] = {sid: [] for sid in segment_ids}
             for s in sentences:
-                mapping[str(s.seg_id)].append(
+                mapping[s.seg_id].append(
                     SentenceType(
                         id=strawberry.ID(s.sent_id),
                         sentence_index=s.sent_order or 0,
                         text=s.text or "",
                         risk_score=float(s.risk_score or 0.0),
-                        sentiment_score=float(s.vader_compound or 0.0),
+                        sentiment_score=s.vader_compound or 0.0,
                         power_level=float(s.power_level or 0.0),
                         uncertainty_score=getattr(s, "uncertainty_score", 0.0),
                     )

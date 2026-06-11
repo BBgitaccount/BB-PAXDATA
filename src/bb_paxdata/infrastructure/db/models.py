@@ -1,14 +1,10 @@
-"""SQLAlchemy 2.0 ORM models mirroring BB-PAXDATA legacy SQLite schemas."""
-
 from __future__ import annotations
 
 import json
+import uuid
 from datetime import datetime, timezone
 from enum import Enum
 from typing import TYPE_CHECKING, Any, TypeVar, cast
-
-if TYPE_CHECKING:
-    from bb_paxdata.application.domain.models.argument import ArgumentGraph
 
 from pgvector.sqlalchemy import Vector
 from sqlalchemy import (
@@ -28,8 +24,8 @@ from sqlalchemy import (
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 from sqlalchemy.sql.sqltypes import Enum as SQLEnum
 
+from bb_paxdata.application.domain.enums.country_enums import RelationshipType
 from bb_paxdata.application.domain.enums.demand_category import DemandCategory
-from bb_paxdata.application.domain.enums.relationship_type import RelationshipType
 from bb_paxdata.application.domain.enums.risk_level import RiskLevel
 from bb_paxdata.infrastructure.db.base import Base
 from bb_paxdata.infrastructure.db.discourse_network_table import (
@@ -42,6 +38,7 @@ if TYPE_CHECKING:
         LogLevel,
     )
     from bb_paxdata.application.domain.models.analysis import Analysis
+    from bb_paxdata.application.domain.models.argument import ArgumentGraph
     from bb_paxdata.application.domain.models.demand import Demand
     from bb_paxdata.application.domain.models.metadata import Metadata
     from bb_paxdata.application.domain.models.relationship import Relationship
@@ -51,7 +48,6 @@ if TYPE_CHECKING:
     from bb_paxdata.application.domain.models.topic import Topic
     from bb_paxdata.application.domain.models.transcript import Transcript
     from bb_paxdata.application.domain.models.validation_result import ValidationResult
-
 E = TypeVar("E", bound=Enum)
 
 
@@ -108,7 +104,6 @@ def _evidence_list(
 
 class File(Base):
     __tablename__ = "files"
-
     file_id: Mapped[str] = mapped_column(String, primary_key=True)
     file_size_bytes: Mapped[int] = mapped_column(Integer, default=0)
     idempotency_key: Mapped[str] = mapped_column(Text, nullable=False, unique=True)
@@ -136,11 +131,9 @@ class File(Base):
     imported_at: Mapped[datetime | None] = mapped_column(
         DateTime, server_default=func.now(), nullable=True
     )
-
     segments: Mapped[list[Segment]] = relationship(
         back_populates="file", cascade="all, delete-orphan"
     )
-
     network_edges: Mapped[list[DiscourseNetworkEdgeTable]] = relationship(
         back_populates="file", cascade="all, delete-orphan", lazy="selectin"
     )
@@ -210,7 +203,6 @@ class File(Base):
 
 class SpeakerProfile(Base):
     __tablename__ = "speaker_profiles"
-
     speaker_id: Mapped[str] = mapped_column(String, primary_key=True)
     full_name: Mapped[str] = mapped_column(Text, nullable=False)
     country: Mapped[str | None] = mapped_column(Text, nullable=True)
@@ -254,7 +246,6 @@ class SpeakerProfile(Base):
     avg_dki_score: Mapped[float] = mapped_column(Float, default=0)
     dominant_frame: Mapped[str | None] = mapped_column(Text, nullable=True)
     dominant_audience: Mapped[str | None] = mapped_column(Text, nullable=True)
-
     segments: Mapped[list[Segment]] = relationship(back_populates="speaker")
 
     def to_domain(self) -> SpeakerDomain:
@@ -317,7 +308,6 @@ class SpeakerProfile(Base):
                 dominant_audience=cf.get("dominant_audience"),
                 avg_dki_score=float(cf.get("avg_dki_score") or 0),
             )
-
         country: str | None = None
         title: str | None = None
         if model.description:
@@ -349,7 +339,6 @@ class Segment(Base):
         Index("idx_seg_emotion", "emotion_category"),
         Index("idx_seg_topic", "dominant_topic"),
     )
-
     seg_id: Mapped[str] = mapped_column(String, primary_key=True)
     file_id: Mapped[str] = mapped_column(ForeignKey("files.file_id"), nullable=False)
     speaker_id: Mapped[str | None] = mapped_column(
@@ -417,7 +406,6 @@ class Segment(Base):
     dominant_frame: Mapped[str | None] = mapped_column(Text, nullable=True)
     dominant_audience: Mapped[str | None] = mapped_column(Text, nullable=True)
     dominant_evidence: Mapped[str | None] = mapped_column(Text, nullable=True)
-
     file: Mapped[File] = relationship(back_populates="segments")
     speaker: Mapped[SpeakerProfile | None] = relationship(back_populates="segments")
     sentences: Mapped[list[Sentence]] = relationship(
@@ -529,7 +517,6 @@ class Sentence(Base):
         Index("idx_sent_audience", "audience_type"),
         Index("idx_sent_code", "sentence_code", unique=True),
     )
-
     sent_id: Mapped[str] = mapped_column(String, primary_key=True)
     sentence_code: Mapped[str | None] = mapped_column(
         String(50), unique=True, nullable=True
@@ -544,7 +531,6 @@ class Sentence(Base):
     power_level: Mapped[int] = mapped_column(Integer, default=0)
     sent_order: Mapped[int | None] = mapped_column(Integer, nullable=True)
     global_sent_order: Mapped[int | None] = mapped_column(Integer, nullable=True)
-    # Temporal fields for domain model compatibility
     start_time: Mapped[float | None] = mapped_column(Float, nullable=True)
     end_time: Mapped[float | None] = mapped_column(Float, nullable=True)
     duration: Mapped[float | None] = mapped_column(Float, nullable=True)
@@ -590,16 +576,11 @@ class Sentence(Base):
     )
     appraisal_attitude: Mapped[str | None] = mapped_column(Text, nullable=True)
     audience_type: Mapped[str | None] = mapped_column(Text, nullable=True)
-    ai_analyzed: Mapped[int] = mapped_column(
-        Integer, default=0
-    )  # 0 = not analyzed, 1 = analyzed
-    logic_result: Mapped[str | None] = mapped_column(
-        Text, nullable=True
-    )  # 'PASS' | 'FAIL' | None
+    ai_analyzed: Mapped[int] = mapped_column(Integer, default=0)
+    logic_result: Mapped[str | None] = mapped_column(Text, nullable=True)
     formula_inconsistency_score: Mapped[float] = mapped_column(Float, default=0.0)
     discrepancy_score: Mapped[float] = mapped_column(Float, default=0.0)
     embedding: Mapped[list[float] | None] = mapped_column(Vector(384), nullable=True)
-
     segment: Mapped[Segment] = relationship(back_populates="sentences")
     ai_demand_analyses: Mapped[list[AIDemandAnalysis]] = relationship(
         back_populates="sentence"
@@ -637,7 +618,6 @@ class Sentence(Base):
                 e = _try_enum(EvidenceType, str(x))
                 if e:
                     evidence_enums.append(e)
-
         ts_dict: dict[str, float] | None = None
         if isinstance(self.topic_scores, dict):
             ts_dict = {k: float(v) for k, v in self.topic_scores.items()}
@@ -648,7 +628,6 @@ class Sentence(Base):
                     ts_dict = {k: float(v) for k, v in loaded.items()}
             except json.JSONDecodeError:
                 ts_dict = None
-
         return SentenceDomainModel(
             id=self.sent_id,
             text=self.text,
@@ -691,7 +670,7 @@ class Sentence(Base):
             face_save_count=self.face_save_count,
             confidence_score=None,
             risk_score=self.risk_score,
-            manipulation_score=self.negation_aware_diplo,  # Or mapped field if exists
+            manipulation_score=self.negation_aware_diplo,
             is_demand=self.demand_type is not None,
         )
 
@@ -740,7 +719,6 @@ class Word(Base):
         Index("idx_word_norm", "word_norm"),
         Index("idx_word_stopword", "is_stopword"),
     )
-
     word_id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
     sent_id: Mapped[str] = mapped_column(
         ForeignKey("sentences.sent_id"), nullable=False
@@ -808,12 +786,10 @@ class Word(Base):
 
 class CountryReference(Base):
     __tablename__ = "legacy_country_references"
-
     __table_args__ = (
         Index("idx_legacy_coref_from", "from_country"),
         Index("idx_legacy_coref_to", "to_country"),
     )
-
     ref_id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
     file_id: Mapped[str | None] = mapped_column(
         ForeignKey("files.file_id"), nullable=True
@@ -873,7 +849,6 @@ class CountryReference(Base):
 
 class CountryStat(Base):
     __tablename__ = "country_stats"
-
     country: Mapped[str] = mapped_column(Text, primary_key=True)
     file_id: Mapped[str] = mapped_column(ForeignKey("files.file_id"), primary_key=True)
     n_segments: Mapped[int] = mapped_column(Integer, default=0)
@@ -930,12 +905,10 @@ class CountryStat(Base):
 
 class TopicMatrix(Base):
     __tablename__ = "topic_matrix"
-
     file_id: Mapped[str] = mapped_column(ForeignKey("files.file_id"), primary_key=True)
     country: Mapped[str] = mapped_column(Text, primary_key=True)
     topic: Mapped[str] = mapped_column(Text, primary_key=True)
     score: Mapped[float] = mapped_column(Float, default=0.0)
-
     mention_count: Mapped[int | None] = mapped_column(Integer, nullable=True)
     avg_sentiment: Mapped[float | None] = mapped_column(Float, nullable=True)
     risk_score: Mapped[float | None] = mapped_column(Float, nullable=True)
@@ -999,7 +972,6 @@ class TopicMatrix(Base):
 class CountryPairSentiment(Base):
     __tablename__ = "country_pair_sentiment"
     __table_args__ = (Index("idx_pair_from", "from_country"),)
-
     from_country: Mapped[str] = mapped_column(Text, primary_key=True)
     to_country: Mapped[str] = mapped_column(Text, primary_key=True)
     total_mentions: Mapped[int] = mapped_column(Integer, default=0)
@@ -1080,7 +1052,6 @@ class DemandRecord(Base):
         Index("idx_demand_country", "country"),
         Index("idx_demand_type", "demand_type"),
     )
-
     demand_id: Mapped[int] = mapped_column(
         Integer, primary_key=True, autoincrement=True
     )
@@ -1107,6 +1078,31 @@ class DemandRecord(Base):
     full_sentence: Mapped[str] = mapped_column(Text, nullable=False)
     diplo_compound: Mapped[float] = mapped_column(Float, default=0)
 
+    # New fields for demand analysis (BLOAT-5)
+    timestamp: Mapped[float | None] = mapped_column(Float, nullable=True)
+    deadline: Mapped[float | None] = mapped_column(Float, nullable=True)
+    compliance_likelihood: Mapped[float | None] = mapped_column(Float, nullable=True)
+    assertiveness_score: Mapped[float | None] = mapped_column(Float, nullable=True)
+    politeness_score: Mapped[float | None] = mapped_column(Float, nullable=True)
+    response_text: Mapped[str | None] = mapped_column(Text, nullable=True)
+    response_timestamp: Mapped[float | None] = mapped_column(Float, nullable=True)
+    compliance_status: Mapped[str | None] = mapped_column(Text, nullable=True)
+    related_demand_ids: Mapped[dict[str, Any] | None] = mapped_column(
+        JSON, nullable=True
+    )
+    is_conditional: Mapped[bool] = mapped_column(Boolean, default=False)
+    conditions: Mapped[dict[str, Any] | None] = mapped_column(JSON, nullable=True)
+    impact_score: Mapped[float | None] = mapped_column(Float, nullable=True)
+    risk_implication: Mapped[str | None] = mapped_column(Text, nullable=True)
+    is_active: Mapped[bool] = mapped_column(Boolean, default=True)
+    is_fulfilled: Mapped[bool] = mapped_column(Boolean, default=False)
+    fulfillment_timestamp: Mapped[datetime | None] = mapped_column(
+        DateTime, nullable=True
+    )
+    notes: Mapped[str | None] = mapped_column(Text, nullable=True)
+    tags: Mapped[dict[str, Any] | None] = mapped_column(JSON, nullable=True)
+    extra_metadata: Mapped[dict[str, Any] | None] = mapped_column(JSON, nullable=True)
+
     def to_domain(self) -> Demand:
         from bb_paxdata.application.domain.enums import DemandCategory, DemandType
         from bb_paxdata.application.domain.models.demand import Demand as DemandModel
@@ -1127,23 +1123,27 @@ class DemandRecord(Base):
             demand_category=dc or DemandCategory.DIPLOMATIC_ENGAGEMENT,
             pressure_level=None,
             demand_text=self.full_sentence,
-            paraphrased_demand=None,
-            context=None,
-            timestamp=None,
-            urgency=None,
-            deadline=None,
-            compliance_likelihood=None,
-            assertiveness_score=None,
-            politeness_score=None,
+            timestamp=self.timestamp,
+            deadline=self.deadline,
+            compliance_likelihood=self.compliance_likelihood,
+            assertiveness_score=self.assertiveness_score,
+            politeness_score=self.politeness_score,
             evidence_types=[],
             confidence_score=min(1.0, max(0.0, self.demand_weight or 0.5)),
-            response_text=None,
-            response_timestamp=None,
-            compliance_status=None,
-            impact_score=None,
-            risk_implication=None,
-            fulfillment_timestamp=None,
-            notes=None,
+            response_text=self.response_text,
+            response_timestamp=self.response_timestamp,
+            compliance_status=self.compliance_status,
+            related_demand_ids=self.related_demand_ids or [],
+            is_conditional=self.is_conditional or False,
+            conditions=self.conditions or [],
+            impact_score=self.impact_score,
+            risk_implication=self.risk_implication,
+            is_active=self.is_active or True,
+            is_fulfilled=self.is_fulfilled or False,
+            fulfillment_timestamp=self.fulfillment_timestamp,
+            notes=self.notes,
+            tags=self.tags or [],
+            metadata=self.extra_metadata or {},
         )
 
     @classmethod
@@ -1159,6 +1159,25 @@ class DemandRecord(Base):
             demand_weight=model.confidence_score,
             demand_category=model.demand_category.value,
             full_sentence=model.demand_text,
+            timestamp=model.timestamp,
+            deadline=model.deadline,
+            compliance_likelihood=model.compliance_likelihood,
+            assertiveness_score=model.assertiveness_score,
+            politeness_score=model.politeness_score,
+            response_text=model.response_text,
+            response_timestamp=model.response_timestamp,
+            compliance_status=model.compliance_status,
+            related_demand_ids=model.related_demand_ids,
+            is_conditional=model.is_conditional,
+            conditions=model.conditions,
+            impact_score=model.impact_score,
+            risk_implication=model.risk_implication,
+            is_active=model.is_active,
+            is_fulfilled=model.is_fulfilled,
+            fulfillment_timestamp=model.fulfillment_timestamp,
+            notes=model.notes,
+            tags=model.tags,
+            extra_metadata=model.metadata,
         )
 
 
@@ -1178,7 +1197,6 @@ class PatternRecord(Base):
             "sent_id", "pattern_type", "matched_keyword", name="uq_pattern_per_sentence"
         ),
     )
-
     pattern_id: Mapped[int] = mapped_column(
         Integer, primary_key=True, autoincrement=True
     )
@@ -1257,7 +1275,6 @@ class FileDynamics(Base):
         Index("idx_dyn_panel", "file_id"),
         Index("idx_dyn_sent", "sent_id", unique=True),
     )
-
     dyn_id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
     file_id: Mapped[str | None] = mapped_column(
         ForeignKey("files.file_id"), nullable=True
@@ -1327,12 +1344,11 @@ class DiscourseNetworkEdge(Base):
     __table_args__ = (
         Index("idx_net_from", "from_country"),
         Index("idx_net_to", "to_country"),
-        Index("idx_net_predicate", "predicate"),  # NEW: Query by action
-        Index("idx_net_bilateral", "from_country", "to_country"),  # NEW: Composite
+        Index("idx_net_predicate", "predicate"),
+        Index("idx_net_bilateral", "from_country", "to_country"),
         CheckConstraint("weight >= 0", name="ck_weight_non_negative"),
         {"comment": "Bilateral discourse relationships enriched with SRL semantics"},
     )
-
     edge_id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
     file_id: Mapped[str | None] = mapped_column(
         ForeignKey("files.file_id"), nullable=True
@@ -1343,8 +1359,6 @@ class DiscourseNetworkEdge(Base):
     avg_sentiment: Mapped[float] = mapped_column(Float, default=0)
     edge_type: Mapped[str | None] = mapped_column(Text, nullable=True)
     power_source: Mapped[int] = mapped_column(Integer, default=0)
-
-    # === SRL Enrichment Fields (Phase 2+) ===
     predicate: Mapped[str | None] = mapped_column(
         Text,
         nullable=True,
@@ -1353,30 +1367,29 @@ class DiscourseNetworkEdge(Base):
     arg1_entity: Mapped[str | None] = mapped_column(
         Text, nullable=True, comment="ARG1/Patient entity text (target of action)"
     )
-    arg0_entity: Mapped[str | None] = mapped_column(  # NEW: Also store actor
+    arg0_entity: Mapped[str | None] = mapped_column(
         Text, nullable=True, comment="ARG0/Agent entity text (actor performing action)"
     )
-    srl_frame_json: Mapped[str | None] = mapped_column(  # NEW: Full frame serialization
+    srl_frame_json: Mapped[str | None] = mapped_column(
         Text, nullable=True, comment="Complete SRL frame as JSON for advanced queries"
     )
-    srl_confidence: Mapped[float | None] = mapped_column(  # NEW: Quality score
+    srl_confidence: Mapped[float | None] = mapped_column(
         Float, nullable=True, comment="SRL extraction confidence score (0-1)"
     )
-    is_negated: Mapped[bool | None] = mapped_column(  # NEW: Negation flag
+    is_negated: Mapped[bool | None] = mapped_column(
         Boolean,
         nullable=True,
         default=False,
         comment="True if action was negated in source text",
     )
-    srl_extracted_at: Mapped[datetime | None] = mapped_column(  # NEW: Audit trail
-        DateTime,
+    srl_extracted_at: Mapped[datetime | None] = mapped_column(
+        DateTime(timezone=True),
         nullable=True,
         default=func.now(),
         comment="Timestamp when SRL enrichment was applied",
     )
 
     def to_domain(self) -> Metadata:
-        """Enhanced domain mapping with SRL fields."""
         from bb_paxdata.application.domain.models.metadata import Metadata
 
         custom_fields = {
@@ -1384,21 +1397,17 @@ class DiscourseNetworkEdge(Base):
             "to_country": self.to_country,
             "weight": self.weight,
             "edge_type": self.edge_type,
-            # SRL enrichments
             "predicate": self.predicate,
             "arg0_entity": self.arg0_entity,
             "arg1_entity": self.arg1_entity,
             "is_negated": self.is_negated,
             "srl_confidence": self.srl_confidence,
         }
-
-        # Parse JSON frame if present
         if self.srl_frame_json:
             try:
                 custom_fields["srl_frame"] = json.loads(self.srl_frame_json)
             except json.JSONDecodeError:
                 pass
-
         return Metadata(
             id=f"discourse_edge:{self.edge_id}",
             entity_id=str(self.edge_id),
@@ -1439,7 +1448,7 @@ class DiscourseNetworkEdge(Base):
                 instance.srl_frame_json = json.dumps(
                     cf.get("srl_frame"), ensure_ascii=False
                 )
-            instance.srl_extracted_at = datetime.utcnow()
+            instance.srl_extracted_at = datetime.now(timezone.utc)
         return instance
 
 
@@ -1456,7 +1465,6 @@ class AISentenceAnalysis(Base):
         Index("idx_ai_processed_at", "processed_at"),
         Index("idx_ai_sentence_code", "sentence_code"),
     )
-
     ai_id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
     sent_id: Mapped[str] = mapped_column(
         ForeignKey("sentences.sent_id"), nullable=False
@@ -1487,6 +1495,12 @@ class AISentenceAnalysis(Base):
     demand_type: Mapped[str | None] = mapped_column(Text, nullable=True)
     primary_topic: Mapped[str | None] = mapped_column(Text, nullable=True)
     secondary_topic: Mapped[str | None] = mapped_column(Text, nullable=True)
+    topic_diversity: Mapped[float | None] = mapped_column(
+        Float,
+        nullable=True,
+        comment="Shannon entropy of BERTopic P(topic|doc) distribution (Faz 5). "
+        "0.0 = fully focused, higher = dispersed topic signal.",
+    )
     diplomatic_tone: Mapped[str | None] = mapped_column(Text, nullable=True)
     intent_analysis: Mapped[str | None] = mapped_column(Text, nullable=True)
     manipulation_score: Mapped[float | None] = mapped_column(Float, nullable=True)
@@ -1538,9 +1552,7 @@ class AISentenceAnalysis(Base):
     logic_fail_reasons: Mapped[str | None] = mapped_column(Text, nullable=True)
     logic_pass_count: Mapped[int] = mapped_column(Integer, default=0)
     logic_fail_count: Mapped[int] = mapped_column(Integer, default=0)
-    backend: Mapped[str | None] = mapped_column(
-        Text, nullable=True
-    )  # "local" | "api" | "gemini" | "groq"
+    backend: Mapped[str | None] = mapped_column(Text, nullable=True)
     model_name: Mapped[str | None] = mapped_column(Text, nullable=True)
     ai_sentiment: Mapped[str | None] = mapped_column(Text, nullable=True)
     ai_emotion: Mapped[str | None] = mapped_column(Text, nullable=True)
@@ -1553,9 +1565,7 @@ class AISentenceAnalysis(Base):
     ai_manipulation_score: Mapped[float | None] = mapped_column(Float, nullable=True)
     ai_politeness_score: Mapped[float | None] = mapped_column(Float, nullable=True)
     ai_evidence_type: Mapped[str | None] = mapped_column(Text, nullable=True)
-    logic_result: Mapped[str | None] = mapped_column(
-        Text, nullable=True
-    )  # 'PASS' | 'FAIL' | None
+    logic_result: Mapped[str | None] = mapped_column(Text, nullable=True)
     validation_flags: Mapped[dict[str, Any] | None] = mapped_column(JSON, nullable=True)
     raw_response: Mapped[str | None] = mapped_column(Text, nullable=True)
     tokens_used: Mapped[int | None] = mapped_column(Integer, nullable=True)
@@ -1565,7 +1575,6 @@ class AISentenceAnalysis(Base):
     created_at: Mapped[datetime | None] = mapped_column(
         DateTime, server_default=func.now(), nullable=True
     )
-    # Legacy fields for backward compatibility
     backend_used: Mapped[str | None] = mapped_column(Text, nullable=True)
     model_used: Mapped[str | None] = mapped_column(Text, nullable=True)
     from_cache: Mapped[bool] = mapped_column(Boolean, default=False)
@@ -1653,6 +1662,7 @@ class AISentenceAnalysis(Base):
                 consensus.ai_result.detected_subtype if consensus else None
             ),
             speech_act_json=model.speech_act.model_dump() if model.speech_act else None,
+            topic_diversity=model.topic_diversity_score,
         )
 
 
@@ -1664,7 +1674,6 @@ class AIValidationLog(Base):
         Index("idx_val_type", "check_type"),
         Index("idx_val_sentence_code", "sentence_code"),
     )
-
     val_id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
     sent_id: Mapped[str] = mapped_column(Text, nullable=False)
     sentence_code: Mapped[str | None] = mapped_column(String(50), nullable=True)
@@ -1725,7 +1734,6 @@ class AIValidationLog(Base):
 class AISegmentInsight(Base):
     __tablename__ = "ai_segment_insights"
     __table_args__ = (Index("idx_seg_insight", "seg_id"),)
-
     insight_id: Mapped[int] = mapped_column(
         Integer, primary_key=True, autoincrement=True
     )
@@ -1760,19 +1768,14 @@ class AISegmentInsight(Base):
     logic_health_pct: Mapped[float | None] = mapped_column(Float, nullable=True)
     backend_used: Mapped[str | None] = mapped_column(Text, nullable=True)
     model_used: Mapped[str | None] = mapped_column(Text, nullable=True)
-    ai_insight: Mapped[str | None] = mapped_column(
-        Text, nullable=True
-    )  # Main insight content
-    ai_insight_version: Mapped[str | None] = mapped_column(
-        Text, nullable=True
-    )  # Version of insight generation
+    ai_insight: Mapped[str | None] = mapped_column(Text, nullable=True)
+    ai_insight_version: Mapped[str | None] = mapped_column(Text, nullable=True)
     insight_generated_at: Mapped[datetime | None] = mapped_column(
         DateTime, nullable=True
     )
     processed_at: Mapped[datetime | None] = mapped_column(
         DateTime, server_default=func.now(), nullable=True
     )
-
     segment: Mapped[Segment] = relationship(back_populates="ai_insight")
 
     def to_domain(self) -> Metadata:
@@ -1811,7 +1814,6 @@ class AISegmentInsight(Base):
 class AICache(Base):
     __tablename__ = "ai_cache"
     __table_args__ = (Index("idx_cache_hash", "hash"),)
-
     hash: Mapped[str] = mapped_column(String, primary_key=True)
     result_json: Mapped[str] = mapped_column(Text, nullable=False)
     model_used: Mapped[str | None] = mapped_column(Text, nullable=True)
@@ -1864,7 +1866,6 @@ class AIContextualFlag(Base):
         Index("idx_flags_cat", "flag_category"),
         Index("idx_flags_sentence_code", "sentence_code"),
     )
-
     flag_id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
     sent_id: Mapped[str] = mapped_column(Text, nullable=False)
     sentence_code: Mapped[str | None] = mapped_column(String(50), nullable=True)
@@ -1927,7 +1928,6 @@ class AIDemandAnalysis(Base):
         Index("idx_ai_demand_sent", "sent_id"),
         Index("idx_ai_demand_country", "country"),
     )
-
     ai_demand_id: Mapped[int] = mapped_column(
         Integer, primary_key=True, autoincrement=True
     )
@@ -1967,7 +1967,6 @@ class AIDemandAnalysis(Base):
     processed_at: Mapped[datetime | None] = mapped_column(
         DateTime, server_default=func.now(), nullable=True
     )
-
     sentence: Mapped[Sentence | None] = relationship(
         back_populates="ai_demand_analyses"
     )
@@ -2005,7 +2004,6 @@ class AIDemandAnalysis(Base):
 
 class AIPanelSynthesis(Base):
     __tablename__ = "ai_panel_synthesis"
-
     synthesis_id: Mapped[int] = mapped_column(
         Integer, primary_key=True, autoincrement=True
     )
@@ -2075,7 +2073,6 @@ class AIFailAnalysis(Base):
         Index("idx_fail_panel", "file_id"),
         Index("idx_fail_sentence_code", "sentence_code"),
     )
-
     fail_id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
     sent_id: Mapped[str] = mapped_column(Text, nullable=False)
     sentence_code: Mapped[str | None] = mapped_column(String(50), nullable=True)
@@ -2133,7 +2130,6 @@ class AIFailAnalysis(Base):
     processed_at: Mapped[datetime | None] = mapped_column(
         DateTime, server_default=func.now(), nullable=True
     )
-
     anomaly_cross_rows: Mapped[list[AIFailAnomalyCross]] = relationship(
         back_populates="fail_analysis"
     )
@@ -2177,7 +2173,6 @@ class AIFailPattern(Base):
         Index("idx_fail_pattern_kat", "fail_category"),
         Index("idx_fail_pattern_chk", "check_type"),
     )
-
     pattern_id: Mapped[int] = mapped_column(
         Integer, primary_key=True, autoincrement=True
     )
@@ -2236,7 +2231,6 @@ class AIFailAnomalyCross(Base):
         Index("idx_fac_sent", "sent_id"),
         Index("idx_fac_fail", "fail_id"),
     )
-
     cross_id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
     sent_id: Mapped[str] = mapped_column(Text, nullable=False)
     fail_id: Mapped[int | None] = mapped_column(
@@ -2248,7 +2242,6 @@ class AIFailAnomalyCross(Base):
     detected_at: Mapped[datetime | None] = mapped_column(
         DateTime, server_default=func.now(), nullable=True
     )
-
     fail_analysis: Mapped[AIFailAnalysis | None] = relationship(
         back_populates="anomaly_cross_rows"
     )
@@ -2291,7 +2284,6 @@ class AIFailAnomalyCross(Base):
 class AIFailCache(Base):
     __tablename__ = "ai_fail_cache"
     __table_args__ = (Index("idx_fcache_hash", "hash"),)
-
     hash: Mapped[str] = mapped_column(String, primary_key=True)
     result_json: Mapped[str] = mapped_column(Text, nullable=False)
     model_used: Mapped[str | None] = mapped_column(Text, nullable=True)
@@ -2344,7 +2336,6 @@ class DependencyTripleORM(Base):
         Index("idx_dep_to", "object_resolved"),
         Index("idx_dep_verb", "verb_lemma"),
     )
-
     triple_id: Mapped[int] = mapped_column(
         Integer, primary_key=True, autoincrement=True
     )
@@ -2353,19 +2344,15 @@ class DependencyTripleORM(Base):
     file_id: Mapped[str | None] = mapped_column(String, nullable=True)
     speaker_name: Mapped[str | None] = mapped_column(Text, nullable=True)
     country: Mapped[str | None] = mapped_column(Text, nullable=True)
-
     subject_raw: Mapped[str | None] = mapped_column(Text, nullable=True)
     subject_resolved: Mapped[str | None] = mapped_column(Text, nullable=True)
     verb_lemma: Mapped[str | None] = mapped_column(Text, nullable=True)
     object_raw: Mapped[str | None] = mapped_column(Text, nullable=True)
     object_resolved: Mapped[str | None] = mapped_column(Text, nullable=True)
-
     is_passive: Mapped[int] = mapped_column(Integer, default=0)
     is_negative: Mapped[int] = mapped_column(Integer, default=0)
-
     sentiment_context: Mapped[float | None] = mapped_column(Float, nullable=True)
     risk_score: Mapped[int | None] = mapped_column(Integer, nullable=True)
-
     human_verified: Mapped[int] = mapped_column(Integer, default=0)
     verification_status: Mapped[str] = mapped_column(Text, default="AUTO")
     extracted_at: Mapped[datetime | None] = mapped_column(
@@ -2380,7 +2367,6 @@ class ActorActionMatrixORM(Base):
         Index("idx_matrix_from", "from_country"),
         Index("idx_matrix_to", "to_country"),
     )
-
     matrix_id: Mapped[int] = mapped_column(
         Integer, primary_key=True, autoincrement=True
     )
@@ -2400,7 +2386,6 @@ class ActorActionMatrixORM(Base):
 class AIExplanationsORM(Base):
     __tablename__ = "ai_explanations"
     __table_args__ = (Index("idx_exp_sent", "sent_id"),)
-
     explanation_id: Mapped[int] = mapped_column(
         Integer, primary_key=True, autoincrement=True
     )
@@ -2410,9 +2395,7 @@ class AIExplanationsORM(Base):
     grammatical_explanation: Mapped[str | None] = mapped_column(Text, nullable=True)
     discrepancy_explanation: Mapped[str | None] = mapped_column(Text, nullable=True)
     executive_summary: Mapped[str] = mapped_column(Text, nullable=False)
-    token_attributions_json: Mapped[str | None] = mapped_column(
-        Text, nullable=True
-    )  # JSON string
+    token_attributions_json: Mapped[str | None] = mapped_column(Text, nullable=True)
     generated_at: Mapped[datetime | None] = mapped_column(
         DateTime, server_default=func.now(), nullable=True
     )
@@ -2426,12 +2409,10 @@ class FormulaValidationLog(Base):
         Index("idx_fval_formula", "formula_name"),
         Index("idx_fval_status", "status"),
         Index("idx_fval_sentence_code", "sentence_code"),
-        # v2 HITL indexes
         Index("idx_fval_is_current", "is_current"),
         Index("idx_fval_reviewer", "reviewer_id"),
         Index("idx_fval_human_verdict", "human_verdict"),
     )
-
     log_id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
     run_id: Mapped[str] = mapped_column(String, nullable=False)
     sentence_code: Mapped[str | None] = mapped_column(String(50), nullable=True)
@@ -2447,13 +2428,10 @@ class FormulaValidationLog(Base):
     created_at: Mapped[datetime | None] = mapped_column(
         DateTime, server_default=func.now(), nullable=True
     )
-
-    # ── HITL Karar Alanları (v2) ──────────────────────────────────────
     human_review_id: Mapped[int | None] = mapped_column(Integer, nullable=True)
     human_verdict: Mapped[str | None] = mapped_column(
         String(20),
         nullable=True,
-        # "CONFIRMED_FAIL" | "CONFIRMED_PASS" | "CORRECTED"
     )
     human_corrected_value: Mapped[float | None] = mapped_column(Float, nullable=True)
     human_note: Mapped[str | None] = mapped_column(Text, nullable=True)
@@ -2462,25 +2440,14 @@ class FormulaValidationLog(Base):
     human_reviewer_role: Mapped[str | None] = mapped_column(
         String(50),
         nullable=True,
-        # 'senior_analyst' | 'junior_analyst'
     )
-
-    # ── Immutability / Versiyonlama (v2) ──────────────────────────────
     log_version: Mapped[int] = mapped_column(Integer, default=1)
     superseded_by: Mapped[int | None] = mapped_column(Integer, nullable=True)
     is_current: Mapped[bool] = mapped_column(Boolean, default=True)
-
-    # ── Auto-Triage (v2) ─────────────────────────────────────────────
     auto_triage_reason: Mapped[str | None] = mapped_column(Text, nullable=True)
-    confidence_at_review: Mapped[str | None] = mapped_column(
-        String(20), nullable=True  # LOW | MEDIUM | HIGH
-    )
-
-    # ── Optimistic Locking (v2) ──────────────────────────────────────
+    confidence_at_review: Mapped[str | None] = mapped_column(String(20), nullable=True)
     reviewer_id: Mapped[str | None] = mapped_column(String(100), nullable=True)
     locked_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
-
-    # ── Relationships (v2) ───────────────────────────────────────────
     audit_entries: Mapped[list[FormulaValidationAudit]] = relationship(
         "FormulaValidationAudit", back_populates="log", lazy="selectin"
     )
@@ -2535,11 +2502,6 @@ class FormulaValidationLog(Base):
 
 
 class FormulaValidationAudit(Base):
-    """WORM (Write Once Read Many) audit trail for HITL formula validation actions.
-
-    Records are immutable — they are never deleted or updated after creation.
-    """
-
     __tablename__ = "formula_validation_audit"
     __table_args__ = (
         Index("idx_faudit_log", "log_id"),
@@ -2547,34 +2509,23 @@ class FormulaValidationAudit(Base):
         Index("idx_faudit_performer", "performed_by"),
         Index("idx_faudit_at", "performed_at"),
     )
-
     audit_id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
     log_id: Mapped[int] = mapped_column(
         Integer, ForeignKey("formula_validation_logs.log_id"), nullable=False
     )
-
     action_type: Mapped[str] = mapped_column(String(50), nullable=False)
-    # REVIEW_STARTED | VERDICT_SUBMITTED | CORRECTED | ROLLED_BACK | ESCALATED
-
     previous_verdict: Mapped[str | None] = mapped_column(String(20), nullable=True)
     new_verdict: Mapped[str | None] = mapped_column(String(20), nullable=True)
     previous_value: Mapped[float | None] = mapped_column(Float, nullable=True)
     new_value: Mapped[float | None] = mapped_column(Float, nullable=True)
-
     performed_by: Mapped[str] = mapped_column(String(100), nullable=False)
     performed_at: Mapped[datetime] = mapped_column(
         DateTime, default=lambda: datetime.now(timezone.utc).replace(tzinfo=None)
     )
     ip_address: Mapped[str | None] = mapped_column(String(45), nullable=True)
     justification: Mapped[str | None] = mapped_column(Text, nullable=True)
-
-    # Second-eye review (for high-risk corrections)
     reviewed_by: Mapped[str | None] = mapped_column(String(100), nullable=True)
-    review_status: Mapped[str | None] = mapped_column(
-        String(20), nullable=True
-    )  # PENDING | APPROVED
-
-    # Relationship back to log
+    review_status: Mapped[str | None] = mapped_column(String(20), nullable=True)
     log: Mapped[FormulaValidationLog] = relationship(
         "FormulaValidationLog", back_populates="audit_entries"
     )
@@ -2586,7 +2537,7 @@ class FormulaValidationAudit(Base):
             id=f"formula_audit:{self.audit_id}",
             entity_id=str(self.log_id),
             entity_type="formula_validation_audit",
-            title=f"Audit {self.action_type} on log #{self.log_id}",
+            title=f"Audit {self.action_type} on log {self.log_id}",
             description=f"{self.performed_by} → {self.action_type}: {self.previous_verdict} → {self.new_verdict}",
             category=self.action_type,
             subcategory=self.review_status,
@@ -2612,8 +2563,6 @@ class FormulaValidationAudit(Base):
 
 
 class ReviewerAssignment(Base):
-    """RBAC table: which reviewer can review which formula/speaker/panel/country."""
-
     __tablename__ = "reviewer_assignments"
     __table_args__ = (
         Index("idx_rassign_reviewer", "reviewer_id"),
@@ -2622,19 +2571,13 @@ class ReviewerAssignment(Base):
             "reviewer_id", "scope_type", "scope_value", name="uq_reviewer_scope"
         ),
     )
-
     assignment_id: Mapped[int] = mapped_column(
         Integer, primary_key=True, autoincrement=True
     )
     reviewer_id: Mapped[str] = mapped_column(String(100), nullable=False)
-
     scope_type: Mapped[str] = mapped_column(String(50), nullable=False)
-    # 'formula' | 'speaker' | 'panel' | 'country' | 'global'
     scope_value: Mapped[str] = mapped_column(String(100), nullable=False)
-
     permission_level: Mapped[str] = mapped_column(String(20), nullable=False)
-    # 'view' | 'verdict' | 'correct' | 'escalate' | 'admin'
-
     max_daily_reviews: Mapped[int] = mapped_column(Integer, default=50)
     current_daily_count: Mapped[int] = mapped_column(Integer, default=0)
     last_reset_at: Mapped[datetime] = mapped_column(
@@ -2648,7 +2591,6 @@ class ReviewerAssignment(Base):
 
 class SegmentAnalyzedEvent(Base):
     __tablename__ = "segment_events"
-
     event_id: Mapped[str] = mapped_column(String(36), primary_key=True)
     event_timestamp: Mapped[datetime] = mapped_column(DateTime, nullable=False)
     file_id: Mapped[str] = mapped_column(String(255), nullable=False)
@@ -2674,7 +2616,6 @@ class SegmentAnalyzedEvent(Base):
 
 class ActorTopicProjection(Base):
     __tablename__ = "actor_topic_projection"
-
     file_id: Mapped[str] = mapped_column(String(255), primary_key=True)
     country: Mapped[str] = mapped_column(String(100), primary_key=True)
     topic: Mapped[str] = mapped_column(String(200), primary_key=True)
@@ -2716,7 +2657,6 @@ class ActorTopicProjection(Base):
 
 class ActorTopicDocument(Base):
     __tablename__ = "actor_topic_documents"
-
     id: Mapped[str] = mapped_column(String(36), primary_key=True)
     file_id: Mapped[str] = mapped_column(String(255), nullable=False)
     country: Mapped[str] = mapped_column(String(100), nullable=False)
@@ -2731,7 +2671,6 @@ class ActorTopicDocument(Base):
 
 class AggregationLineage(Base):
     __tablename__ = "aggregation_lineage"
-
     id: Mapped[str] = mapped_column(String(36), primary_key=True)
     projection_id: Mapped[str] = mapped_column(String(36), nullable=False)
     event_id: Mapped[str] = mapped_column(String(36), nullable=False)
@@ -2741,7 +2680,6 @@ class AggregationLineage(Base):
 
 class TopicModelVersion(Base):
     __tablename__ = "topic_model_versions"
-
     version_id: Mapped[str] = mapped_column(String(50), primary_key=True)
     trained_at: Mapped[datetime] = mapped_column(DateTime, nullable=False)
     hyperparameters: Mapped[dict[str, Any]] = mapped_column(JSON, nullable=False)
@@ -2750,7 +2688,6 @@ class TopicModelVersion(Base):
 
 class TopicMapping(Base):
     __tablename__ = "topic_mappings"
-
     version_from: Mapped[str] = mapped_column(String(50), primary_key=True)
     topic_from: Mapped[str] = mapped_column(String(200), primary_key=True)
     version_to: Mapped[str] = mapped_column(String(50), primary_key=True)
@@ -2760,10 +2697,7 @@ class TopicMapping(Base):
 
 
 class DomainEvent(Base):
-    """Append-only domain event store (WORM). Never UPDATE or DELETE rows."""
-
     __tablename__ = "domain_events"
-
     event_id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
     aggregate_type: Mapped[str] = mapped_column(String(64), nullable=False)
     aggregate_id: Mapped[str] = mapped_column(String(128), nullable=False, index=True)
@@ -2775,26 +2709,19 @@ class DomainEvent(Base):
     occurred_at: Mapped[datetime] = mapped_column(
         DateTime, server_default=func.now(), nullable=False
     )
-
     __table_args__ = (
         Index("ix_domain_events_aggregate", "aggregate_type", "aggregate_id"),
         Index("ix_domain_events_type_time", "event_type", "occurred_at"),
     )
 
 
-import uuid  # noqa: E402
-
-
 class OutboxEventORM(Base):
     __tablename__ = "outbox_events"
-
     id: Mapped[str] = mapped_column(
         String(36), primary_key=True, default=lambda: str(uuid.uuid4())
     )
     event_type: Mapped[str] = mapped_column(String(100), nullable=False, index=True)
-    aggregate_id: Mapped[str] = mapped_column(
-        String(36), nullable=False, index=True
-    )  # analysis_id, segment_id vb.
+    aggregate_id: Mapped[str] = mapped_column(String(36), nullable=False, index=True)
     payload: Mapped[dict[str, Any]] = mapped_column(JSON, nullable=False)
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), default=lambda: datetime.now(timezone.utc)
@@ -2810,13 +2737,7 @@ class OutboxEventORM(Base):
 
 
 class DeadLetterEventORM(Base):
-    """
-    MaxRetry aşımı veya kalıcı hata sonucu işlenemeyen event'ler buraya taşınır.
-    Manuel inceleme ve yeniden işleme için korunur.
-    """
-
     __tablename__ = "dead_letter_events"
-
     id: Mapped[str] = mapped_column(
         String(36), primary_key=True, default=lambda: str(uuid.uuid4())
     )
@@ -2839,7 +2760,6 @@ class ArgumentGraphNode(Base):
         Index("idx_arg_node_speaker", "speaker"),
         Index("idx_arg_node_type", "node_type"),
     )
-
     id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
     graph_id: Mapped[str] = mapped_column(Text, nullable=False, index=True)
     segment_id: Mapped[str] = mapped_column(Text, nullable=False)
@@ -2853,7 +2773,9 @@ class ArgumentGraphNode(Base):
     predicate: Mapped[str | None] = mapped_column(Text, nullable=True)
     is_negated: Mapped[bool] = mapped_column(Boolean, default=False)
     metadata_json: Mapped[dict | list | None] = mapped_column(JSON, nullable=True)
-    created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime, default=lambda: datetime.now(timezone.utc).replace(tzinfo=None)
+    )
 
 
 class ArgumentGraphEdge(Base):
@@ -2863,7 +2785,6 @@ class ArgumentGraphEdge(Base):
         Index("idx_edge_source_target", "source_id", "target_id"),
         Index("idx_edge_type", "relation_type"),
     )
-
     id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
     graph_id: Mapped[str] = mapped_column(Text, nullable=False, index=True)
     edge_id: Mapped[str] = mapped_column(Text, nullable=False, unique=True)
@@ -2874,13 +2795,14 @@ class ArgumentGraphEdge(Base):
     weight: Mapped[float] = mapped_column(Float, default=1.0)
     is_cross_speaker: Mapped[bool] = mapped_column(Boolean, default=False)
     evidence_snippet: Mapped[str | None] = mapped_column(Text, nullable=True)
-    created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime, default=lambda: datetime.now(timezone.utc).replace(tzinfo=None)
+    )
 
 
 class ArgumentGraphMetadata(Base):
     __tablename__ = "argument_graphs_metadata"
     __table_args__ = (Index("idx_arg_meta_doc", "document_id"),)
-
     id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
     graph_id: Mapped[str] = mapped_column(Text, unique=True, nullable=False)
     document_id: Mapped[str | None] = mapped_column(Text, nullable=True)
@@ -2895,9 +2817,13 @@ class ArgumentGraphMetadata(Base):
     model_version: Mapped[str] = mapped_column(Text, nullable=True)
     processing_time_ms: Mapped[float] = mapped_column(Float, default=0.0)
     graph_snapshot_json: Mapped[dict | list | None] = mapped_column(JSON, nullable=True)
-    created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime, default=lambda: datetime.now(timezone.utc).replace(tzinfo=None)
+    )
     updated_at: Mapped[datetime] = mapped_column(
-        DateTime, default=datetime.utcnow, onupdate=datetime.utcnow
+        DateTime,
+        default=lambda: datetime.now(timezone.utc).replace(tzinfo=None),
+        onupdate=lambda: datetime.now(timezone.utc).replace(tzinfo=None),
     )
 
     def to_domain(self) -> ArgumentGraph:
@@ -2905,14 +2831,12 @@ class ArgumentGraphMetadata(Base):
 
         if isinstance(self.graph_snapshot_json, dict):
             try:
-                # full json snapshot'tan deserialize eder
                 return ArgumentGraph(**self.graph_snapshot_json, skip_validation=True)
             except Exception as e:
                 import logging
 
                 logger = logging.getLogger(__name__)
                 logger.error(f"Failed to deserialize graph snapshot: {e}")
-
         return ArgumentGraph(
             graph_id=self.graph_id,
             document_id=self.document_id,

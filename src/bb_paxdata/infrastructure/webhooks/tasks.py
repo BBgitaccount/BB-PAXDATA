@@ -4,10 +4,12 @@ from __future__ import annotations
 import random
 
 import httpx
-from bb_paxdata.infrastructure.tasks.celery_app import app as celery_app
+from bb_paxdata.infrastructure.tasks.celery_app import get_celery_app
 from bb_paxdata.infrastructure.webhooks.signature import generate_webhook_signature
 from celery import Task
 from celery.utils.log import get_task_logger
+
+celery_app = get_celery_app()
 
 logger = get_task_logger(__name__)
 

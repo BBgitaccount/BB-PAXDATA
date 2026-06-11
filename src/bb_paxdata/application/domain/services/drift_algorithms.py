@@ -2,7 +2,7 @@
 
 import math
 from collections import Counter
-from typing import Any, Optional
+from typing import Any
 
 import numpy as np
 import structlog
@@ -629,7 +629,7 @@ def detect_entropy_constriction(
 
 def detect_illocutionary_drift(
     speech_act_series: list[str],
-    force_modifiers: list[Optional[str]],
+    force_modifiers: list[str | None],
     window_size: int = 3,
     confidence_threshold: float = 0.5,
     min_commissive_ratio: float = 0.5,
@@ -676,7 +676,7 @@ def detect_illocutionary_drift(
     return drift_points
 
 
-def _compute_modifier_adjustment(modifier: Optional[str]) -> float:
+def _compute_modifier_adjustment(modifier: str | None) -> float:
     if not modifier:
         return 0.0
     mod_lower = modifier.lower()

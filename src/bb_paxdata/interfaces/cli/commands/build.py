@@ -377,9 +377,9 @@ async def _process_single_file(
         file_speakers_metadata=file_speakers_metadata,
     )
     if res not in ("skipped", "error"):
-        from bb_paxdata.infrastructure.events.publisher import EventPublisher
+        from bb_paxdata.infrastructure.events.publisher import WORMEventPublisher
 
-        await EventPublisher(session).emit(
+        await WORMEventPublisher(session).emit(
             aggregate_type="ProcessedFile",
             aggregate_id=file_id,
             event_type="FileIngested",
@@ -604,7 +604,7 @@ async def backfill_segment_events(session: Any) -> None:
 
     import uuid
 
-    run_id = f"backfill_{uuid.uuid4().hex[:8]}"
+    run_id = f"backfill_{uuid.uuid4().hex}"
     for s in segments:
         vad = get_vad_vector(s.diplo_compound or 0.0, s.emotion_category)
         act = classify_speech_act(s.text or "", s.demand_count or 0)

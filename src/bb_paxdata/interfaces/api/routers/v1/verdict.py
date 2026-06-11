@@ -1,15 +1,34 @@
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, Query, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from bb_paxdata.infrastructure.cache.redis import RedisCacheBackend
 from bb_paxdata.infrastructure.db.repositories.formula_validation import (
     FormulaValidationRepository,
 )
-from bb_paxdata.infrastructure.messaging.publisher import EventPublisher, get_publisher
+from bb_paxdata.infrastructure.messaging.publisher import (
+    RedisEventPublisher,
+    get_publisher,
+)
 from bb_paxdata.interfaces.api.dependencies import PermissionChecker, get_cache, get_db
-from bb_paxdata.interfaces.api.schemas import VerdictPayload, VerdictResponse
+from bb_paxdata.interfaces.api.schemas import (
+    AuditEntryResponse,
+    VerdictPayload,
+    VerdictResponse,
+)
 
 router = APIRouter(prefix="/verdict", tags=["Verdict"])
+
+
+@router.get("/audit", response_model=list[AuditEntryResponse])
+async def get_audit_trail(
+    limit: int = Query(20),
+    db: AsyncSession = Depends(get_db),
+    # Require at least 'view' permission to view audit trail
+    _has_permission: bool = Depends(PermissionChecker("view")),
+):
+    """Retrieve recent reviewer actions and decision logs."""
+    repo = FormulaValidationRepository(db)
+    return await repo.get_audit_trail(limit=limit)
 
 
 @router.post("", response_model=VerdictResponse)
@@ -17,7 +36,7 @@ async def submit_verdict(
     payload: VerdictPayload,
     db: AsyncSession = Depends(get_db),
     cache: RedisCacheBackend = Depends(get_cache),
-    publisher: EventPublisher = Depends(get_publisher),
+    publisher: RedisEventPublisher = Depends(get_publisher),
     # Require at least 'verdict' level permission to submit review responses
     _has_permission: bool = Depends(PermissionChecker("verdict")),
 ):
@@ -34,9 +53,7 @@ async def submit_verdict(
             reviewer_id=payload.reviewer_id,
         )
 
-        from bb_paxdata.infrastructure.events.publisher import (
-            EventPublisher as WORMEventPublisher,
-        )
+        from bb_paxdata.infrastructure.events.publisher import WORMEventPublisher
 
         await WORMEventPublisher(db).emit(
             aggregate_type="HumanReview",

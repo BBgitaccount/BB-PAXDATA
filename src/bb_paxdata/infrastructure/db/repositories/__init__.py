@@ -15,6 +15,7 @@ from .human_review_repository import HumanReviewRepository
 from .reviewer_assignment import ReviewerAssignmentRepository
 from .segment import SegmentRepository
 from .sentence import SentenceRepository
+from .topic_assignment_repository import TopicAssignmentRepository
 from .unit_of_work import AbstractUnitOfWork, SqlAlchemyUnitOfWork
 
 __all__ = [
@@ -24,9 +25,9 @@ __all__ = [
     "BilateralSentimentRepository",
     "CalibrationRepository",
     "CountryReferenceRepository",
+    "DKIRepository",
     "DiscourseFlowRepository",
     "DiscourseNetworkRepository",
-    "DKIRepository",
     "FormulaAuditRepository",
     "FormulaValidationRepository",
     "HumanReviewRepository",
@@ -34,5 +35,6 @@ __all__ = [
     "SegmentRepository",
     "SentenceRepository",
     "SqlAlchemyUnitOfWork",
+    "TopicAssignmentRepository",
     "TopicSynthesisRepository",
 ]

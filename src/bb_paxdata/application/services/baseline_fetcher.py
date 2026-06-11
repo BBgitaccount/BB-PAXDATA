@@ -2,7 +2,8 @@
 from __future__ import annotations
 
 from collections import Counter
-from typing import Any, Callable
+from collections.abc import Callable
+from typing import Any
 
 import numpy as np
 from bb_paxdata.application.domain.services.protocols.judge_protocols import (

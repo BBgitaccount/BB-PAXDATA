@@ -1,6 +1,7 @@
 # tests/unit/test_phase5_components.py
 from __future__ import annotations
 
+from collections.abc import AsyncGenerator
 from unittest.mock import AsyncMock, MagicMock
 
 import numpy as np
@@ -45,7 +46,9 @@ from sqlalchemy.pool import StaticPool
 
 
 @pytest.fixture
-async def test_session_factory() -> async_sessionmaker[AsyncSession]:
+async def test_session_factory() -> (
+    AsyncGenerator[async_sessionmaker[AsyncSession], None]
+):
     engine = create_async_engine(
         "sqlite+aiosqlite://",
         connect_args={"check_same_thread": False},
@@ -453,6 +456,7 @@ async def test_model_evaluation_engine(test_session_factory, mock_embedding_serv
 
     assert run.status == "completed"
     assert run.model_name == "test-llm"
+    assert run.total_cost_usd is not None
     assert run.total_cost_usd > Decimal("0")
 
     # Check metrics in DB

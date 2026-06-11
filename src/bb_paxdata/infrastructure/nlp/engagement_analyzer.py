@@ -435,7 +435,7 @@ class EngagementAnalyzer:
         )
 
         return DetailedEngagementScore(
-            value=float(base_score),
+            value=base_score,
             velocity=round(velocity, 4),
             density=round(density, 4),
             referential_cohesion=round(referential_cohesion, 4),

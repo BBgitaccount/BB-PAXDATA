@@ -1,18 +1,17 @@
 from __future__ import annotations
 
 import asyncio
+from collections.abc import Callable
 from typing import TYPE_CHECKING
 
-from bb_paxdata.application.domain.services.colbert_embedding_service import (
-    RAGatoulleColBERTService,
-)
 from bb_paxdata.application.domain.services.protocols.rag_protocols import (
     RAGQueryRequest,
     RetrievedContext,
 )
+from bb_paxdata.infrastructure.nlp.colbert_service import RAGatoulleColBERTService
 
 if TYPE_CHECKING:
-    pass
+    from sqlalchemy.ext.asyncio import AsyncSession
 
 
 class ColBERTDenseRetriever:
@@ -21,8 +20,13 @@ class ColBERTDenseRetriever:
     Adapts ragatouille search results to RetrievedContext domain objects.
     """
 
-    def __init__(self, colbert_service: RAGatoulleColBERTService) -> None:
+    def __init__(
+        self,
+        colbert_service: RAGatoulleColBERTService,  # TODO(MİMARİ-5): -> ColBERTEmbeddingServiceProtocol
+        session_factory: Callable[[], AsyncSession] | None = None,
+    ) -> None:
         self._colbert = colbert_service
+        self._session_factory = session_factory
 
     async def search(self, request: RAGQueryRequest) -> list[RetrievedContext]:
         """
@@ -54,15 +58,32 @@ class ColBERTDenseRetriever:
             content = r.get("content", "")
             score = float(r.get("score", 0.0))
 
-            # ColBERT PLAID index doesn't store metadata; fields are None
-            # Future enhancement: fetch metadata from DB using document_id
+            # Post-retrieval DB lookup to populate metadata fields
+            speaker_name = None
+            country = None
+            panel_id = None
+
+            if doc_id.startswith("sentence:") and self._session_factory is not None:
+                sent_id = doc_id.split(":", 1)[1]
+                async with self._session_factory() as session:
+                    from bb_paxdata.infrastructure.db.repositories.sentence import (
+                        SentenceRepository,
+                    )
+
+                    sentence_repo = SentenceRepository(session)
+                    sentence = await sentence_repo.get(sent_id)
+                    if sentence:
+                        speaker_name = sentence.speaker_name
+                        country = sentence.country
+                        panel_id = sentence.file_id
+
             contexts.append(
                 RetrievedContext(
                     sentence_id=doc_id,
                     text=content,
-                    speaker_name=None,
-                    country=None,
-                    panel_id=None,
+                    speaker_name=speaker_name,
+                    country=country,
+                    panel_id=panel_id,
                     similarity_score=score,
                     retrieval_source="colbert_plaid",
                 )

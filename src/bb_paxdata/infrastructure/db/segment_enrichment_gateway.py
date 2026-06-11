@@ -1,5 +1,5 @@
 from dataclasses import dataclass
-from typing import Any, Dict, List, Optional
+from typing import Any
 
 from bb_paxdata.infrastructure.db.models import Segment, Sentence
 
@@ -8,17 +8,17 @@ from bb_paxdata.infrastructure.db.models import Segment, Sentence
 class EnrichedSegmentData:
     """Segment ORM nesnesine yazılacak zenginleştirilmiş alanlar."""
 
-    bloc: Optional[str]
-    role: Optional[str]
-    key_phrases: Optional[str]
-    tfidf_keywords: Optional[str]
-    entities_gpe: List[str]
-    entities_org: List[str]
-    entities_person: List[str]
-    risk_signals: List[Dict[str, Any]]
-    demand_concentration: Dict[str, int]
+    bloc: str | None
+    role: str | None
+    key_phrases: str | None
+    tfidf_keywords: str | None
+    entities_gpe: list[str]
+    entities_org: list[str]
+    entities_person: list[str]
+    risk_signals: list[dict[str, Any]]
+    demand_concentration: dict[str, int]
     inconsistency_score: float
-    dominant_frame: Optional[str]
+    dominant_frame: str | None
 
 
 class SegmentEnrichmentGateway:
@@ -29,15 +29,17 @@ class SegmentEnrichmentGateway:
     def enrich(
         self,
         db_segment: Segment,
-        db_sentences: List[Sentence],
+        db_sentences: list[Sentence],
         pipeline_res: Any = None,
         topic_result: Any = None,
+        db_speaker: Any | None = None,
     ) -> EnrichedSegmentData:
         """Tüm segment zenginleştirme mantığını tek bir kapıdan (gateway) koordine eder."""
 
         # 1. Konuşmacı Bilgileri Rollup (bloc, role)
-        speaker_bloc = db_segment.speaker.bloc if db_segment.speaker else None
-        speaker_role = db_segment.speaker.role if db_segment.speaker else None
+        speaker = db_speaker or db_segment.speaker
+        speaker_bloc = speaker.bloc if speaker else None
+        speaker_role = speaker.role if speaker else None
 
         # 2. LODP / key_phrases Çıkarımı
         key_phrases = None
@@ -93,7 +95,7 @@ class SegmentEnrichmentGateway:
             dominant_frame=dominant_frame,
         )
 
-    def _aggregate_entities(self, sentences: List[Sentence]) -> Dict[str, List[str]]:
+    def _aggregate_entities(self, sentences: list[Sentence]) -> dict[str, list[str]]:
         gpe, org, person = set(), set(), set()
         for sent in sentences:
             if sent.entities_gpe:
@@ -118,8 +120,8 @@ class SegmentEnrichmentGateway:
         }
 
     def _resolve_dominant_frame(
-        self, sentences: List[Sentence], pipeline_res: Any
-    ) -> Optional[str]:
+        self, sentences: list[Sentence], pipeline_res: Any
+    ) -> str | None:
         # Öncelik: AI Sonucu (frame_salience)
         if pipeline_res and hasattr(pipeline_res, "analysis") and pipeline_res.analysis:
             fs = getattr(pipeline_res.analysis, "frame_salience", None)
@@ -134,7 +136,7 @@ class SegmentEnrichmentGateway:
             return max(set(frames), key=frames.count)
         return None
 
-    def _calculate_inconsistency(self, sentences: List[Sentence]) -> float:
+    def _calculate_inconsistency(self, sentences: list[Sentence]) -> float:
         scores = []
         for s in sentences:
             val = getattr(s, "discrepancy_score", None) or getattr(
@@ -144,8 +146,8 @@ class SegmentEnrichmentGateway:
         return sum(scores) / len(scores) if scores else 0.0
 
     def _calculate_demand_concentration(
-        self, sentences: List[Sentence]
-    ) -> Dict[str, int]:
+        self, sentences: list[Sentence]
+    ) -> dict[str, int]:
         n = len(sentences)
         if n == 0:
             return {"intro": 0, "develop": 0, "concl": 0}

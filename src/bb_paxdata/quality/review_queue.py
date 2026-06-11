@@ -216,6 +216,37 @@ class ReviewFlagger:
             except Exception as ws_ex:
                 self.logger.warning(f"Could not broadcast new flagged item: {ws_ex}")
 
+            # Publish new flagged item event to Redis Pub/Sub channel
+            try:
+                import redis
+
+                from bb_paxdata.config.settings import get_settings
+
+                r_client = redis.Redis.from_url(get_settings().redis_url)
+                r_payload = {
+                    "event_type": "new_flagged_item",
+                    "data": {
+                        "sent_id": sent_id,
+                        "review_id": review_entry.review_id,
+                        "speaker_name": review_entry.speaker_name,
+                        "country": review_entry.country,
+                        "ai_risk_score": review_entry.ai_risk_score,
+                        "sentence_text": (
+                            context.get("text")
+                            if context
+                            else ai_output.get("text", "")
+                        ),
+                    },
+                }
+                r_client.publish("verdict_events", json.dumps(r_payload))
+                self.logger.info(
+                    "Published new_flagged_item to Redis channel 'verdict_events'"
+                )
+            except Exception as redis_ex:
+                self.logger.warning(
+                    f"Could not publish new flagged item to Redis: {redis_ex}"
+                )
+
             return review_entry
 
         except Exception as e:
@@ -372,10 +403,14 @@ class ReviewQueueManager:
                 )
 
             # Mark as human-reviewed
-            if hasattr(ai_analysis, "human_reviewed"):
-                ai_analysis.human_reviewed = 1
-            if hasattr(ai_analysis, "human_review_status"):
-                ai_analysis.human_review_status = action
+            try:
+                setattr(ai_analysis, "human_reviewed", 1)
+            except AttributeError:
+                pass
+            try:
+                setattr(ai_analysis, "human_review_status", action)
+            except AttributeError:
+                pass
 
             self.db_session.commit()
 

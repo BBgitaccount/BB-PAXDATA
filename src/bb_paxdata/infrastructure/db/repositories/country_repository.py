@@ -1,10 +1,3 @@
-# src/bb_paxdata/infrastructure/repositories/country_repository.py
-"""
-Concrete repository implementasyonları.
-
-Her class, domain/services/country_repositories.py'daki Protocol'ü implemente eder.
-SQLAlchemy 2.0 async session kullanılır.
-"""
 from __future__ import annotations
 
 from collections.abc import Sequence
@@ -31,8 +24,6 @@ from bb_paxdata.infrastructure.db.country_models import (
 
 
 class CountryReferenceRepository:
-    """ICountryReferenceRepository Protocol'ünün SQLAlchemy implementasyonu."""
-
     def __init__(self, session: AsyncSession | None = None) -> None:
         self._session = session
 
@@ -76,21 +67,14 @@ class CountryReferenceRepository:
 
 
 class BilateralSentimentRepository:
-    """IBilateralSentimentRepository Protocol'ünün SQLAlchemy implementasyonu."""
-
     def __init__(self, session: AsyncSession) -> None:
         self._session = session
 
     async def upsert(self, sentiment: BilateralSentiment) -> BilateralSentiment:
-        """
-        Upsert: (panel_id, from_country, to_country) unique constraint'e göre
-        kayıt varsa günceller, yoksa ekler.
-        """
         existing = await self.get_by_pair(
             sentiment.from_country, sentiment.to_country, sentiment.panel_id
         )
         if existing is not None:
-            # Mevcut kaydı bul ve güncelle
             result = await self._session.execute(
                 select(BilateralSentimentTable).where(
                     BilateralSentimentTable.file_id == sentiment.panel_id,
@@ -99,8 +83,6 @@ class BilateralSentimentRepository:
                 )
             )
             row = result.scalar_one()
-            # Alan alan güncelle (ORM nesnesini mutate etmek burada meşru —
-            # bu infra katmanı, domain immutability kuralı domain modelleri için geçerli)
             row.total_mentions = sentiment.total_mentions
             row.avg_sentiment = sentiment.avg_sentiment
             row.interaction_count = sentiment.interaction_count
@@ -109,8 +91,6 @@ class BilateralSentimentRepository:
             row.power_weighted_score = sentiment.power_weighted_score
             row.diplomatic_distance = sentiment.diplomatic_distance
             row.last_updated = sentiment.last_updated.replace(tzinfo=None)
-
-            # Phase 4 Extensions
             if sentiment.dyadic_metrics:
                 m = sentiment.dyadic_metrics
                 row.vote_affinity = m.vote_affinity
@@ -122,15 +102,10 @@ class BilateralSentimentRepository:
         else:
             row = BilateralSentimentTable.from_domain(sentiment)
             self._session.add(row)
-
         await self._session.flush()
         return row.to_domain()
 
     async def save_dyadic(self, session: AsyncSession, metrics: DyadicMetrics) -> None:
-        """Persist Maoz dyadic metrics into bilateral_sentiments table."""
-        # Find existing bilateral record for this pair and session
-        # session_id here maps to panel_id in BilateralSentimentTable
-        # Match either orientation (A->B or B->A) to ensure updates regardless
         stmt = select(BilateralSentimentTable).where(
             BilateralSentimentTable.file_id == metrics.session_id,
             or_(
@@ -146,7 +121,6 @@ class BilateralSentimentRepository:
         )
         result = await session.execute(stmt)
         row = result.scalar_one_or_none()
-
         if row:
             row.vote_affinity = metrics.vote_affinity
             row.alliance_score = metrics.alliance_score
@@ -157,8 +131,6 @@ class BilateralSentimentRepository:
             row.maoz_affinity_score = metrics.affinity_score
             await session.flush()
         else:
-            # If no bilateral record exists, we might need to create a stub or log a warning.
-            # In Phase 4, assemble_network should ensure bilateral records exist from Faz 3.
             pass
 
     async def get_by_pair(
@@ -183,18 +155,12 @@ class BilateralSentimentRepository:
         return [row.to_domain() for row in result.scalars().all()]
 
     async def rebuild_global_country_pair_sentiments(self) -> None:
-        """Query aggregates from BilateralSentimentTable and populate/overwrite CountryPairSentiment."""
         from sqlalchemy import delete, func
 
-        from bb_paxdata.application.domain.enums.relationship_type import (
-            RelationshipType,
-        )
+        from bb_paxdata.application.domain.enums.country_enums import RelationshipType
         from bb_paxdata.infrastructure.db.models import CountryPairSentiment
 
-        # Clear existing entries in country_pair_sentiment table
         await self._session.execute(delete(CountryPairSentiment))
-
-        # Query aggregates from BilateralSentimentTable
         stmt = select(
             BilateralSentimentTable.from_country,
             BilateralSentimentTable.to_country,
@@ -215,7 +181,6 @@ class BilateralSentimentRepository:
         )
         res = await self._session.execute(stmt)
         rows = res.all()
-
         for r in rows:
             aff = r.affinity_score or 0.0
             if aff > 0.5:
@@ -228,7 +193,6 @@ class BilateralSentimentRepository:
                 rel_type = RelationshipType.CAUTIOUS
             else:
                 rel_type = RelationshipType.NEUTRAL
-
             cp = CountryPairSentiment(
                 from_country=r.from_country,
                 to_country=r.to_country,
@@ -247,13 +211,10 @@ class BilateralSentimentRepository:
 
 
 class DiscourseFlowRepository(IDiscourseFlowRepository):
-    """IDiscourseFlowRepository Protocol'ünün SQLAlchemy implementasyonu."""
-
     def __init__(self, session: AsyncSession) -> None:
         self._session = session
 
     async def get_by_session(self, session_id: str) -> list[DiscourseFlow]:
-        """Get all discourse flows for a session."""
         result = await self._session.execute(
             select(DiscourseFlowTable).where(DiscourseFlowTable.file_id == session_id)
         )
@@ -277,8 +238,6 @@ class DiscourseFlowRepository(IDiscourseFlowRepository):
 
 
 class TopicSynthesisRepository:
-    """ITopicSynthesisRepository Protocol'ünün SQLAlchemy implementasyonu."""
-
     def __init__(self, session: AsyncSession) -> None:
         self._session = session
 
@@ -297,21 +256,16 @@ class TopicSynthesisRepository:
         else:
             row = TopicMatrixTable.from_domain(synthesis)
             self._session.add(row)
-
-        # Write to the normalized topic_matrix table (TopicMatrix model from models.py)
         from sqlalchemy import delete
 
         from bb_paxdata.infrastructure.db.models import TopicMatrix as TopicMatrixORM
 
-        # First clean normalized entries for this panel and country
         await self._session.execute(
             delete(TopicMatrixORM).where(
                 TopicMatrixORM.file_id == synthesis.panel_id,
                 TopicMatrixORM.country == synthesis.country,
             )
         )
-
-        # Save new normalized entries
         if synthesis.topic_scores:
             for topic, score in synthesis.topic_scores.items():
                 db_tm = TopicMatrixORM(
@@ -321,7 +275,6 @@ class TopicSynthesisRepository:
                     score=score,
                 )
                 self._session.add(db_tm)
-
         await self._session.flush()
         return row.to_domain()
 

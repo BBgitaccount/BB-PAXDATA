@@ -5,11 +5,11 @@ from typing import Any
 import spacy
 from spacy.language import Language
 
-from bb_paxdata.application.domain.models.negation import (
+from bb_paxdata.application.domain.enums.negation_type import NegationType
+from bb_paxdata.application.domain.models.negation_cue import (
     LanguageCode,
     NegationCue,
     NegationResult,
-    NegationType,
 )
 
 logger = logging.getLogger(__name__)
@@ -132,10 +132,33 @@ class SpacyNegationDetector:
         if lang not in self._models:
             if lang == LanguageCode.TR:
                 logger.info("Loading Turkish spaCy model...")
-                self._models[lang] = spacy.load("tr_core_news_md")
+                try:
+                    self._models[lang] = spacy.load("tr_core_news_md")
+                except OSError:
+                    import subprocess
+                    import sys
+
+                    subprocess.run(
+                        [
+                            sys.executable,
+                            "-m",
+                            "pip",
+                            "install",
+                            "https://huggingface.co/turkish-nlp-suite/tr_core_news_md/resolve/main/tr_core_news_md-1.0-py3-none-any.whl",
+                        ],
+                        check=True,
+                    )
+                    self._models[lang] = spacy.load("tr_core_news_md")
             else:
                 logger.info("Loading English spaCy model...")
-                self._models[lang] = spacy.load("en_core_web_md")
+                try:
+                    self._models[lang] = spacy.load("en_core_web_md")
+                except OSError:
+                    try:
+                        self._models[lang] = spacy.load("en_core_web_sm")
+                    except OSError:
+                        spacy.cli.download("en_core_web_sm")
+                        self._models[lang] = spacy.load("en_core_web_sm")
         return self._models[lang]
 
     async def _spacy_parse_async(self, nlp: Language, text: str) -> Any:

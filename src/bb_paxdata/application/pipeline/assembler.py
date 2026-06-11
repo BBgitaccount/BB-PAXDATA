@@ -65,7 +65,7 @@ class AnalysisAssembler:
         metadata = metadata or {}
 
         analysis = Analysis(
-            id=metadata.get("id", f"anal-{uuid.uuid4().hex[:8]}"),
+            id=metadata.get("id", f"anal-{uuid.uuid4().hex}"),
             source_text=source_text,
             language=language,
             timestamp=metadata.get("timestamp", datetime.now(timezone.utc).isoformat()),
@@ -127,12 +127,18 @@ class AnalysisAssembler:
                         update={"topic_ids": list(topic_result.topic_keywords.keys())}
                     )
 
+                # Expose topic_diversity as a first-class scalar on the analysis
+                # so downstream services (CrossAnomalyService, GAT feature extraction)
+                # can consume it without re-computing it.
+                topic_div = topic_synth.topic_diversity  # float, Shannon entropy
+
                 # Immutable update
                 analysis = analysis.model_copy(
                     update={
                         "topic_synthesis": topic_synth,
                         "topic_node_mapping": node_mapping,
                         "discourse_flow": updated_discourse_flow,
+                        "topic_diversity_score": topic_div,
                     }
                 )
 

@@ -1,8 +1,8 @@
-from enum import Enum
+from __future__ import annotations
 
+from bb_paxdata.application.domain.enums.severity_level import SeverityLevel
 
-class ContextualImportance(str, Enum):
-    LOW = "low"
-    MEDIUM = "medium"
-    HIGH = "high"
-    CRITICAL = "critical"
+# Type alias: ContextualImportance has the exact same LOW/MEDIUM/HIGH/CRITICAL
+# lowercase schema as SeverityLevel. No DB migration required.
+# Used in: Segment domain model (segment.py).
+ContextualImportance = SeverityLevel

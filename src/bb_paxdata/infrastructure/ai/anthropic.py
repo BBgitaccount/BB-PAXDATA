@@ -121,9 +121,19 @@ class AnthropicClient(AIClient):
             raw_response = response.json()
             content = raw_response.get("content", [{}])[0].get("text", "")
 
-            # Remove the prefill "{" if we added it
-            if options.json_mode and not content.startswith("{"):
-                content = "{" + content
+            # Remove the prefill "{" we added - response should start with "{"
+            if options.json_mode:
+                stripped = content.lstrip()
+                if stripped.startswith("{"):
+                    # Prefill was included in response, remove it
+                    content = stripped[1:]
+                else:
+                    # Model didn't see the prefill - log warning but continue
+                    logger.warning(
+                        "Anthropic response missing prefill '{'",
+                        content_start=content[:50],
+                    )
+                    content = stripped
 
             # Calculate tokens
             usage = raw_response.get("usage", {})

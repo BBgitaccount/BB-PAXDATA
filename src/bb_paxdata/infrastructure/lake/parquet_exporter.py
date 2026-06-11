@@ -85,13 +85,15 @@ async def export_to_parquet(
     res = await db.execute(stmt)
     rows = res.fetchall()
 
-    s3_kwargs = {}
     if aws_endpoint_url:
-        s3_kwargs["endpoint_url"] = aws_endpoint_url
-        s3_kwargs["aws_access_key_id"] = "paxdata_access_key"
-        s3_kwargs["aws_secret_access_key"] = "paxdata_secret_key"
-
-    s3 = boto3.client("s3", **s3_kwargs)
+        s3 = boto3.client(
+            "s3",
+            endpoint_url=aws_endpoint_url,
+            aws_access_key_id="paxdata_access_key",
+            aws_secret_access_key="paxdata_secret_key",
+        )
+    else:
+        s3 = boto3.client("s3")
 
     sentences_key = f"{prefix}/sentences.parquet"
     if rows:

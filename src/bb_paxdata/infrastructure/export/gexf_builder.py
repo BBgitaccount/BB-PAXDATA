@@ -90,14 +90,13 @@ class GEXFBuilder:
         self, node_id: str, label: str, attributes: dict | None = None
     ) -> GEXFBuilder:
         """Add node to graph if it doesn't already exist."""
-        s_id = str(node_id)
-        if s_id in self.added_nodes:
+        if node_id in self.added_nodes:
             return self
 
         node = ET.SubElement(
-            self.nodes_element, "node", {"id": s_id, "label": str(label)}
+            self.nodes_element, "node", {"id": node_id, "label": label}
         )
-        self.added_nodes.add(s_id)
+        self.added_nodes.add(node_id)
 
         if attributes:
             attvalues = ET.SubElement(node, "attvalues")
@@ -121,7 +120,7 @@ class GEXFBuilder:
         self.edge_count += 1
         edge_id = f"edge_{self.edge_count}"
 
-        attribs = {"id": edge_id, "source": str(source_id), "target": str(target_id)}
+        attribs = {"id": edge_id, "source": source_id, "target": target_id}
         if weight is not None:
             attribs["weight"] = str(weight)
 

@@ -224,33 +224,10 @@ class CollectStage:
                 services_config=services_config,
             )
 
-        # ── APPRAISAL SENTENCE-LEVEL AGGREGATION ──
+        # ── APPRAISAL DOCUMENT AGGREGATION ──
+        # Use the document-level appraisal from Phase 1 (no duplicate calculation)
         appraisal_document = None
-        if (
-            self._appraisal_service is not None
-            and local.appraisal_vector is None
-            and local.tokenizer
-            and "sentences" in local.tokenizer
-        ):
-            from bb_paxdata.application.domain.models.appraisal_vector import (
-                AppraisalDocumentResult,
-            )
-
-            sentences = local.tokenizer["sentences"]
-            vectors = []
-            loop = asyncio.get_running_loop()
-            for i, s_text in enumerate(sentences):
-                vector = await loop.run_in_executor(
-                    None,
-                    self._appraisal_service.analyze,
-                    s_text,
-                    f"{panel_id}-s{i}",
-                    None,
-                    None,
-                )
-                vectors.append((f"{panel_id}-s{i}", vector))
-            appraisal_document = AppraisalDocumentResult(vectors=vectors)
-        elif self._appraisal_service is not None and local.appraisal_vector is not None:
+        if self._appraisal_service is not None and local.appraisal_vector is not None:
             from bb_paxdata.application.domain.models.appraisal_vector import (
                 AppraisalDocumentResult,
             )
@@ -365,7 +342,7 @@ class CollectStage:
         raw_tokenizer = self._safe_extract(results[1], {})
 
         neg_res = self._safe_extract(results[2], None)
-        from bb_paxdata.application.domain.models.negation import NegationResult
+        from bb_paxdata.application.domain.models.negation_cue import NegationResult
 
         if isinstance(neg_res, NegationResult):
             negation_cues = tuple(neg_res.cues)

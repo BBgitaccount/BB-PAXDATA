@@ -5,10 +5,13 @@ from __future__ import annotations
 from datetime import datetime, timezone
 from typing import Any
 
+import structlog
 from sqlalchemy import and_, func, select, update
 
 from bb_paxdata.infrastructure.db.models import ReviewerAssignment
 from bb_paxdata.infrastructure.db.repositories.base import BaseRepository
+
+logger = structlog.get_logger(__name__)
 
 # Permission level hierarchy (higher includes all lower)
 _PERMISSION_HIERARCHY = {
@@ -152,7 +155,13 @@ class ReviewerAssignmentRepository(BaseRepository[ReviewerAssignment]):
             rank = _PERMISSION_HIERARCHY.get(assignment.permission_level, 0)
             if rank >= required_rank:
                 reviewer_id = assignment.reviewer_id
-                assert isinstance(reviewer_id, str)
+                if not isinstance(reviewer_id, str):
+                    logger.error(
+                        "Invalid reviewer_id type in assignment",
+                        reviewer_id=reviewer_id,
+                        type=type(reviewer_id).__name__,
+                    )
+                    continue
                 return reviewer_id
 
         return None

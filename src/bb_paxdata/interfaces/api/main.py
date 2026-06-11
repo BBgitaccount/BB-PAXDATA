@@ -1,6 +1,6 @@
 from contextlib import asynccontextmanager
 
-from fastapi import FastAPI, Request, Response
+from fastapi import FastAPI, HTTPException, Request, Response, status
 from fastapi.middleware.cors import CORSMiddleware
 from prometheus_client import CONTENT_TYPE_LATEST, generate_latest
 from slowapi import Limiter, _rate_limit_exceeded_handler
@@ -20,7 +20,7 @@ from bb_paxdata.interfaces.api.routers.v1 import (
     verdict,
 )
 from bb_paxdata.interfaces.api.routers.ws import queue_ws
-from bb_paxdata.interfaces.graphql.router import graphql_router
+from bb_paxdata.interfaces.graphql.router import get_graphql_router
 
 settings = get_settings()
 
@@ -52,7 +52,7 @@ app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)  # ty
 # CORS middleware to allow frontend communication
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],  # Production environment will narrow this down
+    allow_origins=settings.cors_allowed_origins,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -68,7 +68,7 @@ app.include_router(prompts.router, prefix="/api/v1")
 app.include_router(search.router, prefix="/api/v1")
 app.include_router(compare.router, prefix="/api/v1")
 app.include_router(queue_ws.router, prefix="/api")
-app.include_router(graphql_router, prefix="/graphql")
+app.include_router(get_graphql_router(), prefix="/graphql")
 
 
 @app.get("/health")
@@ -84,8 +84,20 @@ def health_check(request: Request):
 
 
 @app.get("/metrics")
-def metrics():
-    """Prometheus scrape endpoint serving internal MetricsCollector registry."""
+def metrics(request: Request):
+    """Prometheus scrape endpoint serving internal MetricsCollector registry.
+
+    Requires METRICS_TOKEN header for authentication in production environments.
+    """
+    # Check for metrics token in production
+    if settings.environment == "production" and settings.metrics_token:
+        auth_header = request.headers.get("X-Metrics-Token")
+        if auth_header != settings.metrics_token:
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="Invalid or missing metrics token",
+            )
+
     collector = get_metrics()
     return Response(
         content=generate_latest(collector.registry),  # type: ignore

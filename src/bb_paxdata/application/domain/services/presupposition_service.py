@@ -13,10 +13,10 @@ from typing import Any
 import structlog
 from spacy.tokens import Doc, Token
 
-from bb_paxdata.application.domain.lexicons.presupposition_triggers import (
+from bb_paxdata.application.domain.lexicon.presupposition_triggers import (
     PresuppositionLexicon,
 )
-from bb_paxdata.application.domain.models.negation import LanguageCode
+from bb_paxdata.application.domain.models.negation_cue import LanguageCode
 from bb_paxdata.application.domain.models.presupposition import (
     Presupposition,
     PresuppositionExtractionResult,

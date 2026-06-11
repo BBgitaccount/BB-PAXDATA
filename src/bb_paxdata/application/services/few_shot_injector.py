@@ -46,7 +46,7 @@ class FewShotInjector:
         target_text = None
         for marker in ["Metin:", "Text:"]:
             if marker in base_prompt:
-                target_text = base_prompt.split(marker)[-1].strip()
+                target_text = base_prompt.rsplit(marker, maxsplit=1)[-1].strip()
                 break
         if not target_text:
             target_text = base_prompt

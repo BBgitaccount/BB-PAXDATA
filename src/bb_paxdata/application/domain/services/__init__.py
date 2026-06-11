@@ -16,14 +16,14 @@ from .speech_act_classifier import SpeechActClassifierService
 from .topic_service import TopicService
 
 __all__ = [
+    "AppraisalService",
     "CrossAnomalyService",
     "FramingService",
     "HedgingService",
     "RiskService",
     "SegmentService",
     "SentimentService",
-    "TopicService",
-    "AppraisalService",
-    "get_appraisal_service",
     "SpeechActClassifierService",
+    "TopicService",
+    "get_appraisal_service",
 ]

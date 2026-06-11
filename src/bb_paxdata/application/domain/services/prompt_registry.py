@@ -35,10 +35,8 @@ class PromptVersion:
 
     @staticmethod
     def _compute_hash(text: str) -> str:
-        """SHA-256 hash hesaplar."""
-        return hashlib.sha256(text.encode("utf-8")).hexdigest()[
-            :16
-        ]  # İlk 16 karakter yeterlidir
+        """SHA-256 hash hesaplar (tam 64 karakter)."""
+        return hashlib.sha256(text.encode("utf-8")).hexdigest()
 
     def verify_integrity(self, provided_hash: str) -> bool:
         """Dışarıdan gelen hash'in bu şablonla eşleşip eşleşmediğini kontrol eder."""

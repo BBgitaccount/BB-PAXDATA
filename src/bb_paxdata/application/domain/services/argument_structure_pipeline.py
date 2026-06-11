@@ -529,7 +529,7 @@ class ArgumentStructurePipeline:
         import hashlib
 
         normalized = f"{speaker}:{text.lower()}"
-        return hashlib.sha256(normalized.encode()).hexdigest()[:16]
+        return hashlib.sha256(normalized.encode()).hexdigest()
 
     def _check_cache(self, key: str) -> ArgumentGraph | None:
         with self._cache_lock:

@@ -6,7 +6,7 @@ Create Date: 2026-05-30 02:28:18.199157
 
 """
 
-from typing import Optional, Sequence, Union
+from collections.abc import Sequence
 
 import sqlalchemy as sa
 from sqlalchemy.exc import NoSuchTableError
@@ -15,18 +15,18 @@ from alembic import op
 
 # revision identifiers, used by Alembic.
 revision: str = "f904f26a70c1"
-down_revision: Union[str, None] = "fix_tm_composite_pk"
-branch_labels: Union[str, Sequence[str], None] = None
-depends_on: Union[str, Sequence[str], None] = None
+down_revision: str | None = "fix_tm_composite_pk"
+branch_labels: str | Sequence[str] | None = None
+depends_on: str | Sequence[str] | None = None
 
 
 def add_column_safely(
     table_name: str,
     column_name: str,
     col_type,
-    index_name: Optional[str] = None,
+    index_name: str | None = None,
     unique: bool = False,
-    constraint_name: Optional[str] = None,
+    constraint_name: str | None = None,
 ) -> None:
     conn = op.get_bind()
     inspector = sa.inspect(conn)
@@ -92,8 +92,8 @@ def add_column_safely(
 def drop_column_safely(
     table_name: str,
     column_name: str,
-    index_name: Optional[str] = None,
-    constraint_name: Optional[str] = None,
+    index_name: str | None = None,
+    constraint_name: str | None = None,
 ) -> None:
     conn = op.get_bind()
     inspector = sa.inspect(conn)

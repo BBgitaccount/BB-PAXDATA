@@ -60,7 +60,7 @@ class PooleRosenthalPositionTracker:
             else:
                 velocity = delta_theta / delta_t
 
-            raw_velocities.append(float(velocity))
+            raw_velocities.append(velocity)
 
         # 5. Apply smoothing (SMA)
         smoothed_velocities = await asyncio.to_thread(
@@ -91,10 +91,10 @@ class PooleRosenthalPositionTracker:
             session_count=len(thetas),
             raw_velocities=raw_velocities,
             smoothed_velocities=smoothed_velocities,
-            current_velocity=float(current_velocity),
-            current_acceleration=float(current_acceleration),
+            current_velocity=current_velocity,
+            current_acceleration=current_acceleration,
             interpolation_count=interpolation_count,
-            max_gap_days=float(max_gap),
+            max_gap_days=max_gap,
             calculation_method=f"poole_rosenthal_1997_{self._smoothing}",
         )
 

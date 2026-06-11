@@ -42,7 +42,7 @@ class Analysis(BaseModel):
 
     # ── Temel Alanlar ──────────────────────────────────────────────
     id: str = Field(
-        default_factory=lambda: f"anal-{uuid.uuid4().hex[:8]}",
+        default_factory=lambda: f"anal-{uuid.uuid4().hex}",
         description="Unique identifier for the analysis",
     )
     source_text: str = Field(default="", description="Analiz edilen orijinal metin")
@@ -140,7 +140,7 @@ class Analysis(BaseModel):
     )
     prompt_hash: str | None = Field(
         default=None,
-        description="Prompt şablonunun SHA256 hash'i (ilk 16 karakter) — audit için",
+        description="Prompt şablonunun SHA256 hash'i (tam 64 karakter) — audit için",
     )
     model_name: str | None = Field(
         default=None,
@@ -230,6 +230,14 @@ class Analysis(BaseModel):
     )
     topic_synthesis: TopicSynthesis | None = Field(
         default=None, description="Probabilistic topic modeling results (Faz 5)"
+    )
+    topic_diversity_score: float | None = Field(
+        default=None,
+        description=(
+            "Shannon entropy of BERTopic P(topic|doc) distribution. "
+            "Derived from TopicSynthesis.topic_diversity after assembly. "
+            "0.0 = single-topic focused discourse; higher = dispersed topics."
+        ),
     )
     discourse_flow: DiscourseFlow | None = Field(
         default=None, description="DNA network flow (Faz 4)"

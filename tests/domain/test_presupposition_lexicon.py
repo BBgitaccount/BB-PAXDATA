@@ -2,7 +2,7 @@
 Unit tests for presupposition trigger lexicon.
 """
 
-from bb_paxdata.application.domain.lexicons.presupposition_triggers import (
+from bb_paxdata.application.domain.lexicon.presupposition_triggers import (
     PresuppositionLexicon,
 )
 from bb_paxdata.application.domain.models.presupposition import TriggerType

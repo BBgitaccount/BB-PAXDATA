@@ -1,8 +1,3 @@
-# ============================================================
-# DOSYA: src/bb_paxdata/domain/services/ai_analyst.py
-# AÇIKLAMA: Versiyon damgalı, dil-aware AI analiz servisi
-# ============================================================
-
 from __future__ import annotations
 
 import json
@@ -19,19 +14,20 @@ from .prompt_registry import PromptRegistry, build_default_registry
 logger = logging.getLogger(__name__)
 
 
+class AIProviderNotConfiguredError(RuntimeError):
+    """Raised when AIAnalyst has no infrastructure analyst configured.
+
+    This error signals that the *infra_analyst* dependency was not injected
+    and no real AI backend is available.  Callers should either:
+
+    1. Provide a working *infra_analyst* instance (e.g.
+       ``ModernAIAnalystAdapter``) at construction time, or
+    2. Set up the environment variables / config so that the service
+       container can inject one automatically.
+    """
+
+
 class AIAnalyst:
-    """
-    AI tabanlı metin analiz servisi.
-
-    Her analiz çağrısında:
-    1. Aktif prompt versiyonunu dil bazlı olarak registry'den çeker
-    2. Şablonu metinle doldurur
-    3. AI modeli çağırır (gerçek implementasyonda OpenAI/Anthropic SDK)
-    4. Yanıtı parse eder
-    5. prompt_version + prompt_hash damgasını çıktıya ekler
-    6. AIAnalysisResult Pydantic modeli döner (ham dict değil)
-    """
-
     def __init__(
         self,
         registry: PromptRegistry | None = None,
@@ -55,14 +51,14 @@ class AIAnalyst:
         forced_version: str | None = None,
         language: str | None = None,
     ) -> AIAnalysisResult:
-        """
-        Metin üzerinde AI analizi çalıştırır.
-        AIAnalysisResult (Pydantic) döner — ham dict değil.
+        """Analyze a single text.
+
+        Raises:
+            AIProviderNotConfiguredError: If *infra_analyst* is ``None`` and
+                no batch processor can handle the request.
         """
         resolved_prompt_id = prompt_id or self.default_prompt_id
         detected_language = language or self.language_detector.detect(text)
-
-        # Aktif prompt seçimi: forced_version > dil bazlı > any
         if forced_version:
             active_prompt = self.registry.get_version(
                 resolved_prompt_id, forced_version
@@ -73,15 +69,12 @@ class AIAnalyst:
             active_prompt = self.registry.get_active(
                 resolved_prompt_id, detected_language
             )
-
         if active_prompt is None:
             logger.error(f"Aktif prompt bulunamadı: {resolved_prompt_id}")
             return AIAnalysisResult(
                 prompt_version=f"{resolved_prompt_id}@unknown",
                 error="no_active_prompt",
             )
-
-        # Şablonu metinle doldur ve AI'a gönder
         rendered = active_prompt.template.format(text=text)
         if self.few_shot_injector:
             rendered = await self.few_shot_injector.inject(
@@ -89,8 +82,6 @@ class AIAnalyst:
             )
         raw_response = await self._call_ai_model(rendered, active_prompt.model_name)
         parsed = self._parse_response(raw_response)
-
-        # KRİTİK: Prompt versiyon ve hash damgası
         return AIAnalysisResult(
             sentiment_score=parsed.get("sentiment_score"),
             risk_score=parsed.get("risk_score"),
@@ -105,8 +96,10 @@ class AIAnalyst:
         )
 
     async def _call_ai_model(self, rendered_prompt: str, model_name: str) -> str:
-        """
-        AI modeli çağrısı.
+        """Route the request to the configured infrastructure analyst.
+
+        Raises:
+            AIProviderNotConfiguredError: If *infra_analyst* is ``None``.
         """
         if self.infra_analyst is not None:
             from bb_paxdata.infrastructure.ai.analyst import BackendType
@@ -119,45 +112,19 @@ class AIAnalyst:
                 backend = BackendType.GEMINI
             elif "groq" in model_name_lower:
                 backend = BackendType.GROQ
-
-            # Direct async call - no longer using asyncio.to_thread workaround
             res = await self.infra_analyst.analyze_text(
                 text=rendered_prompt,
                 backend=backend,
                 model=model_name,
             )
             return json.dumps(res.content)
-
-        logger.warning(
-            "AIAnalyst: MOCK yanıt kullanılıyor — gerçek AI provider bağlayın!"
+        raise AIProviderNotConfiguredError(
+            "AIAnalyst has no infra_analyst configured. "
+            "Provide a ModernAIAnalystAdapter instance or configure "
+            "AI backend environment variables."
         )
-        return json.dumps(
-            {
-                "sentiment_score": -0.35,
-                "risk_score": 0.55,
-                "sentiment_label": "negative",
-                "risk_factors": ["diplomatic_tension", "ambiguous_rhetoric"],
-                "summary": "Metin diplomatik gerginlik unsurları içermektedir.",
-                "key_claims": ["İlişkilerin gözden geçirilmesi gerektiği vurgulanmış."],
-            }
-        )
-
-        # ── GERÇEK IMPLEMENTASYON (OpenAI) ──────────────────────────────
-        # import openai
-        # client = openai.OpenAI()
-        # response = client.chat.completions.create(
-        #     model=model_name,
-        #     messages=[
-        #         {"role": "system", "content": "Sadece geçerli JSON yanıt ver."},
-        #         {"role": "user", "content": rendered_prompt}
-        #     ],
-        #     temperature=0.1,
-        #     response_format={"type": "json_object"}
-        # )
-        # return response.choices[0].message.content
 
     def _parse_response(self, raw: str) -> dict[str, Any]:
-        """AI yanıtını parse eder. Markdown kod bloğu içindeki JSON'u da çıkarır."""
         try:
             json_match = re.search(r"\{[\s\S]*\}", raw)
             if json_match:
@@ -176,28 +143,44 @@ class AIAnalyst:
             }
 
     async def analyze_texts(self, texts: list[str]) -> list[AIAnalysisResult]:
+        """Analyze multiple texts using the batch processor if available.
+
+        If no batch processor is configured, falls back to sequential single
+        analysis.  Each item is wrapped in a try/except so that a failure for
+        one text (e.g. missing AI provider) does not abort the entire list.
         """
-        Metin listesi üzerinde AI analizi çalıştırır.
-        BatchProcessor kullanarak toplu işlem yapar.
-        """
-        if not self._batch_processor or not texts:
-            # Fallback to sequential
-            results = []
+        if not texts:
+            return []
+
+        if not self._batch_processor:
+            results: list[AIAnalysisResult] = []
             for text in texts:
-                res = await self.analyze(text)
-                results.append(res)
+                try:
+                    res = await self.analyze(text)
+                    results.append(res)
+                except AIProviderNotConfiguredError as exc:
+                    logger.error(f"AI provider not configured: {exc}")
+                    results.append(
+                        AIAnalysisResult(
+                            prompt_version=f"{self.default_prompt_id}@unavailable",
+                            error="ai_provider_not_configured",
+                        )
+                    )
+                except Exception as exc:
+                    logger.exception("Unexpected error during single analysis")
+                    results.append(
+                        AIAnalysisResult(
+                            prompt_version=f"{self.default_prompt_id}@error",
+                            error=f"analysis_failed: {exc}",
+                        )
+                    )
             return results
 
-        # Wrap each text into a BatchItem
         items = [
             BatchItem(item_id=str(i), payload=text) for i, text in enumerate(texts)
         ]
-
         resolved_prompt_id = self.default_prompt_id
-        detected_language = "any"
-        if texts:
-            detected_language = self.language_detector.detect(texts[0])
-
+        detected_language = self.language_detector.detect(texts[0])
         active_prompt = self.registry.get_active(resolved_prompt_id, detected_language)
         if active_prompt is None:
             logger.error(f"Aktif prompt bulunamadı: {resolved_prompt_id}")
@@ -213,7 +196,6 @@ class AIAnalyst:
             items_str = ""
             for item in batch_items:
                 items_str += f"ID: {item.item_id}\nMetin: {item.payload}\n---\n"
-
             return (
                 "Sen, uluslararası diplomasi ve jeopolitik analizde uzman bir yapay zeka asistanısın.\n"
                 "Aşağıdaki metinlerin her birini çok katmanlı olarak analiz et.\n\n"
@@ -233,12 +215,16 @@ class AIAnalyst:
                 f"Analiz edilecek metinler:\n\n{items_str}"
             )
 
-        # Process via BatchProcessor
-        batch_results, stats = await self._batch_processor.process(items, build_prompt)
+        try:
+            batch_results, _stats = await self._batch_processor.process(
+                items, build_prompt
+            )
+        except Exception as exc:
+            logger.error(f"BatchProcessor failed: {exc}. Falling back to individual.")
+            return await self._fallback_individual(texts)
 
-        # Map back to original order
         results_map = {res.item_id: res for res in batch_results}
-        final_results = []
+        final_results: list[AIAnalysisResult] = []
         for i, text in enumerate(texts):
             res = results_map.get(str(i))
             if res and res.success and res.parsed:
@@ -259,9 +245,55 @@ class AIAnalyst:
                 )
             else:
                 logger.warning(
-                    f"Batch item {i} failed or has no parsed data, calling single analyze fallback."
+                    f"Batch item {i} failed or has no parsed data, "
+                    "calling single analyze fallback."
                 )
-                fallback_res = await self.analyze(text)
-                final_results.append(fallback_res)
-
+                try:
+                    fallback_res = await self.analyze(text)
+                    final_results.append(fallback_res)
+                except AIProviderNotConfiguredError as exc:
+                    logger.error(f"AI provider not configured for fallback: {exc}")
+                    final_results.append(
+                        AIAnalysisResult(
+                            prompt_version=active_prompt.full_version_id,
+                            prompt_hash=active_prompt.hash,
+                            model_name=active_prompt.model_name,
+                            error="ai_provider_not_configured",
+                        )
+                    )
+                except Exception as exc:
+                    logger.exception(f"Single fallback failed for item {i}")
+                    final_results.append(
+                        AIAnalysisResult(
+                            prompt_version=active_prompt.full_version_id,
+                            prompt_hash=active_prompt.hash,
+                            model_name=active_prompt.model_name,
+                            error=f"fallback_failed: {exc}",
+                        )
+                    )
         return final_results
+
+    async def _fallback_individual(self, texts: list[str]) -> list[AIAnalysisResult]:
+        """Process texts one-by-one when batch processing is unavailable."""
+        results: list[AIAnalysisResult] = []
+        for text in texts:
+            try:
+                res = await self.analyze(text)
+                results.append(res)
+            except AIProviderNotConfiguredError as exc:
+                logger.error(f"AI provider not configured: {exc}")
+                results.append(
+                    AIAnalysisResult(
+                        prompt_version=f"{self.default_prompt_id}@unavailable",
+                        error="ai_provider_not_configured",
+                    )
+                )
+            except Exception as exc:
+                logger.exception("Unexpected error during fallback analysis")
+                results.append(
+                    AIAnalysisResult(
+                        prompt_version=f"{self.default_prompt_id}@error",
+                        error=f"analysis_failed: {exc}",
+                    )
+                )
+        return results

@@ -5,9 +5,10 @@ import asyncio
 import hashlib
 import json
 import time
+from collections.abc import Callable, Sequence
 from dataclasses import dataclass
 from decimal import Decimal
-from typing import Any, Callable, Sequence
+from typing import Any
 
 import numpy as np
 import structlog
@@ -102,7 +103,7 @@ class ModelEvaluationEngine:
         )
 
         async with self._session_factory() as session:
-            session.expire_on_commit = False
+            session.sync_session.expire_on_commit = False
             session.add(run)
             await session.commit()
             # Reload to get the run_id
@@ -220,7 +221,7 @@ class ModelEvaluationEngine:
             p99_lat = float(np.percentile(lat_arr, 99)) if len(lat_arr) > 0 else 0.0
 
             async with self._session_factory() as session:
-                session.expire_on_commit = False
+                session.sync_session.expire_on_commit = False
                 # Reload run inside session
                 db_run = await session.get(ModelEvaluationRun, run_id)
                 if db_run:
@@ -259,7 +260,7 @@ class ModelEvaluationEngine:
         except Exception as exc:
             logger.error("evaluation_failed", model=model_name, error=str(exc))
             async with self._session_factory() as session:
-                session.expire_on_commit = False
+                session.sync_session.expire_on_commit = False
                 db_run = await session.get(ModelEvaluationRun, run_id)
                 if db_run:
                     db_run.status = "failed"

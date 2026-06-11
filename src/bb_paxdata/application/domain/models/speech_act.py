@@ -1,7 +1,12 @@
 from enum import Enum
-from typing import ClassVar, FrozenSet, Optional
+from typing import ClassVar, Final
 
 from pydantic import BaseModel, Field
+
+# Speech act dictionary keys for serialization/DB fields
+SPEECH_ACT_PRIMARY: Final[str] = "speech_act_primary"
+SPEECH_ACT_MODIFIER: Final[str] = "speech_act_modifier"
+SPEECH_ACT_CONFIDENCE: Final[str] = "speech_act_confidence"
 
 
 class SpeechActType(str, Enum):
@@ -17,11 +22,11 @@ class SpeechActClassification(BaseModel):
     """Represents a speech act classification with optional secondary type and confidence."""
 
     primary_type: SpeechActType
-    secondary_type: Optional[SpeechActType] = None
+    secondary_type: SpeechActType | None = None
     confidence: float = Field(..., ge=0.0, le=1.0)
-    force_modifier: Optional[str] = None
+    force_modifier: str | None = None
 
-    _COERCIVE_MODIFIERS: ClassVar[FrozenSet[str]] = frozenset(
+    _COERCIVE_MODIFIERS: ClassVar[frozenset[str]] = frozenset(
         {
             "strongly",
             "categorically",

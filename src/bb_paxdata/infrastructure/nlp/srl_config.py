@@ -6,7 +6,7 @@ Centralized configuration with environment variable support and validation.
 from __future__ import annotations
 
 import os
-from typing import Literal
+from typing import Literal, cast
 
 from pydantic import BaseModel, Field, field_validator
 
@@ -18,11 +18,18 @@ class SRLModelConfig(BaseModel):
     """
 
     # Model Selection
+    # Primary: bert-base-uncased fine-tuned on Universal PropBank (English SRL, ARG0/ARG1/V BIO tags)
+    # Alt-1  : yeomtong/srl_bert_model — BERT tabanlı SRL, token-classification
+    # Alt-2  : sapienzanlp/srl-bert-b-semeval2012 — SemEval-2012 OntoNotes SRL
     model_name: str = Field(
-        default="dl22/bert-base-srl", description="HuggingFace model identifier for SRL"
+        default="dannashao/bert-base-uncased-finetuned-srl_arg",
+        description="HuggingFace model identifier for SRL (token-classification, PropBank BIO tags)",
     )
     alternative_models: list[str] = Field(
-        default=["hebel/bert-base-srl", "vblagoje/bert-english-uncased-finetuned-srl"],
+        default=[
+            "yeomtong/srl_bert_model",
+            "sapienzanlp/srl-bert-b-semeval2012",
+        ],
         description="Fallback models if primary fails",
     )
 
@@ -72,7 +79,10 @@ class SRLModelConfig(BaseModel):
         default=1.0, ge=0.1, description="Exponential backoff base (seconds)"
     )
     timeout_seconds: float = Field(
-        default=30.0, ge=5.0, le=120.0, description="Per-sentence inference timeout"
+        default=120.0,
+        ge=5.0,
+        le=300.0,
+        description="Per-sentence inference timeout (increased for first-time model download)",
     )
 
     # Quality Thresholds
@@ -118,12 +128,18 @@ class SRLModelConfig(BaseModel):
     def from_env(cls) -> SRLModelConfig:
         """Load configuration from environment variables with defaults."""
         return cls(
-            model_name=os.getenv("SRL_MODEL_NAME", "dl22/bert-base-srl"),
-            device=os.getenv("SRL_DEVICE", "auto"),
+            model_name=os.getenv(
+                "SRL_MODEL_NAME", "dannashao/bert-base-uncased-finetuned-srl_arg"
+            ),
+            device=cast(
+                Literal["auto", "cpu", "cuda", "mps"],
+                os.getenv("SRL_DEVICE", "auto"),
+            ),
             batch_size=int(os.getenv("SRL_BATCH_SIZE", "32")),
             enable_cache=os.getenv("SRL_ENABLE_CACHE", "true").lower() == "true",
-            use_quantization=os.getenv("SRL_USE_QUANTIZATION", "false").lower()
-            == "true",
+            use_quantization=(
+                os.getenv("SRL_USE_QUANTIZATION", "false").lower() == "true"
+            ),
         )
 
 

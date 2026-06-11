@@ -1,7 +1,8 @@
 import asyncio
 import logging
 from collections import OrderedDict
-from typing import Any, Sequence
+from collections.abc import Sequence
+from typing import Any
 
 import numpy as np
 from redis.asyncio import Redis

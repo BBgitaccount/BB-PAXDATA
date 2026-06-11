@@ -69,14 +69,19 @@ class GATFeatureExtractionService:
     async def extract_concept_features(
         self,
         concept_descriptions: dict[str, str],
+        topic_diversity_by_concept: dict[str, float] | None = None,
     ) -> dict[str, list[float]]:
         """Compute SBERT embeddings for concept/topic descriptions.
 
         Args:
             concept_descriptions: {concept_id: "topic description or representative text"}
+            topic_diversity_by_concept: {concept_id: Shannon entropy} (optional).
+                                        When provided, appends diversity as a
+                                        scalar feature at the end of the embedding
+                                        (dim becomes 385 instead of 384).
 
         Returns:
-            {concept_id: [384-dim float vector]}
+            {concept_id: [float vector]}
         """
         if not concept_descriptions:
             return {}
@@ -87,9 +92,15 @@ class GATFeatureExtractionService:
         # Batch compute embeddings
         embeddings = await self._embedding_service.get_embeddings(descriptions)
 
-        concept_features = {
-            cid: emb.tolist() for cid, emb in zip(concept_ids, embeddings)
-        }
+        concept_features: dict[str, list[float]] = {}
+        for cid, emb in zip(concept_ids, embeddings):
+            vec = emb.tolist()
+            if topic_diversity_by_concept and cid in topic_diversity_by_concept:
+                # Append diversity as 385th scalar feature
+                # Normalise to [0, 1] using empirical max entropy ≈ 4 bits (16 topics)
+                normalised_div = min(1.0, topic_diversity_by_concept[cid] / 4.0)
+                vec = [*vec, normalised_div]
+            concept_features[cid] = vec
 
         logger.info(f"Extracted features for {len(concept_features)} concepts")
         return concept_features
@@ -98,12 +109,14 @@ class GATFeatureExtractionService:
         self,
         actor_sentences: dict[str, list[str]],
         concept_descriptions: dict[str, str],
+        topic_diversity_by_concept: dict[str, float] | None = None,
     ) -> tuple[dict[str, list[float]], dict[str, list[float]]]:
         """Extract both actor and concept features in parallel.
 
         Args:
             actor_sentences: {actor_id: [sentence1, sentence2, ...]}
             concept_descriptions: {concept_id: "topic description"}
+            topic_diversity_by_concept: {concept_id: Shannon entropy} (optional).
 
         Returns:
             (actor_features, concept_features)
@@ -111,7 +124,10 @@ class GATFeatureExtractionService:
         import asyncio
 
         actor_task = self.extract_actor_features(actor_sentences)
-        concept_task = self.extract_concept_features(concept_descriptions)
+        concept_task = self.extract_concept_features(
+            concept_descriptions,
+            topic_diversity_by_concept=topic_diversity_by_concept,
+        )
 
         actor_features, concept_features = await asyncio.gather(
             actor_task, concept_task

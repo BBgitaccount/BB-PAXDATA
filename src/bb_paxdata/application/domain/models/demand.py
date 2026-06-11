@@ -30,23 +30,30 @@ class Demand(BaseModel):
 
     # Content and context
     demand_text: str = Field(..., description="Exact text of the demand")
-    paraphrased_demand: str | None = Field(
-        default=None, description="Paraphrased version of the demand"
-    )
-    context: str | None = Field(
-        default=None, description="Context surrounding the demand"
-    )
 
     # Temporal information
     timestamp: float | None = Field(
         default=None, description="Time when demand was made in seconds"
     )
-    urgency: float | None = Field(
-        default=None, ge=0.0, le=1.0, description="Urgency level of the demand"
-    )
     deadline: float | None = Field(
         default=None, description="Deadline mentioned if any"
     )
+
+    @property
+    def urgency(self) -> float | None:
+        """Compute urgency based on deadline and timestamp."""
+        if self.deadline is None or self.timestamp is None:
+            return None
+
+        time_remaining = self.deadline - self.timestamp
+        if time_remaining <= 0:
+            return 1.0  # Critical urgency
+
+        # Normalize: 1 week = 0.0 urgency, immediate = 1.0 urgency
+        max_time = 7 * 24 * 3600  # 1 week in seconds
+        urgency = max(0.0, 1.0 - (time_remaining / max_time))
+
+        return urgency
 
     # Analysis metrics
     compliance_likelihood: float | None = Field(

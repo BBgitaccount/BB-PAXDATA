@@ -1,6 +1,6 @@
 """FastAPI router for full-text search over sentences and communities."""
 
-from typing import Any, Optional
+from typing import Any
 
 from fastapi import APIRouter, Query
 from pydantic import BaseModel
@@ -23,8 +23,8 @@ class SearchResponse(BaseModel):
 @router.get("/sentences", response_model=SearchResponse)
 async def search_sentences_endpoint(
     q: str = Query(..., min_length=1, max_length=512, description="Search query"),
-    country: Optional[str] = Query(default=None),
-    min_risk: Optional[int] = Query(default=None, ge=0, le=10),
+    country: str | None = Query(default=None),
+    min_risk: int | None = Query(default=None, ge=0, le=10),
     limit: int = Query(default=20, ge=1, le=100),
     offset: int = Query(default=0, ge=0),
 ) -> SearchResponse:

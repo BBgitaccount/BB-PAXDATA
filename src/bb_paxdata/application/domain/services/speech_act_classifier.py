@@ -1,5 +1,4 @@
 import re
-from typing import Optional
 
 import structlog
 
@@ -13,7 +12,7 @@ from bb_paxdata.application.services.calibration_service import CalibrationServi
 class SpeechActClassifierService:
     """Service to classify speech acts based on heuristics and SRL context."""
 
-    __slots__ = ("model_name", "_log", "triggers", "force_modifiers", "_calibration")
+    __slots__ = ("_calibration", "_log", "force_modifiers", "model_name", "triggers")
 
     def __init__(self, model_name: str = "deberta-v3-small") -> None:
         self.model_name = model_name
@@ -101,7 +100,7 @@ class SpeechActClassifierService:
         )
 
     async def classify(
-        self, text: str, srl_context: Optional[dict] = None
+        self, text: str, srl_context: dict | None = None
     ) -> SpeechActClassification:
         """Classifies speech act with optional SRL context validation."""
         if srl_context:

@@ -8,11 +8,11 @@ from sqlalchemy import insert
 from sqlalchemy.ext.asyncio import AsyncSession
 
 
-class EventPublisher:
+class WORMEventPublisher:
     """Writes immutable domain events to the WORM event store.
 
     Usage:
-        publisher = EventPublisher(db)
+        publisher = WORMEventPublisher(db)
         await publisher.emit(
             aggregate_type="AISentenceAnalysis",
             aggregate_id=sent_id,
@@ -42,7 +42,7 @@ class EventPublisher:
             payload=payload,
             actor_id=actor_id,
             correlation_id=correlation_id,
-            occurred_at=datetime.now(UTC),
+            occurred_at=datetime.now(UTC).replace(tzinfo=None),
         )
         self.db.add(event)
         # Do NOT flush here — let the caller manage the transaction boundary.
@@ -60,7 +60,7 @@ class EventPublisher:
                     "payload": e["payload"],
                     "actor_id": e.get("actor_id"),
                     "correlation_id": e.get("correlation_id"),
-                    "occurred_at": datetime.now(UTC),
+                    "occurred_at": datetime.now(UTC).replace(tzinfo=None),
                 }
                 for e in events
             ]

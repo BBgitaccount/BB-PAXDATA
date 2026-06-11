@@ -76,14 +76,14 @@ SETTINGS_COMMUNITIES = MeilisearchSettings(
 
 async def get_meilisearch_client() -> AsyncClient:
     """Return a shared async Meilisearch client."""
-    url = getattr(_settings, "meilisearch_url", MEILISEARCH_URL)
-    key = getattr(_settings, "meilisearch_master_key", MEILISEARCH_MASTER_KEY)
+    url = getattr(_settings, "meilisearch_url", None) or MEILISEARCH_URL
+    key = getattr(_settings, "meilisearch_master_key", None) or MEILISEARCH_MASTER_KEY
     return AsyncClient(url=url, api_key=key)
 
 
 async def ensure_indexes() -> None:
     """Idempotently create and configure the sentences and communities indexes."""
-    async with await get_meilisearch_client() as client:
+    async with await get_meilisearch_client() as client:  # type: ignore
         for idx, settings in [
             (INDEX_SENTENCES, SETTINGS_SENTENCES),
             (INDEX_COMMUNITIES, SETTINGS_COMMUNITIES),
@@ -101,14 +101,14 @@ async def ensure_indexes() -> None:
 
 async def index_sentences(documents: list[dict[str, Any]]) -> None:
     """Bulk-index sentence documents. Upserts by sent_id."""
-    async with await get_meilisearch_client() as client:
+    async with await get_meilisearch_client() as client:  # type: ignore
         index = await client.get_index(INDEX_SENTENCES)
         await index.add_documents(documents, primary_key="sent_id")
 
 
 async def index_communities(documents: list[dict[str, Any]]) -> None:
     """Bulk-index community documents. Upserts by id."""
-    async with await get_meilisearch_client() as client:
+    async with await get_meilisearch_client() as client:  # type: ignore
         index = await client.get_index(INDEX_COMMUNITIES)
         await index.add_documents(documents, primary_key="id")
 
@@ -120,7 +120,7 @@ async def search_sentences(
     offset: int = 0,
 ) -> dict[str, Any]:
     """Full-text search over sentences with optional filter."""
-    async with await get_meilisearch_client() as client:
+    async with await get_meilisearch_client() as client:  # type: ignore
         index = await client.get_index(INDEX_SENTENCES)
         result = await index.search(
             query=query,
@@ -139,7 +139,7 @@ async def search_communities(
     offset: int = 0,
 ) -> dict[str, Any]:
     """Full-text search over communities with optional filter."""
-    async with await get_meilisearch_client() as client:
+    async with await get_meilisearch_client() as client:  # type: ignore
         index = await client.get_index(INDEX_COMMUNITIES)
         result = await index.search(
             query=query,

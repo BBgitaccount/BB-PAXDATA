@@ -3,17 +3,26 @@ from __future__ import annotations
 
 import os
 import uuid
+from collections.abc import Callable
 from datetime import datetime, timedelta, timezone
-from typing import Any, Callable
+from typing import Any
 
 import jwt
 from bb_paxdata.config.settings import get_settings
 from fastapi import HTTPException, Request, Response, status
 
-settings = get_settings()
-
-_SECRET_KEY = os.getenv("JWT_SECRET_KEY", "dev-secret-change-in-production")
+# Default values for backward compatibility - should be injected via constructor
+_SECRET_KEY: str | None = None
 _ALGORITHM = "HS256"
+
+
+def _get_secret_key() -> str:
+    """Get JWT secret key from settings (lazy initialization)."""
+    global _SECRET_KEY
+    if _SECRET_KEY is None:
+        _SECRET_KEY = get_settings().jwt_secret_key
+    return _SECRET_KEY
+
 
 # Expiration configs (Standard secure defaults)
 ACCESS_TOKEN_EXPIRE_MINUTES = 15
@@ -38,6 +47,7 @@ class JWTService:
         Generates access token, refresh token, and a CSRF token.
         """
         now = datetime.now(timezone.utc)
+        secret_key = _get_secret_key()
 
         # 1. Access Token (Short-lived)
         access_payload = {
@@ -47,7 +57,7 @@ class JWTService:
             "exp": now + timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES),
             "type": "access",
         }
-        access_token = jwt.encode(access_payload, _SECRET_KEY, algorithm=_ALGORITHM)
+        access_token = jwt.encode(access_payload, secret_key, algorithm=_ALGORITHM)
 
         # 2. Refresh Token (Long-lived)
         refresh_payload = {
@@ -56,7 +66,7 @@ class JWTService:
             "exp": now + timedelta(days=REFRESH_TOKEN_EXPIRE_DAYS),
             "type": "refresh",
         }
-        refresh_token = jwt.encode(refresh_payload, _SECRET_KEY, algorithm=_ALGORITHM)
+        refresh_token = jwt.encode(refresh_payload, secret_key, algorithm=_ALGORITHM)
 
         # 3. CSRF Token (UUID)
         csrf_token = str(uuid.uuid4())
@@ -116,7 +126,8 @@ class JWTService:
         Decode and validate JWT token. Ensures expiration and type checks.
         """
         try:
-            payload = jwt.decode(token, _SECRET_KEY, algorithms=[_ALGORITHM])
+            secret_key = _get_secret_key()
+            payload = jwt.decode(token, secret_key, algorithms=[_ALGORITHM])
             if payload.get("type") != expected_type:
                 raise ValueError(f"Invalid token type: expected {expected_type}")
             return payload
@@ -124,6 +135,27 @@ class JWTService:
             raise ValueError("Token signature has expired")
         except jwt.InvalidTokenError as e:
             raise ValueError(f"Invalid token: {e}")
+
+    @staticmethod
+    def verify_access_token(token: str) -> dict[str, Any]:
+        """
+        Verify an access token string directly (without Request object).
+        Used for dependency injection in FastAPI endpoints.
+
+        Args:
+            token: JWT access token string.
+
+        Returns:
+            Dict with 'reviewer_id' and 'roles' keys.
+
+        Raises:
+            ValueError: If token is invalid or expired.
+        """
+        payload = JWTService.decode_token(token, "access")
+        return {
+            "reviewer_id": payload.get("sub"),
+            "roles": payload.get("roles", []),
+        }
 
     @staticmethod
     def verify_request_auth(request: Request) -> dict[str, Any]:

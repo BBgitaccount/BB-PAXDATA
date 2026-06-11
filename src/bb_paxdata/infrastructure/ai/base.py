@@ -57,6 +57,21 @@ class AIClient(ABC):
         Always returns CompletionResult; success=False on failure.
         """
 
+    async def generate(
+        self,
+        prompt: str,
+        temperature: float = 0.0,
+        max_tokens: int = 1024,
+    ) -> str:
+        """Asynchronously generate a text completion from a prompt."""
+        options = CompletionOptions(
+            temperature=temperature,
+            max_tokens=max_tokens,
+            json_mode=False,
+        )
+        result = await self.complete(prompt, options)
+        return result.content
+
     @abstractmethod
     async def health_check(self) -> bool: ...
 

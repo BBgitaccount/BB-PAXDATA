@@ -12,9 +12,11 @@ from bb_paxdata.infrastructure.db.models import File
 from bb_paxdata.infrastructure.db.session import get_db_session
 from bb_paxdata.infrastructure.export.gexf_builder import GEXFBuilder
 from bb_paxdata.infrastructure.export.latex_utils import render_latex_template
-from bb_paxdata.infrastructure.tasks.celery_app import app as celery_app
+from bb_paxdata.infrastructure.tasks.celery_app import get_celery_app
 from celery import Task
 from sqlalchemy import select
+
+celery_app = get_celery_app()
 
 logger = logging.getLogger(__name__)
 

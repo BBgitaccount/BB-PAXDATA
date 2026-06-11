@@ -1,4 +1,4 @@
-from typing import Optional, Protocol
+from typing import Protocol
 
 from bb_paxdata.application.domain.models.speech_act import SpeechActClassification
 
@@ -7,7 +7,7 @@ class SpeechActClassifierProtocol(Protocol):
     """Protocol defining the interface for speech act classification services."""
 
     async def classify(
-        self, text: str, srl_context: Optional[dict] = None
+        self, text: str, srl_context: dict | None = None
     ) -> SpeechActClassification:
         """Classifies the primary and secondary speech acts of the given text.
 

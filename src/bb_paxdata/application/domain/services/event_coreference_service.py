@@ -276,7 +276,7 @@ class EventCoreferenceService:
                 )
 
                 # Resolve with LLM if near threshold
-                is_same, confidence = await resolve_pair(
+                is_same, _confidence = await resolve_pair(
                     candidate_a,
                     candidate_b,
                     sim_score,

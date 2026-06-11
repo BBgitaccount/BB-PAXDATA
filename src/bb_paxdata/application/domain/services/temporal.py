@@ -1,12 +1,13 @@
 """Temporal analyzer for speaker language drift detection."""
 
-from typing import Any, Literal, Optional, get_args
+import re
+from typing import Any, Literal, get_args
 
 import numpy as np
 import structlog
 from pydantic import BaseModel, field_validator
 
-from bb_paxdata.application.domain.constants.speech_act_keys import (
+from bb_paxdata.application.domain.models.speech_act import (
     SPEECH_ACT_MODIFIER,
     SPEECH_ACT_PRIMARY,
 )
@@ -542,7 +543,7 @@ class TemporalAnalyzer:
         panel_id: str,
         positions: list[int],
         speech_act_series: list[str],
-        force_modifiers: list[Optional[str]],
+        force_modifiers: list[str | None],
     ) -> list[DriftEvent]:
         """Detect illocutionary drift using Searle's Speech Act Theory and ratio gates."""
         if len(speech_act_series) < 3:
@@ -616,3 +617,46 @@ class TemporalAnalyzer:
             return "MEDIUM"
         else:
             return "LOW"
+
+    def extract_deadline(self, text: str, timestamp: float) -> float | None:
+        """Extract deadline from text.
+
+        Args:
+            text: Text to analyze
+            timestamp: Base timestamp in seconds
+
+        Returns:
+            Deadline timestamp in seconds or None if not found
+        """
+        # Temporal expression detection
+        deadline_patterns = [
+            (r"by\s+(\d+)\s+(hours|hour|hrs|hr)", 3600),  # hours
+            (r"within\s+(\d+)\s+(hours|hour|hrs|hr)", 3600),  # hours
+            (r"by\s+(\d+)\s+(days|day)", 86400),  # days
+            (r"within\s+(\d+)\s+(days|day)", 86400),  # days
+            (r"by\s+(\d+)\s+(weeks|week)", 604800),  # weeks
+            (r"within\s+(\d+)\s+(weeks|week)", 604800),  # weeks
+            (r"before\s+(\d{4}-\d{2}-\d{2})", None),  # ISO date
+        ]
+
+        for pattern, multiplier in deadline_patterns:
+            match = re.search(pattern, text, re.IGNORECASE)
+            if match:
+                if multiplier is None:
+                    # ISO date format - parse and convert to timestamp
+                    from datetime import datetime, timezone
+
+                    try:
+                        date_str = match.group(1)
+                        date_obj = datetime.strptime(date_str, "%Y-%m-%d").replace(
+                            tzinfo=timezone.utc
+                        )
+                        return date_obj.timestamp()
+                    except ValueError:
+                        continue
+                else:
+                    # Relative time - add to base timestamp
+                    amount = int(match.group(1))
+                    return timestamp + (amount * multiplier)
+
+        return None

@@ -1,6 +1,9 @@
 from typing import Any, Protocol, runtime_checkable
 
-from bb_paxdata.application.domain.models.negation import LanguageCode, NegationResult
+from bb_paxdata.application.domain.models.negation_cue import (
+    LanguageCode,
+    NegationResult,
+)
 
 
 @runtime_checkable

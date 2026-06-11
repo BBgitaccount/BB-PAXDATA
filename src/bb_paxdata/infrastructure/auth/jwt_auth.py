@@ -1,8 +1,18 @@
-"""JWT authentication utilities for HITL dashboard."""
+"""JWT authentication utilities for HITL dashboard.
+
+DEPRECATED: This module is deprecated. Use bb_paxdata.interfaces.http.auth.jwt_service.JWTService instead.
+The new JWTService provides:
+- Short-lived access tokens (15 minutes) for better security
+- Long-lived refresh tokens (7 days) with rotation
+- CSRF protection via double-submit cookie pattern
+- HttpOnly cookie support
+
+This module will be removed in a future version.
+"""
 
 from __future__ import annotations
 
-import os
+import warnings
 from datetime import datetime, timedelta, timezone
 from typing import Any
 
@@ -12,7 +22,9 @@ except ImportError:
     jwt = None
 
 
-_SECRET_KEY = os.getenv("JWT_SECRET_KEY", "dev-secret-change-in-production")
+from bb_paxdata.config.settings import get_settings
+
+_SECRET_KEY = get_settings().jwt_secret_key
 _ALGORITHM = "HS256"
 _TOKEN_EXPIRE_HOURS = 24
 
@@ -24,6 +36,8 @@ def create_jwt(
 ) -> str:
     """Create a JWT token for a reviewer (development/testing use).
 
+    DEPRECATED: Use JWTService.create_tokens() instead.
+
     Args:
         reviewer_id: Unique reviewer identifier (e.g., email).
         roles: List of role strings (e.g., ["admin", "verdict"]).
@@ -32,12 +46,18 @@ def create_jwt(
     Returns:
         Encoded JWT string.
     """
+    warnings.warn(
+        "create_jwt is deprecated. Use JWTService.create_tokens() instead.",
+        DeprecationWarning,
+        stacklevel=2,
+    )
     if jwt is None:
         raise ImportError("PyJWT is required: pip install PyJWT")
 
     payload: dict[str, Any] = {
         "sub": reviewer_id,
         "roles": roles or ["verdict"],
+        "type": "access",
         "iat": datetime.now(timezone.utc),
         "exp": datetime.now(timezone.utc) + timedelta(hours=expires_hours),
     }
@@ -50,6 +70,8 @@ def create_jwt(
 def decode_jwt(token: str) -> dict[str, Any]:
     """Decode and validate a JWT token.
 
+    DEPRECATED: Use JWTService.verify_access_token() instead.
+
     Args:
         token: Encoded JWT string.
 
@@ -59,6 +81,11 @@ def decode_jwt(token: str) -> dict[str, Any]:
     Raises:
         ValueError: If token is invalid or expired.
     """
+    warnings.warn(
+        "decode_jwt is deprecated. Use JWTService.verify_access_token() instead.",
+        DeprecationWarning,
+        stacklevel=2,
+    )
     if jwt is None:
         raise ImportError("PyJWT is required: pip install PyJWT")
 

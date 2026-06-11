@@ -1,7 +1,7 @@
 # src/bb_paxdata/interfaces/graphql/schema.py
 from __future__ import annotations
 
-from typing import AsyncGenerator
+from collections.abc import AsyncGenerator
 
 import strawberry
 from bb_paxdata.interfaces.graphql.resolvers import (
@@ -76,7 +76,9 @@ class Subscription:
         try:
             async for message in pubsub.listen():
                 if message["type"] == "message":
-                    yield await resolve_analysis(info, analysis_id)
+                    res = await resolve_analysis(info, analysis_id)
+                    if res is not None:
+                        yield res
         finally:
             await pubsub.unsubscribe(channel)
 
@@ -87,8 +89,8 @@ schema = strawberry.Schema(
     subscription=Subscription,
     extensions=[
         # Kötü niyetli nested query saldırısını engeller
-        QueryDepthLimiter(max_depth=10),
+        lambda: QueryDepthLimiter(max_depth=10),
         # Karmaşık sorguların kaynak tüketimini sınırlar
-        MaxAliasesLimiter(max_alias_count=15),
+        lambda: MaxAliasesLimiter(max_alias_count=15),
     ],
 )

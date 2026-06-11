@@ -117,7 +117,12 @@ class SBICalculator:
             logger.error("sbi_calculator.wordfish_failed", error=str(wordfish_thetas))
             wordfish_thetas = {sid: 0.0 for sid in speaker_ids}
 
-        assert isinstance(wordfish_thetas, dict)
+        if not isinstance(wordfish_thetas, dict):
+            logger.error(
+                "sbi_calculator.invalid_wordfish_type",
+                type=type(wordfish_thetas).__name__,
+            )
+            wordfish_thetas = {sid: 0.0 for sid in speaker_ids}
 
         stance_scores = results[1 : 1 + len(speaker_ids)]
         engagement_scores = results[1 + len(speaker_ids) :]

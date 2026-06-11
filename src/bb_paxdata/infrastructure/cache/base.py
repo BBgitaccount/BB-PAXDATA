@@ -50,4 +50,4 @@ class CacheBackend(ABC):
         Monolitik get_cache_key() mantığının karşılığı.
         """
         combined = ":".join(parts)
-        return hashlib.sha256(combined.encode()).hexdigest()[:16]
+        return hashlib.sha256(combined.encode()).hexdigest()

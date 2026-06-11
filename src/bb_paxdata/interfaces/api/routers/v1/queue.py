@@ -1,5 +1,3 @@
-from typing import Optional
-
 from fastapi import APIRouter, Depends, Query
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -22,7 +20,7 @@ router = APIRouter(prefix="/queue", tags=["Queue"])
 
 @router.get("", response_model=list[FailQueueItemResponse])
 async def get_fail_queue(
-    formula_name: Optional[str] = Query(None),
+    formula_name: str | None = Query(None),
     status_filter: str = Query("unreviewed"),
     limit: int = Query(50),
     db: AsyncSession = Depends(get_db),
@@ -79,7 +77,7 @@ async def get_triplet_context(sent_id: str, db: AsyncSession = Depends(get_db)):
 async def get_similar_cases(
     sent_id: str,
     formula_name: str,
-    country: Optional[str] = Query(None),
+    country: str | None = Query(None),
     db: AsyncSession = Depends(get_db),
 ):
     """Retrieve similar historical failures for the same validation formula to guide the reviewer."""

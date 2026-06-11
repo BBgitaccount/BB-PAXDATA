@@ -120,7 +120,7 @@ class AnomalyResult(BaseModel):
     )
 
 
-from typing import Optional, runtime_checkable  # noqa: E402
+from typing import runtime_checkable  # noqa: E402
 
 
 @runtime_checkable
@@ -130,9 +130,9 @@ class AppraisalServiceProtocol(Protocol):
     def analyze(
         self,
         text: str,
-        segment_id: Optional[str] = None,
-        srl_frame: Optional[SRLFrame] = None,
-        hedging_detected_markers: Optional[list[str]] = None,
+        segment_id: str | None = None,
+        srl_frame: SRLFrame | None = None,
+        hedging_detected_markers: list[str] | None = None,
     ) -> AppraisalVector:
         """Analyze appraisal theory vectors in text.
 
@@ -286,6 +286,24 @@ class BaseService(ABC):
         self._confidence = value
 
 
+class LLMServiceProtocol(Protocol):
+    """Protocol for LLM services, e.g. for generating narratives."""
+
+    @property
+    def model_name(self) -> str:
+        """The name of the underlying model used by the service."""
+        ...
+
+    async def generate(
+        self,
+        prompt: str,
+        temperature: float = 0.0,
+        max_tokens: int = 1024,
+    ) -> str:
+        """Generate text completion from a prompt asynchronously."""
+        ...
+
+
 __all__ = [
     "AnomalyResult",
     "AppraisalServiceProtocol",
@@ -294,6 +312,7 @@ __all__ = [
     "FramingServiceProtocol",
     "HedgingResult",
     "HedgingServiceProtocol",
+    "LLMServiceProtocol",
     "NERServiceProtocol",
     "RiskAssessment",
     "RiskServiceProtocol",

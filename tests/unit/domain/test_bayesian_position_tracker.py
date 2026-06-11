@@ -164,7 +164,7 @@ class TestKalmanPositionTracker:
         tracker = KalmanPositionTracker(measurement_noise=0.5)
         tracker.predict()
         # Override with lower noise
-        mean, std = tracker.update(1.0, measurement_noise=0.1)
+        _mean, std = tracker.update(1.0, measurement_noise=0.1)
         # Lower noise should result in lower posterior std
         assert std < 0.5
 
@@ -218,7 +218,7 @@ class TestParticleFilterPositionTracker:
         tracker.particles = np.full(100, 1.5)
         tracker.weights = np.ones(100) / 100
         # Must not raise LinAlgError
-        mode, mean, ci = tracker.get_posterior()
+        mode, mean, _ci = tracker.get_posterior()
         assert mode == pytest.approx(1.5, abs=1e-6)
         assert mean == pytest.approx(1.5, abs=1e-6)
 

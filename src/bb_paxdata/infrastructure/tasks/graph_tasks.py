@@ -2,7 +2,9 @@
 
 import logging
 
-from bb_paxdata.infrastructure.tasks.celery_app import app
+from bb_paxdata.infrastructure.tasks.celery_app import get_celery_app
+
+app = get_celery_app()
 
 logger = logging.getLogger(__name__)
 

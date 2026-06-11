@@ -117,7 +117,61 @@ def main() -> None:
     report_data = []
     pipeline_start_time = time.time()
 
-    # Step 1: Database migrations
+    # Step 1: Install spaCy NLP models
+    console.print(
+        "\n[bold blue]>>> Running Step: Install spaCy NLP Models[/bold blue]\n"
+    )
+    spacy_success = True
+    spacy_models = {
+        "en_core_web_sm": "https://github.com/explosion/spacy-models/releases/download/en_core_web_sm-3.8.0/en_core_web_sm-3.8.0-py3-none-any.whl",
+        "tr_core_news_md": "https://huggingface.co/turkish-nlp-suite/tr_core_news_md/resolve/main/tr_core_news_md-1.0-py3-none-any.whl",
+    }
+    for model, url in spacy_models.items():
+        # Check if the model is already installed and loadable in the virtual environment
+        console.print(
+            f"Checking if spaCy model [bold cyan]{model}[/bold cyan] is installed..."
+        )
+        check_cmd = [
+            "poetry",
+            "run",
+            "python",
+            "-c",
+            f"import spacy; spacy.load('{model}')",
+        ]
+        check_res = subprocess.run(
+            check_cmd, capture_output=True, text=True, check=False
+        )
+
+        if check_res.returncode == 0:
+            console.print(
+                f"[green][OK] {model} is already installed and loadable.[/green]"
+            )
+            report_data.append(
+                (f"Check/Install spaCy - {model}", True, "0.00s", "Already installed")
+            )
+        else:
+            console.print(
+                f"[yellow]{model} not found or not loadable. Installing...[/yellow]"
+            )
+            cmd = ["poetry", "run", "pip", "install", url]
+            s_success, s_msg, s_dur = run_command(cmd, f"Install spaCy: {model}")
+            report_data.append(
+                (f"Install spaCy - {model}", s_success, f"{s_dur:.2f}s", s_msg)
+            )
+            if not s_success:
+                console.print(f"[red]Failed to install {model}[/red]")
+                spacy_success = False
+            else:
+                console.print(f"[green]Successfully installed {model}[/green]")
+
+    if not spacy_success:
+        console.print(
+            "[bold red]Critical Error: Failed to install any spaCy NLP model! Stopping pipeline.[/bold red]"
+        )
+        print_summary_report(report_data, time.time() - pipeline_start_time)
+        sys.exit(1)
+
+    # Step 2: Database migrations
     success, msg, duration = run_command(
         ["poetry", "run", "alembic", "upgrade", "head"], "Database Migration (Alembic)"
     )
@@ -129,7 +183,7 @@ def main() -> None:
         print_summary_report(report_data, time.time() - pipeline_start_time)
         sys.exit(1)
 
-    # Step 2: Build database from transcripts
+    # Step 3: Build database from transcripts
     success, msg, duration = run_command(build_flags, "Database Build & Ingestion")
     report_data.append(("Database Build & Ingestion", success, f"{duration:.2f}s", msg))
     if not success:
@@ -139,7 +193,7 @@ def main() -> None:
         print_summary_report(report_data, time.time() - pipeline_start_time)
         sys.exit(1)
 
-    # Step 3: Run full analysis for all panels
+    # Step 4: Run full analysis for all panels
     console.print(
         "\n[bold blue]>>> Running Step: Full Discourse & Topic Analysis on all 12 Panels[/bold blue]\n"
     )
@@ -164,7 +218,7 @@ def main() -> None:
             f"\n[bold red]Some panels failed analysis. Time taken: {analysis_duration:.2f}s[/bold red]"
         )
 
-    # Step 4: Run Database Validation
+    # Step 5: Run Database Validation
     success, msg, duration = run_command(
         ["poetry", "run", "paxdata", "validate", "db", "--strict"],
         "Database Quality & Schema Validation",

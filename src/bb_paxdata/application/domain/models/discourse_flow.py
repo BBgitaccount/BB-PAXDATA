@@ -155,11 +155,14 @@ class DyadicMetrics(BaseModel):
         sd = self.effective_structural_distance
         dsd = self.discourse_sentiment_delta
 
-        # Maoz formulas
+        if va is None or al is None or dsd is None:
+            return self
+
+        # Maoz formulas - convert to float for arithmetic, then back to Decimal
         # diplomatic_distance = 1 - (vote_affinity × alliance_score)
-        diplo_dist = Decimal("1") - (va * al)  # type: ignore[operator]
+        diplo_dist = Decimal(str(1.0 - (float(va) * float(al))))
         # affinity_score = discourse_sentiment_delta × (1 / structural_distance)
-        affinity = dsd * (Decimal("1") / sd)  # type: ignore[operator]
+        affinity = Decimal(str(float(dsd) * (1.0 / float(sd))))
 
         return self.model_copy(
             update={

@@ -65,8 +65,7 @@ class CanonicalEvent:
             f"{self.first_mention.date().isoformat()}"
         )
         self.event_id = (
-            "EVT_"
-            + hashlib.sha256(fingerprint.encode("utf-8")).hexdigest()[:16].upper()
+            "EVT_" + hashlib.sha256(fingerprint.encode("utf-8")).hexdigest().upper()
         )
 
     def add_mention(

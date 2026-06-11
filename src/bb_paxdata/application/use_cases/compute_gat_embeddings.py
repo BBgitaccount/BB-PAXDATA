@@ -19,11 +19,11 @@ from bb_paxdata.application.domain.ports.i_gat_embedding_repository import (
 )
 
 if TYPE_CHECKING:
-    from bb_paxdata.application.domain.services.gat_embedding_service import (
-        GATEmbeddingService,
-    )
     from bb_paxdata.application.domain.services.gat_feature_extraction import (
         GATFeatureExtractionService,
+    )
+    from bb_paxdata.infrastructure.nlp.gat_embedding_service import (
+        GATEmbeddingService,
     )
 
 logger = structlog.get_logger(__name__)

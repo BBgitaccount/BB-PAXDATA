@@ -40,12 +40,13 @@ from .transcript import Transcript
 from .validation_result import ValidationResult
 
 __all__ = [
-    "AgreementStatus",
     "ANOMALY_SENTINEL",
+    "EMBEDDING_DIM",
+    "AffectType",
+    "AgreementStatus",
     "Analysis",
     "AnalysisDelta",
     "Anomaly",
-    "AffectType",
     "AppraisalDocumentResult",
     "AppraisalVector",
     "AppreciationType",
@@ -55,7 +56,6 @@ __all__ = [
     "CountryReference",
     "Demand",
     "DiscourseFlow",
-    "EMBEDDING_DIM",
     "EngagementType",
     "Frame",
     "GATEmbedding",

@@ -23,10 +23,11 @@ services:
       - GF_SECURITY_ADMIN_USER=admin
       - GF_SECURITY_ADMIN_PASSWORD=paxdata2024
       - GF_USERS_ALLOW_SIGN_UP=false
-      - GF_DASHBOARDS_DEFAULT_HOME_DASHBOARD_PATH=/var/lib/grafana/dashboards/bbpaxdata.json
+      - GF_DASHBOARDS_DEFAULT_HOME_DASHBOARD_PATH=/var/lib/grafana/dashboards/system_overview.json
     volumes:
       - grafana_data:/var/lib/grafana
-      - ./src/bb_paxdata/infrastructure/observability/dashboard/grafana.json:/var/lib/grafana/dashboards/bbpaxdata.json:ro
+      - ./src/bb_paxdata/infrastructure/observability/grafana/provisioning:/etc/grafana/provisioning:ro
+      - ./src/bb_paxdata/infrastructure/observability/grafana/dashboards:/var/lib/grafana/dashboards:ro
     ports:
       - "3000:3000"
     depends_on:
@@ -36,7 +37,7 @@ services:
       - paxdata-net
 
   postgres:
-    image: postgres:16-alpine
+    image: pgvector/pgvector:pg16
     container_name: paxdata-postgres
     environment:
       - POSTGRES_USER=paxdata_user
@@ -46,6 +47,12 @@ services:
       - "5432:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U paxdata_user -d paxdata_db"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
     restart: unless-stopped
     networks:
       - paxdata-net
@@ -55,43 +62,12 @@ services:
     container_name: paxdata-redis
     ports:
       - "6379:6379"
-    restart: unless-stopped
-    networks:
-      - paxdata-net
-
-  api:
-    build:
-      context: .
-      dockerfile: Dockerfile.api
-    container_name: paxdata-api
-    environment:
-      - PAXDATA_DATABASE_MODE=postgresql
-      - PAXDATA_DATABASE_URL=postgresql+asyncpg://paxdata_user:paxdata_password@postgres:5432/paxdata_db
-      - PAXDATA_DATABASE_REPLICA_URL=postgresql+asyncpg://paxdata_user:paxdata_password@postgres:5432/paxdata_db
-      - PAXDATA_REDIS_URL=redis://redis:6379/0
-      - PAXDATA_ENVIRONMENT=development
-      - PAXDATA_DEBUG=true
-    ports:
-      - "8000:8000"
-    depends_on:
-      - postgres
-      - redis
-      - meilisearch
-    restart: unless-stopped
-    networks:
-      - paxdata-net
-
-  web:
-    build:
-      context: ./src/bb_paxdata/interfaces/web
-      dockerfile: Dockerfile
-    container_name: paxdata-web
-    environment:
-      - VITE_API_URL=http://localhost:8000
-    ports:
-      - "5173:5173"
-    depends_on:
-      - api
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+      start_period: 5s
     restart: unless-stopped
     networks:
       - paxdata-net
@@ -106,6 +82,12 @@ services:
       - meilisearch_data:/meili_data
     ports:
       - "7700:7700"
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:7700/health"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+      start_period: 5s
     restart: unless-stopped
     networks:
       - paxdata-net
@@ -122,6 +104,90 @@ services:
     ports:
       - "9000:9000"
       - "9001:9001"
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:9000/minio/health/live"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+    restart: unless-stopped
+    networks:
+      - paxdata-net
+
+  api:
+    build:
+      context: .
+      dockerfile: Dockerfile.api
+    container_name: paxdata-api
+    command: sh -c "poetry run alembic upgrade head && uvicorn bb_paxdata.interfaces.api.main:app --host 0.0.0.0 --port 8000 --reload"
+    environment:
+      - PAXDATA_DATABASE_MODE=postgresql
+      - PAXDATA_DATABASE_URL=postgresql+asyncpg://paxdata_user:paxdata_password@postgres:5432/paxdata_db
+      - PAXDATA_DATABASE_REPLICA_URL=postgresql+asyncpg://paxdata_user:paxdata_password@postgres:5432/paxdata_db
+      - PAXDATA_REDIS_URL=redis://redis:6379/0
+      - PAXDATA_ENVIRONMENT=development
+      - PAXDATA_DEBUG=true
+    ports:
+      - "8000:8000"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      meilisearch:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 15s
+    restart: unless-stopped
+    networks:
+      - paxdata-net
+
+  web:
+    build:
+      context: ./src/bb_paxdata/interfaces/web
+      dockerfile: Dockerfile
+    container_name: paxdata-web
+    environment:
+      - VITE_API_URL=http://localhost:8000
+    ports:
+      - "5173:5173"
+    depends_on:
+      api:
+        condition: service_healthy
+    restart: unless-stopped
+    networks:
+      - paxdata-net
+
+  streamlit:
+    build:
+      context: .
+      dockerfile: Dockerfile.api
+    container_name: paxdata-streamlit
+    command: streamlit run scripts/hitl_dashboard.py --server.port 8501 --server.address 0.0.0.0
+    environment:
+      - DATABASE_URL=postgresql+asyncpg://paxdata_user:paxdata_password@postgres:5432/paxdata_db
+      - PAXDATA_DATABASE_URL=postgresql+asyncpg://paxdata_user:paxdata_password@postgres:5432/paxdata_db
+      - PAXDATA_REDIS_URL=redis://redis:6379/0
+      - PAXDATA_ENVIRONMENT=development
+    ports:
+      - "8501:8501"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      api:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8501/"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 15s
     restart: unless-stopped
     networks:
       - paxdata-net
@@ -137,8 +203,13 @@ services:
       - PAXDATA_DATABASE_URL=postgresql+asyncpg://paxdata_user:paxdata_password@postgres:5432/paxdata_db
       - PAXDATA_REDIS_URL=redis://redis:6379/0
     depends_on:
-      - postgres
-      - redis
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      api:
+        condition: service_healthy
+    restart: unless-stopped
     networks:
       - paxdata-net
 
@@ -154,9 +225,15 @@ services:
       - PAXDATA_REDIS_URL=redis://redis:6379/0
       - PAXDATA_MEILISEARCH_URL=http://meilisearch:7700
     depends_on:
-      - postgres
-      - redis
-      - meilisearch
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      meilisearch:
+        condition: service_healthy
+      api:
+        condition: service_healthy
+    restart: unless-stopped
     networks:
       - paxdata-net
 
@@ -171,8 +248,13 @@ services:
       - PAXDATA_DATABASE_URL=postgresql+asyncpg://paxdata_user:paxdata_password@postgres:5432/paxdata_db
       - PAXDATA_REDIS_URL=redis://redis:6379/0
     depends_on:
-      - postgres
-      - redis
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      api:
+        condition: service_healthy
+    restart: unless-stopped
     networks:
       - paxdata-net
 
@@ -183,7 +265,69 @@ services:
     ports:
       - "5555:5555"
     depends_on:
-      - redis
+      redis:
+        condition: service_healthy
+    restart: unless-stopped
+    networks:
+      - paxdata-net
+
+  # Exporters for Prometheus scraping (Görev 2)
+  redis-exporter:
+    image: oliver006/redis_exporter:v1.58.0
+    container_name: paxdata-redis-exporter
+    environment:
+      - REDIS_ADDR=redis://redis:6379
+    ports:
+      - "9121:9121"
+    depends_on:
+      redis:
+        condition: service_healthy
+    restart: unless-stopped
+    networks:
+      - paxdata-net
+
+  postgres-exporter:
+    image: prometheuscommunity/postgres-exporter:v0.15.0
+    container_name: paxdata-postgres-exporter
+    environment:
+      - DATA_SOURCE_NAME=postgresql://paxdata_user:paxdata_password@postgres:5432/paxdata_db?sslmode=disable
+    ports:
+      - "9187:9187"
+    depends_on:
+      postgres:
+        condition: service_healthy
+    restart: unless-stopped
+    networks:
+      - paxdata-net
+
+  celery-exporter:
+    image: danihodovic/celery-prometheus-exporter:2.0.0
+    container_name: paxdata-celery-exporter
+    environment:
+      - CELERY_BROKER_URL=redis://redis:6379/0
+    ports:
+      - "8888:8888"
+    depends_on:
+      redis:
+        condition: service_healthy
+    restart: unless-stopped
+    networks:
+      - paxdata-net
+
+  node-exporter:
+    image: prom/node-exporter:v1.8.1
+    container_name: paxdata-node-exporter
+    volumes:
+      - /proc:/host/proc:ro
+      - /sys:/host/sys:ro
+      - /:/rootfs:ro
+    command:
+      - '--path.procfs=/host/proc'
+      - '--path.sysfs=/host/sys'
+      - '--collector.filesystem.ignored-mount-points=^/(sys|proc|dev|host|etc)($$|/)'
+    ports:
+      - "9100:9100"
+    restart: unless-stopped
     networks:
       - paxdata-net
 

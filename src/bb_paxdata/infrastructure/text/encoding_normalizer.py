@@ -86,7 +86,7 @@ class EncodingNormalizer:
         while fixed != text:
             text = fixed
             fixed = ftfy.fix_text(text)
-        return str(fixed)
+        return fixed
 
     # ------------------------------------------------------------------
     # Stage 3: Unicode NFKC normalization

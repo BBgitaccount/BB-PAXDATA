@@ -6,18 +6,18 @@ Create Date: 2026-06-03 21:00:14.036673
 
 """
 
-from typing import Sequence, Union
+from collections.abc import Sequence
 
-import pgvector
+import pgvector.sqlalchemy
 import sqlalchemy as sa
 
 from alembic import op
 
 # revision identifiers, used by Alembic.
 revision: str = "f2626f5f3e19"
-down_revision: Union[str, None] = "36457cd3ec1c"
-branch_labels: Union[str, Sequence[str], None] = None
-depends_on: Union[str, Sequence[str], None] = None
+down_revision: str | None = "36457cd3ec1c"
+branch_labels: str | Sequence[str] | None = None
+depends_on: str | Sequence[str] | None = None
 
 
 def upgrade() -> None:
@@ -47,7 +47,7 @@ def upgrade() -> None:
             batch_op.alter_column(
                 "embedding",
                 existing_type=sa.NUMERIC(precision=384),
-                type_=pgvector.sqlalchemy.vector.VECTOR(dim=384),
+                type_=pgvector.sqlalchemy.VECTOR(dim=384),
                 existing_nullable=True,
             )
 
@@ -61,7 +61,7 @@ def downgrade() -> None:
         with op.batch_alter_table("sentences", schema=None) as batch_op:
             batch_op.alter_column(
                 "embedding",
-                existing_type=pgvector.sqlalchemy.vector.VECTOR(dim=384),
+                existing_type=pgvector.sqlalchemy.VECTOR(dim=384),
                 type_=sa.NUMERIC(precision=384),
                 existing_nullable=True,
             )

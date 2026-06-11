@@ -101,7 +101,7 @@ class CambridgeCoreLLMPositionEstimator:
         std_dev = float(np.std(positions)) if len(positions) > 1 else 0.0
 
         # 5. Build Result
-        text_hash = hashlib.sha256(text.encode("utf-8")).hexdigest()[:16]
+        text_hash = hashlib.sha256(text.encode("utf-8")).hexdigest()
 
         version_id = getattr(
             prompt_version, "version_id", getattr(prompt_version, "full_version_id", "")

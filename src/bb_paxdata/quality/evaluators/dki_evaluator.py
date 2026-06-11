@@ -58,7 +58,7 @@ class DKIEvaluator:
         )
         self._semantic_metric.measure(test_case)
         score = self._semantic_metric.score
-        return bool(score is not None and score >= 0.7)
+        return score is not None and score >= 0.7
 
     async def evaluate_velocity_consistency(
         self, result: DynamicPositionResult, trajectory_str: str
@@ -70,7 +70,7 @@ class DKIEvaluator:
         )
         self._velocity_metric.measure(test_case)
         score = self._velocity_metric.score
-        return bool(score is not None and score >= 0.7)
+        return score is not None and score >= 0.7
 
     def validate_calibration(self, calibration: PositionCalibration) -> bool:
         """Check if LLM vs Wordfish calibration drift is within acceptable bounds."""
@@ -81,4 +81,4 @@ class DKIEvaluator:
                 pearson_r=calibration.pearson_r,
             )
             return False
-        return bool(calibration.pearson_r > 0.5)
+        return calibration.pearson_r > 0.5

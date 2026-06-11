@@ -30,7 +30,7 @@ async def backfill():
 
     async with SessionLocal() as session:
         # Prevent expiring instances on commit to avoid MissingGreenlet errors
-        session.expire_on_commit = False
+        session.sync_session.expire_on_commit = False
 
         # 1. Cümlelerin entities_org ve dominant_frame alanlarını doldur
         print("Cumlelerin (Sentence) eksik alanlari taraniyor...")

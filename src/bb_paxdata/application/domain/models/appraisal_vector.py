@@ -1,6 +1,5 @@
 from enum import Enum
 from functools import cached_property
-from typing import Optional
 
 from pydantic import BaseModel, ConfigDict, Field
 
@@ -32,33 +31,31 @@ class AppraisalVector(BaseModel):
 
     # AFFECT (Emotional response)
     affect_score: float = Field(default=0.0, ge=-1.0, le=1.0)
-    affect_type: Optional[AffectType] = Field(default=None)
+    affect_type: AffectType | None = Field(default=None)
     affect_confidence: float = Field(default=0.0, ge=0.0, le=1.0)
 
     # JUDGMENT (Ethical / Moral evaluation)
     judgment_score: float = Field(default=0.0, ge=-1.0, le=1.0)
-    judgment_type: Optional[JudgmentType] = Field(default=None)
+    judgment_type: JudgmentType | None = Field(default=None)
     judgment_is_sanction: bool = Field(default=False)
     judgment_confidence: float = Field(default=0.0, ge=0.0, le=1.0)
 
     # APPRECIATION (Aesthetic / Value judgment)
     appreciation_score: float = Field(default=0.0, ge=-1.0, le=1.0)
-    appreciation_type: Optional[AppreciationType] = Field(default=None)
+    appreciation_type: AppreciationType | None = Field(default=None)
     appreciation_confidence: float = Field(default=0.0, ge=0.0, le=1.0)
 
     # GRADUATION (Intensity / Force / Focus modifier)
     graduation_force: float = Field(default=0.0, ge=0.0, le=1.0)
-    graduation_force_direction: Optional[str] = Field(
-        default=None
-    )  # e.g., "up" or "down"
-    graduation_focus: Optional[str] = Field(default=None)
+    graduation_force_direction: str | None = Field(default=None)  # e.g., "up" or "down"
+    graduation_focus: str | None = Field(default=None)
 
     # ENGAGEMENT (Monogloss / Heterogloss alignment)
     engagement_type: EngagementType = Field(default=EngagementType.MONOGLOSS)
     engagement_confidence: float = Field(default=0.0, ge=0.0, le=1.0)
 
     # Metadata & Provenance
-    source_segment_id: Optional[str] = Field(default=None)
+    source_segment_id: str | None = Field(default=None)
     model_version: str = Field(default="lexicon-v1.0")
     trigger_words: list[str] = Field(default_factory=list)
 
@@ -74,7 +71,7 @@ class AppraisalVector(BaseModel):
         )
 
     @property
-    def dominant_axis(self) -> Optional[str]:
+    def dominant_axis(self) -> str | None:
         """Determine the appraisal axis with the highest absolute confidence-weighted score."""
         if not self.has_any_detection:
             return None

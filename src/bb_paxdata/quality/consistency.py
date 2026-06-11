@@ -32,8 +32,7 @@ class ConsistencyCalculator:
             return 0.0
 
         try:
-            # Convert to float
-            numeric_values = [float(v) for v in values]
+            numeric_values = values
 
             # Calculate mean and standard deviation
             mean_val = sum(numeric_values) / len(numeric_values)
@@ -80,10 +79,7 @@ class ConsistencyCalculator:
             return 0.0
 
         try:
-            # Normalize values (lowercase, strip)
-            normalized_values = [
-                str(v).strip().lower() for v in values if v is not None
-            ]
+            normalized_values = [v.strip().lower() for v in values if v is not None]
 
             if not normalized_values:
                 return 0.0
@@ -121,8 +117,7 @@ class ConsistencyCalculator:
             for value in values:
                 if value is None:
                     continue
-                # Convert to lowercase and split into words
-                text = str(value).lower()
+                text = value.lower()
                 words = set(text.split())
                 normalized_values.append(words)
 

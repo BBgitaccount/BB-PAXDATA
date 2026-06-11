@@ -5,7 +5,6 @@
 Universität Göttingen. 5W1H extraction stage.]
 """
 
-from typing import Optional
 
 import structlog
 from bb_paxdata.application.domain.models.frame_annotation import FiveWOneH
@@ -30,10 +29,10 @@ class FiveWOneHSchema(BaseModel):
     where: list[str] = Field(default_factory=list)
     why: list[str] = Field(default_factory=list)
     how: list[str] = Field(default_factory=list)
-    primary_speech_act: Optional[str] = Field(default=None)
-    secondary_speech_act: Optional[str] = Field(default=None)
+    primary_speech_act: str | None = Field(default=None)
+    secondary_speech_act: str | None = Field(default=None)
     speech_act_confidence: float = Field(default=1.0)
-    force_modifier: Optional[str] = Field(default=None)
+    force_modifier: str | None = Field(default=None)
 
 
 class LLMFiveWOneHExtractor:
@@ -49,7 +48,7 @@ class LLMFiveWOneHExtractor:
         self._prompt_version = "5w1h_extraction@6.1.0"
         self._log = logger.bind(service="5w1h_extractor", version=self._prompt_version)
 
-    def _safe_parse_speech_act(self, raw: Optional[str]) -> tuple[SpeechActType, float]:
+    def _safe_parse_speech_act(self, raw: str | None) -> tuple[SpeechActType, float]:
         """Safely parses raw speech act string to SpeechActType, returning default if invalid."""
         if not raw:
             return SpeechActType.ASSERTIVE, 0.5

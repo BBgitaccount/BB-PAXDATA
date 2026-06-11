@@ -202,7 +202,7 @@ class TestArgumentGraphValidation:
             edges=edges,
             root_claim_ids=["claim_1"],
             document_id="test_doc_001",
-        )
+        ).validate_graph()
 
     def test_valid_graph_creation(self):
         graph = self._create_sample_graph()
@@ -230,8 +230,10 @@ class TestArgumentGraphValidation:
                 relation_type=RelationType.SUPPORT,
             )
         ]
-        with pytest.raises(ValidationError, match="non-existent"):
-            ArgumentGraph(nodes=nodes, edges=edges, root_claim_ids=["n1"])
+        with pytest.raises(ValueError, match="non-existent"):
+            ArgumentGraph(
+                nodes=nodes, edges=edges, root_claim_ids=["n1"]
+            ).validate_graph()
 
     def test_invalid_root_claim_raises_error(self):
         nodes = [
@@ -243,8 +245,10 @@ class TestArgumentGraphValidation:
                 timestamp=0.0,
             )
         ]
-        with pytest.raises(ValidationError, match="Root claim"):
-            ArgumentGraph(nodes=nodes, edges=[], root_claim_ids=["NONEXISTENT_ROOT"])
+        with pytest.raises(ValueError, match="Root claim"):
+            ArgumentGraph(
+                nodes=nodes, edges=[], root_claim_ids=["NONEXISTENT_ROOT"]
+            ).validate_graph()
 
     def test_cycle_detection(self):
         nodes = [
@@ -281,8 +285,10 @@ class TestArgumentGraphValidation:
                 source_id="c", target_id="a", relation_type=RelationType.REBUTTAL
             ),
         ]
-        with pytest.raises(ValidationError, match="cycle"):
-            ArgumentGraph(nodes=nodes, edges=edges, root_claim_ids=["a"])
+        with pytest.raises(ValueError, match="cycle"):
+            ArgumentGraph(
+                nodes=nodes, edges=edges, root_claim_ids=["a"]
+            ).validate_graph()
 
     def test_get_self_attacks(self):
         graph = self._create_sample_graph()
@@ -439,7 +445,9 @@ class TestArgumentAnomalyDetection:
                 confidence=0.88,
             )
         ]
-        return ArgumentGraph(nodes=nodes, edges=edges, root_claim_ids=["claim_1"])
+        return ArgumentGraph(
+            nodes=nodes, edges=edges, root_claim_ids=["claim_1"]
+        ).validate_graph()
 
     @pytest.mark.asyncio
     async def test_self_attack_detection(self, service, self_attack_graph):
@@ -473,6 +481,6 @@ class TestArgumentAnomalyDetection:
                 ),
             ],
             root_claim_ids=["n1"],
-        )
+        ).validate_graph()
         ratio = service._compute_hostility_ratio(graph)
         assert ratio == 1.0

@@ -37,7 +37,22 @@ class SpacyTokenizerService:
                 self._models[lang] = spacy.load(model_name)
             except OSError:
                 try:
-                    spacy.cli.download(model_name)  # type: ignore[attr-defined]
+                    if model_name == "tr_core_news_md":
+                        import subprocess
+                        import sys
+
+                        subprocess.run(
+                            [
+                                sys.executable,
+                                "-m",
+                                "pip",
+                                "install",
+                                "https://huggingface.co/turkish-nlp-suite/tr_core_news_md/resolve/main/tr_core_news_md-1.0-py3-none-any.whl",
+                            ],
+                            check=True,
+                        )
+                    else:
+                        spacy.cli.download(model_name)  # type: ignore[attr-defined]
                     self._models[lang] = spacy.load(model_name)
                 except (Exception, SystemExit) as e:
                     logger.error(f"Tokenizer modeli indirilemedi ({model_name}): {e}")

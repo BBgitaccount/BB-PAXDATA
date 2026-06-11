@@ -186,6 +186,7 @@ class AnalysisTriggerService:
                 seg_id=f"seg_{file_id}_{seg_idx}",
                 file_id=file_id,
                 speaker_id=speaker_id,
+                speaker=db_speaker,
                 speaker_name=speaker_name,
                 country=country,
                 power_level=db_speaker.power_level if db_speaker else 5,
@@ -448,20 +449,17 @@ class AnalysisTriggerService:
 
                 if pipeline_res.analysis.topic_synthesis:
                     ts = pipeline_res.analysis.topic_synthesis
-                    from bb_paxdata.infrastructure.db.topic_models import (
-                        TopicAssignmentORM,
+                    from bb_paxdata.infrastructure.db.repositories.topic_assignment_repository import (
+                        TopicAssignmentRepository,
                     )
 
-                    db_assignment = TopicAssignmentORM(
+                    _topic_repo = TopicAssignmentRepository(session)
+                    await _topic_repo.upsert(
                         segment_id=db_segment.seg_id,
                         analysis_id=sent_id,
-                        primary_topic=ts.dominant_topic or "-1",
-                        topic_scores=ts.topic_scores or {},
-                        topic_label=ts.topic_label,
-                        ctfidf_keywords=ts.topic_keywords or {},
+                        synthesis=ts,
                         model_metadata={},
                     )
-                    session.add(db_assignment)
 
                 db_sentences_in_seg.append(db_sentence)
                 all_processed_sentences.append(db_sentence)
@@ -491,11 +489,14 @@ class AnalysisTriggerService:
                 ai_analysis.hedging_score = _hedging_score
                 ai_analysis.politeness_score = _politeness_ratio
                 ai_analysis.logic_result = _logic_result
+                db_sentence.ai_analysis = ai_analysis
                 session.add(ai_analysis)
 
-                from bb_paxdata.infrastructure.events.publisher import EventPublisher
+                from bb_paxdata.infrastructure.events.publisher import (
+                    WORMEventPublisher,
+                )
 
-                await EventPublisher(session).emit(
+                await WORMEventPublisher(session).emit(
                     aggregate_type="AISentenceAnalysis",
                     aggregate_id=sent_id,
                     event_type="AnalysisCompleted",
@@ -1372,6 +1373,7 @@ class AnalysisTriggerService:
                 db_sentences=db_sentences_in_seg,
                 pipeline_res=pipeline_res,
                 topic_result=None,
+                db_speaker=db_speaker,
             )
 
             db_segment.bloc = enriched_data.bloc
@@ -1597,7 +1599,7 @@ class AnalysisTriggerService:
             import json
             import uuid
 
-            run_id = f"run_{uuid.uuid4().hex[:8]}"
+            run_id = f"run_{uuid.uuid4().hex}"
             auditor = FormulaAuditor()
 
             # Group sentences by segment id for segment audit
@@ -1650,10 +1652,10 @@ class AnalysisTriggerService:
                     session.add(db_log)
 
                     from bb_paxdata.infrastructure.events.publisher import (
-                        EventPublisher,
+                        WORMEventPublisher,
                     )
 
-                    await EventPublisher(session).emit(
+                    await WORMEventPublisher(session).emit(
                         aggregate_type="FormulaValidationLog",
                         aggregate_id=f"{db_log.run_id}_{db_log.formula_name}_{db_log.entity_id}",
                         event_type="FormulaValidated",
@@ -1732,10 +1734,10 @@ class AnalysisTriggerService:
                     session.add(db_log)
 
                     from bb_paxdata.infrastructure.events.publisher import (
-                        EventPublisher,
+                        WORMEventPublisher,
                     )
 
-                    await EventPublisher(session).emit(
+                    await WORMEventPublisher(session).emit(
                         aggregate_type="FormulaValidationLog",
                         aggregate_id=f"{db_log.run_id}_{db_log.formula_name}_{db_log.entity_id}",
                         event_type="FormulaValidated",
@@ -1799,7 +1801,7 @@ class AnalysisTriggerService:
 
         # ── Temporal Drift Event Analysis ──
         try:
-            from bb_paxdata.application.domain.constants.speech_act_keys import (
+            from bb_paxdata.application.domain.models.speech_act import (
                 SPEECH_ACT_MODIFIER,
                 SPEECH_ACT_PRIMARY,
             )
@@ -1905,7 +1907,7 @@ class AnalysisTriggerService:
             )
             from bb_paxdata.infrastructure.db.models import SegmentAnalyzedEvent
 
-            run_id_event = f"run_{uuid.uuid4().hex[:8]}"
+            run_id_event = f"run_{uuid.uuid4().hex}"
 
             for db_seg in all_processed_segments:
                 vad = get_vad_vector(
@@ -1957,8 +1959,12 @@ class AnalysisTriggerService:
         # ── Meilisearch Indexing Hook ──
         try:
             from bb_paxdata.infrastructure.search.meilisearch_client import (
+                ensure_indexes,
                 index_sentences,
             )
+
+            # İdempotent: index yoksa oluştur, varsa dokunma.
+            await ensure_indexes()
 
             meili_docs = [
                 {
