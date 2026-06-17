@@ -65,7 +65,7 @@ class GaussianDistribution(BaseModel, Distribution):
     Reference: TASK-A07 Finding C-01
     """
 
-    model_config = ConfigDict(frozen=True)
+    model_config = ConfigDict(frozen=False)
 
     mu: float
     sigma: float
@@ -116,7 +116,7 @@ class EmpiricalDistribution(BaseModel, Distribution):
     Reference: TASK-A07 Finding M-01
     """
 
-    model_config = ConfigDict(frozen=True)
+    model_config = ConfigDict(frozen=False)
 
     particles: list[float]
     weights: list[float]

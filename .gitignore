@@ -54,9 +54,6 @@ Desktop.ini
 # Graphify
 graphify-out/
 
-# Web Interface (React/Vite Frontend)
-src/bb_paxdata/interfaces/web/
-
 # Developer & Test Outputs (not needed by CLI)
 scratch/
 .prompts/
@@ -84,9 +81,12 @@ graphify_mcp_server.py
 
 # agents
 AGENTS.md
-.agents/
-.prompts
+/.agents
+/.prompts
 
 # frontend
 frontend/
 dashboards/
+
+#whl
+/.docker

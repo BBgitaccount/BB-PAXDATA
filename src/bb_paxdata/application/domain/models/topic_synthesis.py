@@ -3,11 +3,13 @@ from __future__ import annotations
 
 from uuid import UUID, uuid4
 
-from pydantic import BaseModel, Field
 from pydantic import ConfigDict as model_config
+from pydantic import Field
+
+from .base import AggregateRoot
 
 
-class TopicSynthesis(BaseModel):
+class TopicSynthesis(AggregateRoot):
     """
     Panel × ülke bazında konu skorlarını tutan Value Object.
 

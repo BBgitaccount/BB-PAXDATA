@@ -1,7 +1,11 @@
+from __future__ import annotations
+
 from datetime import datetime, timezone
 from typing import Any
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, model_validator
+
+from bb_paxdata.application.domain.utils.json_validation import validate_json_safe
 
 from ..enums import (
     EvidenceType,
@@ -151,3 +155,15 @@ class ValidationResult(BaseModel):
         default_factory=lambda: datetime.now(timezone.utc),
         description="Last update timestamp",
     )
+
+    @model_validator(mode="after")
+    def validate_json_fields(self) -> ValidationResult:
+        """Ensure validation_parameters, debug_info, and metadata contain only JSON-safe types."""
+        for field_name in ["validation_parameters", "debug_info", "metadata"]:
+            val = getattr(self, field_name)
+            if val is not None:
+                try:
+                    validate_json_safe(val)
+                except TypeError as e:
+                    raise ValueError(f"Invalid {field_name}: {e}")
+        return self

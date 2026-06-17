@@ -9,6 +9,8 @@ import structlog
 from bb_paxdata.application.domain.enums.signal_type import SignalType
 from bb_paxdata.application.domain.models.ai_analysis import AIAnalysisResult
 from bb_paxdata.application.domain.models.analysis import Analysis
+from bb_paxdata.application.domain.models.appraisal_vector import AppraisalVector
+from bb_paxdata.application.domain.models.argument import ArgumentGraph
 from bb_paxdata.application.domain.models.bilateral_sentiment import BilateralSentiment
 from bb_paxdata.application.domain.models.frame_annotation import (
     FrameDetectionResult,
@@ -16,6 +18,7 @@ from bb_paxdata.application.domain.models.frame_annotation import (
 )
 from bb_paxdata.application.domain.models.negation_cue import NegationCue
 from bb_paxdata.application.domain.models.power_index import PowerIndex
+from bb_paxdata.application.domain.models.presupposition import Presupposition
 from bb_paxdata.application.domain.models.risk_signal import RiskSignal
 from bb_paxdata.application.domain.models.sbi_models import SBIResult
 from bb_paxdata.application.domain.models.segment import Segment
@@ -57,6 +60,14 @@ class AnalysisAssembler:
         frame_detection: FrameDetectionResult | None = None,
         frame_salience: FrameSalienceResult | None = None,
         sbi_result: SBIResult | None = None,
+        appraisal_vector: AppraisalVector | None = None,
+        appraisal_judgment_sanction_count: int = 0,
+        dominant_appraisal_axis: str | None = None,
+        argument_graph: ArgumentGraph | None = None,
+        argument_quality_score: float | None = None,
+        key_claims_extracted: list[str] | None = None,
+        controversy_level: float | None = None,
+        hidden_commitments: list[Presupposition] | None = None,
         metadata: dict[str, Any] | None = None,
     ) -> Analysis:
         """
@@ -92,6 +103,15 @@ class AnalysisAssembler:
             frame_salience=frame_salience,
             # ── SBI Alanları ──
             sbi_result=sbi_result,
+            # ── Consolidated Rich Annotations ──
+            appraisal_vector=appraisal_vector,
+            appraisal_judgment_sanction_count=appraisal_judgment_sanction_count,
+            dominant_appraisal_axis=dominant_appraisal_axis,
+            argument_graph=argument_graph,
+            argument_quality_score=argument_quality_score,
+            key_claims_extracted=key_claims_extracted or [],
+            controversy_level=controversy_level,
+            hidden_commitments=hidden_commitments or [],
         )
 
         # ── Faz 5: Topic Modeling Entegrasyonu ──
@@ -117,14 +137,13 @@ class AnalysisAssembler:
 
                 # DNA node mapping (Phase 4 DiscourseFlow varsa)
                 node_mapping = {}
-                updated_discourse_flow = analysis.discourse_flow
                 if analysis.discourse_flow:
                     node_mapping = self._map_topics_to_nodes(
                         topic_result, analysis.discourse_flow.edges
                     )
                     # DiscourseFlow'a topic_id'leri ekle
-                    updated_discourse_flow = analysis.discourse_flow.model_copy(
-                        update={"topic_ids": list(topic_result.topic_keywords.keys())}
+                    analysis.discourse_flow.topic_ids = list(
+                        topic_result.topic_keywords.keys()
                     )
 
                 # Expose topic_diversity as a first-class scalar on the analysis
@@ -132,15 +151,10 @@ class AnalysisAssembler:
                 # can consume it without re-computing it.
                 topic_div = topic_synth.topic_diversity  # float, Shannon entropy
 
-                # Immutable update
-                analysis = analysis.model_copy(
-                    update={
-                        "topic_synthesis": topic_synth,
-                        "topic_node_mapping": node_mapping,
-                        "discourse_flow": updated_discourse_flow,
-                        "topic_diversity_score": topic_div,
-                    }
-                )
+                # Mutate in place
+                analysis.topic_synthesis = topic_synth
+                analysis.topic_node_mapping = node_mapping
+                analysis.topic_diversity_score = topic_div
 
         logger.debug(
             f"Assembly tamamlandı: id={analysis.id}, " f"language={analysis.language}"
@@ -155,19 +169,13 @@ class AnalysisAssembler:
             return analysis
 
         speech_act = five_w_one_h.speech_act
-        updated_segments = []
         for segment in analysis.segments:
-            updated_sentences = []
             for sentence in segment.sentences:
                 if getattr(sentence, "speech_act", None) is None:
-                    sentence = sentence.model_copy(update={"speech_act": speech_act})
-                updated_sentences.append(sentence)
-            segment = segment.model_copy(update={"sentences": updated_sentences})
-            updated_segments.append(segment)
+                    sentence.speech_act = speech_act
 
-        return analysis.model_copy(
-            update={"speech_act": speech_act, "segments": updated_segments}
-        )
+        analysis.speech_act = speech_act
+        return analysis
 
     def _map_topics_to_nodes(
         self,
@@ -207,7 +215,6 @@ class AnalysisAssembler:
         if not reference_segments or len(segments) < 1:
             return segments
 
-        enriched_segments = []
         for i, segment in enumerate(segments):
             # Karşılaştırma için referans segment seç (veya tüm referansları birleştir)
             ref = reference_segments[i % len(reference_segments)]
@@ -216,13 +223,11 @@ class AnalysisAssembler:
             # key_phrases: LODP z_skor'u yüksek olan kelimeler (|z| > 1.96)
             key_phrases = [r.word for r in lodp_results if abs(r.z_score) > 1.96]
 
-            # Segment'i immutable güncelleme
-            enriched = segment.model_copy(
-                update={"key_phrases": key_phrases, "lodp_results": lodp_results}
-            )
-            enriched_segments.append(enriched)
+            # Mutate in place
+            segment.key_phrases = key_phrases
+            segment.lodp_results = lodp_results
 
-        return enriched_segments
+        return segments
 
     def _calculate_commitment_cost_ratio(self, signals: Sequence[RiskSignal]) -> float:
         """COSTLY_SIGNAL oranı = commitment cost proxy (Trager 2010)."""

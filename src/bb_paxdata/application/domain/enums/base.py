@@ -22,13 +22,3 @@ class AIProvider(str, enum.Enum):
     GROQ = "groq"
     OLLAMA = "ollama"
     DEEPSEEK = "deepseek"
-
-
-class MigrationStatus(str, enum.Enum):
-    """Migration process state machine."""
-
-    PENDING = "pending"
-    RUNNING = "running"
-    COMPLETED = "completed"
-    FAILED = "failed"
-    PARTIAL = "partial"  # Some batches failed

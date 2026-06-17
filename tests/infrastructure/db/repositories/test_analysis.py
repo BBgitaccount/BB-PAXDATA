@@ -70,10 +70,26 @@ async def test_analysis_get_failures(db_session: AsyncSession) -> None:
 async def test_analysis_cache_roundtrip(db_session: AsyncSession) -> None:
     repo = AnalysisRepository(db_session)
     await repo.set_cache("h1", '{"x":1}', "m1", "b1")
+    await repo.set_cache("h1", '{"x":2}', "m1", "b1", file_id="file1")
+    await repo.set_cache("h1", '{"x":3}', "m1", "b1", file_id="file2")
     await db_session.commit()
-    meta = await repo.get_cache("h1")
-    assert meta is not None
-    assert meta.entity_id == "h1"
+
+    meta_global = await repo.get_cache("h1")
+    assert meta_global is not None
+    assert meta_global.entity_id == "h1"
+
+    meta_f1 = await repo.get_cache("h1", file_id="file1")
+    assert meta_f1 is not None
+    # Wait, the entity_id or hash for effective_hash is the SHA256 of "h1:file1"
+    import hashlib
+
+    expected_hash_f1 = hashlib.sha256(b"h1:file1").hexdigest()
+    assert meta_f1.entity_id == expected_hash_f1
+
+    meta_f2 = await repo.get_cache("h1", file_id="file2")
+    assert meta_f2 is not None
+    expected_hash_f2 = hashlib.sha256(b"h1:file2").hexdigest()
+    assert meta_f2.entity_id == expected_hash_f2
 
 
 async def test_validation_log_roundtrip(db_session: AsyncSession) -> None:

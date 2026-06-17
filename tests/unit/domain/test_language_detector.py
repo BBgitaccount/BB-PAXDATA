@@ -40,7 +40,7 @@ class TestLanguageDetector:
         assert LanguageDetector.detect("") == "en"
         assert LanguageDetector.detect("   \n   ") == "en"
 
-    @patch("bb_paxdata.domain.services.language_detector.detect")
+    @patch("bb_paxdata.application.domain.services.language_detector.detect")
     def test_langdetect_exception_returns_fallback(
         self, mock_detect: MagicMock
     ) -> None:
@@ -48,7 +48,7 @@ class TestLanguageDetector:
         mock_detect.side_effect = LangDetectException(0, "No features in text.")
         assert LanguageDetector.detect("12345 !@#$") == "en"
 
-    @patch("bb_paxdata.domain.services.language_detector.detect")
+    @patch("bb_paxdata.application.domain.services.language_detector.detect")
     def test_unsupported_language_without_script_match(
         self, mock_detect: MagicMock
     ) -> None:
@@ -66,7 +66,7 @@ class TestLanguageRouter:
     def test_get_config_english(self) -> None:
         config = LanguageRouter.get_config("en")
         assert config.spacy_model == "en_core_web_sm"
-        assert config.sentiment_lexicon == "DIPLO_LEXICON"
+        assert config.sentiment_lexicon == "DIPLO_LEXICON_EN"
 
     def test_get_config_unsupported_falls_back_to_english(self) -> None:
         config = LanguageRouter.get_config("ar")

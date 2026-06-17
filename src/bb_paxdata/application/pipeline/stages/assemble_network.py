@@ -177,11 +177,9 @@ class NetworkAssemblyStage(BaseAssemblyStage):
 
             if dyadic is None:
                 if srl_update:
-                    enriched_bilateral_metrics.append(
-                        sentiment.model_copy(update=srl_update)
-                    )
-                else:
-                    enriched_bilateral_metrics.append(sentiment)
+                    for k, v in srl_update.items():
+                        setattr(sentiment, k, v)
+                enriched_bilateral_metrics.append(sentiment)
                 continue
 
             seen_pairs.add((dyadic.actor_a_id, dyadic.actor_b_id))
@@ -201,9 +199,9 @@ class NetworkAssemblyStage(BaseAssemblyStage):
             }
             update_fields.update(srl_update)
 
-            enriched_bilateral_metrics.append(
-                sentiment.model_copy(update=update_fields)
-            )
+            for k, v in update_fields.items():
+                setattr(sentiment, k, v)
+            enriched_bilateral_metrics.append(sentiment)
 
         for dyadic in dyadic_metrics:
             pair = (dyadic.actor_a_id, dyadic.actor_b_id)
@@ -243,13 +241,10 @@ class NetworkAssemblyStage(BaseAssemblyStage):
                 )
             )
 
-        # Update analysis (immutable copy)
-        enriched = analysis.model_copy(
-            update={
-                "discourse_flow": discourse_flow,
-                "bilateral_metrics": enriched_bilateral_metrics,
-            }
-        )
+        # Update analysis (in-place mutation)
+        analysis.discourse_flow = discourse_flow
+        analysis.bilateral_metrics = enriched_bilateral_metrics
+        enriched = analysis
 
         logger.info(
             "network_assemble_complete",

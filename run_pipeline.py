@@ -1,7 +1,19 @@
+import io
 import os
 import subprocess
 import sys
 import time
+
+# Fix Windows console encoding for Turkish/Unicode characters (cp1252 → utf-8)
+if sys.platform == "win32":
+    if hasattr(sys.stdout, "buffer"):
+        sys.stdout = io.TextIOWrapper(
+            sys.stdout.buffer, encoding="utf-8", errors="replace"
+        )
+    if hasattr(sys.stderr, "buffer"):
+        sys.stderr = io.TextIOWrapper(
+            sys.stderr.buffer, encoding="utf-8", errors="replace"
+        )
 
 from rich.console import Console
 from rich.panel import Panel
@@ -217,15 +229,6 @@ def main() -> None:
         console.print(
             f"\n[bold red]Some panels failed analysis. Time taken: {analysis_duration:.2f}s[/bold red]"
         )
-
-    # Step 5: Run Database Validation
-    success, msg, duration = run_command(
-        ["poetry", "run", "paxdata", "validate", "db", "--strict"],
-        "Database Quality & Schema Validation",
-    )
-    report_data.append(
-        ("Database Quality Validation", success, f"{duration:.2f}s", msg)
-    )
 
     # Print Final Summary Report
     print_summary_report(report_data, time.time() - pipeline_start_time)

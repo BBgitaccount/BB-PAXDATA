@@ -9,11 +9,11 @@ Routes through existing SBERTEmbeddingService cache layer to avoid redundant inf
 
 from __future__ import annotations
 
-import logging
+import structlog
 
 from bb_paxdata.application.domain.ports.embedding_port import EmbeddingService
 
-logger = logging.getLogger(__name__)
+logger = structlog.get_logger(__name__)
 
 
 class GATFeatureExtractionService:

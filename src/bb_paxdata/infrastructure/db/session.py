@@ -1,6 +1,5 @@
 """Database engine, session factory, and lifecycle helpers."""
 
-import os as _os
 from collections.abc import AsyncGenerator, Generator
 from contextlib import contextmanager
 
@@ -31,15 +30,12 @@ if _is_postgres:
             "pool_size": _settings.db_pool_size,  # default 5
             "max_overflow": _settings.db_pool_size * 2,  # burst capacity
             "pool_timeout": _settings.db_pool_timeout,  # default 30s
-            "pool_recycle": 1800,  # recycle connections every 30 min
+            "pool_recycle": 300,  # recycle connections every 5 min
             "pool_pre_ping": True,  # validate connection before use
         }
     )
 
 engine = create_async_engine(DATABASE_URL, **_engine_kwargs)
-SessionLocal = async_sessionmaker(
-    autocommit=False, autoflush=False, bind=engine, class_=AsyncSession
-)
 
 # ── NullPool engine for CLI workers (forked processes) ───────────────────────
 # CLI build commands run in a subprocess. Sharing the QueuePool across forks
@@ -50,14 +46,11 @@ engine_cli = create_async_engine(
     echo=False,
     future=True,
 )
-SessionLocalCLI = async_sessionmaker(
-    autocommit=False, autoflush=False, bind=engine_cli, class_=AsyncSession
-)
 
 # ── Optional read-replica engine ─────────────────────────────────────────────
 # Set PAXDATA_DATABASE_REPLICA_URL to a PG read replica URL to enable.
 # Falls back to the primary engine if not configured.
-_REPLICA_URL = _os.getenv("PAXDATA_DATABASE_REPLICA_URL")
+_REPLICA_URL = _settings.database_replica_url
 if _REPLICA_URL and _is_postgres:
     _replica_url = _REPLICA_URL.replace("postgresql://", "postgresql+asyncpg://", 1)
     engine_replica = create_async_engine(
@@ -67,16 +60,67 @@ if _REPLICA_URL and _is_postgres:
         echo=False,
         future=True,
     )
-    SessionLocalReplica = async_sessionmaker(
-        autocommit=False, autoflush=False, bind=engine_replica, class_=AsyncSession
-    )
 else:
     engine_replica = engine
+
+
+class RoutingSession(Session):
+    """Custom session that routes read queries to the replica engine."""
+
+    def get_bind(self, mapper=None, clause=None, **kw):
+        if self.in_transaction() or self.new or self.dirty or self.deleted:
+            return engine.sync_engine
+
+        if clause is not None:
+            from sqlalchemy.sql import Select
+
+            if isinstance(clause, Select):
+                return engine_replica.sync_engine
+
+        return engine.sync_engine
+
+
+SessionLocal = async_sessionmaker(
+    autocommit=False,
+    autoflush=False,
+    bind=engine,
+    class_=AsyncSession,
+    sync_session_class=RoutingSession,
+)
+
+SessionLocalCLI = async_sessionmaker(
+    autocommit=False,
+    autoflush=False,
+    bind=engine_cli,
+    class_=AsyncSession,
+    sync_session_class=RoutingSession,
+)
+
+if _REPLICA_URL and _is_postgres:
+    SessionLocalReplica = async_sessionmaker(
+        autocommit=False,
+        autoflush=False,
+        bind=engine_replica,
+        class_=AsyncSession,
+        sync_session_class=RoutingSession,
+    )
+else:
     SessionLocalReplica = SessionLocal
 
 # ── Sync engine (Alembic migrations, scripts) ────────────────────────────────
 engine_sync = create_engine(DATABASE_URL_SYNC, echo=False, future=True)
 SessionLocalSync = sessionmaker(autocommit=False, autoflush=False, bind=engine_sync)
+
+# ── Instrument database engines for OpenTelemetry tracing ─────────────────────
+if _settings.otel_enabled:
+    try:
+        from bb_paxdata.infrastructure.observability.tracing import (
+            instrument_sqlalchemy_engines,
+        )
+
+        instrument_sqlalchemy_engines([engine, engine_cli, engine_replica, engine_sync])
+    except Exception:
+        pass
 
 
 # ── Session providers ────────────────────────────────────────────────────────
@@ -123,11 +167,7 @@ async def init_db() -> None:
     )
     from bb_paxdata.infrastructure.db.country_models import Base as CountryBase
     from bb_paxdata.infrastructure.db.models import OutboxEventORM  # noqa: F401
-    from bb_paxdata.infrastructure.legacy_migration.models import (
-        Base as PersistenceBase,
-    )
 
     async with engine.begin() as conn:
         await conn.run_sync(Base.metadata.create_all)
         await conn.run_sync(CountryBase.metadata.create_all)
-        await conn.run_sync(PersistenceBase.metadata.create_all)

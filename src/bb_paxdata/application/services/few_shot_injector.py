@@ -1,14 +1,14 @@
 # src/bb_paxdata/application/services/few_shot_injector.py
 from __future__ import annotations
 
-import logging
 from typing import Any
 
+import structlog
 from bb_paxdata.application.services.dynamic_few_shot_optimizer import (
     VectorSimilaritySelector,
 )
 
-logger = logging.getLogger(__name__)
+logger = structlog.get_logger(__name__)
 
 _FEW_SHOT_TEMPLATE = """
 ## UZMAN ONAYLI REFERANS ÖRNEKLER (Few‑Shot Gold Standard)

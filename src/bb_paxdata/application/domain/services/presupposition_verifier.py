@@ -7,13 +7,12 @@ Routes through existing AIClientFactory and BatchProcessor infrastructure.
 from __future__ import annotations
 
 import hashlib
-from dataclasses import dataclass
 
 import structlog
 
 from bb_paxdata.application.domain.models.presupposition import (
     Presupposition,
-    TriggerType,
+    PresuppositionCandidate,
     VerificationMethod,
 )
 from bb_paxdata.infrastructure.ai.base import (
@@ -23,20 +22,6 @@ from bb_paxdata.infrastructure.ai.base import (
 from bb_paxdata.infrastructure.cache.base import CacheBackend
 
 logger = structlog.get_logger(__name__)
-
-
-@dataclass
-class PresuppositionCandidate:
-    """Candidate presupposition for verification."""
-
-    trigger_word: str
-    trigger_type: TriggerType
-    presupposed_content: str
-    confidence: float
-    segment_id: str
-    speaker: str
-    segment_text: str
-    timestamp: float | None = None
 
 
 class PresuppositionVerifier:

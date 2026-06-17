@@ -14,7 +14,7 @@ from typing import Any
 import httpx
 import structlog
 
-from ...application.domain.enums import AIProvider, ValidationCheckType
+from ...application.domain.enums import ValidationCheckType
 from ...config.settings import get_settings
 
 logger = structlog.get_logger(__name__)
@@ -753,143 +753,23 @@ Return ONLY this JSON:
 }}"""
 
     async def call_backend(self, system: str, user: str) -> str | None:
-        settings = get_settings()
-        provider = settings.ai_provider
-        api_key = settings.active_ai_api_key
-        model = settings.ai_model
-        payload: Any
+        from .base import CompletionOptions
+        from .factory import AIClientFactory
 
-        if provider == AIProvider.ANTHROPIC:
-            headers = {
-                "x-api-key": api_key,
-                "anthropic-version": "2023-06-01",
-                "content-type": "application/json",
-            }
-            payload = {
-                "model": model if model else "claude-haiku-4-5-20251001",
-                "max_tokens": 1200,
-                "system": system,
-                "messages": [
-                    {"role": "user", "content": user},
-                    {"role": "assistant", "content": "{"},
-                ],
-            }
-            try:
-                resp = await self._http_client.post(
-                    "https://api.anthropic.com/v1/messages",
-                    headers=headers,
-                    json=payload,
-                )
-                resp.raise_for_status()
-                content = resp.json()["content"][0]["text"]
-                if isinstance(content, str):
-                    content = content.strip()
-                    if not content.startswith("{"):
-                        content = "{" + content
-                    return content
-                return None
-            except httpx.HTTPError as e:
-                logger.error(f"Anthropic API call failed: {e}")
-                return None
-            except Exception as e:
-                logger.error(f"Anthropic processing failed: {e}")
-                return None
-
-        elif provider == AIProvider.GEMINI:
-            url = f"https://generativelanguage.googleapis.com/v1beta/models/{model if model else 'gemini-2.5-flash'}:generateContent?key={api_key}"
-            payload = {
-                "contents": [{"role": "user", "parts": [{"text": user}]}],
-                "systemInstruction": {"parts": [{"text": system}]},
-                "generationConfig": {
-                    "temperature": 0.1,
-                    "topP": 0.9,
-                    "responseMimeType": "application/json",
-                },
-            }
-            try:
-                resp = await self._http_client.post(
-                    url,
-                    headers={"Content-Type": "application/json"},
-                    json=payload,
-                )
-                resp.raise_for_status()
-                text = resp.json()["candidates"][0]["content"]["parts"][0]["text"]
-                if isinstance(text, str):
-                    return text.strip()
-                return None
-            except httpx.HTTPError as e:
-                logger.error(f"Gemini API call failed: {e}")
-                return None
-            except Exception as e:
-                logger.error(f"Gemini processing failed: {e}")
-                return None
-
-        elif provider == AIProvider.GROQ:
-            headers = {
-                "Authorization": f"Bearer {api_key}",
-                "Content-Type": "application/json",
-            }
-            payload = {
-                "model": model if model else "llama-3.3-70b-versatile",
-                "messages": [
-                    {"role": "system", "content": system},
-                    {"role": "user", "content": user},
-                ],
-                "temperature": 0.1,
-                "max_tokens": 1200,
-                "response_format": {"type": "json_object"},
-            }
-            try:
-                resp = await self._http_client.post(
-                    "https://api.groq.com/openai/v1/chat/completions",
-                    headers=headers,
-                    json=payload,
-                )
-                resp.raise_for_status()
-                content = resp.json()["choices"][0]["message"]["content"]
-                if isinstance(content, str):
-                    return content.strip()
-                return None
-            except httpx.HTTPError as e:
-                logger.error(f"Groq API call failed: {e}")
-                return None
-            except Exception as e:
-                logger.error(f"Groq processing failed: {e}")
-                return None
-
-        else:  # OLLAMA
-            payload = {
-                "model": model if model else "gemma3:4b",
-                "messages": [
-                    {"role": "system", "content": system},
-                    {"role": "user", "content": user},
-                ],
-                "stream": False,
-                "format": "json",
-                "options": {
-                    "temperature": 0.1,
-                    "num_ctx": 4096,
-                    "num_predict": 1200,
-                },
-            }
-            url = f"{settings.ollama_base_url}/api/chat"
-            try:
-                resp = await self._http_client.post(url, json=payload)
-                resp.raise_for_status()
-                content = resp.json()["message"]["content"]
-                if isinstance(content, str):
-                    content = content.strip()
-                    content = re.sub(
-                        r"<think>.*?</think>", "", content, flags=re.DOTALL
-                    ).strip()
-                    return content
-                return None
-            except httpx.HTTPError as e:
-                logger.error(f"Ollama API call failed: {e}")
-                return None
-            except Exception as e:
-                logger.error(f"Ollama processing failed: {e}")
-                return None
+        try:
+            client = AIClientFactory.from_settings(get_settings())
+            options = CompletionOptions(
+                system_prompt=system,
+                temperature=0.1,
+                max_tokens=1200,
+                json_mode=True,
+            )
+            res = await client.complete(user, options)
+            if res.success:
+                return res.content
+        except Exception as e:
+            logger.error(f"Fail check call_backend failed: {e}")
+        return None
 
     def safe_parse_json_object(self, raw: str) -> dict[str, Any] | None:
         if not raw:

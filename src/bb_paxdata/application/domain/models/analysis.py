@@ -5,7 +5,9 @@ from collections.abc import Sequence
 from datetime import datetime, timezone
 from typing import Any
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, computed_field, model_validator
+
+from bb_paxdata.application.domain.utils.json_validation import validate_json_safe
 
 from ...protocols import HedgingResult
 from ..enums import (
@@ -19,12 +21,15 @@ from ..enums import (
     ValidationCheckType,
 )
 from .appraisal_vector import AppraisalVector
+from .argument import ArgumentGraph
+from .base import AggregateRoot
 from .bilateral_sentiment import BilateralSentiment
 from .discourse_network import DiscourseFlow
 from .dki import DKIResult
 from .frame_annotation import FrameDetectionResult, FrameSalienceResult
 from .negation_cue import NegationCue
 from .power_index import PowerIndex
+from .presupposition import Presupposition
 from .risk_signal import RiskSignal
 from .sbi_models import SBIResult
 from .segment import Segment
@@ -32,7 +37,7 @@ from .speech_act import SpeechActClassification
 from .topic_synthesis import TopicSynthesis
 
 
-class Analysis(BaseModel):
+class Analysis(AggregateRoot):
     """Represents analysis results for a segment or sentence with various assessments.
 
     Includes risk, sentiment, and anomaly assessments.
@@ -198,7 +203,7 @@ class Analysis(BaseModel):
         default=None, ge=0.0, le=1.0, description="Coherence score"
     )
     manipulation_score: float | None = Field(
-        default=None, ge=0.0, le=1.0, description="Manipulation likelihood score"
+        default=None, le=1.0, description="Manipulation likelihood score"
     )
 
     # Analysis metadata
@@ -279,6 +284,41 @@ class Analysis(BaseModel):
         default=None, description="Appraisal theory vector analysis"
     )
 
+    # === Consolidating rich analysis fields from DTO ===
+    argument_graph: ArgumentGraph | None = Field(
+        default=None,
+        description="Peldszus & Stede (2013) argumentation structure graph",
+    )
+    argument_quality_score: float | None = Field(
+        default=None,
+        ge=0.0,
+        le=1.0,
+        description="Overall argumentation quality metric (coherence, coverage)",
+    )
+    key_claims_extracted: list[str] = Field(
+        default_factory=list, description="Top-N most important claims identified"
+    )
+    controversy_level: float | None = Field(
+        default=None,
+        ge=0.0,
+        le=1.0,
+        description="Discourse controversy indicator (0=consensus, 1=highly contested)",
+    )
+    appraisal_judgment_sanction_count: int = Field(
+        default=0, ge=0, description="Total negative social sanction judgments"
+    )
+    dominant_appraisal_axis: str | None = Field(
+        default=None,
+        description="Dominant appraisal axis (AFFECT, JUDGMENT, APPRECIATION)",
+    )
+    hidden_commitments: list[Presupposition] = Field(
+        default_factory=list,
+        description=(
+            "Presuppositions extracted per Lewis (1979) / Beaver & Geurts (2014). "
+            "Populated by PresuppositionService post-TASK-A01 SRL enrichment."
+        ),
+    )
+
     # ── None-Safety Hesaplama Property'leri ───────────────────────
 
     @property
@@ -319,6 +359,202 @@ class Analysis(BaseModel):
         weighted_sum = sum(s.weighted_risk_contribution for s in self.risk_signals)
 
         return (base_risk * max_multiplier) + (weighted_sum * 0.1)
+
+    @computed_field
+    @property
+    def hidden_commitment_count(self) -> int:
+        return len(self.hidden_commitments)
+
+    @computed_field
+    @property
+    def commitment_by_type(self) -> dict[str, int]:
+        result: dict[str, int] = {}
+        for p in self.hidden_commitments:
+            result[p.trigger_type.value] = result.get(p.trigger_type.value, 0) + 1
+        return result
+
+    @property
+    def appraisal_attitude_from_vector(self) -> str:
+        """
+        Bridge: derive legacy AppraisalAttitude string from AppraisalVector.
+        Supersedes ai_appraisal_attitude for downstream rules.
+        Returns: 'POSITIVE' | 'NEGATIVE' | 'NEUTRAL'
+        """
+        if self.appraisal_vector is None or not self.appraisal_vector.has_any_detection:
+            val = getattr(self, "ai_appraisal_attitude", "NEUTRAL") or "NEUTRAL"
+            return str(val).upper()
+        v = self.appraisal_vector
+        dominant_score = max(
+            v.affect_score * v.affect_confidence,
+            v.judgment_score * v.judgment_confidence,
+            v.appreciation_score * v.appreciation_confidence,
+            key=abs,
+        )
+        if dominant_score > 0.15:
+            return "POSITIVE"
+        if dominant_score < -0.15:
+            return "NEGATIVE"
+        return "NEUTRAL"
+
+    @property
+    def has_argument_analysis(self) -> bool:
+        """Check if argument graph analysis completed."""
+        return self.argument_graph is not None and len(self.argument_graph.nodes) > 0
+
+    def get_summary_arguments(self, top_n: int = 5) -> list[dict]:
+        """Extract top-N most significant arguments for reporting."""
+        # Assign to local variable so type checkers know
+        # argument_graph cannot be None past this point.
+        graph = self.argument_graph
+        if graph is None or len(graph.nodes) == 0:
+            return []
+
+        # Sort by confidence × depth weight
+        scored_nodes = [
+            {
+                "segment_id": node.segment_id,
+                "text": node.text[:200],
+                "type": node.node_type.value,
+                "speaker": node.speaker,
+                "confidence": node.confidence,
+                "significance": node.confidence * (1 + node.depth * 0.1),
+            }
+            for node in graph.nodes
+        ]
+
+        scored_nodes.sort(key=lambda x: x["significance"], reverse=True)
+        return scored_nodes[:top_n]
+
+    def evaluate_high_risk_anomaly(self) -> tuple[bool, float, str]:
+        """Evaluate if the risk exceeds the critical threshold (HighRiskThresholdRule)."""
+        CRITICAL_THRESHOLD = 0.8
+        if not self.has_ai_output:
+            return False, 0.0, ""
+
+        risk = self.effective_risk
+        if risk >= CRITICAL_THRESHOLD:
+            return (
+                True,
+                risk * 0.6,
+                f"HIGH_RISK_THRESHOLD: risk={risk:.2f} >= {CRITICAL_THRESHOLD}",
+            )
+        return False, 0.0, ""
+
+    def evaluate_negative_sentiment_anomaly(self) -> tuple[bool, float, str]:
+        """Evaluate if the sentiment indicates extreme negativity (NegativeSentimentRule)."""
+        NEGATIVE_THRESHOLD = -0.7
+        if not self.has_ai_output:
+            return False, 0.0, ""
+
+        sentiment = self.effective_sentiment
+        if sentiment <= NEGATIVE_THRESHOLD:
+            score = abs(sentiment) * 0.3
+            return (
+                True,
+                min(score, 0.3),
+                f"EXTREME_NEGATIVE_SENTIMENT: sentiment={sentiment:.2f}",
+            )
+        return False, 0.0, ""
+
+    def evaluate_power_asymmetry_anomaly(self) -> tuple[bool, float, str]:
+        """Evaluate if there is significant power asymmetry with negative sentiment."""
+        THRESHOLD_ASYMMETRY = 0.5
+        THRESHOLD_DELTA = -0.3
+
+        if len(self.power_indices) < 2:
+            return False, 0.0, ""
+
+        indices = list(self.power_indices.values())
+        idx_a = indices[0].total_power_index
+        idx_b = indices[1].total_power_index
+
+        raw_diff = abs(idx_a - idx_b)
+        max_idx = max(idx_a, idx_b)
+        asymmetry = (raw_diff / max_idx) if max_idx > 0 else 0.0
+        sentiment = self.effective_sentiment
+
+        if asymmetry > THRESHOLD_ASYMMETRY and sentiment < THRESHOLD_DELTA:
+            return (
+                True,
+                asymmetry * 0.5,
+                f"POWER_ASYMMETRY_ANOMALY: asymmetry={asymmetry:.2f}, sentiment={sentiment:.2f}",
+            )
+
+        return False, 0.0, ""
+
+    def evaluate_cheap_talk_anomaly(self) -> tuple[bool, float, str]:
+        """Evaluate cheap talk anomaly based on risk signals credibility and power."""
+        THRESHOLD_POWER = 0.1
+        THRESHOLD_CREDIBILITY = 0.4
+
+        if not self.risk_signals:
+            return False, 0.0, ""
+
+        power = 1.0
+        if self.speaker_id in self.power_indices:
+            power = self.power_indices[self.speaker_id].total_power_index
+
+        max_multiplier = max(s.escalation_multiplier for s in self.risk_signals)
+        weighted_score = power * max_multiplier
+
+        # Check for costly signaling or red line
+        costly_count = sum(
+            1
+            for s in self.risk_signals
+            if s.signal_type in ("costly_signal", "red_line")
+            or (
+                hasattr(s.signal_type, "value")
+                and s.signal_type.value in ("costly_signal", "red_line")
+            )
+        )
+        credibility = costly_count / len(self.risk_signals)
+
+        if weighted_score > THRESHOLD_POWER and credibility < THRESHOLD_CREDIBILITY:
+            return (
+                True,
+                0.4,
+                f"PLAY_TALK_ANOMALY: weighted_score={weighted_score:.2f}, credibility={credibility:.2f}",
+            )
+
+        return False, 0.0, ""
+
+    def evaluate_topic_diversity_anomaly(self) -> tuple[bool, float, str]:
+        """Evaluate discourse fragmentation anomaly via BERTopic topic distribution entropy."""
+        DIVERSITY_THRESHOLD = 2.0
+        RISK_AMPLIFIER = 0.35
+
+        if not self.has_ai_output:
+            return False, 0.0, ""
+
+        ts = self.topic_synthesis
+        if ts is None:
+            return False, 0.0, ""
+
+        diversity = ts.topic_diversity
+        if diversity <= DIVERSITY_THRESHOLD:
+            return False, 0.0, ""
+
+        risk = self.effective_risk
+        score = min(
+            1.0,
+            (diversity / (DIVERSITY_THRESHOLD * 2)) * RISK_AMPLIFIER * (1 + risk),
+        )
+
+        return (
+            True,
+            round(score, 4),
+            f"TOPIC_DIVERSITY_ANOMALY: Shannon_H={diversity:.3f} bits "
+            f"> threshold={DIVERSITY_THRESHOLD}, risk={risk:.2f}",
+        )
+
+    @model_validator(mode="after")
+    def validate_json_fields(self) -> Analysis:
+        """Ensure entities contains only JSON-safe types."""
+        try:
+            validate_json_safe(self.entities)
+        except TypeError as e:
+            raise ValueError(f"Invalid entities: {e}")
+        return self
 
 
 # Alias for compatibility with instructions

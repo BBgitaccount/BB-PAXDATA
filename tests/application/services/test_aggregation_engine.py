@@ -166,9 +166,11 @@ def test_aggregate_events_success():
     tr_t1 = next(p for p in projections if p.country == "TR" and p.topic == "topic_1")
     assert tr_t1.score == 0.8
     assert tr_t1.risk_score == 2.0
+    assert tr_t1.composite_risk_index == pytest.approx(1.6)
     assert tr_t1.avg_sentiment == 0.6
     assert tr_t1.dominant_emotion == "constructive"
     assert tr_t1.dominant_frame == "security"
+    assert tr_t1.avg_vad is not None
     assert tr_t1.avg_vad["V"] == 0.6
 
     # TR and UK are highly aligned (cosine similarity close to 1.0)

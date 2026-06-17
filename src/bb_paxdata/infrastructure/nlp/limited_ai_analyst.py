@@ -15,14 +15,15 @@
 
 from __future__ import annotations
 
-import logging
 import threading
 from typing import Any
+
+import structlog
 
 from bb_paxdata.application.domain.models.ai_analysis import AIAnalysisResult
 from bb_paxdata.infrastructure.nlp.logic_only_analyst import LogicOnlyAIAnalyst
 
-logger = logging.getLogger(__name__)
+logger = structlog.get_logger(__name__)
 
 
 class LimitedAIAnalyst:
@@ -144,6 +145,7 @@ class LimitedAIAnalyst:
         prompt_id: str | None = None,
         forced_version: str | None = None,
         language: str | None = None,
+        file_id: str | None = None,
     ) -> AIAnalysisResult:
         """
         AI analizi çağırır.
@@ -167,6 +169,7 @@ class LimitedAIAnalyst:
                 prompt_id=prompt_id,
                 forced_version=forced_version,
                 language=language,
+                file_id=file_id,
             )
             return result
         else:
@@ -178,6 +181,7 @@ class LimitedAIAnalyst:
                 prompt_id=prompt_id,
                 forced_version=forced_version,
                 language=language,
+                file_id=file_id,
             )
             return result
 

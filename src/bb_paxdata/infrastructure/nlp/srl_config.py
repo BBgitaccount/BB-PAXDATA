@@ -151,5 +151,7 @@ def get_srl_config() -> SRLModelConfig:
     """Get or create global SRL configuration instance."""
     global _config_instance
     if _config_instance is None:
-        _config_instance = SRLModelConfig.from_env()
+        from bb_paxdata.config.settings import get_settings
+
+        _config_instance = get_settings().srl
     return _config_instance

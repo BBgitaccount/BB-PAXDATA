@@ -4,6 +4,7 @@ from collections.abc import Sequence
 from typing import TYPE_CHECKING, Any, cast
 
 if TYPE_CHECKING:
+    from bb_paxdata.application.domain.models.segment import Segment as SegmentDomain
     from bb_paxdata.infrastructure.ai.prompt_registry import PromptRegistry
 
 import structlog
@@ -132,6 +133,18 @@ class SegmentRepository(BaseRepository[Segment]):
         result = await self._session.execute(stmt)
         return result.scalars().all()  # type: ignore[no-any-return]
 
+    async def get_domain_by_panel(self, file_id: str) -> list[SegmentDomain]:
+        """Get all segments for a specific panel as domain models, ordered by seq_order."""
+
+        stmt = (
+            select(Segment)
+            .where(Segment.file_id == file_id)
+            .order_by(Segment.seq_order)
+        )
+        result = await self._session.execute(stmt)
+        segments = result.scalars().all()
+        return [s.to_domain() for s in segments]
+
     async def get_speaker_segments(
         self, speaker_name: str, file_id: str | None = None
     ) -> Sequence[Segment]:
@@ -176,3 +189,99 @@ class SegmentRepository(BaseRepository[Segment]):
         stmt = select(Segment).where(Segment.seg_id == seg_id)
         result = await self._session.execute(stmt)
         return result.scalar_one_or_none()
+
+    async def search_meilisearch(
+        self,
+        query: str,
+        file_id: str | None = None,
+        country: str | None = None,
+        speaker_name: str | None = None,
+        limit: int = 20,
+    ) -> list[Segment]:
+        """Full-text search over segments using Meilisearch."""
+        try:
+            from bb_paxdata.infrastructure.search.meilisearch_client import (
+                search_segments,
+            )
+
+            filters = []
+            if file_id:
+                filters.append(f"file_id = '{file_id}'")
+            if country:
+                filters.append(f"country = '{country}'")
+            if speaker_name:
+                filters.append(f"speaker_name = '{speaker_name}'")
+
+            filter_str = " AND ".join(filters) if filters else None
+
+            result = await search_segments(
+                query=query,
+                filters=filter_str,
+                limit=limit,
+            )
+
+            hits = result.get("hits", [])
+            seg_ids = [hit["seg_id"] for hit in hits]
+
+            # Fetch full Segment objects from database
+            stmt = select(Segment).where(Segment.seg_id.in_(seg_ids))
+            db_result = await self._session.execute(stmt)
+            segments = db_result.scalars().all()
+
+            # Return in the same order as Meilisearch results
+            seg_dict = {s.seg_id: s for s in segments}
+            return [seg_dict[sid] for sid in seg_ids if sid in seg_dict]
+
+        except Exception as e:
+            logger.warning(
+                "meilisearch_search_failed",
+                query=query[:100],
+                error=str(e),
+            )
+            # Fallback to SQL LIKE search
+            stmt = select(Segment).where(Segment.text.ilike(f"%{query}%"))
+            if file_id:
+                stmt = stmt.where(Segment.file_id == file_id)
+            if country:
+                stmt = stmt.where(Segment.country == country)
+            if speaker_name:
+                stmt = stmt.where(Segment.speaker_name == speaker_name)
+            stmt = stmt.limit(limit)
+
+            result = await self._session.execute(stmt)
+            return result.scalars().all()  # type: ignore[no-any-return]
+
+    async def index_to_meilisearch(self, segments: list[Segment]) -> None:
+        """Index segments to Meilisearch for full-text search."""
+        try:
+            from bb_paxdata.infrastructure.search.meilisearch_client import (
+                index_segments,
+            )
+
+            documents = []
+            for seg in segments:
+                documents.append(
+                    {
+                        "seg_id": seg.seg_id,
+                        "file_id": seg.file_id,
+                        "text": seg.text,
+                        "speaker_name": seg.speaker_name,
+                        "country": seg.country,
+                        "dominant_topic": seg.dominant_topic,
+                        "key_phrases": seg.key_phrases,
+                        "emotion_category": seg.emotion_category,
+                        "risk_score": seg.risk_score,
+                        "duration_sec": seg.duration_sec,
+                    }
+                )
+
+            await index_segments(documents)
+            logger.info(
+                "segments_indexed_to_meilisearch",
+                count=len(segments),
+            )
+        except Exception as e:
+            logger.warning(
+                "segments_index_to_meilisearch_failed",
+                error=str(e),
+            )

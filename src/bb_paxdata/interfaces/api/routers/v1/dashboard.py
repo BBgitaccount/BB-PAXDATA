@@ -11,6 +11,8 @@ from bb_paxdata.interfaces.api.dependencies import (
 )
 from bb_paxdata.interfaces.api.schemas import (
     AnomalyTimelineItemResponse,
+    CalibrationReportResponse,
+    CalibrationTrendItem,
     ConsensusDistributionResponse,
     DailyTrendResponse,
     DkiHistoryItemResponse,
@@ -128,6 +130,7 @@ async def get_bilateral_sentiment(
     db: AsyncSession = Depends(get_db),
     file_id: str | None = Query(
         default=None,
+        max_length=200,
         description="Panel/dosya filtresi — belirtilmezse tüm veriler aggregated döner.",
     ),
 ):
@@ -139,12 +142,16 @@ async def get_bilateral_sentiment(
 @router.get("/anomalies", response_model=list[AnomalyTimelineItemResponse])
 async def get_anomalies(
     db: AsyncSession = Depends(get_db),
-    file_id: str | None = Query(None, description="Filter anomalies by panel/file_id"),
+    file_id: str | None = Query(
+        None, max_length=200, description="Filter anomalies by panel/file_id"
+    ),
     category: str | None = Query(
-        None, description="Filter by fail_category (contradiction, hedging, risk etc.)"
+        None,
+        max_length=100,
+        description="Filter by fail_category (contradiction, hedging, risk etc.)",
     ),
     min_discrepancy: float = Query(
-        0.0, description="Filter by minimum discrepancy_score"
+        0.0, ge=0.0, le=1.0, description="Filter by minimum discrepancy_score"
     ),
 ):
     """Retrieve chronologically ordered validation/contradiction anomalies."""
@@ -206,3 +213,131 @@ async def get_temporal_drift(
         drift_events=[DriftEventItemResponse(**d) for d in res["drift_events"]],
         speakers=res["speakers"],
     )
+
+
+@router.get("/calibration", response_model=CalibrationReportResponse)
+async def get_calibration_report(
+    db: AsyncSession = Depends(get_db),
+) -> CalibrationReportResponse:
+    """Retrieve the latest calibration report metrics."""
+    from datetime import datetime, timezone
+
+    from sqlalchemy import select
+
+    from bb_paxdata.infrastructure.db.human_review_table import CalibrationReportORM
+
+    stmt = (
+        select(CalibrationReportORM)
+        .order_by(CalibrationReportORM.created_at.desc())
+        .limit(1)
+    )
+    result = await db.execute(stmt)
+    row = result.scalar_one_or_none()
+
+    if not row:
+        now_str = datetime.now(timezone.utc).isoformat()
+        return CalibrationReportResponse(
+            prompt_version="N/A",
+            evaluation_period_start=now_str,
+            evaluation_period_end=now_str,
+            cohens_kappa_frame=None,
+            cohens_kappa_risk=None,
+            ai_human_f1_frame=None,
+            ai_human_f1_risk=None,
+            sbi_mae=None,
+            total_reviews=0,
+            total_disagreements=0,
+            disagreement_rate=0.0,
+            is_reliable=False,
+            requires_prompt_update=False,
+            requires_weight_update=False,
+            alert_message="Sistemde henüz kalibrasyon verisi bulunmamaktadır.",
+            top_disagreement_patterns=[],
+        )
+
+    disagreement_rate = (
+        (row.total_disagreements / row.total_reviews * 100)
+        if row.total_reviews > 0
+        else 0.0
+    )
+    is_reliable = row.cohens_kappa_frame is not None and row.cohens_kappa_frame >= 0.67
+
+    return CalibrationReportResponse(
+        id=row.id,
+        prompt_version=row.prompt_version,
+        evaluation_period_start=(
+            row.evaluation_period_start.isoformat()
+            if row.evaluation_period_start
+            else ""
+        ),
+        evaluation_period_end=(
+            row.evaluation_period_end.isoformat() if row.evaluation_period_end else ""
+        ),
+        cohens_kappa_frame=row.cohens_kappa_frame,
+        cohens_kappa_risk=row.cohens_kappa_risk,
+        ai_human_f1_frame=row.ai_human_f1_frame,
+        ai_human_f1_risk=row.ai_human_f1_risk,
+        sbi_mae=row.sbi_mae,
+        total_reviews=row.total_reviews,
+        total_disagreements=row.total_disagreements,
+        disagreement_rate=round(disagreement_rate, 2),
+        is_reliable=is_reliable,
+        requires_prompt_update=row.requires_prompt_update,
+        requires_weight_update=row.requires_weight_update,
+        alert_message=row.alert_message,
+        top_disagreement_patterns=row.top_disagreement_patterns or [],
+    )
+
+
+@router.get("/calibration/trend", response_model=list[CalibrationTrendItem])
+async def get_calibration_trend(
+    months: int = Query(
+        default=6, ge=1, le=12, description="Lookback window in months"
+    ),
+    db: AsyncSession = Depends(get_db),
+) -> list[CalibrationTrendItem]:
+    """Retrieve historical calibration trend metrics."""
+
+    from sqlalchemy import select
+
+    from bb_paxdata.infrastructure.db.human_review_table import CalibrationReportORM
+
+    stmt = (
+        select(CalibrationReportORM)
+        .order_by(CalibrationReportORM.created_at.desc())
+        .limit(months)
+    )
+    result = await db.execute(stmt)
+    rows = result.scalars().all()
+
+    TR_MONTHS = [
+        "Oca",
+        "Şub",
+        "Mar",
+        "Nis",
+        "May",
+        "Haz",
+        "Tem",
+        "Ağu",
+        "Eyl",
+        "Eki",
+        "Kas",
+        "Ara",
+    ]
+
+    if not rows:
+        return []
+
+    # Return rows ordered chronologically
+    trend_items = []
+    for row in reversed(rows):
+        dt = row.created_at or row.evaluation_period_end
+        month_name = TR_MONTHS[dt.month - 1] if dt else "Bilinmeyen"
+        trend_items.append(
+            CalibrationTrendItem(
+                month=month_name,
+                kappa=row.cohens_kappa_frame or 0.0,
+                f1=row.ai_human_f1_frame or 0.0,
+            )
+        )
+    return trend_items

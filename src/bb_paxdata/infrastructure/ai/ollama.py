@@ -11,8 +11,8 @@ from bb_paxdata.infrastructure.ai.base import (
     AIClient,
     CompletionOptions,
     CompletionResult,
+    ai_call_instrumented,
 )
-from bb_paxdata.infrastructure.observability.metrics import get_metrics
 
 logger = structlog.get_logger(__name__)
 
@@ -72,46 +72,19 @@ class OllamaClient(AIClient):
             if options.extra:
                 payload["options"].update(options.extra)
 
-            # [FAZ3-METRIC]
-            _t0 = time.perf_counter()
-            try:
+            async with ai_call_instrumented("ollama", self._model, logger) as record:
                 response = await self._client.post(
                     f"{self._base_url}/api/chat",
                     json=payload,
                     timeout=options.timeout,
                 )
                 response.raise_for_status()
-                duration = time.perf_counter() - _t0
-                try:
-                    get_metrics().record_ai_request(
-                        backend="ollama",
-                        model=self._model,
-                        duration_seconds=duration,
-                        status="success",
-                    )
-                except Exception:
-                    pass
-            except Exception:
-                duration = time.perf_counter() - _t0
-                try:
-                    get_metrics().record_ai_request(
-                        backend="ollama",
-                        model=self._model,
-                        duration_seconds=duration,
-                        status="error",
-                    )
-                except Exception:
-                    pass
-                raise
-
-            raw_response = response.json()
+                raw_response = response.json()
+                record.prompt_tokens = raw_response.get("prompt_eval_count", 0)
+                record.completion_tokens = raw_response.get("eval_count", 0)
             content = raw_response.get("message", {}).get("content", "")
 
-            # Calculate tokens (Ollama provides prompt_eval_count + eval_count)
-            tokens_used = raw_response.get("prompt_eval_count", 0) + raw_response.get(
-                "eval_count", 0
-            )
-
+            tokens_used = record.prompt_tokens + record.completion_tokens
             latency_ms = int((time.monotonic() - start_time) * 1000)
 
             # Parse JSON if requested
@@ -135,6 +108,8 @@ class OllamaClient(AIClient):
                 latency_ms=latency_ms,
                 success=True,
                 raw_response=raw_response,
+                prompt_tokens=record.prompt_tokens,
+                completion_tokens=record.completion_tokens,
             )
 
         except Exception as e:

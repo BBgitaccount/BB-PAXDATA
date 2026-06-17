@@ -1,9 +1,16 @@
 from __future__ import annotations
 
 from pathlib import Path
-from typing import Any
+from typing import Any, Literal
 
-from pydantic import BaseModel, Field, SecretStr, field_validator, model_validator
+from pydantic import (
+    AliasChoices,
+    BaseModel,
+    Field,
+    SecretStr,
+    field_validator,
+    model_validator,
+)
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 from bb_paxdata.application.domain.enums import AIProvider, DatabaseMode, LogLevel
@@ -65,14 +72,14 @@ class Settings(BaseSettings):
         PAXDATA_LOG_LEVEL=DEBUG
         PAXDATA_DATABASE_PATH=/data/paxdata.db
         PAXDATA_ANTHROPIC_API_KEY=sk-ant-...
-        PAXDATA_LEGACY_DB_PATH=/old/data/legacy.db
     """
 
     model_config = SettingsConfigDict(
-        env_file=".env",
+        env_file=[".env.local", ".env"],
         env_file_encoding="utf-8",
         env_prefix="PAXDATA_",
         extra="ignore",
+        populate_by_name=True,
         # Secrets dosyasından da okuyabilir (Docker secret mounting için)
         secrets_dir="/run/secrets" if Path("/run/secrets").exists() else None,
     )
@@ -111,7 +118,19 @@ class Settings(BaseSettings):
         description="JWT secret key for authentication (must be changed in production)",
     )
 
+    # ── OpenTelemetry Tracing ─────────────────────────────────────────────
+    otel_enabled: bool = Field(default=False)
+    otel_exporter_otlp_endpoint: str = Field(default="http://localhost:4317")
+    otel_service_name: str = Field(default="bb-paxdata")
+
+    # ── Sentry Error Tracking ─────────────────────────────────────────────
+    sentry_dsn: str = Field(default="", description="Sentry DSN for error tracking")
+    sentry_traces_sample_rate: float = Field(
+        default=1.0, description="Sentry traces sample rate"
+    )
+
     # ── AI / LLM ─────────────────────────────────────────────────────────
+
     ai_provider: AIProvider = Field(default=AIProvider.OLLAMA)
     anthropic_api_key: SecretStr = Field(default=SecretStr(""))
     gemini_api_key: SecretStr = Field(default=SecretStr(""))
@@ -125,11 +144,6 @@ class Settings(BaseSettings):
     # ── İş Akışı ─────────────────────────────────────────────────────────
     batch_size: int = Field(default=10, ge=1, le=500)
     json_recovery_level: int = Field(default=6, ge=0, le=6)
-
-    # ── Eski Sistem (Migration için kritik) ───────────────────────────────
-    legacy_db_path: Path | None = Field(default=None)
-    legacy_data_root: Path | None = Field(default=None)
-    legacy_schema_version: str = Field(default="5.8")  # Esneklik için
 
     # ── DualGate Konfigürasyonu ──────────────────────────────────────────
     anomaly_context_window: int = Field(
@@ -147,6 +161,9 @@ class Settings(BaseSettings):
     risk_ai_weight: float = Field(default=0.6, description="Risk Hesaplama AI Ağırlığı")
     risk_anomaly_weight: float = Field(
         default=0.4, description="Risk Hesaplama Anomali Ağırlığı"
+    )
+    formula_tolerance: float = Field(
+        default=0.01, description="Formula validation tolerance threshold"
     )
     risk_threshold: float = Field(
         default=70.0, description="Kullanıcı kontrollü risk uyarı eşik değeri (0-100)"
@@ -191,6 +208,134 @@ class Settings(BaseSettings):
         description="Subdirectory name of the active PLAID index within colbert_index_path.",
     )
 
+    # ── SRL Model Settings ────────────────────────────────────────────────
+    srl_model_name: str = Field(
+        default="dannashao/bert-base-uncased-finetuned-srl_arg",
+        validation_alias=AliasChoices("PAXDATA_SRL_MODEL_NAME", "SRL_MODEL_NAME"),
+        description="HuggingFace model identifier for SRL",
+    )
+    srl_device: Literal["auto", "cpu", "cuda", "mps"] = Field(
+        default="auto",
+        validation_alias=AliasChoices("PAXDATA_SRL_DEVICE", "SRL_DEVICE"),
+        description="Compute device selection for SRL",
+    )
+    srl_batch_size: int = Field(
+        default=32,
+        ge=1,
+        le=128,
+        validation_alias=AliasChoices("PAXDATA_SRL_BATCH_SIZE", "SRL_BATCH_SIZE"),
+        description="Batch size for SRL inference",
+    )
+    srl_enable_cache: bool = Field(
+        default=True,
+        validation_alias=AliasChoices("PAXDATA_SRL_ENABLE_CACHE", "SRL_ENABLE_CACHE"),
+        description="Enable LRU caching of SRL predictions",
+    )
+    srl_use_quantization: bool = Field(
+        default=False,
+        validation_alias=AliasChoices(
+            "PAXDATA_SRL_USE_QUANTIZATION", "SRL_USE_QUANTIZATION"
+        ),
+        description="Enable INT8 quantization for SRL",
+    )
+
+    # ── Argument Mining Settings ──────────────────────────────────────────
+    argmining_claim_threshold: float = Field(
+        default=0.78,
+        ge=0.5,
+        le=0.99,
+        validation_alias=AliasChoices(
+            "PAXDATA_ARGMINING_CLAIM_THRESHOLD", "ARGMINING_CLAIM_THRESHOLD"
+        ),
+        description="Minimum confidence to classify segment as CLAIM",
+    )
+    argmining_use_srl: bool = Field(
+        default=True,
+        validation_alias=AliasChoices("PAXDATA_ARGMINING_USE_SRL", "ARGMINING_USE_SRL"),
+        description="Use SRL ARG1 spans as additional features for claim detection",
+    )
+    argmining_rel_threshold: float = Field(
+        default=0.65,
+        ge=0.4,
+        le=0.99,
+        validation_alias=AliasChoices(
+            "PAXDATA_ARGMINING_REL_THRESHOLD", "ARGMINING_REL_THRESHOLD"
+        ),
+        description="Minimum confidence to accept relation prediction",
+    )
+    argmining_edu_method: Literal["rst", "spacy", "hybrid"] = Field(
+        default="hybrid",
+        validation_alias=AliasChoices(
+            "PAXDATA_ARGMINING_EDU_METHOD", "ARGMINING_EDU_METHOD"
+        ),
+        description="Segmentation strategy",
+    )
+    argmining_device: Literal["auto", "cpu", "cuda", "mps"] = Field(
+        default="auto",
+        validation_alias=AliasChoices("PAXDATA_ARGMINING_DEVICE", "ARGMINING_DEVICE"),
+        description="Compute device for argument mining",
+    )
+    argmining_cache: bool = Field(
+        default=True,
+        validation_alias=AliasChoices("PAXDATA_ARGMINING_CACHE", "ARGMINING_CACHE"),
+        description="Enable argument mining result caching",
+    )
+    argmining_validate_dag: bool = Field(
+        default=True,
+        validation_alias=AliasChoices(
+            "PAXDATA_ARGMINING_VALIDATE_DAG", "ARGMINING_VALIDATE_DAG"
+        ),
+        description="Enforce acyclic graph constraint",
+    )
+
+    # ── Appraisal Settings ────────────────────────────────────────────────
+    appraisal_classifier_model_name: str = Field(
+        default="cross-encoder/nli-deberta-v3-base",
+        validation_alias=AliasChoices(
+            "PAXDATA_APPRAISAL_CLASSIFIER_MODEL", "APPRAISAL_CLASSIFIER_MODEL"
+        ),
+        description="Zero-shot NLI classifier model name for appraisal",
+    )
+    appraisal_use_classifier: bool = Field(
+        default=False,
+        validation_alias=AliasChoices(
+            "PAXDATA_APPRAISAL_USE_CLASSIFIER", "APPRAISAL_USE_CLASSIFIER"
+        ),
+        description="Whether to use classifier mode for appraisal",
+    )
+    appraisal_fine_tuned_path: str | None = Field(
+        default=None,
+        validation_alias=AliasChoices(
+            "PAXDATA_APPRAISAL_FINE_TUNED_PATH", "APPRAISAL_FINE_TUNED_PATH"
+        ),
+        description="Path to fine-tuned appraisal model",
+    )
+    appraisal_srl_argm_mod_graduation_boost: float = Field(
+        default=0.2,
+        ge=0.0,
+        le=1.0,
+        validation_alias=AliasChoices(
+            "PAXDATA_APPRAISAL_SRL_BOOST", "APPRAISAL_SRL_BOOST"
+        ),
+        description="Boost applied to graduation force when SRL modal verb exists",
+    )
+    appraisal_cache_max_entries: int = Field(
+        default=5000,
+        ge=10,
+        le=100000,
+        validation_alias=AliasChoices(
+            "PAXDATA_APPRAISAL_CACHE_MAX", "APPRAISAL_CACHE_MAX"
+        ),
+        description="Maximum LRU cache entries for AppraisalService",
+    )
+
+    # ── OpenAI API Key ───────────────────────────────────────────────────
+    openai_api_key: SecretStr = Field(
+        default=SecretStr(""),
+        validation_alias=AliasChoices("PAXDATA_OPENAI_API_KEY", "OPENAI_API_KEY"),
+        description="OpenAI API Key for evaluations",
+    )
+
     # ── Validators ────────────────────────────────────────────────────────
 
     @field_validator("database_url", mode="before")
@@ -206,9 +351,7 @@ class Settings(BaseSettings):
             return f"sqlite+aiosqlite:///{abs_path}"
         return None  # PostgreSQL URL zorunlu; model_validator kontrol eder
 
-    @field_validator(
-        "legacy_db_path", "legacy_data_root", "database_path", mode="after"
-    )
+    @field_validator("database_path", mode="after")
     @classmethod
     def _resolve_paths(cls, v: Path | None) -> Path | None:
         if v is None:
@@ -277,8 +420,16 @@ class Settings(BaseSettings):
         return "aiosqlite" in self.database_url or "asyncpg" in self.database_url
 
     @property
-    def has_legacy_config(self) -> bool:
-        return self.legacy_db_path is not None and self.legacy_db_path.exists()
+    def ai_backend(self) -> str:
+        """Seçili provider'ı factory'ye uygun string'e dönüştürür."""
+        provider_map = {
+            AIProvider.OLLAMA: "local",
+            AIProvider.ANTHROPIC: "api",
+            AIProvider.GEMINI: "gemini",
+            AIProvider.GROQ: "groq",
+            AIProvider.DEEPSEEK: "deepseek",
+        }
+        return provider_map.get(self.ai_provider, "local")
 
     @property
     def active_ai_api_key(self) -> str:
@@ -296,6 +447,57 @@ class Settings(BaseSettings):
     def is_test_environment(self) -> bool:
         return self.environment == "test"
 
+    @property
+    def srl(self) -> Any:
+        from bb_paxdata.infrastructure.nlp.srl_config import SRLModelConfig
+
+        return SRLModelConfig(
+            model_name=self.srl_model_name,
+            device=self.srl_device,
+            batch_size=self.srl_batch_size,
+            enable_cache=self.srl_enable_cache,
+            use_quantization=self.srl_use_quantization,
+        )
+
+    @property
+    def argmining(self) -> Any:
+        from bb_paxdata.infrastructure.nlp.argmining_config import (
+            ArgumentMiningPipelineConfig,
+            ClaimDetectionConfig,
+            EDUSegmentationConfig,
+            RelationClassificationConfig,
+        )
+
+        return ArgumentMiningPipelineConfig(
+            claim_detection=ClaimDetectionConfig(
+                confidence_threshold=self.argmining_claim_threshold,
+                use_srl_guidance=self.argmining_use_srl,
+            ),
+            relation_classification=RelationClassificationConfig(
+                confidence_threshold=self.argmining_rel_threshold,
+            ),
+            edu_segmentation=EDUSegmentationConfig(
+                method=self.argmining_edu_method,
+            ),
+            device=self.argmining_device,
+            enable_cache=self.argmining_cache,
+            validate_dag_on_build=self.argmining_validate_dag,
+        )
+
+    @property
+    def appraisal(self) -> Any:
+        from bb_paxdata.application.domain.lexicon.appraisal_config import (
+            AppraisalPipelineConfig,
+        )
+
+        return AppraisalPipelineConfig(
+            classifier_model_name=self.appraisal_classifier_model_name,
+            use_classifier=self.appraisal_use_classifier,
+            fine_tuned_path=self.appraisal_fine_tuned_path,
+            srl_argm_mod_graduation_boost=self.appraisal_srl_argm_mod_graduation_boost,
+            cache_max_entries=self.appraisal_cache_max_entries,
+        )
+
 
 # ── Singleton Yönetimi ────────────────────────────────────────────────────
 
@@ -311,6 +513,19 @@ def get_settings() -> Settings:
     global _settings
     if _settings is None:
         _settings = Settings()
+        # Override with custom settings if exists
+        custom_path = Path("data/system_settings.json")
+        if custom_path.exists():
+            try:
+                import json
+
+                with open(custom_path, encoding="utf-8") as f:
+                    custom_data = json.load(f)
+                for field, value in custom_data.items():
+                    if hasattr(_settings, field):
+                        setattr(_settings, field, value)
+            except Exception:
+                pass
     return _settings
 
 

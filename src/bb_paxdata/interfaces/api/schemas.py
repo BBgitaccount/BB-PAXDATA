@@ -8,6 +8,7 @@ class KpiStatsResponse(BaseModel):
     total_logs: int
     total_pass: int
     total_fail: int
+    total_anomalies: int
     pending_review: int
     confirmed_fail: int
     confirmed_pass: int
@@ -100,13 +101,13 @@ class TripletContextResponse(BaseModel):
 
 
 class VerdictPayload(BaseModel):
-    log_id: int
+    log_id: int = Field(..., gt=0)
     verdict: str = Field(..., pattern="^(CONFIRMED_PASS|CONFIRMED_FAIL|CORRECTED)$")
-    corrected_value: float | None = None
-    note: str | None = None
+    corrected_value: float | None = Field(None, ge=-100.0, le=100.0)
+    note: str | None = Field(None, max_length=2000)
     confidence: str | None = Field("MEDIUM", pattern="^(LOW|MEDIUM|HIGH)$")
-    justification: str | None = None
-    reviewer_id: str
+    justification: str | None = Field(None, max_length=2000)
+    reviewer_id: str = Field(..., min_length=1, max_length=100)
 
 
 class VerdictResponse(BaseModel):
@@ -351,3 +352,64 @@ class CompareSessionsResponse(BaseModel):
     contrast_report: ContrastReportResponse | None = None
     analysis_delta: AnalysisDeltaResponse | None = None
     errors: list[str] = Field(default_factory=list)
+
+
+class CalibrationReportResponse(BaseModel):
+    id: str | int | None = None
+    prompt_version: str
+    evaluation_period_start: str
+    evaluation_period_end: str
+    cohens_kappa_frame: float | None = None
+    cohens_kappa_risk: float | None = None
+    ai_human_f1_frame: float | None = None
+    ai_human_f1_risk: float | None = None
+    sbi_mae: float | None = None
+    total_reviews: int
+    total_disagreements: int
+    disagreement_rate: float
+    is_reliable: bool
+    requires_prompt_update: bool
+    requires_weight_update: bool
+    alert_message: str | None = None
+    top_disagreement_patterns: list[str] = Field(default_factory=list)
+
+
+class ReviewerResponse(BaseModel):
+    reviewer_id: str
+    scope_type: str
+    scope_value: str
+    permission_level: str
+    max_daily_reviews: int
+    current_daily_count: int
+    is_active: bool
+    created_at: str
+
+
+class ReviewerPerformanceResponse(BaseModel):
+    reviewer_id: str
+    total_actions: int
+    verdict_count: int
+    correction_count: int
+    correction_rate: float
+
+
+class CalibrationTrendItem(BaseModel):
+    month: str
+    kappa: float
+    f1: float
+
+
+class SystemSettingsSchema(BaseModel):
+    anomaly_soft_log_only: bool
+    anomaly_controller_enabled: bool
+    anomaly_context_window: int = Field(..., ge=1, le=50)
+    risk_ai_weight: float = Field(..., ge=0.0, le=1.0)
+    risk_anomaly_weight: float = Field(..., ge=0.0, le=1.0)
+    formula_tolerance: float = Field(..., ge=0.0, le=0.5)
+    risk_threshold: float = Field(..., ge=0.0, le=100.0)
+
+    @model_validator(mode="after")
+    def validate_weights(self) -> "SystemSettingsSchema":
+        if abs(self.risk_ai_weight + self.risk_anomaly_weight - 1.0) > 1e-6:
+            raise ValueError("risk_ai_weight and risk_anomaly_weight must sum to 1.0")
+        return self

@@ -80,3 +80,19 @@ class CreateAnalysisInput:
     source_text: str
     source_language: str = "tr"
     pipeline_config_id: str | None = None
+
+    def validate(self):
+        if not self.title or len(self.title.strip()) < 1 or len(self.title) > 200:
+            raise ValueError("title must be between 1 and 200 characters")
+        if (
+            not self.source_text
+            or len(self.source_text.strip()) < 10
+            or len(self.source_text) > 100000
+        ):
+            raise ValueError("source_text must be between 10 and 100,000 characters")
+        import re
+
+        if not re.match(r"^[a-z]{2}(-[A-Z]{2})?$", self.source_language):
+            raise ValueError(
+                "source_language must be ISO 639-1 language code (e.g. 'en', 'tr')"
+            )

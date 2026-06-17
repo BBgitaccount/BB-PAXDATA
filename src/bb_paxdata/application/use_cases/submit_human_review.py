@@ -3,17 +3,17 @@
 
 from __future__ import annotations
 
-import logging
 from dataclasses import dataclass
 from typing import Any
 
+import structlog
 from bb_paxdata.application.domain.models.human_review import (
     AgreementStatus,
     HumanReview,
     RiskLevel,
 )
 
-logger = logging.getLogger(__name__)
+logger = structlog.get_logger(__name__)
 
 
 @dataclass(frozen=True)

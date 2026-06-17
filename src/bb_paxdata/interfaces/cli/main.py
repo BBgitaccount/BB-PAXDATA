@@ -27,17 +27,9 @@ def _lazy_import_commands() -> None:
             analyze,
             api,
             build,
-            migrate,
             test,
-            validate,
         )
 
-        app.add_typer(
-            migrate.app,
-            name="migrate",
-            help="Migration from legacy format to new format",
-        )
-        app.add_typer(validate.app, name="validate", help="Database consistency check")
         app.add_typer(
             build.app, name="build", help="Build database from transcript files"
         )

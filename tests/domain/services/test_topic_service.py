@@ -173,14 +173,18 @@ class TestTopicService:
         texts = ["text one", "text two", "text three"]
 
         with patch(
-            "bb_paxdata.domain.services.topic_service.TopicService.HAS_TFIDF", False
+            "bb_paxdata.application.domain.services.topic_service.TopicService.HAS_TFIDF",
+            False,
         ):
             result = self.service.tfidf_batch(texts)
 
         assert len(result) == len(texts)
         assert all(keywords == [] for keywords in result)
 
-    @patch("bb_paxdata.domain.services.topic_service.TopicService.HAS_TFIDF", True)
+    @patch(
+        "bb_paxdata.application.domain.services.topic_service.TopicService.HAS_TFIDF",
+        True,
+    )
     async def test_tfidf_batch_with_sklearn_import_error(self) -> None:
         """Test TF-IDF batch processing with ImportError."""
         texts = ["text one", "text two"]

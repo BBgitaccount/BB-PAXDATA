@@ -1,9 +1,9 @@
 import json
-import logging
 
+import structlog
 from fastapi import APIRouter, WebSocket, WebSocketDisconnect
 
-logger = logging.getLogger(__name__)
+logger = structlog.get_logger(__name__)
 
 router = APIRouter(prefix="/ws", tags=["WebSockets"])
 
@@ -86,3 +86,49 @@ async def websocket_build_endpoint(websocket: WebSocket) -> None:
     except Exception as e:
         logger.error(f"Build WebSocket error: {e}")
         manager.disconnect(websocket)
+
+
+async def listen_to_redis_events() -> None:
+    """Listens to Redis events on 'verdict_events' channel and broadcasts them via WebSocket."""
+    import asyncio
+    import json
+
+    import redis.asyncio as aioredis
+
+    from bb_paxdata.config.settings import get_settings
+
+    settings = get_settings()
+    while True:
+        try:
+            logger.info("Connecting to Redis Pub/Sub...")
+            r = aioredis.Redis.from_url(settings.redis_url, decode_responses=True)
+            pubsub = r.pubsub()
+            await pubsub.subscribe("verdict_events")
+            logger.info("Subscribed to Redis channel 'verdict_events'")
+
+            async for message in pubsub.listen():
+                if message["type"] == "message":
+                    try:
+                        payload = json.loads(message["data"])
+                        event_type = payload.get("event_type")
+                        data = payload.get("data", {})
+
+                        if event_type == "new_flagged_item":
+                            msg = {"event": "new_flagged_item", **data}
+                            await manager.broadcast(msg)
+                        elif event_type == "verdict_submitted":
+                            msg = {
+                                "event": "queue_updated",
+                                "log_id": data.get("log_id"),
+                                "verdict": data.get("verdict"),
+                                "reviewer_id": data.get("reviewer_id"),
+                            }
+                            await manager.broadcast(msg)
+                    except Exception as parse_ex:
+                        logger.error(f"Error parsing Redis message: {parse_ex}")
+        except asyncio.CancelledError:
+            logger.info("Redis Pub/Sub listener task cancelled")
+            break
+        except Exception as e:
+            logger.error(f"Redis Pub/Sub listener error: {e}. Retrying in 5 seconds...")
+            await asyncio.sleep(5)

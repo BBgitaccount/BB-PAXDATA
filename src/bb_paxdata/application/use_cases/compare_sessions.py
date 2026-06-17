@@ -264,7 +264,7 @@ class CompareSessionsUseCase:
                 d = dist.setdefault(a.speaker_id, {})
                 act_type = a.speech_act.primary_type.value
                 d[act_type] = d.get(act_type, 0.0) + 1.0
-        for speaker in dist:
+        for speaker, value in dist.items():
             total = sum(dist[speaker].values())
             if total > 0:
                 dist[speaker] = {k: v / total for k, v in dist[speaker].items()}

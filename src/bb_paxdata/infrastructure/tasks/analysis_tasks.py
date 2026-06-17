@@ -1,16 +1,16 @@
 """Celery tasks for sentence analysis and quality regression."""
 
 import asyncio
-import logging
 import subprocess
 import sys
 from typing import Any
 
+import structlog
 from bb_paxdata.infrastructure.tasks.celery_app import get_celery_app
 
 app = get_celery_app()
 
-logger = logging.getLogger(__name__)
+logger = structlog.get_logger(__name__)
 
 
 @app.task(
@@ -35,6 +35,12 @@ def analyze_sentence_task(
     from bb_paxdata.infrastructure.events.publisher import WORMEventPublisher
 
     async def _run():
+        import structlog
+        from bb_paxdata.application.domain.utils.context import set_correlation_id
+
+        set_correlation_id(self.request.id)
+        structlog.contextvars.bind_contextvars(correlation_id=self.request.id)
+
         async with SessionLocalCLI() as db:
             publisher = WORMEventPublisher(db)
             result = await run_sentence_analysis(sent_id, text, context)

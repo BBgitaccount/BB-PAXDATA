@@ -158,8 +158,8 @@ class TestRiskService:
         """Test risk severity classification."""
         assert self.service._classify_risk_severity(9.0) == RiskLevel.CRITICAL
         assert self.service._classify_risk_severity(7.0) == RiskLevel.HIGH
-        assert self.service._classify_risk_severity(5.0) == RiskLevel.HIGH
-        assert self.service._classify_risk_severity(3.0) == RiskLevel.MEDIUM
+        assert self.service._classify_risk_severity(5.0) == RiskLevel.MEDIUM
+        assert self.service._classify_risk_severity(3.0) == RiskLevel.LOW
         assert self.service._classify_risk_severity(1.0) == RiskLevel.LOW
 
     async def test_assess_risk_single_sentence(self) -> None:

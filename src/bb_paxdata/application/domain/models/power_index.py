@@ -9,7 +9,7 @@ class PowerIndex(BaseModel):
     PowerIndex(speaker) = α·AuthorityMarkers + β·DominancePatterns + γ·LegitimationStrategies
     """
 
-    model_config = ConfigDict(frozen=True, strict=True)
+    model_config = ConfigDict(frozen=False, strict=True)
 
     speaker_id: str = Field(..., description="Konuşmacı kimliği")
     segment_id: str = Field(..., description="Ait olduğu segment UUID")

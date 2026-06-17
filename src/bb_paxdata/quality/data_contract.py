@@ -65,17 +65,16 @@ class AISentenceOutputSchema(pa.DataFrameModel):
         isin=["CONFIRMED", "DISMISSED", "ESCALATED", "AI_ONLY", "INCONCLUSIVE"],
     )
 
-    # === TASK-A06 Presupposition Fields ===
-    # Pandera cannot validate nested Pydantic objects inline.
-    # Serialize to JSON column; validate count separately.
-    hidden_commitment_count: Series[int] = pa.Field(
+    hidden_commitment_count: Series[int] | None = pa.Field(
         ge=0,
-        nullable=False,
-        default=0,
+        nullable=True,
+        default=None,
         description="Count of presuppositions extracted from this segment",
     )
-    hidden_commitment_json: Series[str] = pa.Field(
-        nullable=True, description="JSON-serialized list of Presupposition objects"
+    hidden_commitment_json: Series[str] | None = pa.Field(
+        nullable=True,
+        default=None,
+        description="JSON-serialized list of Presupposition objects",
     )
 
     Config = _AISentenceConfig  # type: ignore[assignment]

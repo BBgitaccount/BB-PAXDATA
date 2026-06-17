@@ -8,12 +8,12 @@ Two-stage architecture:
 
 from __future__ import annotations
 
-import logging
 import threading
 import time
 from collections import OrderedDict
 from dataclasses import dataclass, field
 
+import structlog
 import torch
 from transformers import (
     AutoModelForSequenceClassification,
@@ -33,7 +33,7 @@ from bb_paxdata.infrastructure.nlp.argmining_config import (
 )
 from bb_paxdata.infrastructure.nlp.spacy_manager import SpacyModelManager
 
-logger = logging.getLogger(__name__)
+logger = structlog.get_logger(__name__)
 
 
 @dataclass

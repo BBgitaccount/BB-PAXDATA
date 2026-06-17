@@ -12,7 +12,7 @@ class FrameAnnotation(BaseModel):
     [Academic Ref: Entman, R.M. (1993). Framing: Toward Clarification of a Fractured Paradigm.]
     """
 
-    model_config = ConfigDict(frozen=True)
+    model_config = ConfigDict(frozen=False)
 
     id: str
     frame_type: FrameType
@@ -32,7 +32,7 @@ class ResolvedEntity(BaseModel):
     [Academic Ref: Hamborg, F. (2023). NLP Techniques for Automated Frame Analysis.]
     """
 
-    model_config = ConfigDict(frozen=True)
+    model_config = ConfigDict(frozen=False)
 
     text: str
     start_idx: int
@@ -54,7 +54,7 @@ class FiveWOneH(BaseModel):
     [Academic Ref: Hamborg, F. (2023). NLP Techniques for Automated Frame Analysis. Who, What, When, Where, Why, How.]
     """
 
-    model_config = ConfigDict(frozen=True, extra="ignore")
+    model_config = ConfigDict(frozen=False, extra="ignore")
 
     who: list[str] = Field(default_factory=list)
     what: list[str] = Field(default_factory=list)
@@ -71,7 +71,7 @@ class PerspectiveCluster(BaseModel):
     [Academic Ref: Hamborg, F. (2023). Perspective clustering — identifying actor-based viewpoints.]
     """
 
-    model_config = ConfigDict(frozen=True)
+    model_config = ConfigDict(frozen=False)
 
     actor_id: str
     entities: list[ResolvedEntity]
@@ -90,7 +90,7 @@ class BiasSignal(BaseModel):
     [Academic Ref: Hamborg, F. (2023). Bias detection via cosine similarity thresholding.]
     """
 
-    model_config = ConfigDict(frozen=True)
+    model_config = ConfigDict(frozen=False)
 
     frame_annotation_id: str
     cosine_distance: float
@@ -101,7 +101,7 @@ class BiasSignal(BaseModel):
 class FrameDetectionResult(BaseModel):
     """Hamborg (2023) PFA pipeline tam sonucu. Immutable."""
 
-    model_config = ConfigDict(frozen=True)
+    model_config = ConfigDict(frozen=False)
 
     segment_id: str
     concepts: list[str]
@@ -120,7 +120,7 @@ class FrameSalienceResult(BaseModel):
     [Academic Ref: Entman, R.M. (1993). Framing: Toward Clarification of a Fractured Paradigm.]
     """
 
-    model_config = ConfigDict(frozen=True)
+    model_config = ConfigDict(frozen=False)
 
     segment_id: str
     salience_scores: dict[FrameType, float] = Field(
@@ -147,7 +147,7 @@ class FrameSalienceResult(BaseModel):
 class CueMatch(BaseModel):
     """Lexicon match result for El-Assady (2023) cues."""
 
-    model_config = ConfigDict(frozen=True)
+    model_config = ConfigDict(frozen=False)
 
     token_text: str
     token_idx: int

@@ -5,9 +5,10 @@
 
 from __future__ import annotations
 
-import logging
 from pathlib import Path
 from typing import Any
+
+import structlog
 
 from bb_paxdata.application.domain.models.anomaly import AnomalyResult
 from bb_paxdata.application.domain.models.negation_cue import NegationCue
@@ -21,7 +22,7 @@ from ..enums import AnomalySeverity, AnomalyType, NegationType, RiskLevel
 from ..enums.country_enums import NarrativeLayer
 from ..models.analysis import Analysis
 
-logger = logging.getLogger(__name__)
+logger = structlog.get_logger(__name__)
 
 # Graceful degradation for vaderSentiment
 try:
@@ -110,100 +111,23 @@ class SentimentRiskDivergenceRule:
 
 
 class HighRiskThresholdRule:
-    CRITICAL_THRESHOLD = 0.8
-
     def evaluate(self, analysis: Analysis) -> tuple[bool, float, str]:
-        if not analysis.has_ai_output:
-            return False, 0.0, ""
-
-        risk = analysis.effective_risk
-        if risk >= self.CRITICAL_THRESHOLD:
-            return (
-                True,
-                risk * 0.6,
-                f"HIGH_RISK_THRESHOLD: risk={risk:.2f} >= {self.CRITICAL_THRESHOLD}",
-            )
-        return False, 0.0, ""
+        return analysis.evaluate_high_risk_anomaly()
 
 
 class NegativeSentimentRule:
-    NEGATIVE_THRESHOLD = -0.7
-
     def evaluate(self, analysis: Analysis) -> tuple[bool, float, str]:
-        if not analysis.has_ai_output:
-            return False, 0.0, ""
-
-        sentiment = analysis.effective_sentiment
-        if sentiment <= self.NEGATIVE_THRESHOLD:
-            score = abs(sentiment) * 0.3
-            return (
-                True,
-                min(score, 0.3),
-                f"EXTREME_NEGATIVE_SENTIMENT: sentiment={sentiment:.2f}",
-            )
-        return False, 0.0, ""
+        return analysis.evaluate_negative_sentiment_anomaly()
 
 
 class PowerAsymmetryAnomalyRule:
-    THRESHOLD_ASYMMETRY = 0.5
-    THRESHOLD_DELTA = -0.3
-
     def evaluate(self, analysis: Analysis) -> tuple[bool, float, str]:
-        if len(analysis.power_indices) < 2:
-            return False, 0.0, ""
-
-        indices = list(analysis.power_indices.values())
-        idx_a = indices[0].total_power_index
-        idx_b = indices[1].total_power_index
-
-        raw_diff = abs(idx_a - idx_b)
-        max_idx = max(idx_a, idx_b)
-        asymmetry = (raw_diff / max_idx) if max_idx > 0 else 0.0
-        sentiment = analysis.effective_sentiment
-
-        if asymmetry > self.THRESHOLD_ASYMMETRY and sentiment < self.THRESHOLD_DELTA:
-            return (
-                True,
-                asymmetry * 0.5,
-                f"POWER_ASYMMETRY_ANOMALY: asymmetry={asymmetry:.2f}, sentiment={sentiment:.2f}",
-            )
-
-        return False, 0.0, ""
+        return analysis.evaluate_power_asymmetry_anomaly()
 
 
 class CheapTalkAnomalyRule:
-    THRESHOLD_POWER = 0.1
-    THRESHOLD_CREDIBILITY = 0.4
-
     def evaluate(self, analysis: Analysis) -> tuple[bool, float, str]:
-        if not analysis.risk_signals:
-            return False, 0.0, ""
-
-        power = 1.0
-        if analysis.speaker_id in analysis.power_indices:
-            power = analysis.power_indices[analysis.speaker_id].total_power_index
-
-        max_multiplier = max(s.escalation_multiplier for s in analysis.risk_signals)
-        weighted_score = power * max_multiplier
-
-        costly_count = sum(
-            1
-            for s in analysis.risk_signals
-            if s.signal_type in ("costly_signal", "red_line")
-        )
-        credibility = costly_count / len(analysis.risk_signals)
-
-        if (
-            weighted_score > self.THRESHOLD_POWER
-            and credibility < self.THRESHOLD_CREDIBILITY
-        ):
-            return (
-                True,
-                0.4,
-                f"PLAY_TALK_ANOMALY: weighted_score={weighted_score:.2f}, credibility={credibility:.2f}",
-            )
-
-        return False, 0.0, ""
+        return analysis.evaluate_cheap_talk_anomaly()
 
 
 class TopicDiversityAnomalyRule:
@@ -221,35 +145,8 @@ class TopicDiversityAnomalyRule:
         - TopicSynthesis.topic_diversity (Shannon entropy, base-2)
     """
 
-    DIVERSITY_THRESHOLD: float = 2.0  # bits; tunes recall vs precision
-    RISK_AMPLIFIER: float = 0.35  # contribution to anomaly score
-
     def evaluate(self, analysis: Analysis) -> tuple[bool, float, str]:
-        if not analysis.has_ai_output:
-            return False, 0.0, ""
-
-        ts = analysis.topic_synthesis
-        if ts is None:
-            return False, 0.0, ""
-
-        diversity = ts.topic_diversity
-        if diversity <= self.DIVERSITY_THRESHOLD:
-            return False, 0.0, ""
-
-        risk = analysis.effective_risk
-        score = min(
-            1.0,
-            (diversity / (self.DIVERSITY_THRESHOLD * 2))
-            * self.RISK_AMPLIFIER
-            * (1 + risk),
-        )
-
-        return (
-            True,
-            round(score, 4),
-            f"TOPIC_DIVERSITY_ANOMALY: Shannon_H={diversity:.3f} bits "
-            f"> threshold={self.DIVERSITY_THRESHOLD}, risk={risk:.2f}",
-        )
+        return analysis.evaluate_topic_diversity_anomaly()
 
 
 class ToneDriftRule:
@@ -485,8 +382,8 @@ class CrossAnomalyService:
             )
 
         final_score = round(min(total_score, 1.0), 4)
-        temp_analysis = analysis.model_copy(update={"anomaly_score": final_score})
-        risk_level = self._determine_risk_level(temp_analysis)
+        analysis.anomaly_score = final_score
+        risk_level = self._determine_risk_level(analysis)
 
         logger.info(
             f"Anomali tespiti tamamlandı: "

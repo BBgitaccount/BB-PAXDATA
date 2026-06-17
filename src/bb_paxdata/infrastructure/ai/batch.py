@@ -168,6 +168,17 @@ class BatchProcessor:
 
         return results
 
+    def _get_cache_key(self, item: BatchItem) -> str:
+        """Generate a unique cache key including context metadata (panel/file ID), model, and backend."""
+        panel_id = item.metadata.get("panel_id") or item.metadata.get("file_id") or ""
+        backend = getattr(self._client, "backend_name", None) or ""
+        model = getattr(self._client, "model_name", None) or ""
+        if hasattr(backend, "value"):
+            backend = backend.value
+        return self._cache.make_key(
+            item.payload, str(panel_id), str(backend), str(model)
+        )
+
     async def _check_cache(
         self, items: list[BatchItem]
     ) -> tuple[list[BatchResult], list[BatchItem]]:
@@ -176,7 +187,7 @@ class BatchProcessor:
         uncached_items: list[BatchItem] = []
 
         for item in items:
-            cache_key = self._cache.make_key(item.payload)
+            cache_key = self._get_cache_key(item)
             if self._use_cache:
                 cached_result = await self._cache.get(cache_key)
                 if cached_result:
@@ -282,7 +293,7 @@ class BatchProcessor:
             # Cache results
             if self._use_cache:
                 for item, result in zip(items, results, strict=False):
-                    cache_key = self._cache.make_key(item.payload)
+                    cache_key = self._get_cache_key(item)
                     await self._cache.set(cache_key, result, ttl=86400)
 
             return results
@@ -343,7 +354,7 @@ class BatchProcessor:
 
                         # Cache result
                         if self._use_cache:
-                            cache_key = self._cache.make_key(item.payload)
+                            cache_key = self._get_cache_key(item)
                             await self._cache.set(cache_key, result, ttl=86400)
                     else:
                         stats.failed += 1

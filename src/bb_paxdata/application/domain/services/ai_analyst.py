@@ -1,9 +1,10 @@
 from __future__ import annotations
 
 import json
-import logging
 import re
 from typing import Any, cast
+
+import structlog
 
 from bb_paxdata.infrastructure.ai.batch import BatchItem, BatchProcessor
 
@@ -11,7 +12,7 @@ from ..models.ai_analysis import AIAnalysisResult
 from .language_detector import LanguageDetector
 from .prompt_registry import PromptRegistry, build_default_registry
 
-logger = logging.getLogger(__name__)
+logger = structlog.get_logger(__name__)
 
 
 class AIProviderNotConfiguredError(RuntimeError):
@@ -50,6 +51,7 @@ class AIAnalyst:
         prompt_id: str | None = None,
         forced_version: str | None = None,
         language: str | None = None,
+        file_id: str | None = None,
     ) -> AIAnalysisResult:
         """Analyze a single text.
 
@@ -102,25 +104,19 @@ class AIAnalyst:
             AIProviderNotConfiguredError: If *infra_analyst* is ``None``.
         """
         if self.infra_analyst is not None:
-            from bb_paxdata.infrastructure.ai.analyst import BackendType
+            from bb_paxdata.infrastructure.ai.base import CompletionOptions
 
-            backend = BackendType.OLLAMA
-            model_name_lower = model_name.lower()
-            if "claude" in model_name_lower:
-                backend = BackendType.ANTHROPIC
-            elif "gemini" in model_name_lower:
-                backend = BackendType.GEMINI
-            elif "groq" in model_name_lower:
-                backend = BackendType.GROQ
-            res = await self.infra_analyst.analyze_text(
-                text=rendered_prompt,
-                backend=backend,
-                model=model_name,
+            options = CompletionOptions(
+                system_prompt="You are a diplomatic discourse analyst. Always respond with valid JSON.",
+                temperature=0.3,
+                max_tokens=1000,
+                json_mode=True,
             )
-            return json.dumps(res.content)
+            res = await self.infra_analyst.complete(rendered_prompt, options)
+            return res.content
         raise AIProviderNotConfiguredError(
             "AIAnalyst has no infra_analyst configured. "
-            "Provide a ModernAIAnalystAdapter instance or configure "
+            "Provide a modern AIClient instance or configure "
             "AI backend environment variables."
         )
 
@@ -142,7 +138,9 @@ class AIAnalyst:
                 "_parse_error": str(e),
             }
 
-    async def analyze_texts(self, texts: list[str]) -> list[AIAnalysisResult]:
+    async def analyze_texts(
+        self, texts: list[str], file_id: str | None = None
+    ) -> list[AIAnalysisResult]:
         """Analyze multiple texts using the batch processor if available.
 
         If no batch processor is configured, falls back to sequential single
@@ -156,7 +154,7 @@ class AIAnalyst:
             results: list[AIAnalysisResult] = []
             for text in texts:
                 try:
-                    res = await self.analyze(text)
+                    res = await self.analyze(text, file_id=file_id)
                     results.append(res)
                 except AIProviderNotConfiguredError as exc:
                     logger.error(f"AI provider not configured: {exc}")
@@ -177,7 +175,12 @@ class AIAnalyst:
             return results
 
         items = [
-            BatchItem(item_id=str(i), payload=text) for i, text in enumerate(texts)
+            BatchItem(
+                item_id=str(i),
+                payload=text,
+                metadata={"file_id": file_id} if file_id else {},
+            )
+            for i, text in enumerate(texts)
         ]
         resolved_prompt_id = self.default_prompt_id
         detected_language = self.language_detector.detect(texts[0])
@@ -221,7 +224,7 @@ class AIAnalyst:
             )
         except Exception as exc:
             logger.error(f"BatchProcessor failed: {exc}. Falling back to individual.")
-            return await self._fallback_individual(texts)
+            return await self._fallback_individual(texts, file_id=file_id)
 
         results_map = {res.item_id: res for res in batch_results}
         final_results: list[AIAnalysisResult] = []
@@ -273,12 +276,14 @@ class AIAnalyst:
                     )
         return final_results
 
-    async def _fallback_individual(self, texts: list[str]) -> list[AIAnalysisResult]:
+    async def _fallback_individual(
+        self, texts: list[str], file_id: str | None = None
+    ) -> list[AIAnalysisResult]:
         """Process texts one-by-one when batch processing is unavailable."""
         results: list[AIAnalysisResult] = []
         for text in texts:
             try:
-                res = await self.analyze(text)
+                res = await self.analyze(text, file_id=file_id)
                 results.append(res)
             except AIProviderNotConfiguredError as exc:
                 logger.error(f"AI provider not configured: {exc}")

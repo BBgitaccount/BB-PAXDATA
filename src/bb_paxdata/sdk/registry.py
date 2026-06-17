@@ -1,15 +1,15 @@
 # src/bb_paxdata/sdk/registry.py
 from __future__ import annotations
 
-import logging
 import pathlib
 import threading
 from dataclasses import dataclass, field
 
+import structlog
 from bb_paxdata.sdk.protocols import PluginMetadata
 from bb_paxdata.sdk.sandbox import SandboxResult, run_plugin_in_sandbox
 
-logger = logging.getLogger(__name__)
+logger = structlog.get_logger(__name__)
 
 
 @dataclass

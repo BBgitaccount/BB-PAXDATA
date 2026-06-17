@@ -35,7 +35,7 @@ class SRLSpan(BaseModel):
     Invariant: text length == end_char - start_char
     """
 
-    model_config = ConfigDict(frozen=True)
+    model_config = ConfigDict(frozen=False)
 
     text: str = Field(
         ...,

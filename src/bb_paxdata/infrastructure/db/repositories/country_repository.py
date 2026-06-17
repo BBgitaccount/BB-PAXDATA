@@ -90,7 +90,11 @@ class BilateralSentimentRepository:
             row.affinity_score = sentiment.affinity_score
             row.power_weighted_score = sentiment.power_weighted_score
             row.diplomatic_distance = sentiment.diplomatic_distance
-            row.last_updated = sentiment.last_updated.replace(tzinfo=None)
+            row.last_updated = (
+                sentiment.last_updated.replace(tzinfo=None)
+                if sentiment.last_updated
+                else None
+            )
             if sentiment.dyadic_metrics:
                 m = sentiment.dyadic_metrics
                 row.vote_affinity = m.vote_affinity

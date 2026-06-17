@@ -2,7 +2,6 @@
 
 import io
 import json
-import logging
 import os
 from datetime import UTC, datetime
 
@@ -10,11 +9,12 @@ import boto3
 import pandas as pd
 import pyarrow as pa
 import pyarrow.parquet as pq
+import structlog
 from bb_paxdata.infrastructure.db.models import AISentenceAnalysis, Sentence
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-logger = logging.getLogger(__name__)
+logger = structlog.get_logger(__name__)
 
 # ── Schemas ──────────────────────────────────────────────────────────────────
 SCHEMA_SENTENCES = pa.schema(

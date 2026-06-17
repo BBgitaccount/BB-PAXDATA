@@ -1,17 +1,38 @@
-"""Duplicate panel protection service with idempotency key management."""
+from __future__ import annotations
 
 import hashlib
 from datetime import datetime, timezone
 from pathlib import Path
-from typing import Any
+from typing import TYPE_CHECKING, Any
 
 import structlog
 from sqlalchemy import func
 from sqlalchemy.orm import Session
 
-from bb_paxdata.infrastructure.db.models import File
+if TYPE_CHECKING:
+    from bb_paxdata.application.domain.models.transcript import Transcript
+
+"""Duplicate panel protection service with idempotency key management."""
 
 logger = structlog.get_logger(__name__)
+
+
+def _get_file_orm_class(session: Session) -> type:
+    """Dynamically locates the File ORM class from the session or object subclasses to avoid static imports."""
+    for cls in object.__subclasses__():
+        if cls.__name__ == "File" and getattr(cls, "__tablename__", None) == "files":
+            return cls
+    try:
+        if hasattr(session, "registry") and hasattr(session.registry, "mappers"):
+            for mapper in session.registry.mappers:
+                if mapper.class_.__name__ == "File":
+                    return mapper.class_
+    except Exception:
+        pass
+
+    from bb_paxdata.infrastructure.db.models import File
+
+    return File
 
 
 class DuplicateProtectionService:
@@ -64,7 +85,7 @@ class DuplicateProtectionService:
 
     def is_already_processed(
         self, idempotency_key: str, force_rebuild: bool = False
-    ) -> tuple[bool, File | None]:
+    ) -> tuple[bool, Transcript | None]:
         """
         Check if a file has already been processed.
 
@@ -80,9 +101,10 @@ class DuplicateProtectionService:
             return False, None
 
         try:
+            FileORM = _get_file_orm_class(self.db_session)
             processed_file = (
-                self.db_session.query(File)
-                .filter(File.idempotency_key == idempotency_key)
+                self.db_session.query(FileORM)
+                .filter(FileORM.idempotency_key == idempotency_key)
                 .first()
             )
 
@@ -93,9 +115,9 @@ class DuplicateProtectionService:
                     file_name=processed_file.file_name,
                     last_processed=processed_file.last_processed_at,
                 )
-                return True, processed_file
+                return True, processed_file.to_domain()
 
-            return False, processed_file
+            return False, (processed_file.to_domain() if processed_file else None)
 
         except Exception as e:
             self.logger.error(f"Error checking processed status: {e}")
@@ -108,7 +130,7 @@ class DuplicateProtectionService:
         idempotency_key: str,
         parser_version: str = "1.0",
         speaker_map_version: str = "1.0",
-    ) -> File | None:
+    ) -> Transcript | None:
         """
         Mark a file as processed.
 
@@ -123,20 +145,23 @@ class DuplicateProtectionService:
             File record or None if failed
         """
         try:
+            FileORM = _get_file_orm_class(self.db_session)
             # Calculate file hash
             file_hash = hashlib.sha256(file_content.encode("utf-8")).hexdigest()
             file_size = len(file_content.encode("utf-8"))
 
             # Check if record exists
             existing = (
-                self.db_session.query(File)
-                .filter(File.idempotency_key == idempotency_key)
+                self.db_session.query(FileORM)
+                .filter(FileORM.idempotency_key == idempotency_key)
                 .first()
             )
 
             if existing:
                 # Update existing record
-                existing.last_processed_at = datetime.now(timezone.utc)
+                existing.last_processed_at = datetime.now(timezone.utc).replace(
+                    tzinfo=None
+                )
                 existing.reprocess_count += 1
                 self.db_session.commit()
 
@@ -145,11 +170,11 @@ class DuplicateProtectionService:
                     idempotency_key=idempotency_key[:16],
                     reprocess_count=existing.reprocess_count,
                 )
-                return existing
+                return existing.to_domain()
 
             # Create new record
             file_id = file_path.stem.lower().replace(" ", "_")
-            processed_file = File(
+            processed_file = FileORM(
                 file_id=file_id,
                 file_hash=file_hash,
                 file_name=file_path.name,
@@ -157,8 +182,8 @@ class DuplicateProtectionService:
                 idempotency_key=idempotency_key,
                 parser_version=parser_version,
                 speaker_map_version=speaker_map_version,
-                first_processed_at=datetime.now(timezone.utc),
-                last_processed_at=datetime.now(timezone.utc),
+                first_processed_at=datetime.now(timezone.utc).replace(tzinfo=None),
+                last_processed_at=datetime.now(timezone.utc).replace(tzinfo=None),
                 reprocess_count=0,
                 force_rebuild=0,
             )
@@ -173,7 +198,7 @@ class DuplicateProtectionService:
                 file_size_bytes=file_size,
             )
 
-            return processed_file
+            return processed_file.to_domain()
 
         except Exception as e:
             self.logger.error(f"Error marking file as processed: {e}")
@@ -182,7 +207,7 @@ class DuplicateProtectionService:
 
     def get_existing_panel(
         self, file_path: Path, file_content: str, idempotency_key: str
-    ) -> File | None:
+    ) -> Transcript | None:
         """
         Get existing panel for a processed file.
 
@@ -195,10 +220,11 @@ class DuplicateProtectionService:
             Existing File object or None
         """
         try:
+            FileORM = _get_file_orm_class(self.db_session)
             # Get processed file record
             processed_file = (
-                self.db_session.query(File)
-                .filter(File.idempotency_key == idempotency_key)
+                self.db_session.query(FileORM)
+                .filter(FileORM.idempotency_key == idempotency_key)
                 .first()
             )
 
@@ -206,7 +232,7 @@ class DuplicateProtectionService:
                 return None
 
             # Return processed file record itself (since File represents both)
-            return processed_file
+            return processed_file.to_domain()
 
         except Exception as e:
             self.logger.error(f"Error getting existing panel: {e}")
@@ -227,10 +253,11 @@ class DuplicateProtectionService:
             True if successful, False otherwise
         """
         try:
+            FileORM = _get_file_orm_class(self.db_session)
             # Get processed file record
             processed_file = (
-                self.db_session.query(File)
-                .filter(File.idempotency_key == idempotency_key)
+                self.db_session.query(FileORM)
+                .filter(FileORM.idempotency_key == idempotency_key)
                 .first()
             )
 
@@ -239,8 +266,8 @@ class DuplicateProtectionService:
 
             # Find and soft delete existing panels
             existing_panels = (
-                self.db_session.query(File)
-                .filter(File.file_hash == processed_file.file_hash)
+                self.db_session.query(FileORM)
+                .filter(FileORM.file_hash == processed_file.file_hash)
                 .all()
             )
 
@@ -277,10 +304,11 @@ class DuplicateProtectionService:
             True if successful, False otherwise
         """
         try:
+            FileORM = _get_file_orm_class(self.db_session)
             # Get processed file record
             processed_file = (
-                self.db_session.query(File)
-                .filter(File.idempotency_key == idempotency_key)
+                self.db_session.query(FileORM)
+                .filter(FileORM.idempotency_key == idempotency_key)
                 .first()
             )
 
@@ -310,21 +338,24 @@ class DuplicateProtectionService:
             Dictionary with processing statistics
         """
         try:
+            FileORM = _get_file_orm_class(self.db_session)
             stats: dict[str, Any] = {}
 
             # Total processed files
-            total_processed = self.db_session.query(File).count()
+            total_processed = self.db_session.query(FileORM).count()
             stats["total_processed_files"] = total_processed
 
             # Files marked for force rebuild
             force_rebuild_count = (
-                self.db_session.query(File).filter(File.force_rebuild == 1).count()
+                self.db_session.query(FileORM)
+                .filter(FileORM.force_rebuild == 1)
+                .count()
             )
             stats["force_rebuild_count"] = force_rebuild_count
 
             # Average reprocess count
             avg_reprocess = self.db_session.query(
-                func.avg(File.reprocess_count)
+                func.avg(FileORM.reprocess_count)
             ).scalar()
             stats["average_reprocess_count"] = (
                 float(avg_reprocess) if avg_reprocess is not None else 0.0
@@ -332,8 +363,8 @@ class DuplicateProtectionService:
 
             # Most processed files (by reprocess count)
             most_processed = (
-                self.db_session.query(File)
-                .order_by(File.reprocess_count.desc())
+                self.db_session.query(FileORM)
+                .order_by(FileORM.reprocess_count.desc())
                 .limit(5)
                 .all()
             )

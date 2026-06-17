@@ -45,6 +45,8 @@ async def resolve_analyses_connection(
     after: str | None = None,
     status_filter: str | None = None,
 ) -> AnalysisConnection:
+    if first < 1 or first > 100:
+        raise ValueError("first parameter must be between 1 and 100")
     session: AsyncSession = info.context["db"]
     stmt = select(File)
 
@@ -102,6 +104,7 @@ async def resolve_analyses_connection(
 async def resolve_create_analysis(
     info: strawberry.types.Info, input: CreateAnalysisInput
 ) -> AnalysisType:
+    input.validate()
     session: AsyncSession = info.context["db"]
     file_id = f"file-{uuid4().hex[:8]}"
     created_time = datetime.now(timezone.utc)
@@ -163,6 +166,10 @@ async def resolve_submit_verdict(
     verdict: str,
     notes: str | None = None,
 ) -> SentenceType:
+    if verdict not in {"CONFIRMED_PASS", "CONFIRMED_FAIL", "CORRECTED"}:
+        raise ValueError(
+            "verdict must be one of: CONFIRMED_PASS, CONFIRMED_FAIL, CORRECTED"
+        )
     session: AsyncSession = info.context["db"]
     stmt = select(Sentence).where(Sentence.sent_id == str(sentence_id))
     result = await session.execute(stmt)

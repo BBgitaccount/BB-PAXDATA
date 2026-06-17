@@ -8,7 +8,7 @@ from pydantic import BaseModel, ConfigDict, Field, field_validator
 
 
 class TimeSlice(BaseModel):
-    model_config = ConfigDict(frozen=True)
+    model_config = ConfigDict(frozen=False)
 
     panel_id: str
     timestamp: datetime
@@ -20,7 +20,7 @@ class TimeSlice(BaseModel):
 
 
 class ForecastResult(BaseModel):
-    model_config = ConfigDict(frozen=True)
+    model_config = ConfigDict(frozen=False)
 
     predicted_risk: float = Field(..., ge=0.0, le=10.0)
     trend: float  # slope of EWMA mean

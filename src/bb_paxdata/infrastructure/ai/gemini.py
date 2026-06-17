@@ -11,8 +11,8 @@ from bb_paxdata.infrastructure.ai.base import (
     AIClient,
     CompletionOptions,
     CompletionResult,
+    ai_call_instrumented,
 )
-from bb_paxdata.infrastructure.observability.metrics import get_metrics
 
 logger = structlog.get_logger(__name__)
 
@@ -83,39 +83,17 @@ class GeminiClient(AIClient):
 
             url = f"https://generativelanguage.googleapis.com/v1beta/models/{self._model}:generateContent?key={self._api_key}"
 
-            # [FAZ3-METRIC]
-            _t0 = time.perf_counter()
-            try:
+            async with ai_call_instrumented("gemini", self._model, logger) as record:
                 response = await self._client.post(
                     url,
                     json=payload,
                     timeout=options.timeout,
                 )
                 response.raise_for_status()
-                duration = time.perf_counter() - _t0
-                try:
-                    get_metrics().record_ai_request(
-                        backend="gemini",
-                        model=self._model,
-                        duration_seconds=duration,
-                        status="success",
-                    )
-                except Exception:
-                    pass
-            except Exception:
-                duration = time.perf_counter() - _t0
-                try:
-                    get_metrics().record_ai_request(
-                        backend="gemini",
-                        model=self._model,
-                        duration_seconds=duration,
-                        status="error",
-                    )
-                except Exception:
-                    pass
-                raise
-
-            raw_response = response.json()
+                raw_response = response.json()
+                usage_metadata = raw_response.get("usageMetadata", {})
+                record.prompt_tokens = usage_metadata.get("promptTokenCount", 0)
+                record.completion_tokens = usage_metadata.get("candidatesTokenCount", 0)
 
             # Extract content from response
             candidates = raw_response.get("candidates", [])
@@ -126,14 +104,7 @@ class GeminiClient(AIClient):
                 candidates[0].get("content", {}).get("parts", [{}])[0].get("text", "")
             )
 
-            # Calculate tokens (Gemini provides usage metadata)
-            usage_metadata = raw_response.get("usageMetadata", {})
-            tokens_used = (
-                usage_metadata.get("promptTokenCount", 0)
-                + usage_metadata.get("candidatesTokenCount", 0)
-                + usage_metadata.get("totalTokenCount", 0)
-            )
-
+            tokens_used = record.prompt_tokens + record.completion_tokens
             latency_ms = int((time.monotonic() - start_time) * 1000)
 
             # Parse JSON if requested
@@ -157,6 +128,8 @@ class GeminiClient(AIClient):
                 latency_ms=latency_ms,
                 success=True,
                 raw_response=raw_response,
+                prompt_tokens=record.prompt_tokens,
+                completion_tokens=record.completion_tokens,
             )
 
         except Exception as e:

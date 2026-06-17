@@ -20,8 +20,8 @@ def temp_rules_dir():
 class TestRuleRegistryAndService:
     async def test_registry_loads_valid_rules(self, temp_rules_dir):
         rule_code = """
-from bb_paxdata.domain.models.rule_anomaly import RuleAnomaly
-from bb_paxdata.domain.enums.anomaly_severity import AnomalySeverity
+from bb_paxdata.application.domain.models.rule_anomaly import RuleAnomaly
+from bb_paxdata.application.domain.enums import AnomalySeverity
 
 class MockRule:
     @property

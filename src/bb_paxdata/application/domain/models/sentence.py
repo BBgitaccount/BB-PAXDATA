@@ -2,7 +2,7 @@ from collections.abc import Sequence
 from datetime import datetime, timezone
 from typing import Any
 
-from pydantic import BaseModel, Field
+from pydantic import Field
 
 from bb_paxdata.application.domain.models.speech_act import SpeechActClassification
 from bb_paxdata.application.domain.utils.hash import generate_sentence_code
@@ -20,11 +20,12 @@ from ..enums import (
     TensionLevel,
     TopicCategory,
 )
+from .base import AggregateRoot
 from .negation_cue import NegationCue
 from .srl import ExtractionStatus, SRLFrame
 
 
-class Sentence(BaseModel):
+class Sentence(AggregateRoot):
     """Represents a single sentence in a transcript with analysis metadata."""
 
     id: str = Field(..., description="Unique identifier for the sentence")
@@ -39,6 +40,12 @@ class Sentence(BaseModel):
     segment_id: str | None = Field(
         default=None, description="ID of the segment this sentence belongs to"
     )
+    speaker_name: str | None = Field(
+        default=None, description="Name of the speaker who uttered this sentence"
+    )
+    country: str | None = Field(default=None, description="Country of the speaker")
+    role: str | None = Field(default=None, description="Role of the speaker")
+    bloc: str | None = Field(default=None, description="Bloc of the speaker")
 
     # Temporal information
     start_time: float | None = Field(default=None, description="Start time in seconds")
@@ -123,7 +130,7 @@ class Sentence(BaseModel):
         default=None, ge=0.0, le=10.0, description="Risk score"
     )
     manipulation_score: float | None = Field(
-        default=None, ge=0.0, le=1.0, description="Manipulation score"
+        default=None, le=1.0, description="Manipulation score"
     )
     is_demand: bool = Field(
         default=False, description="Whether the sentence contains a demand"
@@ -133,6 +140,26 @@ class Sentence(BaseModel):
     )
     speech_act: SpeechActClassification | None = Field(
         default=None, description="Speech act classification of the sentence"
+    )
+
+    # AI and Logic analysis results
+    ai_analyzed: int = Field(
+        default=0, description="Whether the sentence has been analyzed by AI"
+    )
+    logic_result: str | None = Field(
+        default=None, description="Logic check validation result"
+    )
+    formula_inconsistency_score: float = Field(
+        default=0.0, description="Formula inconsistency score"
+    )
+    discrepancy_score: float = Field(
+        default=0.0, description="Discrepancy score between AI and formula"
+    )
+    entities_gpe: list[str] | None = Field(
+        default=None, description="GPE entities in the sentence"
+    )
+    global_sent_order: int | None = Field(
+        default=None, description="Global order of the sentence in the transcript"
     )
 
     # Metadata

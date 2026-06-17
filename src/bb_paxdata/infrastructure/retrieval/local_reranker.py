@@ -1,16 +1,16 @@
 # src/bb_paxdata/infrastructure/retrieval/local_reranker.py
 from __future__ import annotations
 
-import logging
 from collections.abc import Sequence
 from typing import Any
 
+import structlog
 from bb_paxdata.application.domain.services.protocols.rag_protocols import (
     RerankerProtocol,
     RetrievedContext,
 )
 
-logger = logging.getLogger(__name__)
+logger = structlog.get_logger(__name__)
 
 
 class LocalCrossEncoderReranker(RerankerProtocol):

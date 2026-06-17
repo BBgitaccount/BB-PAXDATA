@@ -9,7 +9,7 @@ from .anomaly_type import AnomalyType
 from .appraisal_attitude import AppraisalAttitude
 from .audience_type import AudienceType
 from .backend_type import BackendType
-from .base import AIProvider, DatabaseMode, LogLevel, MigrationStatus
+from .base import AIProvider, DatabaseMode, LogLevel
 from .bloc_type import BlocType
 from .contextual_importance import ContextualImportance
 from .demand_category import DemandCategory
@@ -73,7 +73,6 @@ __all__ = [
     "LogicResult",
     "ManipulationTier",
     "MetricType",
-    "MigrationStatus",
     "NegationType",
     "PipelineStage",
     "PolitenessAct",

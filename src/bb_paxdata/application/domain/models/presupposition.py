@@ -118,3 +118,64 @@ class PresuppositionExtractionResult(BaseModel):
         if total == 0:
             return 0.0
         return self.verified_count / total
+
+
+class PresuppositionCandidate(BaseModel):
+    """Candidate presupposition for verification."""
+
+    model_config = ConfigDict(frozen=False)
+
+    trigger_word: str = Field(..., description="The trigger word/phrase")
+    trigger_type: TriggerType = Field(..., description="Type of presupposition trigger")
+    presupposed_content: str = Field(..., description="The presupposed content")
+    confidence: float = Field(..., ge=0.0, le=1.0, description="Confidence score")
+    segment_id: str = Field(..., description="ID of the source segment")
+    speaker: str = Field(..., description="Speaker who uttered the text")
+    segment_text: str = Field(..., description="Full text of the segment")
+    timestamp: float | None = Field(
+        default=None, description="Timestamp of the utterance"
+    )
+
+    @classmethod
+    def calculate_confidence(
+        cls,
+        trigger_lemma: str,
+        presupposed_content: str,
+        sentence_length: int,
+    ) -> float:
+        """
+        Calculate base confidence for a presupposition candidate.
+        Uses trigger-specific specificity weights (Lewis 1979 / Beaver & Geurts 2014).
+        """
+        specificity_weights = {
+            "regret": 0.90,
+            "acknowledge": 0.85,
+            "fail": 0.82,
+            "manage": 0.80,
+            "realize": 0.70,
+            "still": 0.68,
+            "again": 0.65,
+            "know": 0.60,
+            "start": 0.50,
+            "stop": 0.50,
+            "continue": 0.55,
+        }
+
+        lemma = trigger_lemma.lower()
+        specificity = specificity_weights.get(lemma, 0.50)
+
+        # Parse completeness check
+        parse_completeness = 1.0 if presupposed_content else 0.0
+
+        # Context check (simple heuristic)
+        context_score = 0.5 if sentence_length > 3 else 0.3
+
+        # Confidence formula: base + specificity*0.2 + parse*0.2 + context*0.1
+        confidence = (
+            0.5
+            + (specificity * 0.2)
+            + (parse_completeness * 0.2)
+            + (context_score * 0.1)
+        )
+
+        return min(confidence, 1.0)

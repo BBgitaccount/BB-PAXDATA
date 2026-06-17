@@ -273,11 +273,14 @@ class AnalysisPipeline:
                         error="AI result was None in COLLECT stage",
                     )
 
+                appraisal_vector = None
+                sanction_count = 0
+                dominant_axis = None
                 if (
                     hasattr(collect_result, "appraisal_vector")
                     and collect_result.appraisal_vector is not None
                 ):
-                    sanction_count = 0
+                    appraisal_vector = collect_result.appraisal_vector
                     if collect_result.appraisal_document is not None:
                         sanction_count = (
                             collect_result.appraisal_document.judgment_sanction_count
@@ -286,14 +289,6 @@ class AnalysisPipeline:
                         sanction_count = 1
 
                     dominant_axis = collect_result.appraisal_vector.dominant_axis
-
-                    ai_result = ai_result.model_copy(
-                        update={
-                            "appraisal_vector": collect_result.appraisal_vector,
-                            "appraisal_judgment_sanction_count": sanction_count,
-                            "dominant_appraisal_axis": dominant_axis,
-                        }
-                    )
 
                 analysis = self.assembler.assemble(
                     source_text=text,
@@ -307,21 +302,21 @@ class AnalysisPipeline:
                     topic_result=collect_result.topic_result,
                     frame_detection=collect_result.frame_detection,
                     frame_salience=collect_result.frame_salience,
+                    # Pass the appraisal fields directly
+                    appraisal_vector=appraisal_vector,
+                    appraisal_judgment_sanction_count=sanction_count,
+                    dominant_appraisal_axis=dominant_axis,
                     # Note: sbi_result is calculated later at session level,
                     # but we can store individual components for now.
                     metadata=metadata,
                 )
 
                 # Enrich analysis with collected SBI components
-                analysis = analysis.model_copy(
-                    update={
-                        "emotional_intensity": collect_result.engagement_score,  # Proxy
-                        "complexity_score": (
-                            collect_result.stance_density / 100.0
-                            if collect_result.stance_density
-                            else None
-                        ),  # Proxy
-                    }
+                analysis.emotional_intensity = collect_result.engagement_score
+                analysis.complexity_score = (
+                    collect_result.stance_density / 100.0
+                    if collect_result.stance_density
+                    else None
                 )
 
                 if (
@@ -379,14 +374,10 @@ class AnalysisPipeline:
 
                 anomaly_result = await self.anomaly_service.detect(analysis)
 
-                # IMMUTABLE: model_copy ile yeni Analysis nesnesi üretilir, mevcut mutate edilmez
-                analysis = analysis.model_copy(
-                    update={
-                        "anomaly_score": anomaly_result.score,
-                        "anomaly_flags": anomaly_result.flags,
-                        "risk_level": anomaly_result.risk_level,
-                    }
-                )
+                # Mutate in-place
+                analysis.anomaly_score = anomaly_result.score
+                analysis.anomaly_flags = anomaly_result.flags
+                analysis.risk_level = anomaly_result.risk_level
             except MissingAIOutputException as e:
                 errors.append(f"[DETECT/MISSING_AI] {e}")
                 logger.error(str(e))
@@ -458,20 +449,23 @@ class AnalysisPipeline:
                         f"[HITL QUEUE] Sentence {sentence.id} queued. Trigger: CONSENSUS_ANOMALY. Level: {consensus.level.value}. Reason: {consensus.final_reasoning}"
                     )
 
-                # 6. Sonucu Analysis'e yaz (immutable copy)
-                analysis = analysis.model_copy(
-                    update={
-                        "coherence_score": consensus.coherence_score,
-                        "consensus_result": consensus,
-                    }
-                )
+                # 6. Sonucu Analysis'e yaz (in-place mutation)
+                analysis.coherence_score = consensus.coherence_score
+                analysis.consensus_result = consensus
             except Exception as e:
                 errors.append(f"[DUAL_GATE] {e}")
                 logger.error(f"DualGateConsensusLayer başarısız: {e}")
 
         # ─────────────────────────────────────────
-        # AŞAMA 4: FINALIZE
+        # AŞAMA 4: FINALIZE / VALIDATION
         # ─────────────────────────────────────────
+        # Perform final-stage validation on the mutated analysis object
+        try:
+            analysis = Analysis.model_validate(analysis)
+        except Exception as e:
+            errors.append(f"[VALIDATION] {e}")
+            logger.error(f"Final validation failed: {e}")
+
         if "finalize" in active_stages and self.finalize_stage:
             return await self.finalize_stage.run(
                 analysis=analysis,

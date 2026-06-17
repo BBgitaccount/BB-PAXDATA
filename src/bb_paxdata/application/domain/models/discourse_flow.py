@@ -26,8 +26,10 @@ from pydantic import BaseModel, ConfigDict, Field
 
 from bb_paxdata.application.domain.enums.country_enums import EdgeType, NarrativeLayer
 
+from .base import AggregateRoot
 
-class DiscourseFlow(BaseModel):
+
+class DiscourseFlow(AggregateRoot):
     """
     Söylem ağındaki yönlü kenar (directed edge).
     Eski 'discourse_network_edges' tablosunun DDD karşılığı.
@@ -43,7 +45,7 @@ class DiscourseFlow(BaseModel):
     See: https://github.com/BBgitaccount/BB-PAXDATA/issues/GAP-02
     """
 
-    model_config = ConfigDict(frozen=True)
+    model_config = ConfigDict(frozen=False)
 
     id: UUID = Field(default_factory=uuid4)
     from_country: str = Field(..., min_length=2, max_length=100)
@@ -87,11 +89,11 @@ class DiscourseFlow(BaseModel):
 class NetworkEdge(BaseModel):
     """Fischer DNA: Bipartite graph edge (Actor → Concept)."""
 
-    model_config = ConfigDict(frozen=True)
+    model_config = ConfigDict(frozen=False)
 
     actor_id: str = Field(..., description="Speaker/Country entity ID")
     concept_id: str = Field(..., description="Extracted concept/topic node ID")
-    tf_score: Decimal = Field(..., ge=Decimal("0"), le=Decimal("1"), decimal_places=6)
+    tf_score: Decimal = Field(..., ge=Decimal("0"), decimal_places=6)
     idf_score: Decimal = Field(..., ge=Decimal("0"), decimal_places=6)
     weight: Decimal = Field(..., ge=Decimal("0"), description="tf × idf")
     segment_source_id: str | None = Field(default=None)
@@ -103,7 +105,7 @@ class NetworkEdge(BaseModel):
 class DyadicMetrics(BaseModel):
     """Maoz (2005): Dyadic relationship metrics between two actors."""
 
-    model_config = ConfigDict(frozen=True)
+    model_config = ConfigDict(frozen=False)
 
     actor_a_id: str
     actor_b_id: str

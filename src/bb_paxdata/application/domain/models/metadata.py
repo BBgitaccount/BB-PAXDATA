@@ -1,7 +1,11 @@
+from __future__ import annotations
+
 from datetime import datetime, timezone
 from typing import Any
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, model_validator
+
+from bb_paxdata.application.domain.utils.json_validation import validate_json_safe
 
 
 class Metadata(BaseModel):
@@ -85,3 +89,17 @@ class Metadata(BaseModel):
     expires_at: datetime | None = Field(
         default=None, description="Expiration timestamp if applicable"
     )
+
+    @model_validator(mode="after")
+    def validate_json_fields(self) -> Metadata:
+        """Ensure processing_parameters and custom_fields contain only JSON-safe types."""
+        if self.processing_parameters is not None:
+            try:
+                validate_json_safe(self.processing_parameters)
+            except TypeError as e:
+                raise ValueError(f"Invalid processing_parameters: {e}")
+        try:
+            validate_json_safe(self.custom_fields)
+        except TypeError as e:
+            raise ValueError(f"Invalid custom_fields: {e}")
+        return self

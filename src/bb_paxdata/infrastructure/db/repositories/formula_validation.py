@@ -14,6 +14,40 @@ from bb_paxdata.infrastructure.db.models import (
 )
 from bb_paxdata.infrastructure.db.repositories.base import BaseRepository
 
+
+def _normalize_entity_id(entity_id: str) -> str:
+    """Normalize entity_id to ensure consistent format with sent_id.
+
+    This function handles potential format inconsistencies between entity_id
+    in FormulaValidationLog and sent_id in Sentence table.
+
+    Normalization steps:
+    1. Strip leading/trailing whitespace
+    2. Ensure consistent case (uppercase for prefixes like 'SENT-')
+    3. Remove any duplicate prefixes
+
+    Args:
+        entity_id: The raw entity_id from FormulaValidationLog
+
+    Returns:
+        Normalized entity_id string
+    """
+    if not entity_id:
+        return entity_id
+
+    # Strip whitespace
+    normalized = entity_id.strip()
+
+    # If it starts with 'sent-' (case insensitive), normalize to 'SENT-'
+    if normalized.lower().startswith("sent-"):
+        # Extract the numeric part
+        parts = normalized.lower().split("sent-", 1)
+        if len(parts) == 2 and parts[1]:
+            normalized = f"SENT-{parts[1].strip()}"
+
+    return normalized
+
+
 # Priority formula weights
 _FORMULA_WEIGHT = {
     "risk_score": 2.0,
@@ -158,10 +192,7 @@ class FormulaValidationRepository(BaseRepository[FormulaValidationLog]):
             )
             .outerjoin(
                 Sentence,
-                and_(
-                    FormulaValidationLog.entity_id == Sentence.sent_id,
-                    FormulaValidationLog.entity_type == "sentence",
-                ),
+                FormulaValidationLog.entity_id == Sentence.sent_id,
             )
             .outerjoin(
                 AISentenceAnalysis,
@@ -405,6 +436,18 @@ class FormulaValidationRepository(BaseRepository[FormulaValidationLog]):
             confidence_at_review=confidence,
         )
         self._session.add(new_log)
+        new_log.record_event(
+            event_type="VerdictSubmitted",
+            payload={
+                "verdict": verdict,
+                "corrected_value": corrected_value,
+                "note": note,
+                "confidence": confidence,
+                "justification": justification,
+            },
+            actor_id=reviewer_id,
+            aggregate_id=str(log_id),
+        )
         await self._session.flush()
 
         # Update superseded_by pointer on old log
@@ -556,10 +599,7 @@ class FormulaValidationRepository(BaseRepository[FormulaValidationLog]):
             )
             .outerjoin(
                 Sentence,
-                and_(
-                    FormulaValidationLog.entity_id == Sentence.sent_id,
-                    FormulaValidationLog.entity_type == "sentence",
-                ),
+                FormulaValidationLog.entity_id == Sentence.sent_id,
             )
             .where(
                 FormulaValidationLog.formula_name == formula_name,
@@ -600,7 +640,9 @@ class FormulaValidationRepository(BaseRepository[FormulaValidationLog]):
 
     async def get_kpi_stats(self) -> dict[str, Any]:
         """Get KPI statistics for the HITL dashboard header."""
-        # Total counts by status and verdict
+        from bb_paxdata.infrastructure.db.models import AIFailAnalysis
+
+        # Total counts by status and verdict from formula_validation_logs
         stmt = select(
             func.count(FormulaValidationLog.log_id).label("total"),
             func.sum(case((FormulaValidationLog.status == "PASS", 1), else_=0)).label(
@@ -648,6 +690,11 @@ class FormulaValidationRepository(BaseRepository[FormulaValidationLog]):
         confirmed_pass = row.confirmed_pass or 0
         corrected = row.corrected or 0
 
+        # Get total anomalies from ai_fail_analysis
+        anomaly_stmt = select(func.count(AIFailAnalysis.fail_id))
+        anomaly_result = await self._session.execute(anomaly_stmt)
+        total_anomalies = anomaly_result.scalar() or 0
+
         # Accuracy: (PASS + CONFIRMED_PASS + CORRECTED) / total
         effective_pass = total_pass + confirmed_pass + corrected
         accuracy = round((effective_pass / total * 100) if total > 0 else 100.0, 2)
@@ -656,6 +703,7 @@ class FormulaValidationRepository(BaseRepository[FormulaValidationLog]):
             "total_logs": total,
             "total_pass": total_pass,
             "total_fail": total_fail,
+            "total_anomalies": total_anomalies,
             "pending_review": pending,
             "confirmed_fail": row.confirmed_fail or 0,
             "confirmed_pass": confirmed_pass,

@@ -203,5 +203,6 @@ class DKIAssembler:
             anomaly_flag=abs(raw_product) > self._dki_threshold,
         )
 
-        # 6. Return updated Analysis (Immutable)
-        return analysis.model_copy(update={"dki_result": dki_result})
+        # 6. Return updated Analysis (in-place mutation)
+        analysis.dki_result = dki_result
+        return analysis

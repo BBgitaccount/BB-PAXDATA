@@ -10,16 +10,16 @@ Domain layer only holds NERServiceProtocol (application/domain/services/protocol
 
 from __future__ import annotations
 
-import logging
 from typing import Any
 
 import spacy
 import spacy.cli
+import structlog
 from spacy.language import Language
 
 from bb_paxdata.application.domain.services.language_detector import LanguageDetector
 
-logger = logging.getLogger(__name__)
+logger = structlog.get_logger(__name__)
 
 DIPLOMATIC_GAZETTEER: dict[str, list[str]] = {
     "ORG": [

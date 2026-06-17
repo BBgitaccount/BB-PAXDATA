@@ -28,8 +28,12 @@ async def get_discourse_sessions(
 
 @router.get("", response_model=DiscourseNetworkResponse)
 async def get_discourse_network(
-    session_id: str | None = Query(None, description="Filter edges by session/run ID"),
-    min_weight: float = Query(0.0, description="Minimum edge weight threshold"),
+    session_id: str | None = Query(
+        None, max_length=200, description="Filter edges by session/run ID"
+    ),
+    min_weight: float = Query(
+        0.0, ge=0.0, le=1.0, description="Minimum edge weight threshold"
+    ),
     db: AsyncSession = Depends(get_db),
     # Require at least 'view' permission to inspect discourse network
     _has_permission: bool = Depends(PermissionChecker("view")),

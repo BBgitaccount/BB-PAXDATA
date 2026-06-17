@@ -487,7 +487,10 @@ class CollectStage:
         # AI/LLM çağrıları (paralel)
         ai_results = await asyncio.gather(
             _run(
-                "ai_analyst", lambda: self._ai_analyst.analyze(text, language=language)
+                "ai_analyst",
+                lambda: self._ai_analyst.analyze(
+                    text, language=language, file_id=panel_id
+                ),
             ),
             _run(
                 "frame_pipeline",

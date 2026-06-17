@@ -1,10 +1,10 @@
 import asyncio
-import logging
 from collections import OrderedDict
 from collections.abc import Sequence
 from typing import Any
 
 import numpy as np
+import structlog
 from redis.asyncio import Redis
 from redis.exceptions import ConnectionError, TimeoutError
 
@@ -14,7 +14,7 @@ from bb_paxdata.infrastructure.cache.redis_embedding_schema import (
     EmbeddingSerializer,
 )
 
-logger = logging.getLogger(__name__)
+logger = structlog.get_logger(__name__)
 
 
 class InMemoryLRUCache:

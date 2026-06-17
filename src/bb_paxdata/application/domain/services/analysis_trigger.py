@@ -2,50 +2,106 @@
 
 import re
 from collections import Counter
-from typing import Any
+from typing import TYPE_CHECKING, Any
 
 import structlog
-from rich.console import Console
 from sqlalchemy import delete, select
 
 from bb_paxdata.application.domain.services.risk_service import RiskService
 from bb_paxdata.application.domain.utils.hash import generate_sentence_code
-from bb_paxdata.infrastructure.ai.fail_check import ValidationStatus
-from bb_paxdata.infrastructure.db.human_review_queue import HumanReviewQueue
-from bb_paxdata.infrastructure.db.models import (
-    AIFailAnalysis,
-    AISentenceAnalysis,
-    DemandRecord,
-    DiscourseNetworkEdge,
-    File,
-    FileDynamics,
-    FormulaValidationLog,
-    PatternRecord,
-    Segment,
-    Sentence,
-    SpeakerProfile,
-    Word,
+
+if TYPE_CHECKING:
+    from bb_paxdata.infrastructure.ai.fail_check import ValidationStatus
+    from bb_paxdata.infrastructure.db.human_review_queue import HumanReviewQueue
+    from bb_paxdata.infrastructure.db.models import (
+        AIFailAnalysis,
+        AISentenceAnalysis,
+        DemandRecord,
+        File,
+        FileDynamics,
+        FormulaValidationLog,
+        PatternRecord,
+        Segment,
+        Sentence,
+        SpeakerProfile,
+        Word,
+    )
+    from bb_paxdata.infrastructure.db.repositories.analysis import AnalysisRepository
+    from bb_paxdata.infrastructure.db.segment_enrichment_gateway import (
+        SegmentEnrichmentGateway,
+    )
+    from bb_paxdata.infrastructure.logic.formula_auditor import FormulaAuditor
+
+
+def _infra_import(module: str, name: str) -> Any:
+    """Dynamically import a class/function/object from infrastructure to decouple domain."""
+    import importlib
+
+    mod = importlib.import_module(module)
+    return getattr(mod, name)
+
+
+ValidationStatus = _infra_import(
+    "bb_paxdata.infrastructure.ai.fail_check", "ValidationStatus"
 )
-from bb_paxdata.infrastructure.db.repositories.analysis import AnalysisRepository
-from bb_paxdata.infrastructure.db.segment_enrichment_gateway import (
-    SegmentEnrichmentGateway,
+HumanReviewQueue = _infra_import(
+    "bb_paxdata.infrastructure.db.human_review_queue", "HumanReviewQueue"
 )
-from bb_paxdata.infrastructure.logic.formula_auditor import FormulaAuditor
-from bb_paxdata.infrastructure.text.file_io_handler import (
-    BLOC_MAP,
-    POWER_LEVELS,
-    SPEAKER_MAP,
-    _classify_demand_category,
-    _extract_target_entity,
-    classify_pattern_subtype,
-    match_keyword_with_boundaries,
-    power_to_tier,
-    turkish_lower,
-    utc_now,
+AnalysisRepository = _infra_import(
+    "bb_paxdata.infrastructure.db.repositories.analysis", "AnalysisRepository"
+)
+SegmentEnrichmentGateway = _infra_import(
+    "bb_paxdata.infrastructure.db.segment_enrichment_gateway",
+    "SegmentEnrichmentGateway",
+)
+FormulaAuditor = _infra_import(
+    "bb_paxdata.infrastructure.logic.formula_auditor", "FormulaAuditor"
 )
 
+AIFailAnalysis = _infra_import("bb_paxdata.infrastructure.db.models", "AIFailAnalysis")
+AISentenceAnalysis = _infra_import(
+    "bb_paxdata.infrastructure.db.models", "AISentenceAnalysis"
+)
+DemandRecord = _infra_import("bb_paxdata.infrastructure.db.models", "DemandRecord")
+File = _infra_import("bb_paxdata.infrastructure.db.models", "File")
+FileDynamics = _infra_import("bb_paxdata.infrastructure.db.models", "FileDynamics")
+FormulaValidationLog = _infra_import(
+    "bb_paxdata.infrastructure.db.models", "FormulaValidationLog"
+)
+PatternRecord = _infra_import("bb_paxdata.infrastructure.db.models", "PatternRecord")
+Segment = _infra_import("bb_paxdata.infrastructure.db.models", "Segment")
+Sentence = _infra_import("bb_paxdata.infrastructure.db.models", "Sentence")
+SpeakerProfile = _infra_import("bb_paxdata.infrastructure.db.models", "SpeakerProfile")
+Word = _infra_import("bb_paxdata.infrastructure.db.models", "Word")
+
+BLOC_MAP = _infra_import("bb_paxdata.infrastructure.text.file_io_handler", "BLOC_MAP")
+POWER_LEVELS = _infra_import(
+    "bb_paxdata.infrastructure.text.file_io_handler", "POWER_LEVELS"
+)
+SPEAKER_MAP = _infra_import(
+    "bb_paxdata.infrastructure.text.file_io_handler", "SPEAKER_MAP"
+)
+_classify_demand_category = _infra_import(
+    "bb_paxdata.infrastructure.text.file_io_handler", "_classify_demand_category"
+)
+_extract_target_entity = _infra_import(
+    "bb_paxdata.infrastructure.text.file_io_handler", "_extract_target_entity"
+)
+classify_pattern_subtype = _infra_import(
+    "bb_paxdata.infrastructure.text.file_io_handler", "classify_pattern_subtype"
+)
+match_keyword_with_boundaries = _infra_import(
+    "bb_paxdata.infrastructure.text.file_io_handler", "match_keyword_with_boundaries"
+)
+power_to_tier = _infra_import(
+    "bb_paxdata.infrastructure.text.file_io_handler", "power_to_tier"
+)
+turkish_lower = _infra_import(
+    "bb_paxdata.infrastructure.text.file_io_handler", "turkish_lower"
+)
+utc_now = _infra_import("bb_paxdata.infrastructure.text.file_io_handler", "utc_now")
+
 logger = structlog.get_logger(__name__)
-console = Console()
 
 
 class AnalysisTriggerService:
@@ -340,6 +396,8 @@ class AnalysisTriggerService:
                     _risk_signals_json.append(
                         {
                             "signal_text": _rs.signal_text,
+                            "signal_start": _rs.signal_start,
+                            "signal_end": _rs.signal_end,
                             "signal_type": (
                                 _rs.signal_type.value
                                 if hasattr(_rs.signal_type, "value")
@@ -347,6 +405,7 @@ class AnalysisTriggerService:
                             ),
                             "escalation_multiplier": _rs.escalation_multiplier,
                             "credibility_score": _rs.credibility_score,
+                            "sentence_id": _rs.sentence_id,
                         }
                     )
 
@@ -449,8 +508,9 @@ class AnalysisTriggerService:
 
                 if pipeline_res.analysis.topic_synthesis:
                     ts = pipeline_res.analysis.topic_synthesis
-                    from bb_paxdata.infrastructure.db.repositories.topic_assignment_repository import (
-                        TopicAssignmentRepository,
+                    TopicAssignmentRepository = _infra_import(
+                        "bb_paxdata.infrastructure.db.repositories.topic_assignment_repository",
+                        "TopicAssignmentRepository",
                     )
 
                     _topic_repo = TopicAssignmentRepository(session)
@@ -464,41 +524,10 @@ class AnalysisTriggerService:
                 db_sentences_in_seg.append(db_sentence)
                 all_processed_sentences.append(db_sentence)
 
-                # Save AISentenceAnalysis
-                ai_analysis = AISentenceAnalysis.from_domain(
-                    pipeline_res.analysis, sent_id=sent_id
-                )
-                ai_analysis.file_id = file_id
-                ai_analysis.sentence_code = sent_code
-                ai_analysis.speaker_name = speaker_name
-                ai_analysis.country = country
-                ai_analysis.power_level = 0
-                ai_analysis.global_sent_order = total_sentences_count
-                ai_analysis.sentiment_score = _ai_sent
-                ai_analysis.sentiment_category = (
-                    pipeline_res.analysis.ai_sentiment_label
-                )
-                ai_analysis.risk_score = _normalized_risk
-                ai_analysis.ai_sentiment = pipeline_res.analysis.ai_sentiment_label
-                ai_analysis.ai_risk_score = _normalized_risk
-                ai_analysis.ai_frame_type = (
-                    str(pipeline_res.analysis.framing)
-                    if pipeline_res.analysis.framing
-                    else None
-                )
-                ai_analysis.hedging_score = _hedging_score
-                ai_analysis.politeness_score = _politeness_ratio
-                ai_analysis.logic_result = _logic_result
-                db_sentence.ai_analysis = ai_analysis
-                session.add(ai_analysis)
+                # Save AISentenceAnalysis via repository to decouple domain layer
+                analysis_repo = AnalysisRepository(session)
 
-                from bb_paxdata.infrastructure.events.publisher import (
-                    WORMEventPublisher,
-                )
-
-                await WORMEventPublisher(session).emit(
-                    aggregate_type="AISentenceAnalysis",
-                    aggregate_id=sent_id,
+                pipeline_res.analysis.record_event(
                     event_type="AnalysisCompleted",
                     payload={
                         "sentiment_score": (_ai_sent if _ai_sent is not None else 0.0),
@@ -510,7 +539,33 @@ class AnalysisTriggerService:
                         "logic_result": _logic_result,
                     },
                     actor_id="system",
+                    aggregate_id=sent_id,
                 )
+
+                ai_analysis = await analysis_repo.save_sentence_analysis_with_metadata(
+                    pipeline_res.analysis,
+                    sent_id=sent_id,
+                    file_id=file_id,
+                    sentence_code=sent_code,
+                    speaker_name=speaker_name,
+                    country=country,
+                    power_level=0,
+                    global_sent_order=total_sentences_count,
+                    sentiment_score=_ai_sent,
+                    sentiment_category=pipeline_res.analysis.ai_sentiment_label,
+                    risk_score=_normalized_risk,
+                    ai_sentiment=pipeline_res.analysis.ai_sentiment_label,
+                    ai_risk_score=_normalized_risk,
+                    ai_frame_type=(
+                        str(pipeline_res.analysis.framing)
+                        if pipeline_res.analysis.framing
+                        else None
+                    ),
+                    hedging_score=_hedging_score,
+                    politeness_score=_politeness_ratio,
+                    logic_result=_logic_result,
+                )
+                db_sentence.ai_analysis = ai_analysis
 
                 # ── AI Fail Check & Human Review Flagging Entegrasyonu ──
                 # Calculate temporal values BEFORE updating last variables
@@ -1149,9 +1204,11 @@ class AnalysisTriggerService:
                 db_segment.vader_neu = 0.0
 
             # Recalculate SBI and DKI using auditor's formula so they are correct in DB
-            from bb_paxdata.infrastructure.logic.formula_auditor import (
-                RISK_SIGNAL_WEIGHTS,
-                RISK_SIGNALS,
+            RISK_SIGNAL_WEIGHTS = _infra_import(
+                "bb_paxdata.infrastructure.logic.formula_auditor", "RISK_SIGNAL_WEIGHTS"
+            )
+            RISK_SIGNALS = _infra_import(
+                "bb_paxdata.infrastructure.logic.formula_auditor", "RISK_SIGNALS"
             )
 
             _power_levels = []
@@ -1408,7 +1465,10 @@ class AnalysisTriggerService:
             from bb_paxdata.application.domain.models.sentence import (
                 Sentence as SentenceDomain,
             )
-            from bb_paxdata.infrastructure.db.topic_models import TopicAssignmentORM
+
+            TopicAssignmentORM = _infra_import(
+                "bb_paxdata.infrastructure.db.topic_models", "TopicAssignmentORM"
+            )
 
             # Group sentences by segment ID
             sentences_by_seg_id: dict[str, list[Any]] = {}
@@ -1454,8 +1514,9 @@ class AnalysisTriggerService:
                 )
 
             if len(domain_segments) >= 2:
-                console.print(
-                    f"[bold blue]ℹ️  Running panel-level topic modeling on {len(domain_segments)} segments...[/bold blue]"
+                logger.info(
+                    "Running panel-level topic modeling",
+                    segment_count=len(domain_segments),
                 )
                 lang = "en"
                 if (
@@ -1528,13 +1589,8 @@ class AnalysisTriggerService:
                                 db_assign.topic_scores = topic_scores
                                 db_assign.topic_label = topic_label
                                 db_assign.ctfidf_keywords = keywords
-                console.print(
-                    "[green][OK] Topic modeling post-processing completed successfully.[/green]"
-                )
+                logger.info("Topic modeling post-processing completed successfully")
         except Exception as exc:
-            console.print(
-                f"[yellow][WARN] Topic modeling post-processing failed: {exc}[/yellow]"
-            )
             logger.warning(
                 "build.topic_modeling_post_processing_failed", error=str(exc)
             )
@@ -1651,13 +1707,7 @@ class AnalysisTriggerService:
                     )
                     session.add(db_log)
 
-                    from bb_paxdata.infrastructure.events.publisher import (
-                        WORMEventPublisher,
-                    )
-
-                    await WORMEventPublisher(session).emit(
-                        aggregate_type="FormulaValidationLog",
-                        aggregate_id=f"{db_log.run_id}_{db_log.formula_name}_{db_log.entity_id}",
+                    db_log.record_event(
                         event_type="FormulaValidated",
                         payload={
                             "run_id": db_log.run_id,
@@ -1673,6 +1723,7 @@ class AnalysisTriggerService:
                             "status": db_log.status,
                         },
                         actor_id="system",
+                        aggregate_id=f"{db_log.run_id}_{db_log.formula_name}_{db_log.entity_id}",
                     )
 
                     # v2: Flag to Human Review Queue with FORMULA_FAILURE trigger
@@ -1733,13 +1784,7 @@ class AnalysisTriggerService:
                     )
                     session.add(db_log)
 
-                    from bb_paxdata.infrastructure.events.publisher import (
-                        WORMEventPublisher,
-                    )
-
-                    await WORMEventPublisher(session).emit(
-                        aggregate_type="FormulaValidationLog",
-                        aggregate_id=f"{db_log.run_id}_{db_log.formula_name}_{db_log.entity_id}",
+                    db_log.record_event(
                         event_type="FormulaValidated",
                         payload={
                             "run_id": db_log.run_id,
@@ -1755,6 +1800,7 @@ class AnalysisTriggerService:
                             "status": db_log.status,
                         },
                         actor_id="system",
+                        aggregate_id=f"{db_log.run_id}_{db_log.formula_name}_{db_log.entity_id}",
                     )
 
                     # Flag to Human Review Queue if FAIL
@@ -1792,11 +1838,8 @@ class AnalysisTriggerService:
                                 flagged_at=utc_now().isoformat(),
                             )
                             session.add(review_entry)
-            console.print(
-                "[green][OK] Formula logic audit completed and logged to database.[/green]"
-            )
+            logger.info("Formula logic audit completed and logged to database")
         except Exception as exc:
-            console.print(f"[yellow][WARN] Formula logic audit failed: {exc}[/yellow]")
             logger.warning("build.formula_logic_audit_failed", error=str(exc))
 
         # ── Temporal Drift Event Analysis ──
@@ -1806,8 +1849,9 @@ class AnalysisTriggerService:
                 SPEECH_ACT_PRIMARY,
             )
             from bb_paxdata.application.domain.services.temporal import TemporalAnalyzer
-            from bb_paxdata.infrastructure.db.drift_events import (
-                DriftEvent as DriftEventORM,
+
+            DriftEventORM = _infra_import(
+                "bb_paxdata.infrastructure.db.drift_events", "DriftEvent"
             )
 
             # Group sentences by speaker
@@ -1871,27 +1915,22 @@ class AnalysisTriggerService:
                 session.add(db_drift)
 
             if drift_events:
-                console.print(
-                    f"[green][OK] Detected and logged {len(drift_events)} temporal drift events to database.[/green]"
+                logger.info(
+                    "Detected and logged temporal drift events",
+                    count=len(drift_events),
                 )
             else:
-                console.print(
-                    "[green][OK] Temporal drift analysis completed (no drift events detected).[/green]"
+                logger.info(
+                    "Temporal drift analysis completed (no drift events detected)"
                 )
 
         except Exception as exc:
-            console.print(
-                f"[yellow][WARN] Temporal drift analysis failed: {exc}[/yellow]"
-            )
             logger.warning("build.temporal_drift_analysis_failed", error=str(exc))
 
         # ── Phase 4 Discourse Network and Flows Integration ──
         try:
             await rebuild_network_for_file(session, file_id)
         except Exception as exc:
-            console.print(
-                f"[yellow][WARN] Rebuilding network data failed for {file_id}: {exc}[/yellow]"
-            )
             logger.warning(
                 "build.rebuild_network_failed", file_id=file_id, error=str(exc)
             )
@@ -1905,7 +1944,10 @@ class AnalysisTriggerService:
                 get_frame_distribution,
                 get_vad_vector,
             )
-            from bb_paxdata.infrastructure.db.models import SegmentAnalyzedEvent
+
+            SegmentAnalyzedEvent = _infra_import(
+                "bb_paxdata.infrastructure.db.models", "SegmentAnalyzedEvent"
+            )
 
             run_id_event = f"run_{uuid.uuid4().hex}"
 
@@ -1949,18 +1991,17 @@ class AnalysisTriggerService:
                 )
                 session.add(event)
 
-            console.print("[green][OK] Logged segment events to event store.[/green]")
+            logger.info("Logged segment events to event store")
         except Exception as exc:
-            console.print(
-                f"[yellow][WARN] Logging segment events failed: {exc}[/yellow]"
-            )
             logger.warning("build.segment_event_logging_failed", error=str(exc))
 
         # ── Meilisearch Indexing Hook ──
         try:
-            from bb_paxdata.infrastructure.search.meilisearch_client import (
-                ensure_indexes,
-                index_sentences,
+            ensure_indexes = _infra_import(
+                "bb_paxdata.infrastructure.search.meilisearch_client", "ensure_indexes"
+            )
+            index_sentences = _infra_import(
+                "bb_paxdata.infrastructure.search.meilisearch_client", "index_sentences"
             )
 
             # İdempotent: index yoksa oluştur, varsa dokunma.
@@ -1995,16 +2036,21 @@ async def rebuild_network_for_file(session: Any, file_id: str) -> None:
     """Rebuilds bilateral sentiments, discourse network edges, and discourse flows for a single file/panel."""
     from sqlalchemy import delete
 
-    from bb_paxdata.infrastructure.db.country_models import (
-        BilateralSentimentTable,
-        DiscourseFlowTable,
+    BilateralSentimentTable = _infra_import(
+        "bb_paxdata.infrastructure.db.country_models", "BilateralSentimentTable"
     )
-    from bb_paxdata.infrastructure.db.discourse_network_table import (
-        DiscourseNetworkEdgeTable,
+    DiscourseFlowTable = _infra_import(
+        "bb_paxdata.infrastructure.db.country_models", "DiscourseFlowTable"
     )
-    from bb_paxdata.infrastructure.db.models import (
-        ActorActionMatrixORM,
-        DependencyTripleORM,
+    DiscourseNetworkEdgeTable = _infra_import(
+        "bb_paxdata.infrastructure.db.discourse_network_table",
+        "DiscourseNetworkEdgeTable",
+    )
+    ActorActionMatrixORM = _infra_import(
+        "bb_paxdata.infrastructure.db.models", "ActorActionMatrixORM"
+    )
+    DependencyTripleORM = _infra_import(
+        "bb_paxdata.infrastructure.db.models", "DependencyTripleORM"
     )
 
     # Clean existing network data for this panel to support clean re-runs
@@ -2022,9 +2068,6 @@ async def rebuild_network_for_file(session: Any, file_id: str) -> None:
         )
     )
     await session.execute(
-        delete(DiscourseNetworkEdge).where(DiscourseNetworkEdge.file_id == file_id)
-    )
-    await session.execute(
         delete(DependencyTripleORM).where(DependencyTripleORM.file_id == file_id)
     )
     await session.execute(
@@ -2032,39 +2075,37 @@ async def rebuild_network_for_file(session: Any, file_id: str) -> None:
     )
     await session.flush()
 
-    # Construct SegmentDomain and SentenceDomain from database Segment and Sentence ORM tables
+    # Construct SegmentDomain and SentenceDomain from database Segment and Sentence repositories
     from bb_paxdata.application.domain.models.segment import Segment as SegmentDomain
     from bb_paxdata.application.domain.models.sentence import Sentence as SentenceDomain
-    from bb_paxdata.infrastructure.db.models import Segment as SegmentORM
-    from bb_paxdata.infrastructure.db.models import Sentence as SentenceORM
 
-    # Get segments
-    seg_res = await session.execute(
-        select(SegmentORM)
-        .where(SegmentORM.file_id == file_id)
-        .order_by(SegmentORM.seq_order)
+    SegmentRepository = _infra_import(
+        "bb_paxdata.infrastructure.db.repositories.segment", "SegmentRepository"
     )
-    db_segs = seg_res.scalars().all()
+    SentenceRepository = _infra_import(
+        "bb_paxdata.infrastructure.db.repositories.sentence", "SentenceRepository"
+    )
 
-    # Get sentences
-    sent_res = await session.execute(
-        select(SentenceORM)
-        .where(SentenceORM.file_id == file_id)
-        .order_by(SentenceORM.global_sent_order)
-    )
-    db_sents = sent_res.scalars().all()
+    seg_repo = SegmentRepository(session)
+    sent_repo = SentenceRepository(session)
+
+    db_segs = await seg_repo.get_domain_by_panel(file_id)
+    db_sents = await sent_repo.get_domain_by_panel(file_id)
 
     # Group sentences by segment id
     sents_by_seg: dict[str, list[Any]] = {}
     for s in db_sents:
-        sents_by_seg.setdefault(s.seg_id, []).append(s)
+        sents_by_seg.setdefault(s.segment_id, []).append(s)
 
     # Build domain segments
     domain_segments = []
     for db_seg in db_segs:
-        seg_sents = sents_by_seg.get(db_seg.seg_id, [])
+        seg_sents = sents_by_seg.get(db_seg.id, [])
         from bb_paxdata.application.domain.models.srl import ExtractionStatus
-        from bb_paxdata.infrastructure.nlp.srl_pipeline import get_srl_pipeline
+
+        get_srl_pipeline = _infra_import(
+            "bb_paxdata.infrastructure.nlp.srl_pipeline", "get_srl_pipeline"
+        )
 
         domain_sents = []
         for s in seg_sents:
@@ -2079,7 +2120,7 @@ async def rebuild_network_for_file(session: Any, file_id: str) -> None:
             except Exception as e:
                 logger.warning(
                     "srl_extraction_failed_in_trigger",
-                    sentence_id=s.sent_id,
+                    sentence_id=s.id,
                     error=str(e),
                 )
                 srl_frames = []
@@ -2087,7 +2128,7 @@ async def rebuild_network_for_file(session: Any, file_id: str) -> None:
 
             domain_sents.append(
                 SentenceDomain(
-                    id=s.sent_id,
+                    id=s.id,
                     text=s.text,
                     srl_frames=srl_frames,
                     srl_extraction_status=status,
@@ -2095,7 +2136,7 @@ async def rebuild_network_for_file(session: Any, file_id: str) -> None:
             )
 
         # Extract speaker, GPE, and tokens
-        primary_speaker = db_seg.speaker_id
+        primary_speaker = db_seg.primary_speaker_id
         segment_tokens = db_seg.text.lower().split() if db_seg.text else []
         concepts = []
         for s in seg_sents:
@@ -2104,16 +2145,18 @@ async def rebuild_network_for_file(session: Any, file_id: str) -> None:
                     gpe_clean = gpe.strip().title()
                     if gpe_clean and gpe_clean not in concepts:
                         concepts.append(gpe_clean)
-            if (
-                s.dominant_topic
-                and s.dominant_topic != "-1"
-                and s.dominant_topic not in concepts
-            ):
-                concepts.append(s.dominant_topic)
+            if s.dominant_topic:
+                topic_val = (
+                    s.dominant_topic.value
+                    if hasattr(s.dominant_topic, "value")
+                    else str(s.dominant_topic)
+                )
+                if topic_val != "-1" and topic_val not in concepts:
+                    concepts.append(topic_val)
 
         domain_segments.append(
             SegmentDomain(
-                id=db_seg.seg_id,
+                id=db_seg.id,
                 file_id=file_id,
                 primary_speaker_id=primary_speaker,
                 tokens=segment_tokens,
@@ -2141,16 +2184,22 @@ async def rebuild_network_for_file(session: Any, file_id: str) -> None:
             AggregateBilateralSentimentInput(panel_id=file_id)
         )
         if bil_agg_output.succeeded:
-            console.print(
-                f"[{file_id}] [green][OK] Bilateral sentiments aggregated successfully. Saved {bil_agg_output.created_count} new pairs.[/green]"
+            logger.info(
+                "Bilateral sentiments aggregated successfully",
+                file_id=file_id,
+                created_count=bil_agg_output.created_count,
             )
         else:
-            console.print(
-                f"[{file_id}] [yellow][WARN] Bilateral sentiments aggregation failed: {bil_agg_output.errors}[/yellow]"
+            logger.warning(
+                "Bilateral sentiments aggregation failed",
+                file_id=file_id,
+                errors=bil_agg_output.errors,
             )
     except Exception as exc:
-        console.print(
-            f"[{file_id}] [yellow][WARN] Bilateral sentiments aggregation failed: {exc}[/yellow]"
+        logger.error(
+            "Bilateral sentiments aggregation exception",
+            file_id=file_id,
+            error=str(exc),
         )
 
     # ── 2. Discourse Network Analysis (Fischer DNA & Maoz Dyadic) ──
@@ -2187,14 +2236,13 @@ async def rebuild_network_for_file(session: Any, file_id: str) -> None:
             bilateral_metrics=[],
         )
 
-        # Query existing bilateral sentiments for this file_id from database to populate domain model
-        bil_res = await session.execute(
-            select(BilateralSentimentTable).where(
-                BilateralSentimentTable.file_id == file_id
-            )
+        # Fetch domain bilateral metrics from repository instead of direct ORM querying
+        BilateralSentimentRepository = _infra_import(
+            "bb_paxdata.infrastructure.db.repositories.country_repository",
+            "BilateralSentimentRepository",
         )
-        db_bilaterals = bil_res.scalars().all()
-        domain_bilaterals = [b.to_domain() for b in db_bilaterals]
+        bilateral_repo = BilateralSentimentRepository(session)
+        domain_bilaterals = await bilateral_repo.get_all_for_panel(file_id)
 
         analysis_domain = analysis_domain.model_copy(
             update={"bilateral_metrics": domain_bilaterals}
@@ -2206,7 +2254,6 @@ async def rebuild_network_for_file(session: Any, file_id: str) -> None:
         maoz_service = container.maoz_dyadic_service
 
         network_repo = DiscourseNetworkRepository(session)
-        bilateral_repo = BilateralSentimentRepository(session)
 
         # Assemble network
         assembly_stage = NetworkAssemblyStage(
@@ -2222,12 +2269,20 @@ async def rebuild_network_for_file(session: Any, file_id: str) -> None:
         )
         await finalize_stage.process(session, enriched_analysis)
 
-        console.print(
-            f"[{file_id}] [green][OK] Discourse network analysis completed. Saved {enriched_analysis.discourse_flow.edge_count if enriched_analysis.discourse_flow else 0} modern edges.[/green]"
+        logger.info(
+            "Discourse network analysis completed",
+            file_id=file_id,
+            edge_count=(
+                enriched_analysis.discourse_flow.edge_count
+                if enriched_analysis.discourse_flow
+                else 0
+            ),
         )
     except Exception as exc:
-        console.print(
-            f"[{file_id}] [yellow][WARN] Discourse network analysis failed: {exc}[/yellow]"
+        logger.error(
+            "Discourse network analysis failed",
+            file_id=file_id,
+            error=str(exc),
         )
 
     # ── 3. Build Panel Network (Discourse Flows) ──
@@ -2236,9 +2291,14 @@ async def rebuild_network_for_file(session: Any, file_id: str) -> None:
             BuildPanelNetworkInput,
             BuildPanelNetworkUseCase,
         )
-        from bb_paxdata.infrastructure.db.repositories.country_repository import (
-            BilateralSentimentRepository,
-            DiscourseFlowRepository,
+
+        BilateralSentimentRepository = _infra_import(
+            "bb_paxdata.infrastructure.db.repositories.country_repository",
+            "BilateralSentimentRepository",
+        )
+        DiscourseFlowRepository = _infra_import(
+            "bb_paxdata.infrastructure.db.repositories.country_repository",
+            "DiscourseFlowRepository",
         )
 
         flow_use_case = BuildPanelNetworkUseCase(
@@ -2249,16 +2309,22 @@ async def rebuild_network_for_file(session: Any, file_id: str) -> None:
             BuildPanelNetworkInput(panel_id=file_id)
         )
         if flow_output.succeeded:
-            console.print(
-                f"[{file_id}] [green][OK] Discourse flows built successfully. Saved {flow_output.edges_created} flows.[/green]"
+            logger.info(
+                "Discourse flows built successfully",
+                file_id=file_id,
+                edges_created=flow_output.edges_created,
             )
         else:
-            console.print(
-                f"[{file_id}] [yellow][WARN] Discourse flows build had errors: {flow_output.errors}[/yellow]"
+            logger.warning(
+                "Discourse flows build had errors",
+                file_id=file_id,
+                errors=flow_output.errors,
             )
     except Exception as exc:
-        console.print(
-            f"[{file_id}] [yellow][WARN] Discourse flows use case execution failed: {exc}[/yellow]"
+        logger.error(
+            "Discourse flows use case execution failed",
+            file_id=file_id,
+            error=str(exc),
         )
 
     # ── 4. Extract and Persist Grammatical Dependency Triples (SVO) ──
@@ -2267,11 +2333,13 @@ async def rebuild_network_for_file(session: Any, file_id: str) -> None:
 
         from bb_paxdata.application.domain.models.dependency import ActorActionMatrix
         from bb_paxdata.application.domain.services.actor_resolver import ActorResolver
-        from bb_paxdata.infrastructure.container.service_container import (
-            ServiceContainer,
+
+        ServiceContainer = _infra_import(
+            "bb_paxdata.infrastructure.container.service_container", "ServiceContainer"
         )
-        from bb_paxdata.infrastructure.db.repositories.dependency import (
-            DependencyRepository,
+        DependencyRepository = _infra_import(
+            "bb_paxdata.infrastructure.db.repositories.dependency",
+            "DependencyRepository",
         )
 
         container = ServiceContainer.get_instance()
@@ -2312,13 +2380,13 @@ async def rebuild_network_for_file(session: Any, file_id: str) -> None:
 
                 t.subject_resolved = subj_res
                 t.object_resolved = obj_res
-                t.sent_id = s.sent_id
-                t.seg_id = s.seg_id
+                t.sent_id = s.id
+                t.seg_id = s.segment_id
                 t.panel_id = file_id
                 t.speaker_name = s.speaker_name
                 t.country = s.country
 
-                t.sentiment_context = s.vader_compound
+                t.sentiment_context = s.sentiment_score
                 t.risk_score = s.risk_score
 
                 await dep_repo.insert_triple(t)
@@ -2326,7 +2394,7 @@ async def rebuild_network_for_file(session: Any, file_id: str) -> None:
                 if subj_res and obj_res:
                     key = (subj_res, obj_res, t.verb_lemma)
                     matrix_counts[key]["count"] += 1
-                    matrix_counts[key]["sentiment_sum"] += s.vader_compound or 0.0
+                    matrix_counts[key]["sentiment_sum"] += s.sentiment_score or 0.0
                     matrix_counts[key]["passive_cnt"] += 1 if t.is_passive else 0
                     matrix_counts[key]["neg_cnt"] += 1 if t.is_negative else 0
 
@@ -2348,12 +2416,15 @@ async def rebuild_network_for_file(session: Any, file_id: str) -> None:
             )
             await dep_repo.upsert_actor_action_matrix(matrix_entry)
 
-        console.print(
-            f"[{file_id}] [green][OK] Dependency parsing completed successfully. Extracted triples persisted.[/green]"
+        logger.info(
+            "Dependency parsing completed successfully",
+            file_id=file_id,
         )
     except Exception as exc:
-        console.print(
-            f"[{file_id}] [yellow][WARN] Dependency parsing failed: {exc}[/yellow]"
+        logger.error(
+            "Dependency parsing failed",
+            file_id=file_id,
+            error=str(exc),
         )
 
     await session.flush()

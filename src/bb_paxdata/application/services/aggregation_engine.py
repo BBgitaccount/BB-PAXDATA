@@ -142,11 +142,11 @@ class AggregationEngine:
                 for ev, w in zip(evs, weights):
                     if ev.vad_vector:
                         total_weight += w
-                        for k in avg_vad:
+                        for k, value in avg_vad.items():
                             avg_vad[k] += ev.vad_vector.get(k, 0.0) * w
                 if total_weight > 0:
-                    for k in avg_vad:
-                        avg_vad[k] = float(avg_vad[k] / total_weight)
+                    for k, value in avg_vad.items():
+                        avg_vad[k] = float(value / total_weight)
                 else:
                     avg_vad = {"V": 0.0, "A": 0.0, "D": 0.0}
 
@@ -184,6 +184,7 @@ class AggregationEngine:
                     risk_score=risk_score,
                     risk_ci_lower=risk_ci_lower,
                     risk_ci_upper=risk_ci_upper,
+                    composite_risk_index=score * risk_score,
                     demand_count=float(sum(ev.demand_count for ev in evs)),
                     avg_vad=avg_vad,
                     dominant_emotion=dominant_emotion,

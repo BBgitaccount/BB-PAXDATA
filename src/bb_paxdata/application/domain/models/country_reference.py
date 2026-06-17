@@ -19,7 +19,7 @@ class CountryReference(BaseModel):
     Bu model immutable'dır; güncelleme için model_copy(update={}) kullanılır.
     """
 
-    model_config = model_config(frozen=True)
+    model_config = model_config(frozen=False)
 
     id: UUID = Field(default_factory=uuid4)
     panel_id: str = Field(

@@ -189,5 +189,7 @@ def get_argmining_config() -> ArgumentMiningPipelineConfig:
     """Get global configuration instance."""
     global _config_instance
     if _config_instance is None:
-        _config_instance = ArgumentMiningPipelineConfig.from_env()
+        from bb_paxdata.config.settings import get_settings
+
+        _config_instance = get_settings().argmining
     return _config_instance

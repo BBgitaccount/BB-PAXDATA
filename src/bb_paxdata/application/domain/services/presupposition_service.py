@@ -19,6 +19,7 @@ from bb_paxdata.application.domain.lexicon.presupposition_triggers import (
 from bb_paxdata.application.domain.models.negation_cue import LanguageCode
 from bb_paxdata.application.domain.models.presupposition import (
     Presupposition,
+    PresuppositionCandidate,
     PresuppositionExtractionResult,
     TriggerType,
     VerificationMethod,
@@ -27,7 +28,6 @@ from bb_paxdata.application.domain.services.negation_detector_protocol import (
     NegationDetectorProtocol,
 )
 from bb_paxdata.application.domain.services.presupposition_verifier import (
-    PresuppositionCandidate,
     PresuppositionVerifier,
 )
 
@@ -170,9 +170,11 @@ class PresuppositionService:
             if not presupposed_content:
                 continue
 
-            # Calculate base confidence
-            confidence = self._calculate_base_confidence(
-                token, trigger_type, presupposed_content
+            # Calculate base confidence using domain model rules
+            confidence = PresuppositionCandidate.calculate_confidence(
+                trigger_lemma=lemma,
+                presupposed_content=presupposed_content,
+                sentence_length=len(token.sent),
             )
 
             candidate = PresuppositionCandidate(
@@ -299,53 +301,6 @@ class PresuppositionService:
             return focus if focus else ""
 
         return ""
-
-    def _calculate_base_confidence(
-        self,
-        token: Token,
-        trigger_type: TriggerType,
-        presupposed_content: str,
-    ) -> float:
-        """
-        Calculate base confidence for a presupposition candidate.
-        Uses trigger-specific specificity weights.
-
-        # TODO(Phase 4): Replace with logistic regression on gold-standard
-        # Cohen's κ > 0.7 dataset. Current formula is initialization heuristic.
-        """
-        # Trigger-specific specificity weights (from FINDING M-05)
-        specificity_weights = {
-            "regret": 0.90,
-            "acknowledge": 0.85,
-            "fail": 0.82,
-            "manage": 0.80,
-            "realize": 0.70,
-            "still": 0.68,
-            "again": 0.65,
-            "know": 0.60,
-            "start": 0.50,
-            "stop": 0.50,
-            "continue": 0.55,
-        }
-
-        lemma = token.lemma_.lower()
-        specificity = specificity_weights.get(lemma, 0.50)
-
-        # Parse completeness check
-        parse_completeness = 1.0 if presupposed_content else 0.0
-
-        # Context check (simple heuristic)
-        context_score = 0.5 if len(token.sent) > 3 else 0.3
-
-        # Confidence formula: base + specificity*0.2 + parse*0.2 + context*0.1
-        confidence = (
-            0.5
-            + (specificity * 0.2)
-            + (parse_completeness * 0.2)
-            + (context_score * 0.1)
-        )
-
-        return min(confidence, 1.0)
 
     # ===== Helper Functions (C-06) =====
 

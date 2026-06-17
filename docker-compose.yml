@@ -21,9 +21,10 @@ services:
     container_name: paxdata-grafana
     environment:
       - GF_SECURITY_ADMIN_USER=admin
-      - GF_SECURITY_ADMIN_PASSWORD=paxdata2024
+      - GF_SECURITY_ADMIN_PASSWORD=admin
       - GF_USERS_ALLOW_SIGN_UP=false
       - GF_DASHBOARDS_DEFAULT_HOME_DASHBOARD_PATH=/var/lib/grafana/dashboards/system_overview.json
+      - GF_SECURITY_ALLOW_EMBEDDING=true
     volumes:
       - grafana_data:/var/lib/grafana
       - ./src/bb_paxdata/infrastructure/observability/grafana/provisioning:/etc/grafana/provisioning:ro
@@ -127,6 +128,9 @@ services:
       - PAXDATA_REDIS_URL=redis://redis:6379/0
       - PAXDATA_ENVIRONMENT=development
       - PAXDATA_DEBUG=true
+      - PAXDATA_OTEL_ENABLED=true
+      - PAXDATA_OTEL_EXPORTER_OTLP_ENDPOINT=http://jaeger:4317
+
     ports:
       - "8000:8000"
     depends_on:
@@ -140,8 +144,8 @@ services:
       test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
       interval: 10s
       timeout: 5s
-      retries: 5
-      start_period: 15s
+      retries: 10
+      start_period: 90s
     restart: unless-stopped
     networks:
       - paxdata-net
@@ -155,39 +159,19 @@ services:
       - VITE_API_URL=http://localhost:8000
     ports:
       - "5173:5173"
+    volumes:
+      - ./src/bb_paxdata/interfaces/web/src:/app/src
+      - ./src/bb_paxdata/interfaces/web/public:/app/public
+      - ./src/bb_paxdata/interfaces/web/index.html:/app/index.html
+      - ./src/bb_paxdata/interfaces/web/package.json:/app/package.json
+      - ./src/bb_paxdata/interfaces/web/tsconfig.json:/app/tsconfig.json
+      - ./src/bb_paxdata/interfaces/web/vite.config.ts:/app/vite.config.ts
+      - ./src/bb_paxdata/interfaces/web/tailwind.config.js:/app/tailwind.config.js
+      - ./src/bb_paxdata/interfaces/web/postcss.config.js:/app/postcss.config.js
+      - /app/node_modules
     depends_on:
       api:
         condition: service_healthy
-    restart: unless-stopped
-    networks:
-      - paxdata-net
-
-  streamlit:
-    build:
-      context: .
-      dockerfile: Dockerfile.api
-    container_name: paxdata-streamlit
-    command: streamlit run scripts/hitl_dashboard.py --server.port 8501 --server.address 0.0.0.0
-    environment:
-      - DATABASE_URL=postgresql+asyncpg://paxdata_user:paxdata_password@postgres:5432/paxdata_db
-      - PAXDATA_DATABASE_URL=postgresql+asyncpg://paxdata_user:paxdata_password@postgres:5432/paxdata_db
-      - PAXDATA_REDIS_URL=redis://redis:6379/0
-      - PAXDATA_ENVIRONMENT=development
-    ports:
-      - "8501:8501"
-    depends_on:
-      postgres:
-        condition: service_healthy
-      redis:
-        condition: service_healthy
-      api:
-        condition: service_healthy
-    healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:8501/"]
-      interval: 10s
-      timeout: 5s
-      retries: 5
-      start_period: 15s
     restart: unless-stopped
     networks:
       - paxdata-net
@@ -202,6 +186,9 @@ services:
       - PAXDATA_DATABASE_MODE=postgresql
       - PAXDATA_DATABASE_URL=postgresql+asyncpg://paxdata_user:paxdata_password@postgres:5432/paxdata_db
       - PAXDATA_REDIS_URL=redis://redis:6379/0
+      - PAXDATA_OTEL_ENABLED=true
+      - PAXDATA_OTEL_EXPORTER_OTLP_ENDPOINT=http://jaeger:4317
+
     depends_on:
       postgres:
         condition: service_healthy
@@ -224,6 +211,9 @@ services:
       - PAXDATA_DATABASE_URL=postgresql+asyncpg://paxdata_user:paxdata_password@postgres:5432/paxdata_db
       - PAXDATA_REDIS_URL=redis://redis:6379/0
       - PAXDATA_MEILISEARCH_URL=http://meilisearch:7700
+      - PAXDATA_OTEL_ENABLED=true
+      - PAXDATA_OTEL_EXPORTER_OTLP_ENDPOINT=http://jaeger:4317
+
     depends_on:
       postgres:
         condition: service_healthy
@@ -247,6 +237,9 @@ services:
       - PAXDATA_DATABASE_MODE=postgresql
       - PAXDATA_DATABASE_URL=postgresql+asyncpg://paxdata_user:paxdata_password@postgres:5432/paxdata_db
       - PAXDATA_REDIS_URL=redis://redis:6379/0
+      - PAXDATA_OTEL_ENABLED=true
+      - PAXDATA_OTEL_EXPORTER_OTLP_ENDPOINT=http://jaeger:4317
+
     depends_on:
       postgres:
         condition: service_healthy
@@ -272,6 +265,20 @@ services:
       - paxdata-net
 
   # Exporters for Prometheus scraping (Görev 2)
+  celery-exporter:
+    image: danihodovic/celery-exporter:latest
+    container_name: paxdata-celery-exporter
+    environment:
+      - CE_BROKER_URL=redis://redis:6379/0
+      - CE_LISTEN_ADDRESS=0.0.0.0:8888
+    ports:
+      - "8888:8888"
+    depends_on:
+      - redis
+    restart: unless-stopped
+    networks:
+      - paxdata-net
+
   redis-exporter:
     image: oliver006/redis_exporter:v1.58.0
     container_name: paxdata-redis-exporter
@@ -300,20 +307,6 @@ services:
     networks:
       - paxdata-net
 
-  celery-exporter:
-    image: danihodovic/celery-prometheus-exporter:2.0.0
-    container_name: paxdata-celery-exporter
-    environment:
-      - CELERY_BROKER_URL=redis://redis:6379/0
-    ports:
-      - "8888:8888"
-    depends_on:
-      redis:
-        condition: service_healthy
-    restart: unless-stopped
-    networks:
-      - paxdata-net
-
   node-exporter:
     image: prom/node-exporter:v1.8.1
     container_name: paxdata-node-exporter
@@ -330,6 +323,18 @@ services:
     restart: unless-stopped
     networks:
       - paxdata-net
+
+  jaeger:
+    image: jaegertracing/all-in-one:1.56
+    container_name: paxdata-jaeger
+    ports:
+      - "16686:16686" # Jaeger UI
+      - "4317:4317"   # OTLP gRPC receiver
+      - "4318:4318"   # OTLP HTTP receiver
+    restart: unless-stopped
+    networks:
+      - paxdata-net
+
 
 volumes:
   prometheus_data:

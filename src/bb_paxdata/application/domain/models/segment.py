@@ -13,6 +13,7 @@ from ..enums import (
     TemporalPattern,
     TopicCategory,
 )
+from .base import AggregateRoot
 from .lodp_result import LODPResult
 from .risk_signal import RiskSignal
 from .sentence import Sentence
@@ -31,7 +32,7 @@ class TemporalSegmentAnalysis(BaseModel):
     )
 
 
-class Segment(BaseModel):
+class Segment(AggregateRoot):
     """Represents a segment of conversation containing multiple sentences."""
 
     id: str = Field(..., description="Unique identifier for the segment")
@@ -72,6 +73,9 @@ class Segment(BaseModel):
 
     # Speaker information
     speaker: Any | None = Field(default=None, description="Speaker object")
+    speaker_name: str | None = Field(
+        default=None, description="Name of the primary speaker"
+    )
     primary_speaker_id: str | None = Field(
         default=None, description="ID of the primary speaker"
     )

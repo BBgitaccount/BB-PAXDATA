@@ -125,19 +125,6 @@ class DashboardQueryService:
                     }
                 )
 
-        if not trends:
-            for i in range(7, 0, -1):
-                date_str = (
-                    datetime.date.today() - datetime.timedelta(days=i)
-                ).isoformat()
-                trends.append(
-                    {
-                        "date": date_str,
-                        "pass_count": 100 + i * 5,
-                        "fail_count": 10 + i,
-                    }
-                )
-
         return trends
 
     async def get_priority_distribution(self) -> list[dict[str, Any]]:

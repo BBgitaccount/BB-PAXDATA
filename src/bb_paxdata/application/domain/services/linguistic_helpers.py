@@ -133,8 +133,8 @@ def get_frame_distribution(text: str, dominant_frame: str | None) -> dict[str, f
     # Normalize
     total = sum(frames.values())
     if total > 0:
-        for k in frames:
-            frames[k] = round(frames[k] / total, 2)
+        for k, value in frames.items():
+            frames[k] = round(value / total, 2)
     else:
         # Fallback distribution
         frames["security"] = 0.5

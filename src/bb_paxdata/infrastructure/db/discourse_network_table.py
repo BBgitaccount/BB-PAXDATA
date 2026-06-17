@@ -37,7 +37,7 @@ class DiscourseNetworkEdgeTable(Base):
     )
 
     # Relationships
-    file: Mapped[File] = relationship(back_populates="network_edges")
+    file: Mapped[File] = relationship(back_populates="network_edges", lazy="joined")
 
     __table_args__ = (
         UniqueConstraint(

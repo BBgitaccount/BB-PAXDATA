@@ -9,7 +9,7 @@ from pydantic import BaseModel, ConfigDict, Field
 class WordfishParams(BaseModel):
     """Parameters for the Wordfish EM algorithm."""
 
-    model_config = ConfigDict(frozen=True)
+    model_config = ConfigDict(frozen=False)
 
     max_iter: int = Field(default=100, ge=10)
     tolerance: float = Field(default=1e-6, gt=0.0)
@@ -27,7 +27,7 @@ class WordfishParams(BaseModel):
 class SpeakerPosition(BaseModel):
     """Latent position and component scores for a speaker in a session."""
 
-    model_config = ConfigDict(frozen=True, strict=True)
+    model_config = ConfigDict(frozen=False, strict=True)
 
     speaker_id: str = Field(..., min_length=1)
     session_id: str = Field(..., min_length=1)
@@ -136,7 +136,7 @@ class SpeakerPosition(BaseModel):
 class SBIResult(BaseModel):
     """Enveloping result for Speaker-Based Index calculations across multiple speakers."""
 
-    model_config = ConfigDict(frozen=True, strict=True)
+    model_config = ConfigDict(frozen=False, strict=True)
 
     positions: Sequence[SpeakerPosition]
     calibration_source: str = Field(

@@ -1,15 +1,15 @@
 # src/bb_paxdata/sdk/watcher.py
 from __future__ import annotations
 
-import logging
 import pathlib
 import threading
 
+import structlog
 from bb_paxdata.sdk.registry import PluginRegistry
 from watchdog.events import FileSystemEventHandler
 from watchdog.observers import Observer
 
-logger = logging.getLogger(__name__)
+logger = structlog.get_logger(__name__)
 
 
 class PluginFileHandler(FileSystemEventHandler):

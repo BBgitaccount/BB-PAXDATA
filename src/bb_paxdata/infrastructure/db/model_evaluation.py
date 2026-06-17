@@ -68,7 +68,9 @@ class ModelEvaluationMetric(Base):
     predicted_summary: Mapped[str | None] = mapped_column(nullable=True)
     gold_summary: Mapped[str | None] = mapped_column(nullable=True)
 
-    run: Mapped[ModelEvaluationRun] = relationship(back_populates="metrics")
+    run: Mapped[ModelEvaluationRun] = relationship(
+        back_populates="metrics", lazy="joined"
+    )
 
 
 class AuditEntry(Base):

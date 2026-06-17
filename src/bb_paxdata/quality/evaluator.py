@@ -5,9 +5,16 @@ from datetime import UTC, datetime
 from typing import Any, Protocol, cast
 
 import structlog
-from deepeval.metrics import AnswerRelevancyMetric, GEval, JsonCorrectnessMetric
 from deepeval.test_case import LLMTestCase, SingleTurnParams
 from pydantic import BaseModel
+
+# Deepeval metrics are optional — require OPENAI_API_KEY at runtime
+try:
+    from deepeval.metrics import AnswerRelevancyMetric, GEval, JsonCorrectnessMetric
+
+    _DEEPEVAL_AVAILABLE = True
+except Exception:
+    _DEEPEVAL_AVAILABLE = False
 
 from bb_paxdata.infrastructure.nlp.ensemble_sentiment_service import (
     EnsembleSentimentService,
@@ -185,38 +192,67 @@ class QualityEvaluator:
         return True
 
     def _init_deepeval_metrics(self) -> dict[str, DeepEvalMetric]:
-        """Initialize Deepeval metrics."""
-        # G-Eval for diplomatic analysis
-        diplomatic_criteria = """
-        Evaluate whether the AI correctly analyzes the diplomatic tone and intent of the
-        given sentence.
-        Consider:
-        1. Identification of speaker's emotional state
-        2. Recognition of diplomatic strategies
-        3. Assessment of potential implications
-        4. Contextual appropriateness of analysis
-        """
+        """Initialize Deepeval metrics — silently skipped when OpenAI is not configured."""
+        if not _DEEPEVAL_AVAILABLE:
+            self.logger.warning(
+                "deepeval_skipped",
+                reason="deepeval package not importable — OpenAI metrics disabled",
+            )
+            return {}
 
-        geval_metric = GEval(
-            name="Diplomatic Analysis",
-            criteria=diplomatic_criteria,
-            evaluation_params=[
-                SingleTurnParams.INPUT,
-                SingleTurnParams.ACTUAL_OUTPUT,
-            ],
-        )
+        from bb_paxdata.config.settings import get_settings
 
-        # Answer relevancy for focus
-        relevancy_metric = AnswerRelevancyMetric(threshold=0.7, model=self.model_name)
+        openai_key = get_settings().openai_api_key.get_secret_value()
+        if not openai_key:
+            self.logger.warning(
+                "deepeval_skipped",
+                reason="OPENAI_API_KEY not set — deepeval metrics disabled, custom metrics only",
+            )
+            return {}
 
-        # JSON correctness for parseability
-        json_metric = JsonCorrectnessMetric(expected_schema=cast(Any, AISentenceOutput))
+        import os
 
-        return {
-            "diplomatic_analysis": cast(DeepEvalMetric, geval_metric),
-            "answer_relevancy": cast(DeepEvalMetric, relevancy_metric),
-            "json_validity": cast(DeepEvalMetric, json_metric),
-        }
+        os.environ["OPENAI_API_KEY"] = openai_key
+
+        try:
+            # G-Eval for diplomatic analysis
+            diplomatic_criteria = """
+            Evaluate whether the AI correctly analyzes the diplomatic tone and intent of the
+            given sentence.
+            Consider:
+            1. Identification of speaker's emotional state
+            2. Recognition of diplomatic strategies
+            3. Assessment of potential implications
+            4. Contextual appropriateness of analysis
+            """
+
+            geval_metric = GEval(  # type: ignore[name-defined]
+                name="Diplomatic Analysis",
+                criteria=diplomatic_criteria,
+                evaluation_params=[
+                    SingleTurnParams.INPUT,
+                    SingleTurnParams.ACTUAL_OUTPUT,
+                ],
+            )
+
+            # Answer relevancy for focus
+            relevancy_metric = AnswerRelevancyMetric(threshold=0.7, model=self.model_name)  # type: ignore[name-defined]
+
+            # JSON correctness for parseability
+            json_metric = JsonCorrectnessMetric(expected_schema=cast(Any, AISentenceOutput))  # type: ignore[name-defined]
+
+            return {
+                "diplomatic_analysis": cast(DeepEvalMetric, geval_metric),
+                "answer_relevancy": cast(DeepEvalMetric, relevancy_metric),
+                "json_validity": cast(DeepEvalMetric, json_metric),
+            }
+        except Exception as exc:
+            self.logger.warning(
+                "deepeval_init_failed",
+                error=str(exc),
+                reason="Deepeval metrics disabled — custom metrics only",
+            )
+            return {}
 
     def evaluate_single_fixture(
         self,

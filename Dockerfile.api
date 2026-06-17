@@ -2,6 +2,9 @@ FROM python:3.12-slim
 
 WORKDIR /app
 
+# Speed up package downloads using Turkish Debian mirror
+RUN sed -i 's/deb.debian.org/ftp.tr.debian.org/g' /etc/apt/sources.list.d/debian.sources || sed -i 's/deb.debian.org/ftp.tr.debian.org/g' /etc/apt/sources.list
+
 # System dependencies
 RUN apt-get update && apt-get install -y \
     build-essential \
@@ -15,13 +18,20 @@ RUN pip install --no-cache-dir poetry
 # Copy project specifications
 COPY pyproject.toml poetry.lock /app/
 
+# Set Poetry network timeout via environment variable (works in all versions)
+ENV POETRY_HTTP_TIMEOUT=600
+
 # Disable poetry virtualenvs creation & install dependencies
 RUN poetry config virtualenvs.create false \
     && poetry install --no-interaction --no-ansi --no-root
 
-# Pre-download spaCy models to avoid dynamic downloads at runtime
-RUN python -m spacy download tr_core_news_md \
-    && python -m spacy download en_core_web_sm
+# Install spaCy models from pre-downloaded local .whl files (no internet needed at build time)
+# Files must exist in docker/models/ — run `scripts/download_models.ps1` if missing.
+COPY docker/models/ /tmp/spacy-models/
+RUN pip install --no-cache-dir \
+    /tmp/spacy-models/en_core_web_sm-3.8.0-py3-none-any.whl \
+    /tmp/spacy-models/tr_core_news_md-1.0-py3-none-any.whl \
+    && rm -rf /tmp/spacy-models
 
 # Copy full application code
 COPY . /app

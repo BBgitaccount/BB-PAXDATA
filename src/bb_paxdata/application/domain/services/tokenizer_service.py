@@ -1,15 +1,15 @@
 from __future__ import annotations
 
-import logging
 from typing import Any
 
 import spacy
 import spacy.cli
+import structlog
 from spacy.language import Language
 
 from .language_detector import LanguageDetector
 
-logger = logging.getLogger(__name__)
+logger = structlog.get_logger(__name__)
 
 
 class SpacyTokenizerService:

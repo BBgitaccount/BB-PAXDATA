@@ -26,10 +26,10 @@ Tüm formüller AGENTS.md'deki referans değerlerle uyumludur.
 from __future__ import annotations
 
 import asyncio
-import logging
 import os
 
 import numpy as np
+import structlog
 import torch
 import torch.nn.functional as F
 from torch import nn
@@ -52,7 +52,7 @@ from bb_paxdata.application.domain.ports.i_gat_embedding_service import (
     IGATEmbeddingService,
 )
 
-logger = logging.getLogger(__name__)
+logger = structlog.get_logger(__name__)
 
 # ── Sabitler ──────────────────────────────────────────────────────────────────
 HIDDEN_DIM = 128  # Ara katman boyutu

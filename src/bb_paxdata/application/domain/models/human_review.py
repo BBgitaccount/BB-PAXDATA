@@ -11,7 +11,9 @@ from datetime import datetime, timezone
 from enum import Enum
 from uuid import uuid4
 
-from pydantic import BaseModel, ConfigDict, Field
+from pydantic import ConfigDict, Field
+
+from .base import AggregateRoot
 
 
 class RiskLevel(str, Enum):
@@ -28,7 +30,7 @@ class AgreementStatus(str, Enum):
     ESCALATED = "ESCALATED"  # Uzman "bu vaka daha üst seviyeye gitsin" dedi
 
 
-class HumanReview(BaseModel):
+class HumanReview(AggregateRoot):
     """
     Bir uzmanın bir AI analizine verdiği değerlendirme.
 

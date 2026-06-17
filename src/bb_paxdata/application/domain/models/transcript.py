@@ -1,14 +1,15 @@
 from datetime import datetime, timezone
 from typing import Any
 
-from pydantic import BaseModel, Field
+from pydantic import Field
 
 from ..enums import BackendType, LogLevel
+from .base import AggregateRoot
 from .segment import Segment
 from .speaker import Speaker
 
 
-class Transcript(BaseModel):
+class Transcript(AggregateRoot):
     """Represents a complete transcript with all its components and metadata."""
 
     id: str = Field(..., description="Unique identifier for the transcript")
@@ -106,3 +107,32 @@ class Transcript(BaseModel):
         default_factory=lambda: datetime.now(timezone.utc),
         description="Last update timestamp",
     )
+
+    @property
+    def file_name(self) -> str | None:
+        if self.metadata and "file_name" in self.metadata:
+            return str(self.metadata["file_name"])
+        return self.source_file
+
+    @property
+    def idempotency_key(self) -> str | None:
+        return self.metadata.get("idempotency_key") if self.metadata else None
+
+    @property
+    def reprocess_count(self) -> int:
+        return self.metadata.get("reprocess_count", 0) if self.metadata else 0
+
+    @property
+    def force_rebuild(self) -> int:
+        return self.metadata.get("force_rebuild", 0) if self.metadata else 0
+
+    @property
+    def last_processed_at(self) -> datetime | None:
+        if self.metadata and "last_processed_at" in self.metadata:
+            val = self.metadata["last_processed_at"]
+            if val:
+                try:
+                    return datetime.fromisoformat(val)
+                except ValueError:
+                    pass
+        return None

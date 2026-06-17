@@ -30,6 +30,18 @@ from .domain.models.srl import SRLFrame
 from .domain.ports.speech_act_port import SpeechActClassifierProtocol
 
 
+class HedgingResult(BaseModel):
+    """Result of hedging analysis."""
+
+    score: float = Field(..., ge=0.0, le=1.0, description="Hedging score from 0 to 1")
+    categories: list[HedgeType] = Field(
+        default_factory=list, description="Detected hedging categories"
+    )
+    confidence: float = Field(
+        default=1.0, ge=0.0, le=1.0, description="Confidence score"
+    )
+
+
 # Result models for service outputs
 class SentimentResult(BaseModel):
     """Result of sentiment analysis."""
@@ -56,18 +68,6 @@ class RiskAssessment(BaseModel):
         default_factory=list, description="Detected risk signals"
     )
     severity: RiskLevel = Field(..., description="Risk severity level")
-    confidence: float = Field(
-        default=1.0, ge=0.0, le=1.0, description="Confidence score"
-    )
-
-
-class HedgingResult(BaseModel):
-    """Result of hedging analysis."""
-
-    score: float = Field(..., ge=0.0, le=1.0, description="Hedging score from 0 to 1")
-    categories: list[HedgeType] = Field(
-        default_factory=list, description="Detected hedging categories"
-    )
     confidence: float = Field(
         default=1.0, ge=0.0, le=1.0, description="Confidence score"
     )

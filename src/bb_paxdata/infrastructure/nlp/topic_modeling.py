@@ -1,9 +1,9 @@
 # src/bb_paxdata/infrastructure/nlp/topic_modeling.py
 import asyncio
-import logging
 import math
 
 import numpy as np
+import structlog
 from bertopic import BERTopic
 from hdbscan import HDBSCAN
 from sentence_transformers import SentenceTransformer
@@ -17,7 +17,7 @@ from bb_paxdata.application.domain.services.topic_modeling_protocol import (
     TopicModelingProtocol,
 )
 
-logger = logging.getLogger(__name__)
+logger = structlog.get_logger(__name__)
 
 
 class TopicModelingService(TopicModelingProtocol):

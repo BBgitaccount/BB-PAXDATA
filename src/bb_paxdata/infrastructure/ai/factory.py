@@ -57,7 +57,7 @@ class AIClientFactory:
                 raise ValueError(f"Unknown backend: {backend}")
 
         if backend == "local":
-            return OllamaClient(
+            client = OllamaClient(
                 model=model,
                 base_url=base_url or "http://localhost:11434",
             )
@@ -65,7 +65,7 @@ class AIClientFactory:
         elif backend == "api":
             if not api_key:
                 raise ValueError("API key is required for Anthropic backend")
-            return AnthropicClient(
+            client = AnthropicClient(
                 api_key=api_key,
                 model=model,
             )
@@ -73,7 +73,7 @@ class AIClientFactory:
         elif backend == "gemini":
             if not api_key:
                 raise ValueError("API key is required for Gemini backend")
-            return GeminiClient(
+            client = GeminiClient(
                 api_key=api_key,
                 model=model,
             )
@@ -81,7 +81,7 @@ class AIClientFactory:
         elif backend == "groq":
             if not api_key:
                 raise ValueError("API key is required for Groq backend")
-            return GroqClient(
+            client = GroqClient(
                 api_key=api_key,
                 model=model,
             )
@@ -89,13 +89,20 @@ class AIClientFactory:
         elif backend == "deepseek":
             if not api_key:
                 raise ValueError("API key is required for DeepSeek backend")
-            return DeepSeekClient(
+            client = DeepSeekClient(
                 api_key=api_key,
                 model=model,
             )
 
         else:
             raise ValueError(f"Unknown backend: {backend}")
+
+        from bb_paxdata.infrastructure.observability.tracing import trace_ai_completion
+
+        client.complete = trace_ai_completion(
+            client.complete, client.backend_name, client.model_name
+        )
+        return client
 
     @staticmethod
     def from_settings(settings: Any) -> AIClient:
@@ -111,7 +118,20 @@ class AIClientFactory:
             deepseek_api_key: str (for deepseek backend)
             ollama_base_url: str (for local backend)
         """
-        backend = getattr(settings, "ai_backend", "local")
+        backend = getattr(settings, "ai_backend", None)
+        if backend is None and hasattr(settings, "ai_provider"):
+            from bb_paxdata.application.domain.enums import AIProvider
+
+            provider_map = {
+                AIProvider.OLLAMA: "local",
+                AIProvider.ANTHROPIC: "api",
+                AIProvider.GEMINI: "gemini",
+                AIProvider.GROQ: "groq",
+                AIProvider.DEEPSEEK: "deepseek",
+            }
+            backend = provider_map.get(settings.ai_provider, "local")
+        if backend is None:
+            backend = "local"
         model = getattr(settings, "ai_model", None)
 
         # Get API key based on backend

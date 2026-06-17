@@ -3,18 +3,18 @@
 
 from __future__ import annotations
 
-import logging
 from collections import Counter
 from datetime import datetime, timedelta, timezone
 from typing import Any
 
+import structlog
 from bb_paxdata.application.domain.models.calibration import CalibrationReport
 from bb_paxdata.application.domain.models.human_review import (
     AgreementStatus,
     HumanReview,
 )
 
-logger = logging.getLogger(__name__)
+logger = structlog.get_logger(__name__)
 
 KAPPA_RELIABLE_THRESHOLD = 0.67
 F1_ALERT_THRESHOLD = 0.70

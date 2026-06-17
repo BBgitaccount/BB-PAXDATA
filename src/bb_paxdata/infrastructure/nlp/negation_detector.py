@@ -1,8 +1,8 @@
 import asyncio
-import logging
 from typing import Any
 
 import spacy
+import structlog
 from spacy.language import Language
 
 from bb_paxdata.application.domain.enums.negation_type import NegationType
@@ -12,7 +12,7 @@ from bb_paxdata.application.domain.models.negation_cue import (
     NegationResult,
 )
 
-logger = logging.getLogger(__name__)
+logger = structlog.get_logger(__name__)
 
 
 class SpacyNegationDetector:

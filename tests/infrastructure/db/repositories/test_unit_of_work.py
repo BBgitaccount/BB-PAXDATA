@@ -52,3 +52,26 @@ async def test_uow_rollbacks_on_exception(
     async with session_factory() as session:
         gone = await SentenceRepository(session).get("u2")
         assert gone is None
+
+
+async def test_uow_rollbacks_on_commit_failure(
+    session_factory: Callable[[], AsyncSession]
+) -> None:
+    from unittest.mock import AsyncMock
+
+    original_session = session_factory()
+    original_session.commit = AsyncMock(side_effect=RuntimeError("commit failed"))
+    original_session.rollback = AsyncMock(wraps=original_session.rollback)
+    original_session.close = AsyncMock(wraps=original_session.close)
+
+    def mocked_session_factory() -> AsyncSession:
+        return original_session
+
+    uow = SqlAlchemyUnitOfWork(mocked_session_factory)
+
+    with pytest.raises(RuntimeError, match="commit failed"):
+        async with uow:
+            pass
+
+    original_session.rollback.assert_awaited_once()
+    original_session.close.assert_awaited_once()

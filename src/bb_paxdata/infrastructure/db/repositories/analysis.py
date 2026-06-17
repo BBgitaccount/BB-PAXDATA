@@ -17,7 +17,9 @@ from bb_paxdata.application.domain.services.compare_sessions_protocols import (
 )
 from bb_paxdata.infrastructure.db.models import (
     AICache,
+    AIExplanationsORM,
     AIFailAnalysis,
+    AIFailCache,
     AIFailPattern,
     AISentenceAnalysis,
     AIValidationLog,
@@ -43,6 +45,16 @@ class AnalysisRepository(BaseRepository[AISentenceAnalysis], IAnalysisRepository
     """Async repository for AISentenceAnalysis ORM model."""
 
     model_class = AISentenceAnalysis
+
+    def __init__(
+        self,
+        session: Any,
+        ai_cache_service: Any | None = None,
+        ai_fail_cache_service: Any | None = None,
+    ) -> None:
+        super().__init__(session)
+        self._ai_cache_service = ai_cache_service
+        self._ai_fail_cache_service = ai_fail_cache_service
 
     async def get_by_session(self, session_id: str) -> list[AnalysisDomain]:
         """Get all analyses for a session."""
@@ -81,12 +93,8 @@ class AnalysisRepository(BaseRepository[AISentenceAnalysis], IAnalysisRepository
         """
         if getattr(analysis, "prompt_version", None) is None:
             try:
-                analysis = analysis.model_copy(
-                    update={
-                        "prompt_version": get_prompt_registry().get_version_string(
-                            prompt_name
-                        )
-                    }
+                analysis.prompt_version = get_prompt_registry().get_version_string(
+                    prompt_name
                 )
             except (KeyError, Exception):
                 pass  # Registry erişilemezse prompt_version NULL kalır
@@ -109,7 +117,7 @@ class AnalysisRepository(BaseRepository[AISentenceAnalysis], IAnalysisRepository
                 raise ValueError("sentence_id cannot be None")
             # If consensus was passed, we assign it to the domain model temporarily
             if consensus:
-                analysis = analysis.model_copy(update={"consensus_result": consensus})
+                analysis.consensus_result = consensus
             orm = AISentenceAnalysis.from_domain(analysis, sent_id=sent_id)
         else:
             orm = analysis
@@ -121,6 +129,51 @@ class AnalysisRepository(BaseRepository[AISentenceAnalysis], IAnalysisRepository
                 orm.anomaly_detected_subtype = consensus.ai_result.detected_subtype
         self._session.add(orm)
         await self._session.flush()
+
+    async def save_sentence_analysis_with_metadata(
+        self,
+        analysis: AnalysisDomain,
+        *,
+        sent_id: str,
+        file_id: str | None = None,
+        sentence_code: str | None = None,
+        speaker_name: str | None = None,
+        country: str | None = None,
+        power_level: int = 0,
+        global_sent_order: int | None = None,
+        sentiment_score: float | None = None,
+        sentiment_category: str | None = None,
+        risk_score: int | None = None,
+        ai_sentiment: str | None = None,
+        ai_risk_score: float | None = None,
+        ai_frame_type: str | None = None,
+        hedging_score: float | None = None,
+        politeness_score: float | None = None,
+        logic_result: str | None = None,
+    ) -> AISentenceAnalysis:
+        """Save sentence analysis by mapping from domain model and setting metadata fields."""
+        orm = AISentenceAnalysis.from_domain(
+            analysis,
+            sent_id=sent_id,
+            file_id=file_id,
+            sentence_code=sentence_code,
+            speaker_name=speaker_name,
+            country=country,
+            power_level=power_level,
+            global_sent_order=global_sent_order,
+            sentiment_score=sentiment_score,
+            sentiment_category=sentiment_category,
+            risk_score=risk_score,
+            ai_sentiment=ai_sentiment,
+            ai_risk_score=ai_risk_score,
+            ai_frame_type=ai_frame_type,
+            hedging_score=hedging_score,
+            politeness_score=politeness_score,
+            logic_result=logic_result,
+        )
+        self._session.add(orm)
+        await self._session.flush()
+        return orm
 
     async def get_sentence_analysis(self, sent_id: str) -> AnalysisDomain | None:
         """Get analysis for a sentence."""
@@ -148,18 +201,67 @@ class AnalysisRepository(BaseRepository[AISentenceAnalysis], IAnalysisRepository
         result = await self._session.execute(stmt)
         return list(result.scalars().all())
 
-    async def get_cache(self, cache_hash: str) -> Any | None:
-        """Get cached AI response."""
-        stmt = select(AICache).where(AICache.hash == cache_hash)
+    async def get_cache(
+        self, cache_hash: str, file_id: str | None = None
+    ) -> Any | None:
+        """Get cached AI response from Redis (L1) or database (L2)."""
+        # Try Redis cache service first if available
+        if self._ai_cache_service:
+            try:
+                cached = await self._ai_cache_service.get(cache_hash, file_id)
+                if cached:
+                    return cached
+            except Exception as e:
+                logger.warning(
+                    "ai_cache_service_get_failed",
+                    cache_hash=cache_hash[:16],
+                    error=str(e),
+                )
+
+        # Fallback to database
+        import hashlib
+
+        effective_hash = cache_hash
+        if file_id:
+            effective_hash = hashlib.sha256(
+                f"{cache_hash}:{file_id}".encode()
+            ).hexdigest()
+        stmt = select(AICache).where(AICache.hash == effective_hash)
         result = await self._session.execute(stmt)
         orm = result.scalar_one_or_none()
         return orm.to_domain() if orm else None
 
     async def set_cache(
-        self, cache_hash: str, result_json: str, model_used: str, backend_used: str
+        self,
+        cache_hash: str,
+        result_json: str,
+        model_used: str,
+        backend_used: str,
+        file_id: str | None = None,
     ) -> None:
-        """Set cached AI response."""
-        stmt = select(AICache).where(AICache.hash == cache_hash)
+        """Set cached AI response in both Redis (L1) and database (L2)."""
+        # Write to Redis cache service if available
+        if self._ai_cache_service:
+            try:
+                await self._ai_cache_service.set(
+                    cache_hash, result_json, model_used, backend_used, file_id
+                )
+            except Exception as e:
+                logger.warning(
+                    "ai_cache_service_set_failed",
+                    cache_hash=cache_hash[:16],
+                    error=str(e),
+                )
+
+        # Write to database (persistent storage)
+        import hashlib
+
+        effective_hash = cache_hash
+        if file_id:
+            effective_hash = hashlib.sha256(
+                f"{cache_hash}:{file_id}".encode()
+            ).hexdigest()
+        stmt = select(AICache).where(AICache.hash == effective_hash)
         result = await self._session.execute(stmt)
         orm = result.scalar_one_or_none()
         if orm:
@@ -168,10 +270,87 @@ class AnalysisRepository(BaseRepository[AISentenceAnalysis], IAnalysisRepository
             orm.backend_used = backend_used
         else:
             orm = AICache(
+                hash=effective_hash,
+                result_json=result_json,
+                model_used=model_used,
+                backend_used=backend_used,
+            )
+            self._session.add(orm)
+        await self._session.flush()
+
+    async def save_rag_explanation(
+        self,
+        sent_id: str,
+        risk_explanation: str,
+        sentiment_explanation: str,
+        executive_summary: str,
+        token_attributions_json: str | None = None,
+        grammatical_explanation: str | None = None,
+        discrepancy_explanation: str | None = None,
+    ) -> AIExplanationsORM:
+        """Save RAG query explanation to AIExplanationsORM."""
+        # Check if explanation already exists for this sent_id
+        stmt = select(AIExplanationsORM).where(AIExplanationsORM.sent_id == sent_id)
+        result = await self._session.execute(stmt)
+        existing = result.scalar_one_or_none()
+
+        if existing:
+            # Update existing explanation
+            existing.risk_explanation = risk_explanation
+            existing.sentiment_explanation = sentiment_explanation
+            existing.executive_summary = executive_summary
+            existing.token_attributions_json = token_attributions_json
+            existing.grammatical_explanation = grammatical_explanation
+            existing.discrepancy_explanation = discrepancy_explanation
+            await self._session.flush()
+            return existing
+        else:
+            # Create new explanation
+            explanation = AIExplanationsORM(
+                sent_id=sent_id,
+                risk_explanation=risk_explanation,
+                sentiment_explanation=sentiment_explanation,
+                executive_summary=executive_summary,
+                token_attributions_json=token_attributions_json,
+                grammatical_explanation=grammatical_explanation,
+                discrepancy_explanation=discrepancy_explanation,
+            )
+            self._session.add(explanation)
+            await self._session.flush()
+            return explanation
+
+    async def get_rag_explanation(self, sent_id: str) -> AIExplanationsORM | None:
+        """Get RAG query explanation by sent_id."""
+        stmt = select(AIExplanationsORM).where(AIExplanationsORM.sent_id == sent_id)
+        result = await self._session.execute(stmt)
+        return result.scalar_one_or_none()
+
+    async def get_fail_cache(self, cache_hash: str) -> AIFailCache | None:
+        """Get cached AI failure analysis."""
+        stmt = select(AIFailCache).where(AIFailCache.hash == cache_hash)
+        result = await self._session.execute(stmt)
+        orm = result.scalar_one_or_none()
+        return orm
+
+    async def set_fail_cache(
+        self, cache_hash: str, result_json: str, model_used: str, backend_used: str
+    ) -> None:
+        """Set cached AI failure analysis."""
+        stmt = select(AIFailCache).where(AIFailCache.hash == cache_hash)
+        result = await self._session.execute(stmt)
+        orm = result.scalar_one_or_none()
+        if orm:
+            orm.result_json = result_json
+            orm.model_used = model_used
+            orm.backend_used = backend_used
+            orm.hit_count += 1
+        else:
+            orm = AIFailCache(
                 hash=cache_hash,
                 result_json=result_json,
                 model_used=model_used,
                 backend_used=backend_used,
+                hit_count=1,
             )
             self._session.add(orm)
         await self._session.flush()

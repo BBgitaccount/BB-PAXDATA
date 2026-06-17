@@ -5,11 +5,11 @@
 
 from __future__ import annotations
 
-import logging
 import threading
 from typing import Any, cast
 
-from ...application.domain.enums import AIProvider
+import structlog
+
 from ...application.domain.services.ai_analyst import AIAnalyst
 from ...application.domain.services.appraisal_service import get_appraisal_service
 from ...application.domain.services.cross_anomaly_service import CrossAnomalyService
@@ -26,8 +26,6 @@ from ...application.pipeline.stages.country_reference_collector import (
 )
 from ...application.pipeline.stages.finalize_stage import FinalizeStage
 from ...config.settings import get_settings
-from ..ai.analyst import AIAnalyst as InfraAIAnalyst
-from ..ai.analyst import BackendType
 from ..db.repositories.unit_of_work import SqlAlchemyUnitOfWork
 from ..db.session import SessionLocal
 from ..event_bus.simple_event_bus import SimpleEventBus
@@ -38,7 +36,7 @@ from ..nlp.power_index_calculator import PowerIndexCalculator
 from ..nlp.risk_signal_detector import RiskSignalDetector
 from ..nlp.topic_modeling import TopicModelingService
 
-logger = logging.getLogger(__name__)
+logger = structlog.get_logger(__name__)
 
 
 class ServiceContainer:
@@ -147,29 +145,14 @@ class ServiceContainer:
 
             # Initialize infra analyst
             settings = get_settings()
-            provider_map = {
-                AIProvider.OLLAMA: BackendType.OLLAMA,
-                AIProvider.ANTHROPIC: BackendType.ANTHROPIC,
-                AIProvider.GEMINI: BackendType.GEMINI,
-                AIProvider.GROQ: BackendType.GROQ,
-            }
-            backend_type = provider_map.get(settings.ai_provider, BackendType.OLLAMA)
-            api_key = settings.active_ai_api_key
-            base_url = settings.ollama_base_url
+            from ..ai.factory import AIClientFactory
 
-            self.infra_analyst = InfraAIAnalyst(
-                default_backend=backend_type,
-                api_key=api_key if api_key else None,
-                base_url=base_url,
-            )
+            self.infra_analyst = AIClientFactory.from_settings(settings)
 
             from bb_paxdata.infrastructure.ai.batch import BatchProcessor
 
-            raw_client = self.infra_analyst._get_client(
-                self.infra_analyst.default_backend
-            )
             self.batch_processor = BatchProcessor(
-                client=raw_client,
+                client=self.infra_analyst,
                 recovery_engine=self.recovery_engine,
             )
 
@@ -513,6 +496,32 @@ class ServiceContainer:
         from bb_paxdata.infrastructure.retrieval.pgvector_dense_retriever import (
             PgvectorDenseRetriever,
         )
+        from bb_paxdata.infrastructure.search.meilisearch_client import (
+            ensure_indexes,
+        )
+
+        # Configure Meilisearch indexes
+        try:
+            import asyncio
+
+            # Run ensure_indexes in the current event loop or create a new one
+            try:
+                loop = asyncio.get_event_loop()
+                if loop.is_running():
+                    # Schedule the coroutine to run in the background
+                    task = asyncio.create_task(ensure_indexes())
+                    del task  # Explicitly discard to avoid unused warning
+                else:
+                    loop.run_until_complete(ensure_indexes())
+            except RuntimeError:
+                # No event loop, create a new one
+                asyncio.run(ensure_indexes())
+            logger.info("Meilisearch indexes configuration initiated")
+        except Exception as e:
+            logger.warning(
+                "meilisearch_index_configuration_failed",
+                error=str(e),
+            )
 
         self.event_bus = SimpleEventBus()
         self.event_publisher = Phase5EventPublisher(event_bus=self.event_bus)
@@ -548,12 +557,56 @@ class ServiceContainer:
         self.local_reranker = LocalCrossEncoderReranker()
         self.rag_synthesis_client = RAGSynthesisClient(ai_analyst=self.ai_analyst)
 
+        # Create analysis repository for RAG caching
+        from bb_paxdata.infrastructure.cache.ai_cache_service import (
+            AICacheService,
+            AIFailCacheService,
+        )
+        from bb_paxdata.infrastructure.cache.redis import RedisCacheBackend
+        from bb_paxdata.infrastructure.db.repositories.analysis import (
+            AnalysisRepository,
+        )
+
+        # Create Redis cache backend
+        self.redis_cache_backend = RedisCacheBackend(
+            url=settings.redis_url,
+            key_prefix="bbpax:ai:",
+            default_ttl=3600,
+        )
+
+        # Create cache services (pass analysis_repository later after it's created)
+        self.ai_cache_service = AICacheService(
+            redis_backend=self.redis_cache_backend,
+            analysis_repository=None,  # Will be set after repository creation
+            redis_ttl=3600,
+            enable_redis=True,
+        )
+        self.ai_fail_cache_service = AIFailCacheService(
+            redis_backend=self.redis_cache_backend,
+            analysis_repository=None,  # Will be set after repository creation
+            redis_ttl=7200,
+            enable_redis=True,
+        )
+
+        # Create analysis repository with cache services
+        self.analysis_repository = AnalysisRepository(
+            session=SessionLocal(),
+            ai_cache_service=self.ai_cache_service,
+            ai_fail_cache_service=self.ai_fail_cache_service,
+        )
+
+        # Set analysis_repository in cache services for L2 cache integration
+        self.ai_cache_service._db_repo = self.analysis_repository
+        self.ai_fail_cache_service._db_repo = self.analysis_repository
+
         self.rag_service = RAGService(
             keyword_retriever=self.keyword_retriever,
             dense_retriever=self.dense_retriever,
             reranker=self.local_reranker,
             synthesis_client=self.rag_synthesis_client,
             prompt_registry=self.prompt_registry,
+            analysis_repository=self.analysis_repository,
+            enable_cache=True,
         )
 
         self.baseline_fetcher = RollingWindowBaselineFetcher(
@@ -598,10 +651,8 @@ class ServiceContainer:
         await self._http_client.aclose()
 
         # Close all AI backend clients in infra_analyst
-        if hasattr(self, "infra_analyst") and hasattr(self.infra_analyst, "_clients"):
-            for client in self.infra_analyst._clients.values():
-                if hasattr(client, "_client"):
-                    await client._client.aclose()
+        if hasattr(self, "infra_analyst") and hasattr(self.infra_analyst, "aclose"):
+            await self.infra_analyst.aclose()
 
         # Close presupposition verifier's AI client
         if (

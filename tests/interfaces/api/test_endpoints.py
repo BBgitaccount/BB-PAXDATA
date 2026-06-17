@@ -373,3 +373,95 @@ async def test_get_database_stats(test_db_session, seed_data, auth_headers):
     assert "row_counts" in data
     assert data["row_counts"]["sentences"] == 3
     assert data["row_counts"]["files"] == 0
+
+
+@pytest.mark.asyncio
+async def test_get_calibration_report_and_trend(
+    test_db_session, seed_data, auth_headers
+):
+    """Verify retrieving calibration report and trend metrics."""
+    from datetime import datetime, timedelta, timezone
+
+    from bb_paxdata.infrastructure.db.human_review_table import CalibrationReportORM
+
+    now = datetime.now(timezone.utc)
+    # Seed 6 reports for trend and latest report retrieval
+    reports = []
+    for i in range(6):
+        report = CalibrationReportORM(
+            prompt_version="v3",
+            evaluation_period_start=now - timedelta(days=30 * (i + 1)),
+            evaluation_period_end=now - timedelta(days=30 * i),
+            cohens_kappa_frame=0.72 + 0.01 * i,
+            cohens_kappa_risk=0.68,
+            ai_human_f1_frame=0.84,
+            ai_human_f1_risk=0.79,
+            sbi_mae=4.2,
+            total_reviews=100,
+            total_disagreements=10,
+            requires_prompt_update=False,
+            requires_weight_update=False,
+            alert_message="No alert",
+            top_disagreement_patterns=[],
+            created_at=now - timedelta(days=30 * i),
+        )
+        reports.append(report)
+
+    test_db_session.add_all(reports)
+    await test_db_session.commit()
+
+    # Test Calibration Report (should get the latest, which is i=0, so cohens_kappa_frame = 0.72)
+    response = client.get("/api/v1/dashboard/calibration", headers=auth_headers)
+    assert response.status_code == 200
+    data = response.json()
+    assert data["prompt_version"] == "v3"
+    assert data["cohens_kappa_frame"] == 0.72
+
+    # Test Calibration Trend
+    response_trend = client.get(
+        "/api/v1/dashboard/calibration/trend?months=6", headers=auth_headers
+    )
+    assert response_trend.status_code == 200
+    trend_data = response_trend.json()
+    assert isinstance(trend_data, list)
+    assert len(trend_data) == 6
+    assert trend_data[0]["month"] is not None
+    assert trend_data[0]["kappa"] is not None
+    assert trend_data[0]["f1"] is not None
+
+
+@pytest.mark.asyncio
+async def test_system_settings_endpoints(test_db_session, seed_data, auth_headers):
+    """Verify GET and PUT on /api/v1/settings/system for admin users."""
+    # GET — should return defaults when no JSON file exists
+    r_get = client.get("/api/v1/settings/system", headers=auth_headers)
+    assert r_get.status_code == 200
+    data = r_get.json()
+    assert "anomaly_soft_log_only" in data
+    assert "risk_ai_weight" in data
+    assert "formula_tolerance" in data
+    assert "risk_threshold" in data
+
+    # PUT — should accept and echo back updated settings
+    updated = {**data, "risk_threshold": 80.0, "anomaly_context_window": 7}
+    r_put = client.put("/api/v1/settings/system", json=updated, headers=auth_headers)
+    assert r_put.status_code == 200
+    put_data = r_put.json()
+    assert put_data["risk_threshold"] == 80.0
+    assert put_data["anomaly_context_window"] == 7
+
+
+@pytest.mark.asyncio
+async def test_settings_permission_denied_for_non_admin(test_db_session, auth_headers):
+    """Verify /settings/reviewers and /settings/system require admin permission."""
+    from bb_paxdata.infrastructure.auth.jwt_auth import create_jwt
+
+    # Non-admin user token (verdict-level only)
+    verdict_token = create_jwt("analyst@paxdata.local", roles=["verdict"])
+    verdict_headers = {"Authorization": f"Bearer {verdict_token}"}
+
+    r_reviewers = client.get("/api/v1/settings/reviewers", headers=verdict_headers)
+    assert r_reviewers.status_code == 403
+
+    r_system = client.get("/api/v1/settings/system", headers=verdict_headers)
+    assert r_system.status_code == 403

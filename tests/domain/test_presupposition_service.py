@@ -9,8 +9,8 @@ from bb_paxdata.application.domain.lexicon.presupposition_triggers import (
     PresuppositionLexicon,
 )
 from bb_paxdata.application.domain.models.presupposition import (
+    PresuppositionCandidate,
     PresuppositionExtractionResult,
-    TriggerType,
 )
 from bb_paxdata.application.domain.services.presupposition_service import (
     PresuppositionService,
@@ -130,19 +130,10 @@ def test_helper_extract_that_clause():
 
 def test_calculate_base_confidence():
     """Test confidence calculation."""
-    service = PresuppositionService(
-        verifier=Mock(),
-        lexicon=PresuppositionLexicon.load_default(),
-        negation_detector=Mock(),
-    )
-
-    mock_token = Mock()
-    mock_token.lemma_ = "know"
-    mock_token.sent = Mock()
-    mock_token.sent.__len__ = Mock(return_value=5)
-
-    confidence = service._calculate_base_confidence(
-        mock_token, TriggerType.FACTIVE_VERB, "test content"
+    confidence = PresuppositionCandidate.calculate_confidence(
+        trigger_lemma="know",
+        presupposed_content="test content",
+        sentence_length=5,
     )
 
     # "know" has specificity 0.60
@@ -152,19 +143,10 @@ def test_calculate_base_confidence():
 
 def test_calculate_base_confidence_high_specificity():
     """Test confidence calculation with high specificity trigger."""
-    service = PresuppositionService(
-        verifier=Mock(),
-        lexicon=PresuppositionLexicon.load_default(),
-        negation_detector=Mock(),
-    )
-
-    mock_token = Mock()
-    mock_token.lemma_ = "regret"
-    mock_token.sent = Mock()
-    mock_token.sent.__len__ = Mock(return_value=5)
-
-    confidence = service._calculate_base_confidence(
-        mock_token, TriggerType.FACTIVE_VERB, "test content"
+    confidence = PresuppositionCandidate.calculate_confidence(
+        trigger_lemma="regret",
+        presupposed_content="test content",
+        sentence_length=5,
     )
 
     # "regret" has specificity 0.90

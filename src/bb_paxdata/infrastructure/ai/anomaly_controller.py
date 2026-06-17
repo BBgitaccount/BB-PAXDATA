@@ -9,8 +9,9 @@ yakalar.
 from __future__ import annotations
 
 import asyncio
-import logging
 from typing import TYPE_CHECKING, Any
+
+import structlog
 
 from bb_paxdata.application.domain.models.anomaly import (
     AnomalyResult,
@@ -24,7 +25,7 @@ if TYPE_CHECKING:
     from bb_paxdata.infrastructure.ai.base import AIClient
     from bb_paxdata.infrastructure.ai.recovery import RecoveryEngine
 
-logger = logging.getLogger(__name__)
+logger = structlog.get_logger(__name__)
 
 
 class AIAnomalyController:

@@ -1,10 +1,10 @@
 # src/bb_paxdata/infrastructure/export/tasks.py
 from __future__ import annotations
 
-import logging
 import pathlib
 
 import nbformat as nbf
+import structlog
 from bb_paxdata.infrastructure.db.discourse_network_table import (
     DiscourseNetworkEdgeTable,
 )
@@ -18,7 +18,7 @@ from sqlalchemy import select
 
 celery_app = get_celery_app()
 
-logger = logging.getLogger(__name__)
+logger = structlog.get_logger(__name__)
 
 
 @celery_app.task(bind=True, name="export.latex_report")

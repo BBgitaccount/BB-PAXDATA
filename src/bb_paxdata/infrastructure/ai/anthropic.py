@@ -12,7 +12,6 @@ from bb_paxdata.infrastructure.ai.base import (
     CompletionOptions,
     CompletionResult,
 )
-from bb_paxdata.infrastructure.observability.metrics import get_metrics
 
 logger = structlog.get_logger(__name__)
 
@@ -85,9 +84,9 @@ class AnthropicClient(AIClient):
                 "content-type": "application/json",
             }
 
-            # [FAZ3-METRIC]
-            _t0 = time.perf_counter()
-            try:
+            from bb_paxdata.infrastructure.ai.base import ai_call_instrumented
+
+            async with ai_call_instrumented("anthropic", self._model, logger) as record:
                 response = await self._client.post(
                     "https://api.anthropic.com/v1/messages",
                     json=payload,
@@ -95,30 +94,11 @@ class AnthropicClient(AIClient):
                     timeout=options.timeout,
                 )
                 response.raise_for_status()
-                duration = time.perf_counter() - _t0
-                try:
-                    get_metrics().record_ai_request(
-                        backend="anthropic",
-                        model=self._model,
-                        duration_seconds=duration,
-                        status="success",
-                    )
-                except Exception:
-                    pass
-            except Exception:
-                duration = time.perf_counter() - _t0
-                try:
-                    get_metrics().record_ai_request(
-                        backend="anthropic",
-                        model=self._model,
-                        duration_seconds=duration,
-                        status="error",
-                    )
-                except Exception:
-                    pass
-                raise
+                raw_response = response.json()
+                usage = raw_response.get("usage", {})
+                record.prompt_tokens = usage.get("input_tokens", 0)
+                record.completion_tokens = usage.get("output_tokens", 0)
 
-            raw_response = response.json()
             content = raw_response.get("content", [{}])[0].get("text", "")
 
             # Remove the prefill "{" we added - response should start with "{"
@@ -135,10 +115,7 @@ class AnthropicClient(AIClient):
                     )
                     content = stripped
 
-            # Calculate tokens
-            usage = raw_response.get("usage", {})
-            tokens_used = usage.get("input_tokens", 0) + usage.get("output_tokens", 0)
-
+            tokens_used = record.prompt_tokens + record.completion_tokens
             latency_ms = int((time.monotonic() - start_time) * 1000)
 
             # Parse JSON if requested
@@ -162,6 +139,8 @@ class AnthropicClient(AIClient):
                 latency_ms=latency_ms,
                 success=True,
                 raw_response=raw_response,
+                prompt_tokens=record.prompt_tokens,
+                completion_tokens=record.completion_tokens,
             )
 
         except Exception as e:

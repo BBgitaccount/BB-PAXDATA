@@ -3,9 +3,9 @@
 
 from __future__ import annotations
 
-import logging
 from typing import Any
 
+import structlog
 from sqlalchemy import and_, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -16,7 +16,7 @@ from bb_paxdata.application.domain.models.human_review import (
 )
 from bb_paxdata.infrastructure.db.human_review_table import HumanReviewORM
 
-logger = logging.getLogger(__name__)
+logger = structlog.get_logger(__name__)
 
 
 class HumanReviewRepository:

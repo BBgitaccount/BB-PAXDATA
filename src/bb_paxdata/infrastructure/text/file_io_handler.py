@@ -767,7 +767,7 @@ def get_parser_version() -> str:
 
 
 def utc_now() -> datetime:
-    """Get naive UTC datetime for SQLAlchemy/PostgreSQL compatibility."""
+    """Get current UTC datetime as timezone-naive (required for TIMESTAMP WITHOUT TIME ZONE columns)."""
     return datetime.now(timezone.utc).replace(tzinfo=None)
 
 

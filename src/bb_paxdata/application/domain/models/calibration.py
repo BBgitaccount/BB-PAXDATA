@@ -18,7 +18,7 @@ class CalibrationReport(BaseModel):
     Periyodik olarak (örn: haftalık) hesaplanır ve DB'ye yazılır.
     """
 
-    model_config = ConfigDict(frozen=True)
+    model_config = ConfigDict(frozen=False)
 
     id: str = Field(default_factory=lambda: str(uuid4()))
     prompt_version: str  # örn: "sentence_analysis@v1.2"

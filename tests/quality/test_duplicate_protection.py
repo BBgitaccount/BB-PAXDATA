@@ -94,7 +94,7 @@ class TestDuplicateProtectionService:
         is_processed, processed_file = service.is_already_processed("test_key")
 
         assert is_processed is True
-        assert processed_file == mock_processed_file
+        assert processed_file.id == mock_processed_file.file_id
 
     def test_is_already_processed_force_rebuild(
         self, service: DuplicateProtectionService, mock_db_session: Mock
@@ -107,7 +107,7 @@ class TestDuplicateProtectionService:
         assert is_processed is False
         assert processed_file is None
 
-    @patch("bb_paxdata.domain.services.duplicate_protection.hashlib.sha256")
+    @patch("bb_paxdata.application.domain.services.duplicate_protection.hashlib.sha256")
     def test_mark_as_processed_new(
         self,
         mock_sha256: Mock,
@@ -138,7 +138,7 @@ class TestDuplicateProtectionService:
         mock_db_session.add.assert_called_once()
         mock_db_session.commit.assert_called_once()
 
-    @patch("bb_paxdata.domain.services.duplicate_protection.hashlib.sha256")
+    @patch("bb_paxdata.application.domain.services.duplicate_protection.hashlib.sha256")
     def test_mark_as_processed_existing(
         self,
         mock_sha256: Mock,
@@ -174,7 +174,7 @@ class TestDuplicateProtectionService:
             sample_file_path, sample_file_content, idempotency_key
         )
 
-        assert result == existing_file
+        assert result.id == existing_file.file_id
         assert result.reprocess_count == 2  # Should be incremented
         mock_db_session.commit.assert_called_once()
 
@@ -198,7 +198,7 @@ class TestDuplicateProtectionService:
 
         result = service.get_existing_panel(Path("test.txt"), "content", "test_key")
 
-        assert result == processed_file
+        assert result.id == processed_file.file_id
 
     def test_get_existing_panel_not_found(
         self, service: DuplicateProtectionService, mock_db_session: Mock

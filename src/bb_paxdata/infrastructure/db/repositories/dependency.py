@@ -81,3 +81,15 @@ class DependencyRepository:
         stmt = select(DependencyTripleORM).where(DependencyTripleORM.file_id == file_id)
         res = await self.session.execute(stmt)
         return list(res.scalars().all())
+
+    async def delete_by_panel(self, file_id: str) -> None:
+        """Delete all DependencyTripleORM and ActorActionMatrixORM entries associated with a panel."""
+        from sqlalchemy import delete
+
+        await self.session.execute(
+            delete(DependencyTripleORM).where(DependencyTripleORM.file_id == file_id)
+        )
+        await self.session.execute(
+            delete(ActorActionMatrixORM).where(ActorActionMatrixORM.file_id == file_id)
+        )
+        await self.session.flush()

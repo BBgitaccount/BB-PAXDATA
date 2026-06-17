@@ -35,6 +35,9 @@ class MockCacheBackend:
         self._store.clear()
         return 0
 
+    async def health_check(self) -> bool:
+        return True
+
 
 class MockPublisher:
     """Mock event publisher in memory for API testing."""

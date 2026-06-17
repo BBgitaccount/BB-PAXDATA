@@ -8,12 +8,14 @@
 
 from __future__ import annotations
 
-import logging
 import re
+from typing import Any
+
+import structlog
 
 from bb_paxdata.application.domain.models.ai_analysis import AIAnalysisResult
 
-logger = logging.getLogger(__name__)
+logger = structlog.get_logger(__name__)
 
 # ── Diplomatik Duygu Sözlükleri ───────────────────────────────────────────────
 
@@ -287,12 +289,35 @@ class LogicOnlyAIAnalyst:
         """
         return "{}"
 
+    async def complete(
+        self,
+        user_message: str,
+        options: Any = None,
+    ) -> Any:
+        """AIClientProtocol/LLMClientProtocol'u karşılamak için stub.
+
+        Logic-only modda gerçek LLM çağrısı yapılmaz. AIAnomalyController ve benzeri
+        bileşenler bu metodu çağırdığında default/boş JSON döner.
+        """
+        from bb_paxdata.infrastructure.ai.base import CompletionResult
+
+        return CompletionResult(
+            content='{"decision": "INCONCLUSIVE"}',
+            parsed={"decision": "INCONCLUSIVE"},
+            backend=self.MODEL_NAME,
+            model=self.MODEL_NAME,
+            tokens_used=0,
+            latency_ms=0,
+            success=True,
+        )
+
     async def analyze(
         self,
         text: str,
         prompt_id: str | None = None,
         forced_version: str | None = None,
         language: str | None = None,
+        file_id: str | None = None,
     ) -> AIAnalysisResult:
         """
         Metin üzerinde kural tabanlı analiz çalıştırır.

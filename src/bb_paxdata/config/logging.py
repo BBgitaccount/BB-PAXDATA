@@ -20,6 +20,23 @@ from structlog.types import Processor
 _configured = False
 
 
+def add_otel_trace_info(
+    logger: Any, method_name: str, event_dict: dict[str, Any]
+) -> dict[str, Any]:
+    """Injects current trace_id and span_id into the log event dict if OpenTelemetry is active."""
+    try:
+        from opentelemetry import trace
+
+        span = trace.get_current_span()
+        if span and span.get_span_context().is_valid:
+            ctx = span.get_span_context()
+            event_dict["trace_id"] = f"{ctx.trace_id:032x}"
+            event_dict["span_id"] = f"{ctx.span_id:016x}"
+    except Exception:
+        pass
+    return event_dict
+
+
 def setup_logging(
     level: str = "INFO",  # "DEBUG" | "INFO" | "WARNING" | "ERROR"
     pretty: bool = True,  # True = renkli konsol, False = JSON satırı
@@ -38,6 +55,7 @@ def setup_logging(
     # Ortak processor'lar
     shared_processors: list[Processor] = [
         structlog.contextvars.merge_contextvars,  # contextvars entegrasyonu
+        add_otel_trace_info,  # OpenTelemetry tracing context
         structlog.stdlib.add_log_level,
         structlog.stdlib.add_logger_name,
         structlog.processors.TimeStamper(fmt="iso"),

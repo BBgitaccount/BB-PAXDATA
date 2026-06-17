@@ -4,19 +4,20 @@ from __future__ import annotations
 from datetime import datetime, timezone
 from uuid import UUID, uuid4
 
-from pydantic import BaseModel, Field, computed_field
 from pydantic import ConfigDict as model_config
+from pydantic import Field, computed_field
 
 from bb_paxdata.application.domain.enums.country_enums import (
     NarrativeLayer,
     RelationshipType,
 )
 
+from .base import AggregateRoot
 from .discourse_flow import DyadicMetrics
 from .power_index import PowerIndex
 
 
-class BilateralSentiment(BaseModel):
+class BilateralSentiment(AggregateRoot):
     """
     İki ülke arasındaki diplomatik söylem dinamiğinin aggregate modeli.
 

@@ -11,8 +11,8 @@ from bb_paxdata.infrastructure.ai.base import (
     AIClient,
     CompletionOptions,
     CompletionResult,
+    ai_call_instrumented,
 )
-from bb_paxdata.infrastructure.observability.metrics import get_metrics
 
 logger = structlog.get_logger(__name__)
 
@@ -77,9 +77,7 @@ class DeepSeekClient(AIClient):
                 "content-type": "application/json",
             }
 
-            # Record AI Request metrics
-            _t0 = time.perf_counter()
-            try:
+            async with ai_call_instrumented("deepseek", self._model, logger) as record:
                 response = await self._client.post(
                     "https://api.deepseek.com/chat/completions",
                     json=payload,
@@ -87,30 +85,10 @@ class DeepSeekClient(AIClient):
                     timeout=options.timeout,
                 )
                 response.raise_for_status()
-                duration = time.perf_counter() - _t0
-                try:
-                    get_metrics().record_ai_request(
-                        backend="deepseek",
-                        model=self._model,
-                        duration_seconds=duration,
-                        status="success",
-                    )
-                except Exception:
-                    pass
-            except Exception:
-                duration = time.perf_counter() - _t0
-                try:
-                    get_metrics().record_ai_request(
-                        backend="deepseek",
-                        model=self._model,
-                        duration_seconds=duration,
-                        status="error",
-                    )
-                except Exception:
-                    pass
-                raise
-
-            raw_response = response.json()
+                raw_response = response.json()
+                usage = raw_response.get("usage", {})
+                record.prompt_tokens = usage.get("prompt_tokens", 0)
+                record.completion_tokens = usage.get("completion_tokens", 0)
 
             # Extract content from response
             choices = raw_response.get("choices", [])
@@ -119,10 +97,7 @@ class DeepSeekClient(AIClient):
 
             content = choices[0].get("message", {}).get("content", "")
 
-            # Calculate tokens
-            usage = raw_response.get("usage", {})
-            tokens_used = usage.get("total_tokens", 0)
-
+            tokens_used = record.prompt_tokens + record.completion_tokens
             latency_ms = int((time.monotonic() - start_time) * 1000)
 
             # Parse JSON if requested
@@ -146,6 +121,8 @@ class DeepSeekClient(AIClient):
                 latency_ms=latency_ms,
                 success=True,
                 raw_response=raw_response,
+                prompt_tokens=record.prompt_tokens,
+                completion_tokens=record.completion_tokens,
             )
 
         except Exception as e:

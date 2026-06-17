@@ -53,7 +53,7 @@
 | ----------------------- | ----------- | -------------------------- |
 | Python                  | $\geq$ 3.12 | ✅                          |
 | Poetry                  | $\geq$ 1.8  | ✅                          |
-| Streamlit               | $\geq$ 1.30 | ✅ (Dashboard için)         |
+| Node.js                 | $\geq$ 18   | ✅ (React Panel için)       |
 | Docker + Docker Compose | Herhangi    | İzleme için (Opsiyonel)    |
 | Ollama                  | Herhangi    | Yerel LLM için (Opsiyonel) |
 
@@ -115,11 +115,13 @@ poetry run bbpaxdata analyze full --panel-id "panel_01" --threshold 0.5 --centra
 poetry run bbpaxdata validate db --strict
 ```
 
-### 1.4 HITL Dashboard Çalıştırma
-Yapay zeka analizlerinin ve matematiksel/mantıksal formül hatalarının insan denetçiler tarafından incelenebilmesi için geliştirilmiş olan Streamlit Dashboard uygulamasını aşağıdaki komutla başlatabilirsiniz:
+### 1.4 HITL Arayüzü (React) Çalıştırma
+Yapay zeka analizlerinin ve matematiksel/mantıksal formül hatalarının insan denetçiler tarafından incelenebilmesi için geliştirilmiş olan React tabanlı denetçi paneli uygulamasını aşağıdaki komutlarla başlatabilirsiniz:
 
 ```bash
-poetry run streamlit run scripts/hitl_dashboard.py
+cd src/bb_paxdata/interfaces/web
+npm install
+npm run dev
 ```
 
 ---
@@ -167,7 +169,7 @@ flowchart TB
 graph TB
     subgraph INTERFACES["🖥️ INTERFACES"]
         CLI["CLI (Typer + Rich)"]
-        DASHBOARD["Streamlit Dashboard"]
+        DASHBOARD["React Web Panel"]
         API["Future: FastAPI REST"]
     end
 
@@ -791,7 +793,7 @@ Reviewer tarafından yapılan her işlem (`REVIEW_STARTED`, `VERDICT_SUBMITTED`,
 #### 4. Sürüm Zinciri ve Düzeltmeler (Log Versioning)
 Bir formülün değeri denetçi tarafından düzeltildiğinde (`CORRECTED`), eski kayıt silinmez veya güncellenmez. Bunun yerine, eski kayıt `is_current=False` olarak işaretlenir ve `superseded_by` ilişkisiyle yeni oluşturulan güncel versiyona bağlanır. Bu sayede tam izlenebilirlik sağlanır.
 
-#### 5. Streamlit Review Dashboard
+#### 5. React Review Arayüzü
 Denetçilerin kullanımına sunulan modern web arayüzüdür:
 * **KPI Şeridi:** Toplam log, toplam FAIL, bekleyen inceleme sayısı ve doğruluk/düzeltme oranlarını canlı gösterir.
 * **Formül Sağlık Analizi:** Her bir formülün false-positive ve düzeltme oranlarını tablo ve grafiklerle raporlar.

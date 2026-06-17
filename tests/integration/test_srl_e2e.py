@@ -1,4 +1,3 @@
-import json
 from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
@@ -6,11 +5,10 @@ from bb_paxdata.application.domain.models.analysis import Analysis
 from bb_paxdata.application.domain.models.bilateral_sentiment import BilateralSentiment
 from bb_paxdata.application.domain.models.segment import Segment
 from bb_paxdata.application.domain.models.sentence import Sentence
-from bb_paxdata.application.domain.models.srl import ExtractionStatus, SRLFrame, SRLSpan
+from bb_paxdata.application.domain.models.srl import ExtractionStatus
 from bb_paxdata.application.domain.services.spacy_pipeline import SpacyPipeline
 from bb_paxdata.application.pipeline.stages.assemble_network import NetworkAssemblyStage
 from bb_paxdata.application.pipeline.stages.finalize_network import NetworkFinalizeStage
-from bb_paxdata.infrastructure.db.models import DiscourseNetworkEdge
 from bb_paxdata.infrastructure.nlp.fischer_dna_service import FischerDNAService
 from bb_paxdata.infrastructure.nlp.maoz_dyadic_service import MaozDyadicService
 from bb_paxdata.infrastructure.nlp.srl_pipeline import SRLPipeline
@@ -158,96 +156,10 @@ async def test_srl_pipeline_e2e_flow(mock_pipeline_fn):
     finalized_analysis = await finalize_stage.process(mock_session, enriched_analysis)
     assert finalized_analysis is not None
 
-    # Verify session.add was called with a DiscourseNetworkEdge containing the correct columns
-    assert mock_session.add.call_count == 1
-    db_edge = mock_session.add.call_args[0][0]
-
-    assert isinstance(db_edge, DiscourseNetworkEdge)
-    assert db_edge.from_country == "Turkey"
-    assert db_edge.to_country == "proposal"
-    assert db_edge.predicate == "rejected"
-    assert db_edge.arg0_entity == "Turkey"
-    assert db_edge.arg1_entity == "proposal"
-    assert db_edge.is_negated is False
-    assert db_edge.srl_confidence == 0.99
-
-    # Verify frame JSON content
-    srl_frame_json = db_edge.srl_frame_json
-    assert srl_frame_json is not None
-    frame_json = json.loads(srl_frame_json)
-    assert frame_json["predicate"] == "rejected"
-    assert frame_json["arg0"] == "Turkey"
-    assert frame_json["arg1"] == "proposal"
-    assert frame_json["confidence"] == 0.99
-
-
-def test_database_model_round_trip():
-    """
-    Test conversion logic in DiscourseNetworkEdge:
-    Domain (SRLFrame) -> DB Model -> Domain (Metadata / Custom Fields).
-    """
-    frame = SRLFrame(
-        verb="support",
-        arg0=SRLSpan(text="USA", start_char=0, end_char=3),
-        arg1=SRLSpan(text="treaty", start_char=10, end_char=16),
-        argm_neg=False,
-        argm_mod="should",
-        frame_confidence=0.88,
+    # Verify network_repo.save_flow and bilateral_repo.save_dyadic were called
+    mock_network_repo.save_flow.assert_called_once_with(
+        mock_session, enriched_analysis.discourse_flow
     )
-
-    # 1. Convert from Domain to DB
-    from bb_paxdata.application.domain.models.metadata import Metadata
-
-    metadata_mock = Metadata(
-        id="discourse_edge:101",
-        entity_id="101",
-        entity_type="discourse_network_edge",
-        title="USA → treaty: support",
-        description="Bilateral edge",
-        custom_fields={
-            "from_country": "USA",
-            "to_country": "treaty",
-            "weight": 1.0,
-            "edge_type": "supportive",
-            "predicate": "support",
-            "arg0_entity": "USA",
-            "arg1_entity": "treaty",
-            "is_negated": False,
-            "srl_confidence": 0.88,
-            "srl_frame": frame.to_dict_for_db(),
-        },
+    mock_bilateral_repo.save_dyadic.assert_called_once_with(
+        mock_session, mock_maoz_metric
     )
-
-    db_edge = DiscourseNetworkEdge.from_domain(metadata_mock)
-
-    assert db_edge.from_country == "USA"
-    assert db_edge.to_country == "treaty"
-    assert db_edge.predicate == "support"
-    assert db_edge.arg0_entity == "USA"
-    assert db_edge.arg1_entity == "treaty"
-    assert db_edge.is_negated is False
-    assert db_edge.srl_confidence == 0.88
-    srl_frame_json = db_edge.srl_frame_json
-    assert srl_frame_json is not None
-
-    frame_json = json.loads(srl_frame_json)
-    assert frame_json["predicate"] == "support"
-    assert frame_json["arg0_entity"] == "USA"
-    assert frame_json["arg1_entity"] == "treaty"
-    assert frame_json["argm_mod"] == "should"
-
-    # 2. Convert from DB back to Domain
-    db_edge.edge_id = 101  # Mock generated primary key
-    domain_metadata = db_edge.to_domain()
-
-    assert domain_metadata.id == "discourse_edge:101"
-    cf = domain_metadata.custom_fields
-    assert cf["from_country"] == "USA"
-    assert cf["to_country"] == "treaty"
-    assert cf["predicate"] == "support"
-    assert cf["arg0_entity"] == "USA"
-    assert cf["arg1_entity"] == "treaty"
-    assert cf["is_negated"] is False
-    assert cf["srl_confidence"] == 0.88
-    assert cf["srl_frame"]["predicate"] == "support"
-    assert cf["srl_frame"]["argm_mod"] == "should"

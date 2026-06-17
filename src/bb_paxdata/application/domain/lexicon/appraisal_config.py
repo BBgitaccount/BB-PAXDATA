@@ -53,5 +53,7 @@ _config_instance: AppraisalPipelineConfig | None = None
 def get_appraisal_config() -> AppraisalPipelineConfig:
     global _config_instance
     if _config_instance is None:
-        _config_instance = AppraisalPipelineConfig.from_env()
+        from bb_paxdata.config.settings import get_settings
+
+        _config_instance = get_settings().appraisal
     return _config_instance

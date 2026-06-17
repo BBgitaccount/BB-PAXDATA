@@ -1,0 +1,453 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    --bg-primary: #0a0a0a;
+    --bg-secondary: #0c0c0c;
+    --bg-tertiary: #161616;
+    --bg-quaternary: #1a1a1a;
+    --border-hair: #2a2a2a;
+    --border-subtle: #333333;
+    --text-primary: #f5f5f5;
+    --text-secondary: #8a8a8a;
+    --text-tertiary: #505050;
+    --text-quaternary: #3a3a3a;
+    --accent-white: #ffffff;
+    --accent-silver: #e0e0e0;
+    --signal-fail: #5c2626;
+    --signal-pass: #264d26;
+    --signal-warn: #5c4a26;
+    --signal-info: #26424d;
+
+    /* RGB components for Tailwind color palette mapping */
+    --carbon-950-rgb: 10 10 10;
+    --carbon-900-rgb: 12 12 12;
+    --carbon-850-rgb: 15 15 15;
+    --carbon-800-rgb: 18 18 18;
+    --carbon-750-rgb: 22 22 22;
+    --carbon-700-rgb: 26 26 26;
+    --carbon-650-rgb: 30 30 30;
+    --carbon-600-rgb: 34 34 34;
+    --carbon-550-rgb: 42 42 42;
+    --carbon-500-rgb: 51 51 51;
+    --carbon-400-rgb: 80 80 80;
+    --carbon-300-rgb: 138 138 138;
+    --carbon-200-rgb: 160 160 160;
+    --carbon-100-rgb: 224 224 224;
+    --carbon-50-rgb: 245 245 245;
+
+    --signal-fail-rgb: 92 38 38;
+    --signal-pass-rgb: 38 77 38;
+    --signal-warn-rgb: 92 74 38;
+    --signal-info-rgb: 38 66 77;
+  }
+
+  html.light {
+    --bg-primary: #f8f9fa;
+    --bg-secondary: #f1f3f5;
+    --bg-tertiary: #ffffff;
+    --bg-quaternary: #e9ecef;
+    --border-hair: #dee2e6;
+    --border-subtle: #ced4da;
+    --text-primary: #1a1a1a;
+    --text-secondary: #495057;
+    --text-tertiary: #868e96;
+    --text-quaternary: #adb5bd;
+    --accent-white: #000000;
+    --accent-silver: #212529;
+    --signal-fail: #c62828;
+    --signal-pass: #2e7d32;
+    --signal-warn: #ef6c00;
+    --signal-info: #1565c0;
+
+    /* RGB components for Tailwind color palette (Reversed) */
+    --carbon-950-rgb: 248 249 250;
+    --carbon-900-rgb: 241 243 245;
+    --carbon-850-rgb: 237 240 242;
+    --carbon-800-rgb: 233 236 239;
+    --carbon-750-rgb: 255 255 255;
+    --carbon-700-rgb: 248 249 250;
+    --carbon-650-rgb: 233 236 239;
+    --carbon-600-rgb: 222 226 230;
+    --carbon-550-rgb: 206 212 218;
+    --carbon-500-rgb: 173 181 189;
+    --carbon-400-rgb: 134 142 150;
+    --carbon-300-rgb: 73 80 87;
+    --carbon-200-rgb: 52 58 64;
+    --carbon-100-rgb: 33 37 41;
+    --carbon-50-rgb: 26 26 26;
+
+    --signal-fail-rgb: 198 40 40;
+    --signal-pass-rgb: 46 125 50;
+    --signal-warn-rgb: 239 108 0;
+    --signal-info-rgb: 21 101 192;
+  }
+
+  html {
+    scrollbar-width: thin;
+    scrollbar-color: var(--border-hair) var(--bg-primary);
+    transition:
+      background-color 300ms ease,
+      color 300ms ease,
+      border-color 300ms ease;
+  }
+
+  body {
+    font-family: 'Inter', 'SF Pro Display', 'Helvetica Neue', system-ui, sans-serif;
+    background-color: var(--bg-primary);
+    color: var(--text-primary);
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    transition:
+      background-color 300ms ease,
+      color 300ms ease,
+      border-color 300ms ease;
+  }
+
+  ::selection {
+    background-color: var(--text-primary);
+    color: var(--bg-primary);
+  }
+
+  ::-webkit-scrollbar {
+    width: 4px;
+    height: 4px;
+  }
+
+  ::-webkit-scrollbar-track {
+    background: var(--bg-primary);
+  }
+
+  ::-webkit-scrollbar-thumb {
+    background: #2a2a2a;
+    border-radius: 0;
+  }
+
+  ::-webkit-scrollbar-thumb:hover {
+    background: #3a3a3a;
+  }
+
+  input,
+  textarea,
+  select {
+    background-color: var(--bg-tertiary);
+    border: 0.5px solid var(--border-hair);
+    color: var(--text-primary);
+    font-family: 'Inter', sans-serif;
+    transition:
+      border-color 150ms ease,
+      background-color 150ms ease;
+  }
+
+  input:focus,
+  textarea:focus,
+  select:focus {
+    outline: none;
+    border-color: var(--text-tertiary);
+    background-color: var(--bg-quaternary);
+  }
+
+  input::placeholder,
+  textarea::placeholder {
+    color: var(--text-tertiary);
+  }
+
+  button {
+    font-family: 'Inter', sans-serif;
+    transition: all 150ms ease;
+  }
+
+  input[type='range'] {
+    -webkit-appearance: none;
+    appearance: none;
+    width: 100%;
+    background: transparent;
+    height: 10px;
+    margin: 0;
+  }
+
+  input[type='range']:focus {
+    outline: none;
+  }
+
+  /* Track */
+  input[type='range']::-webkit-slider-runnable-track {
+    width: 100%;
+    height: 2px;
+    cursor: pointer;
+    background: linear-gradient(
+      to right,
+      var(--text-primary) 0%,
+      var(--text-primary) var(--range-progress, 0%),
+      var(--border-hair) var(--range-progress, 0%),
+      var(--border-hair) 100%
+    );
+    border-radius: 0;
+    border: none;
+  }
+
+  input[type='range']::-moz-range-track {
+    width: 100%;
+    height: 2px;
+    cursor: pointer;
+    background: linear-gradient(
+      to right,
+      var(--text-primary) 0%,
+      var(--text-primary) var(--range-progress, 0%),
+      var(--border-hair) var(--range-progress, 0%),
+      var(--border-hair) 100%
+    );
+    border-radius: 0;
+    border: none;
+  }
+
+  /* Thumb */
+  input[type='range']::-webkit-slider-thumb {
+    height: 10px;
+    width: 10px;
+    border-radius: 0;
+    background: var(--text-primary);
+    cursor: pointer;
+    -webkit-appearance: none;
+    margin-top: -4px; /* (2px track height - 10px thumb height) / 2 */
+    border: none;
+    transition: background 150ms ease;
+  }
+
+  input[type='range']::-webkit-slider-thumb:hover {
+    background: var(--text-secondary);
+  }
+
+  input[type='range']::-moz-range-thumb {
+    height: 10px;
+    width: 10px;
+    border-radius: 0;
+    background: var(--text-primary);
+    cursor: pointer;
+    border: none;
+    transition: background 150ms ease;
+  }
+
+  input[type='range']::-moz-range-thumb:hover {
+    background: var(--text-secondary);
+  }
+}
+
+@layer components {
+  .card-carbon {
+    background-color: var(--bg-tertiary);
+    border: 0.5px solid var(--border-hair);
+    box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.02);
+  }
+
+  .card-carbon:hover {
+    border-color: var(--border-subtle);
+    box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.04);
+  }
+
+  .text-mono-data {
+    font-family: 'JetBrains Mono', 'IBM Plex Mono', monospace;
+    font-variant-numeric: tabular-nums;
+    letter-spacing: -0.01em;
+  }
+
+  .border-hair {
+    border-width: 0.5px;
+    border-color: var(--border-hair);
+  }
+
+  .border-hair-b {
+    border-bottom-width: 0.5px;
+    border-bottom-color: var(--border-hair);
+  }
+
+  .border-hair-t {
+    border-top-width: 0.5px;
+    border-top-color: var(--border-hair);
+  }
+
+  .border-hair-r {
+    border-right-width: 0.5px;
+    border-right-color: var(--border-hair);
+  }
+
+  .border-hair-l {
+    border-left-width: 0.5px;
+    border-left-color: var(--border-hair);
+  }
+
+  .btn-primary {
+    background-color: var(--text-primary);
+    color: var(--bg-primary);
+    font-weight: 500;
+    letter-spacing: 0.04em;
+    font-size: 0.75rem;
+    text-transform: uppercase;
+    padding: 0.5rem 1.25rem;
+    border: none;
+  }
+
+  .btn-primary:hover {
+    background-color: var(--accent-silver);
+  }
+
+  .btn-primary:active {
+    background-color: var(--text-secondary);
+  }
+
+  .btn-secondary {
+    background-color: transparent;
+    color: var(--text-secondary);
+    font-weight: 500;
+    letter-spacing: 0.04em;
+    font-size: 0.75rem;
+    text-transform: uppercase;
+    padding: 0.5rem 1.25rem;
+    border: 0.5px solid var(--border-hair);
+  }
+
+  .btn-secondary:hover {
+    color: var(--text-primary);
+    border-color: var(--text-tertiary);
+  }
+
+  .btn-danger {
+    background-color: var(--signal-fail);
+    color: var(--text-primary);
+    font-weight: 500;
+    letter-spacing: 0.04em;
+    font-size: 0.75rem;
+    text-transform: uppercase;
+    padding: 0.5rem 1.25rem;
+    border: none;
+  }
+
+  .btn-danger:hover {
+    background-color: #7a3535;
+  }
+
+  .label-micro {
+    font-size: 0.65rem;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--text-tertiary);
+    font-weight: 500;
+  }
+
+  .shimmer {
+    background: linear-gradient(
+      90deg,
+      var(--bg-tertiary) 0%,
+      var(--bg-quaternary) 50%,
+      var(--bg-tertiary) 100%
+    );
+    background-size: 200% 100%;
+    animation: shimmer 1.5s ease-in-out infinite;
+  }
+
+  @keyframes shimmer {
+    0% {
+      background-position: 200% 0;
+    }
+    100% {
+      background-position: -200% 0;
+    }
+  }
+
+  .table-row-hover {
+    transition: background-color 150ms ease;
+  }
+
+  .table-row-hover:hover {
+    background-color: rgba(255, 255, 255, 0.02);
+  }
+
+  .tab-active {
+    color: var(--text-primary);
+    border-bottom: 1px solid var(--text-primary);
+  }
+
+  .tab-inactive {
+    color: var(--text-tertiary);
+    border-bottom: 1px solid transparent;
+  }
+
+  .tab-inactive:hover {
+    color: var(--text-secondary);
+  }
+}
+
+@layer utilities {
+  .tracking-diplomatic {
+    letter-spacing: 0.04em;
+  }
+
+  .font-tabular {
+    font-variant-numeric: tabular-nums;
+  }
+
+  /* Custom purpose-built keyframe animations */
+  @keyframes fade-in-up {
+    from {
+      opacity: 0;
+      transform: translateY(6px);
+      will-change: opacity, transform;
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+
+  @keyframes blink-status {
+    0%,
+    100% {
+      opacity: 1;
+    }
+    50% {
+      opacity: 0.4;
+    }
+  }
+
+  @keyframes toast-lifecycle {
+    0% {
+      transform: translateX(16px);
+      opacity: 0;
+      will-change: opacity, transform;
+    }
+    10% {
+      transform: translateX(0);
+      opacity: 1;
+    }
+    90% {
+      transform: translateX(0);
+      opacity: 1;
+    }
+    100% {
+      transform: translateX(16px);
+      opacity: 0;
+    }
+  }
+
+  .animate-scan-line {
+    transition: width 800ms cubic-bezier(0.23, 1, 0.32, 1);
+    will-change: width;
+  }
+}
+
+/* Prefers Reduced Motion override for accessibility */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  ::before,
+  ::after {
+    animation-delay: -1ms !important;
+    animation-duration: 1ms !important;
+    animation-iteration-count: 1 !important;
+    background-attachment: initial !important;
+    scroll-behavior: auto !important;
+    transition-duration: 0.01ms !important;
+    transition-delay: 0.01ms !important;
+  }
+}

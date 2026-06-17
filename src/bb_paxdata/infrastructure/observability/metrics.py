@@ -98,6 +98,20 @@ class MetricsCollector:
             registry=self._registry,
         )
 
+        self._ai_tokens_total = Counter(
+            "ai_tokens_total",
+            "AI token usage by type",
+            ["backend", "model", "token_type"],
+            registry=self._registry,
+        )
+
+        self._ai_tokens_per_second = Histogram(
+            "ai_tokens_per_second",
+            "Throughput of AI token generation per second",
+            ["backend", "model"],
+            registry=self._registry,
+        )
+
         self._cache_operations_total = Counter(
             "cache_operations_total",
             "Cache hit/miss sayacı",
@@ -205,6 +219,33 @@ class MetricsCollector:
             self._ai_request_duration_seconds.labels(
                 backend=backend, model=model, status=status
             ).observe(duration_seconds)
+
+    def record_ai_tokens(
+        self,
+        backend: str,
+        model: str,
+        prompt_tokens: int,
+        completion_tokens: int,
+        latency_ms: float,
+    ) -> None:
+        """Record AI token usage and throughput."""
+        total = prompt_tokens + completion_tokens
+        with self._lock:
+            self._ai_tokens_total.labels(
+                backend=backend, model=model, token_type="prompt"
+            ).inc(prompt_tokens)
+            self._ai_tokens_total.labels(
+                backend=backend, model=model, token_type="completion"
+            ).inc(completion_tokens)
+            self._ai_tokens_total.labels(
+                backend=backend, model=model, token_type="total"
+            ).inc(total)
+
+            if latency_ms > 0 and total > 0:
+                tokens_per_sec = total / (latency_ms / 1000.0)
+                self._ai_tokens_per_second.labels(backend=backend, model=model).observe(
+                    tokens_per_sec
+                )
 
     def record_cache_operation(
         self,

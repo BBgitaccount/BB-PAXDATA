@@ -34,7 +34,7 @@ from bb_paxdata.application.domain.models.discourse_flow import (  # noqa: F401,
 class DiscourseFlow(BaseModel):
     """Fischer DNA: Complete discourse flow for a single analysis session."""
 
-    model_config = {"frozen": True}
+    model_config = {"frozen": False}
 
     session_id: str
     edges: tuple[NetworkEdge, ...] = Field(default_factory=tuple)

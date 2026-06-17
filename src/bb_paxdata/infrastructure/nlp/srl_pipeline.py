@@ -13,13 +13,13 @@ Features:
 
 from __future__ import annotations
 
-import logging
 import threading
 import time
 from collections import OrderedDict
 from contextlib import contextmanager
 from dataclasses import dataclass, field
 
+import structlog
 import torch
 from transformers import TokenClassificationPipeline, pipeline
 
@@ -31,7 +31,7 @@ from bb_paxdata.application.domain.models.srl import (
 from bb_paxdata.infrastructure.nlp.srl_config import get_srl_config
 
 # Configure module-level logger
-logger = logging.getLogger(__name__)
+logger = structlog.get_logger(__name__)
 
 
 @dataclass

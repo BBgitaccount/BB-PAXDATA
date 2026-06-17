@@ -7,9 +7,9 @@ Infrastructure implementation of ISpacyPipelineService Protocol.
 
 from __future__ import annotations
 
-import logging
 from collections.abc import Iterable
 
+import structlog
 from spacy.tokens import Doc
 
 from bb_paxdata.application.domain.models.srl import (
@@ -21,7 +21,7 @@ from bb_paxdata.application.domain.ports.i_spacy_pipeline import ISpacyPipelineS
 from bb_paxdata.infrastructure.nlp.spacy_manager import SpacyModelManager
 from bb_paxdata.infrastructure.nlp.srl_pipeline import get_srl_pipeline
 
-logger = logging.getLogger(__name__)
+logger = structlog.get_logger(__name__)
 
 
 class SpacyPipelineService:

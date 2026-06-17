@@ -1,10 +1,11 @@
 import json
-import logging
 from typing import Any
+
+import structlog
 
 from bb_paxdata.config.settings import get_settings
 
-logger = logging.getLogger(__name__)
+logger = structlog.get_logger(__name__)
 
 
 class RedisEventPublisher:

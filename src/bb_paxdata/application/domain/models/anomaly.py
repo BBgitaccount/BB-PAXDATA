@@ -1,8 +1,12 @@
+from __future__ import annotations
+
 from datetime import datetime, timezone
 from enum import Enum
 from typing import Any
 
 from pydantic import BaseModel, ConfigDict, Field, model_validator
+
+from bb_paxdata.application.domain.utils.json_validation import validate_json_safe
 
 from ..enums import AnomalySeverity, AnomalyType, EvidenceType, RiskLevel
 
@@ -112,6 +116,16 @@ class Anomaly(BaseModel):
         description="Last update timestamp",
     )
 
+    @model_validator(mode="after")
+    def validate_json_fields(self) -> Anomaly:
+        """Ensure metadata contains only JSON-safe types."""
+        if self.metadata is not None:
+            try:
+                validate_json_safe(self.metadata)
+            except TypeError as e:
+                raise ValueError(f"Invalid metadata: {e}")
+        return self
+
 
 class AnomalyValidationDecision(str, Enum):
     CONFIRMED = "CONFIRMED"
@@ -124,7 +138,7 @@ class AnomalyValidationDecision(str, Enum):
 class AnomalyValidationResult(BaseModel):
     """AIAnomalyController çıktısı — domain modeli."""
 
-    model_config = ConfigDict(frozen=True)
+    model_config = ConfigDict(frozen=False)
 
     decision: AnomalyValidationDecision
     coherence_score: float = Field(ge=0.0, le=1.0)
@@ -213,6 +227,15 @@ class ContradictionResult(BaseModel):
     theta: float
     window: float
     metadata: dict[str, Any] = Field(default_factory=dict)
+
+    @model_validator(mode="after")
+    def validate_json_fields(self) -> ContradictionResult:
+        """Ensure metadata contains only JSON-safe types."""
+        try:
+            validate_json_safe(self.metadata)
+        except TypeError as e:
+            raise ValueError(f"Invalid metadata: {e}")
+        return self
 
     def extend_metadata(self, new_meta: dict[str, Any]) -> None:
         self.metadata.update(new_meta)

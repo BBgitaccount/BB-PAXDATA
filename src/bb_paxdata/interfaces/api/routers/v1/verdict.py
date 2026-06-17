@@ -12,6 +12,7 @@ from bb_paxdata.infrastructure.messaging.publisher import (
 from bb_paxdata.interfaces.api.dependencies import PermissionChecker, get_cache, get_db
 from bb_paxdata.interfaces.api.schemas import (
     AuditEntryResponse,
+    ReviewerPerformanceResponse,
     VerdictPayload,
     VerdictResponse,
 )
@@ -19,16 +20,21 @@ from bb_paxdata.interfaces.api.schemas import (
 router = APIRouter(prefix="/verdict", tags=["Verdict"])
 
 
-@router.get("/audit", response_model=list[AuditEntryResponse])
+@router.get("/audit", response_model=None)
 async def get_audit_trail(
-    limit: int = Query(20),
+    limit: int = Query(20, ge=1, le=200),
+    group_by: str | None = Query(None, pattern="^(reviewer)?$"),
     db: AsyncSession = Depends(get_db),
     # Require at least 'view' permission to view audit trail
     _has_permission: bool = Depends(PermissionChecker("view")),
-):
-    """Retrieve recent reviewer actions and decision logs."""
+) -> list[AuditEntryResponse] | list[ReviewerPerformanceResponse]:
+    """Retrieve recent reviewer actions and decision logs, optionally grouped by reviewer."""
     repo = FormulaValidationRepository(db)
-    return await repo.get_audit_trail(limit=limit)
+    if group_by == "reviewer":
+        rows = await repo.get_reviewer_performance()
+        return [ReviewerPerformanceResponse(**row) for row in rows]
+    rows = await repo.get_audit_trail(limit=limit)
+    return [AuditEntryResponse(**row) for row in rows]
 
 
 @router.post("", response_model=VerdictResponse)
@@ -51,22 +57,6 @@ async def submit_verdict(
             confidence=payload.confidence,
             justification=payload.justification,
             reviewer_id=payload.reviewer_id,
-        )
-
-        from bb_paxdata.infrastructure.events.publisher import WORMEventPublisher
-
-        await WORMEventPublisher(db).emit(
-            aggregate_type="HumanReview",
-            aggregate_id=str(payload.log_id),
-            event_type="VerdictSubmitted",
-            payload={
-                "verdict": payload.verdict,
-                "corrected_value": payload.corrected_value,
-                "note": payload.note,
-                "confidence": payload.confidence,
-                "justification": payload.justification,
-            },
-            actor_id=payload.reviewer_id,
         )
 
         await db.commit()

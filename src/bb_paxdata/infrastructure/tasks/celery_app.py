@@ -50,6 +50,8 @@ def create_celery_app(settings: Settings | None = None) -> Celery:
         "bb_paxdata.infrastructure.tasks.graph_tasks.export_graph_snapshot": {
             "queue": "graph_io"
         },
+        "webhooks.process_outbox_queue": {"queue": "graph_io"},
+        "webhooks.dispatch": {"queue": "graph_io"},
     }
 
     app.conf.update(
@@ -65,6 +67,8 @@ def create_celery_app(settings: Settings | None = None) -> Celery:
         task_time_limit=600,  # 10 min hard kill
         broker_connection_retry_on_startup=True,
         result_expires=3600,  # 1h TTL on results
+        worker_send_task_events=True,
+        task_send_sent_event=True,
     )
 
     # Celery Beat schedule for scheduled tasks
@@ -77,6 +81,10 @@ def create_celery_app(settings: Settings | None = None) -> Celery:
             "task": "bb_paxdata.infrastructure.tasks.analysis_tasks.export_data_lake",
             "schedule": 86400,  # every 24 hours (nightly)
             "args": ["paxdata-archive"],
+        },
+        "process-outbox-events": {
+            "task": "webhooks.process_outbox_queue",
+            "schedule": 10.0,  # every 10 seconds
         },
     }
 

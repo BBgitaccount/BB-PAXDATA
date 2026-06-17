@@ -41,7 +41,9 @@ class HumanReviewORM(Base):
     disagreement_reason: Mapped[str | None] = mapped_column(Text, nullable=True)
     review_duration_seconds: Mapped[int | None] = mapped_column(Integer, nullable=True)
     created_at: Mapped[datetime] = mapped_column(
-        DateTime, default=lambda: datetime.now(timezone.utc), nullable=False
+        DateTime,
+        default=lambda: datetime.now(timezone.utc).replace(tzinfo=None),
+        nullable=False,
     )
 
     # Computed flags (SQLite'da GENERATED ALWAYS AS yoktur; uygulama katmanında hesapla)
@@ -74,5 +76,5 @@ class CalibrationReportORM(Base):
     requires_weight_update: Mapped[bool] = mapped_column(Boolean, default=False)
     alert_message: Mapped[str | None] = mapped_column(Text, nullable=True)
     created_at: Mapped[datetime] = mapped_column(
-        DateTime, default=lambda: datetime.now(timezone.utc)
+        DateTime, default=lambda: datetime.now(timezone.utc).replace(tzinfo=None)
     )

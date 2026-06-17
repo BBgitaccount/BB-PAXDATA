@@ -1,9 +1,10 @@
 from __future__ import annotations
 
-import logging
 from dataclasses import dataclass, field
 from enum import Enum
 from typing import Literal
+
+import structlog
 
 from bb_paxdata.application.domain.enums.anomaly_type import AnomalyType
 from bb_paxdata.application.domain.enums.country_enums import NarrativeLayer
@@ -25,7 +26,7 @@ from bb_paxdata.application.domain.services.cross_anomaly_service import (
     CrossAnomalyService,
 )
 
-logger = logging.getLogger(__name__)
+logger = structlog.get_logger(__name__)
 
 
 class ContradictionPattern(str, Enum):

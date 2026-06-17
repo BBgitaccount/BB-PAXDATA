@@ -35,7 +35,6 @@ from bb_paxdata.infrastructure.db.models import (
     AIFailAnalysis,
     AISentenceAnalysis,
     DemandRecord,
-    DiscourseNetworkEdge,
     File,
     FileDynamics,
     PatternRecord,
@@ -251,9 +250,6 @@ async def _process_single_file(
             DiscourseNetworkEdgeTable.file_id == file_id
         )
     )
-    await session.execute(
-        delete(DiscourseNetworkEdge).where(DiscourseNetworkEdge.file_id == file_id)
-    )
 
     # Parse metadata headers
     metadata_lines, dialogue_lines = _parse_transcript_header_and_dialogue(file_content)
@@ -377,11 +373,7 @@ async def _process_single_file(
         file_speakers_metadata=file_speakers_metadata,
     )
     if res not in ("skipped", "error"):
-        from bb_paxdata.infrastructure.events.publisher import WORMEventPublisher
-
-        await WORMEventPublisher(session).emit(
-            aggregate_type="ProcessedFile",
-            aggregate_id=file_id,
+        db_file.record_event(
             event_type="FileIngested",
             payload={
                 "file_name": db_file.file_name,
@@ -393,6 +385,7 @@ async def _process_single_file(
                 "idempotency_key": db_file.idempotency_key,
             },
             actor_id="system",
+            aggregate_id=file_id,
         )
     return res
 

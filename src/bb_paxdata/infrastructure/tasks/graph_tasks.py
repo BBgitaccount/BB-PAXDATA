@@ -1,12 +1,11 @@
 """Celery tasks for graph and community management."""
 
-import logging
-
+import structlog
 from bb_paxdata.infrastructure.tasks.celery_app import get_celery_app
 
 app = get_celery_app()
 
-logger = logging.getLogger(__name__)
+logger = structlog.get_logger(__name__)
 
 
 @app.task(

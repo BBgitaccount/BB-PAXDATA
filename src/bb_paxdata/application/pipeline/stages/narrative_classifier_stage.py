@@ -114,21 +114,12 @@ class NarrativeClassifierStage:
             speech_act=analysis.speech_act,
         )
 
-        # 5. Pack into Analysis model bilateral_metrics list
-        updated_bilateral = []
+        # 5. Pack into Analysis model bilateral_metrics list (in-place mutation)
         for sentiment in analysis.bilateral_metrics or []:
             # Resolve target mapping: check if Greece/Turkey/etc matches the target actor
             if target_actor and sentiment.to_country.lower() == target_actor.lower():
-                updated_bilateral.append(
-                    sentiment.model_copy(
-                        update={
-                            "narrative_layer": predicted_layer,
-                            "narrative_target_actor": target_actor,
-                            "narrative_salience": salience,
-                        }
-                    )
-                )
-            else:
-                updated_bilateral.append(sentiment)
+                sentiment.narrative_layer = predicted_layer
+                sentiment.narrative_target_actor = target_actor
+                sentiment.narrative_salience = salience
 
-        return analysis.model_copy(update={"bilateral_metrics": updated_bilateral})
+        return analysis

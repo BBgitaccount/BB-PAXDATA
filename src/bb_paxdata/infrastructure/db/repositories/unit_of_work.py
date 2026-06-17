@@ -123,7 +123,11 @@ class SqlAlchemyUnitOfWork(AbstractUnitOfWork):
                 if exc_type is not None:
                     await self._session.rollback()
                 else:
-                    await self._session.commit()
+                    try:
+                        await self._session.commit()
+                    except Exception:
+                        await self._session.rollback()
+                        raise
         finally:
             if self._session is not None:
                 await self._session.close()

@@ -7,17 +7,17 @@ geçişinde tek geçiş noktasıdır.
 
 from __future__ import annotations
 
-import logging
 from dataclasses import dataclass
 from enum import Enum
 
+import structlog
 from bb_paxdata.application.domain.models.anomaly import (
     AnomalyResult,
     AnomalyValidationDecision,
     AnomalyValidationResult,
 )
 
-logger = logging.getLogger(__name__)
+logger = structlog.get_logger(__name__)
 
 
 class ConsensusLevel(str, Enum):

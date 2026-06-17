@@ -4,9 +4,14 @@ import json
 import uuid
 from datetime import datetime, timezone
 from enum import Enum
-from typing import TYPE_CHECKING, Any, TypeVar, cast
+from typing import TYPE_CHECKING, Any, TypeVar
 
-from pgvector.sqlalchemy import Vector
+try:
+    from pgvector.sqlalchemy import Vector
+except ImportError:
+    # Fallback for SQLite mode
+    Vector = None
+
 from sqlalchemy import (
     JSON,
     Boolean,
@@ -19,14 +24,18 @@ from sqlalchemy import (
     String,
     Text,
     UniqueConstraint,
+    event,
     func,
+    inspect,
 )
-from sqlalchemy.orm import Mapped, mapped_column, relationship
+from sqlalchemy.orm import Mapped, Session, mapped_column, relationship
+from sqlalchemy.sql import delete
 from sqlalchemy.sql.sqltypes import Enum as SQLEnum
 
 from bb_paxdata.application.domain.enums.country_enums import RelationshipType
 from bb_paxdata.application.domain.enums.demand_category import DemandCategory
 from bb_paxdata.application.domain.enums.risk_level import RiskLevel
+from bb_paxdata.application.domain.models.metadata import Metadata
 from bb_paxdata.infrastructure.db.base import Base
 from bb_paxdata.infrastructure.db.discourse_network_table import (
     DiscourseNetworkEdgeTable,
@@ -40,7 +49,6 @@ if TYPE_CHECKING:
     from bb_paxdata.application.domain.models.analysis import Analysis
     from bb_paxdata.application.domain.models.argument import ArgumentGraph
     from bb_paxdata.application.domain.models.demand import Demand
-    from bb_paxdata.application.domain.models.metadata import Metadata
     from bb_paxdata.application.domain.models.relationship import Relationship
     from bb_paxdata.application.domain.models.segment import Segment as SegmentDomain
     from bb_paxdata.application.domain.models.sentence import Sentence as SentenceDomain
@@ -62,7 +70,9 @@ def _parse_dt(value: datetime | str | None) -> datetime | None:
             "%Y-%m-%dT%H:%M:%S.%f",
         ):
             try:
-                return datetime.strptime(value.replace("Z", ""), fmt)
+                return datetime.strptime(value.replace("Z", ""), fmt).replace(
+                    tzinfo=timezone.utc
+                )
             except ValueError:
                 continue
     return None
@@ -132,7 +142,7 @@ class File(Base):
         DateTime, server_default=func.now(), nullable=True
     )
     segments: Mapped[list[Segment]] = relationship(
-        back_populates="file", cascade="all, delete-orphan"
+        back_populates="file", cascade="all, delete-orphan", lazy="selectin"
     )
     network_edges: Mapped[list[DiscourseNetworkEdgeTable]] = relationship(
         back_populates="file", cascade="all, delete-orphan", lazy="selectin"
@@ -173,6 +183,15 @@ class File(Base):
                 "n_countries": self.n_countries,
                 "total_words": self.total_words,
                 "total_duration_sec": self.total_duration_sec,
+                "idempotency_key": self.idempotency_key,
+                "reprocess_count": self.reprocess_count,
+                "force_rebuild": self.force_rebuild,
+                "last_processed_at": (
+                    self.last_processed_at.isoformat()
+                    if self.last_processed_at
+                    else None
+                ),
+                "file_name": self.file_name,
                 "imported_at": (
                     self.imported_at.isoformat() if self.imported_at else None
                 ),
@@ -246,7 +265,9 @@ class SpeakerProfile(Base):
     avg_dki_score: Mapped[float] = mapped_column(Float, default=0)
     dominant_frame: Mapped[str | None] = mapped_column(Text, nullable=True)
     dominant_audience: Mapped[str | None] = mapped_column(Text, nullable=True)
-    segments: Mapped[list[Segment]] = relationship(back_populates="speaker")
+    segments: Mapped[list[Segment]] = relationship(
+        back_populates="speaker", lazy="selectin"
+    )
 
     def to_domain(self) -> SpeakerDomain:
         from bb_paxdata.application.domain.enums import (
@@ -293,8 +314,6 @@ class SpeakerProfile(Base):
 
     @classmethod
     def from_domain(cls, model: Any) -> SpeakerProfile:
-        from bb_paxdata.application.domain.models.metadata import Metadata
-
         if isinstance(model, Metadata):
             cf = model.custom_fields or {}
             return cls(
@@ -406,13 +425,15 @@ class Segment(Base):
     dominant_frame: Mapped[str | None] = mapped_column(Text, nullable=True)
     dominant_audience: Mapped[str | None] = mapped_column(Text, nullable=True)
     dominant_evidence: Mapped[str | None] = mapped_column(Text, nullable=True)
-    file: Mapped[File] = relationship(back_populates="segments")
-    speaker: Mapped[SpeakerProfile | None] = relationship(back_populates="segments")
+    file: Mapped[File] = relationship(back_populates="segments", lazy="joined")
+    speaker: Mapped[SpeakerProfile | None] = relationship(
+        back_populates="segments", lazy="joined"
+    )
     sentences: Mapped[list[Sentence]] = relationship(
-        back_populates="segment", cascade="all, delete-orphan"
+        back_populates="segment", cascade="all, delete-orphan", lazy="selectin"
     )
     ai_insight: Mapped[AISegmentInsight | None] = relationship(
-        back_populates="segment", uselist=False
+        back_populates="segment", uselist=False, lazy="joined"
     )
 
     @property
@@ -426,9 +447,90 @@ class Segment(Base):
             FrameType,
             TopicCategory,
         )
+        from bb_paxdata.application.domain.enums.signal_type import SignalType
         from bb_paxdata.application.domain.models.segment import (
             Segment as SegmentDomainModel,
         )
+
+        risk_signals_parsed: list[Any] = []
+        raw_list = []
+        if isinstance(self.risk_signals, list):
+            raw_list = self.risk_signals
+        elif isinstance(self.risk_signals, str):
+            try:
+                loaded = json.loads(self.risk_signals)
+                if isinstance(loaded, list):
+                    raw_list = loaded
+            except json.JSONDecodeError:
+                pass
+
+        for x in raw_list:
+            if isinstance(x, str):
+                try:
+                    loaded_x = json.loads(x)
+                    if isinstance(loaded_x, dict):
+                        dict_x = dict(loaded_x)
+                        if "signal_start" not in dict_x:
+                            dict_x["signal_start"] = 0
+                        if "signal_end" not in dict_x:
+                            dict_x["signal_end"] = len(dict_x.get("signal_text", ""))
+                        if "sentence_id" not in dict_x:
+                            dict_x["sentence_id"] = "unknown"
+                        raw_sig_type = dict_x.get("signal_type")
+                        dict_x["signal_type"] = (
+                            _try_enum(SignalType, raw_sig_type) or SignalType.CHEAP_TALK
+                        )
+                        risk_signals_parsed.append(dict_x)
+                    else:
+                        risk_signals_parsed.append(
+                            {
+                                "signal_text": x,
+                                "signal_start": 0,
+                                "signal_end": len(x),
+                                "signal_type": SignalType.CHEAP_TALK,
+                                "escalation_multiplier": 1.0,
+                                "credibility_score": 0.5,
+                                "sentence_id": "unknown",
+                            }
+                        )
+                except json.JSONDecodeError:
+                    risk_signals_parsed.append(
+                        {
+                            "signal_text": x,
+                            "signal_start": 0,
+                            "signal_end": len(x),
+                            "signal_type": SignalType.CHEAP_TALK,
+                            "escalation_multiplier": 1.0,
+                            "credibility_score": 0.5,
+                            "sentence_id": "unknown",
+                        }
+                    )
+            elif isinstance(x, dict):
+                dict_x = dict(x)
+                if "signal_start" not in dict_x:
+                    dict_x["signal_start"] = 0
+                if "signal_end" not in dict_x:
+                    dict_x["signal_end"] = len(dict_x.get("signal_text", ""))
+                if "sentence_id" not in dict_x:
+                    dict_x["sentence_id"] = "unknown"
+                raw_sig_type = dict_x.get("signal_type")
+                dict_x["signal_type"] = (
+                    _try_enum(SignalType, raw_sig_type) or SignalType.CHEAP_TALK
+                )
+                risk_signals_parsed.append(dict_x)
+
+        demand_concentration_parsed: dict[str, int] | None = None
+        if isinstance(self.demand_concentration, dict):
+            demand_concentration_parsed = {
+                k: int(v) for k, v in self.demand_concentration.items()
+            }
+        elif isinstance(self.demand_concentration, str):
+            try:
+                loaded = json.loads(self.demand_concentration)
+                if isinstance(loaded, dict):
+                    demand_concentration_parsed = {k: int(v) for k, v in loaded.items()}
+            except json.JSONDecodeError:
+                demand_concentration_parsed = None
 
         return SegmentDomainModel(
             id=self.seg_id,
@@ -441,8 +543,8 @@ class Segment(Base):
             dynamic_event=None,
             sentiment_arc=None,
             avg_sentiment_score=None,
-            speaker_count=None,
-            speaker=None,
+            speaker=self.speaker.to_domain() if self.speaker else None,
+            speaker_name=self.speaker_name,
             confidence_score=0.85,
             topic_category=(
                 _try_enum(TopicCategory, self.dominant_topic)
@@ -456,15 +558,9 @@ class Segment(Base):
             sbi_score=self.sbi_score,
             dki_score=self.dki_score,
             risk_score=self.risk_score,
-            risk_signals=(
-                cast(list[str], self.risk_signals) if self.risk_signals else []
-            ),
+            risk_signals=risk_signals_parsed if risk_signals_parsed else [],
             risk_trajectory=self.risk_trajectory,
-            demand_concentration=(
-                cast(dict[str, int], self.demand_concentration)
-                if self.demand_concentration
-                else None
-            ),
+            demand_concentration=demand_concentration_parsed,
             demand_count=self.demand_count,
             dominant_frame=_try_enum(FrameType, self.dominant_frame),
             dominant_audience=_try_enum(AudienceType, self.dominant_audience),
@@ -487,11 +583,21 @@ class Segment(Base):
         resolved_panel = panel_id or model.panel_id
         if not resolved_panel:
             raise ValueError("panel_id is required (argument or Segment.panel_id)")
+
+        sp_name = model.speaker_name
+        if not sp_name and model.speaker:
+            if hasattr(model.speaker, "name"):
+                sp_name = model.speaker.name
+            elif isinstance(model.speaker, dict):
+                sp_name = model.speaker.get("name")
+        if not sp_name:
+            sp_name = ""
+
         return cls(
             seg_id=model.id,
             file_id=resolved_panel,
             speaker_id=model.primary_speaker_id,
-            speaker_name="",
+            speaker_name=sp_name,
             ts_start_sec=int(model.start_time or 0),
             ts_end_sec=int(model.end_time or 0),
             duration_sec=int(model.duration or 0),
@@ -580,13 +686,17 @@ class Sentence(Base):
     logic_result: Mapped[str | None] = mapped_column(Text, nullable=True)
     formula_inconsistency_score: Mapped[float] = mapped_column(Float, default=0.0)
     discrepancy_score: Mapped[float] = mapped_column(Float, default=0.0)
-    embedding: Mapped[list[float] | None] = mapped_column(Vector(384), nullable=True)
-    segment: Mapped[Segment] = relationship(back_populates="sentences")
+    embedding: Mapped[list[float] | None] = (
+        mapped_column(Vector(384), nullable=True)
+        if Vector
+        else mapped_column(JSON, nullable=True)
+    )
+    segment: Mapped[Segment] = relationship(back_populates="sentences", lazy="joined")
     ai_demand_analyses: Mapped[list[AIDemandAnalysis]] = relationship(
-        back_populates="sentence"
+        back_populates="sentence", lazy="selectin"
     )
     ai_analysis: Mapped[AISentenceAnalysis | None] = relationship(
-        back_populates="sentence", uselist=False
+        back_populates="sentence", uselist=False, lazy="joined"
     )
 
     @property
@@ -668,10 +778,21 @@ class Sentence(Base):
             word_count=self.word_count,
             face_threat_count=self.face_threat_count,
             face_save_count=self.face_save_count,
-            confidence_score=None,
             risk_score=self.risk_score,
             manipulation_score=self.negation_aware_diplo,
             is_demand=self.demand_type is not None,
+            ai_analyzed=self.ai_analyzed,
+            logic_result=self.logic_result,
+            formula_inconsistency_score=self.formula_inconsistency_score,
+            discrepancy_score=self.discrepancy_score,
+            entities_gpe=(
+                self.entities_gpe if isinstance(self.entities_gpe, list) else None
+            ),
+            global_sent_order=self.global_sent_order,
+            speaker_name=self.speaker_name,
+            country=self.country,
+            role=self.role,
+            bloc=self.bloc,
         )
 
     @classmethod
@@ -708,6 +829,10 @@ class Sentence(Base):
                 model.appraisal_attitude.value if model.appraisal_attitude else None
             ),
             audience_type=model.audience_type.value if model.audience_type else None,
+            ai_analyzed=model.ai_analyzed,
+            logic_result=model.logic_result,
+            formula_inconsistency_score=model.formula_inconsistency_score,
+            discrepancy_score=model.discrepancy_score,
         )
 
 
@@ -738,8 +863,6 @@ class Word(Base):
     is_named_entity: Mapped[bool] = mapped_column(Boolean, default=False)
 
     def to_domain(self) -> Metadata:
-        from bb_paxdata.application.domain.models.metadata import Metadata
-
         return Metadata(
             id=f"word:{self.word_id}",
             entity_id=str(self.word_id),
@@ -784,69 +907,6 @@ class Word(Base):
         )
 
 
-class CountryReference(Base):
-    __tablename__ = "legacy_country_references"
-    __table_args__ = (
-        Index("idx_legacy_coref_from", "from_country"),
-        Index("idx_legacy_coref_to", "to_country"),
-    )
-    ref_id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
-    file_id: Mapped[str | None] = mapped_column(
-        ForeignKey("files.file_id"), nullable=True
-    )
-    seg_id: Mapped[str | None] = mapped_column(
-        ForeignKey("segments.seg_id"), nullable=True
-    )
-    from_country: Mapped[str] = mapped_column(Text, nullable=False)
-    to_country: Mapped[str] = mapped_column(Text, nullable=False)
-    mention_count: Mapped[int] = mapped_column(Integer, default=1)
-    sentiment_context: Mapped[float | None] = mapped_column(Float, nullable=True)
-    context_snippet: Mapped[str | None] = mapped_column(Text, nullable=True)
-
-    def to_domain(self) -> Metadata:
-        from bb_paxdata.application.domain.models.metadata import Metadata
-
-        return Metadata(
-            id=f"country_ref:{self.ref_id}",
-            entity_id=str(self.ref_id),
-            entity_type="country_reference",
-            title=f"Country Reference {self.ref_id}",
-            description=f"{self.from_country} -> {self.to_country}",
-            category=None,
-            subcategory=None,
-            source=None,
-            source_url=None,
-            source_date=None,
-            quality_score=None,
-            validation_status=None,
-            last_validated=None,
-            processed_by=None,
-            processing_version=None,
-            access_level=None,
-            expires_at=None,
-            custom_fields={
-                "panel_id": self.file_id,
-                "seg_id": self.seg_id,
-                "from_country": self.from_country,
-                "to_country": self.to_country,
-                "mention_count": self.mention_count,
-                "sentiment_context": self.sentiment_context,
-            },
-        )
-
-    @classmethod
-    def from_domain(cls, model: Metadata) -> CountryReference:
-        cf = model.custom_fields or {}
-        return cls(
-            file_id=cf.get("panel_id"),
-            seg_id=cf.get("seg_id"),
-            from_country=str(cf.get("from_country") or ""),
-            to_country=str(cf.get("to_country") or ""),
-            mention_count=int(cf.get("mention_count") or 1),
-            sentiment_context=cf.get("sentiment_context"),
-        )
-
-
 class CountryStat(Base):
     __tablename__ = "country_stats"
     country: Mapped[str] = mapped_column(Text, primary_key=True)
@@ -864,7 +924,16 @@ class CountryStat(Base):
     )
 
     def to_domain(self) -> Metadata:
-        from bb_paxdata.application.domain.models.metadata import Metadata
+        topic_scores_parsed: dict[str, Any] | None = None
+        if isinstance(self.topic_scores, dict):
+            topic_scores_parsed = self.topic_scores
+        elif isinstance(self.topic_scores, str):
+            try:
+                loaded = json.loads(self.topic_scores)
+                if isinstance(loaded, dict):
+                    topic_scores_parsed = loaded
+            except json.JSONDecodeError:
+                topic_scores_parsed = None
 
         return Metadata(
             id=f"country_stat:{self.country}:{self.file_id}",
@@ -886,7 +955,7 @@ class CountryStat(Base):
             expires_at=None,
             custom_fields={
                 "n_segments": self.n_segments,
-                "topic_scores": self.topic_scores,
+                "topic_scores": topic_scores_parsed,
                 "words_per_minute": self.words_per_minute,
             },
         )
@@ -1113,6 +1182,51 @@ class DemandRecord(Base):
             if self.demand_category
             else DemandCategory.DIPLOMATIC_ENGAGEMENT
         )
+
+        related_demand_ids_parsed: list[Any] | None = None
+        if isinstance(self.related_demand_ids, list):
+            related_demand_ids_parsed = self.related_demand_ids
+        elif isinstance(self.related_demand_ids, str):
+            try:
+                loaded = json.loads(self.related_demand_ids)
+                if isinstance(loaded, list):
+                    related_demand_ids_parsed = loaded
+            except json.JSONDecodeError:
+                related_demand_ids_parsed = None
+
+        conditions_parsed: list[Any] | None = None
+        if isinstance(self.conditions, list):
+            conditions_parsed = self.conditions
+        elif isinstance(self.conditions, str):
+            try:
+                loaded = json.loads(self.conditions)
+                if isinstance(loaded, list):
+                    conditions_parsed = loaded
+            except json.JSONDecodeError:
+                conditions_parsed = None
+
+        tags_parsed: list[Any] | None = None
+        if isinstance(self.tags, list):
+            tags_parsed = self.tags
+        elif isinstance(self.tags, str):
+            try:
+                loaded = json.loads(self.tags)
+                if isinstance(loaded, list):
+                    tags_parsed = loaded
+            except json.JSONDecodeError:
+                tags_parsed = None
+
+        extra_metadata_parsed: dict[str, Any] | None = None
+        if isinstance(self.extra_metadata, dict):
+            extra_metadata_parsed = self.extra_metadata
+        elif isinstance(self.extra_metadata, str):
+            try:
+                loaded = json.loads(self.extra_metadata)
+                if isinstance(loaded, dict):
+                    extra_metadata_parsed = loaded
+            except json.JSONDecodeError:
+                extra_metadata_parsed = None
+
         return DemandModel(
             id=str(self.demand_id),
             segment_id=self.seg_id,
@@ -1133,17 +1247,17 @@ class DemandRecord(Base):
             response_text=self.response_text,
             response_timestamp=self.response_timestamp,
             compliance_status=self.compliance_status,
-            related_demand_ids=self.related_demand_ids or [],
+            related_demand_ids=related_demand_ids_parsed or [],
             is_conditional=self.is_conditional or False,
-            conditions=self.conditions or [],
+            conditions=conditions_parsed or [],
             impact_score=self.impact_score,
             risk_implication=self.risk_implication,
             is_active=self.is_active or True,
             is_fulfilled=self.is_fulfilled or False,
             fulfillment_timestamp=self.fulfillment_timestamp,
             notes=self.notes,
-            tags=self.tags or [],
-            metadata=self.extra_metadata or {},
+            tags=tags_parsed or [],
+            metadata=extra_metadata_parsed or {},
         )
 
     @classmethod
@@ -1225,13 +1339,11 @@ class PatternRecord(Base):
     sentiment_category: Mapped[str | None] = mapped_column(
         Text, default="unknown", nullable=True
     )
-    created_at: Mapped[datetime | None] = mapped_column(
-        DateTime, server_default=func.now(), nullable=True
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime, server_default=func.now(), nullable=False
     )
 
     def to_domain(self) -> Metadata:
-        from bb_paxdata.application.domain.models.metadata import Metadata
-
         return Metadata(
             id=f"pattern:{self.pattern_id}",
             entity_id=str(self.pattern_id),
@@ -1292,8 +1404,6 @@ class FileDynamics(Base):
     )
 
     def to_domain(self) -> Metadata:
-        from bb_paxdata.application.domain.models.metadata import Metadata
-
         return Metadata(
             id=f"panel_dyn:{self.dyn_id}",
             entity_id=str(self.dyn_id),
@@ -1337,119 +1447,6 @@ class FileDynamics(Base):
             inconsistency_score=float(cf.get("inconsistency_score") or 0),
             sent_id=str(cf["sent_id"]),
         )
-
-
-class DiscourseNetworkEdge(Base):
-    __tablename__ = "discourse_network_edges_legacy"
-    __table_args__ = (
-        Index("idx_net_from", "from_country"),
-        Index("idx_net_to", "to_country"),
-        Index("idx_net_predicate", "predicate"),
-        Index("idx_net_bilateral", "from_country", "to_country"),
-        CheckConstraint("weight >= 0", name="ck_weight_non_negative"),
-        {"comment": "Bilateral discourse relationships enriched with SRL semantics"},
-    )
-    edge_id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
-    file_id: Mapped[str | None] = mapped_column(
-        ForeignKey("files.file_id"), nullable=True
-    )
-    from_country: Mapped[str] = mapped_column(Text, nullable=False)
-    to_country: Mapped[str] = mapped_column(Text, nullable=False)
-    weight: Mapped[float] = mapped_column(Float, default=1)
-    avg_sentiment: Mapped[float] = mapped_column(Float, default=0)
-    edge_type: Mapped[str | None] = mapped_column(Text, nullable=True)
-    power_source: Mapped[int] = mapped_column(Integer, default=0)
-    predicate: Mapped[str | None] = mapped_column(
-        Text,
-        nullable=True,
-        comment='Extracted predicate/verb from SRL frame (e.g., "reject", "support")',
-    )
-    arg1_entity: Mapped[str | None] = mapped_column(
-        Text, nullable=True, comment="ARG1/Patient entity text (target of action)"
-    )
-    arg0_entity: Mapped[str | None] = mapped_column(
-        Text, nullable=True, comment="ARG0/Agent entity text (actor performing action)"
-    )
-    srl_frame_json: Mapped[str | None] = mapped_column(
-        Text, nullable=True, comment="Complete SRL frame as JSON for advanced queries"
-    )
-    srl_confidence: Mapped[float | None] = mapped_column(
-        Float, nullable=True, comment="SRL extraction confidence score (0-1)"
-    )
-    is_negated: Mapped[bool | None] = mapped_column(
-        Boolean,
-        nullable=True,
-        default=False,
-        comment="True if action was negated in source text",
-    )
-    srl_extracted_at: Mapped[datetime | None] = mapped_column(
-        DateTime(timezone=True),
-        nullable=True,
-        default=func.now(),
-        comment="Timestamp when SRL enrichment was applied",
-    )
-
-    def to_domain(self) -> Metadata:
-        from bb_paxdata.application.domain.models.metadata import Metadata
-
-        custom_fields = {
-            "from_country": self.from_country,
-            "to_country": self.to_country,
-            "weight": self.weight,
-            "edge_type": self.edge_type,
-            "predicate": self.predicate,
-            "arg0_entity": self.arg0_entity,
-            "arg1_entity": self.arg1_entity,
-            "is_negated": self.is_negated,
-            "srl_confidence": self.srl_confidence,
-        }
-        if self.srl_frame_json:
-            try:
-                custom_fields["srl_frame"] = json.loads(self.srl_frame_json)
-            except json.JSONDecodeError:
-                pass
-        return Metadata(
-            id=f"discourse_edge:{self.edge_id}",
-            entity_id=str(self.edge_id),
-            entity_type="discourse_network_edge",
-            title=f"{self.from_country} → {self.to_country}: {self.predicate or 'unknown'}",
-            description=f"Bilateral edge: {self.from_country} [{self.predicate}] {self.to_country}",
-            category=None,
-            subcategory=None,
-            source=None,
-            source_url=None,
-            source_date=None,
-            quality_score=None,
-            validation_status=None,
-            last_validated=None,
-            processed_by=None,
-            processing_version=None,
-            access_level=None,
-            expires_at=None,
-            custom_fields=custom_fields,
-        )
-
-    @classmethod
-    def from_domain(cls, model: Metadata) -> DiscourseNetworkEdge:
-        cf = model.custom_fields or {}
-        instance = cls(
-            from_country=str(cf["from_country"]),
-            to_country=str(cf["to_country"]),
-            weight=float(cf.get("weight") or 1),
-            edge_type=cf.get("edge_type"),
-        )
-        if "predicate" in cf:
-            instance.predicate = cf.get("predicate")
-            instance.arg0_entity = cf.get("arg0_entity")
-            instance.arg1_entity = cf.get("arg1_entity")
-            instance.is_negated = cf.get("is_negated", False)
-            instance.srl_confidence = cf.get("srl_confidence")
-            if "srl_frame" in cf:
-                instance.srl_frame_json = json.dumps(
-                    cf.get("srl_frame"), ensure_ascii=False
-                )
-            instance.srl_extracted_at = datetime.now(timezone.utc)
-        return instance
 
 
 class AISentenceAnalysis(Base):
@@ -1594,7 +1591,9 @@ class AISentenceAnalysis(Base):
 
         return SpeechActClassification.model_validate(self.speech_act_json)
 
-    sentence: Mapped[Sentence | None] = relationship(back_populates="ai_analysis")
+    sentence: Mapped[Sentence | None] = relationship(
+        back_populates="ai_analysis", lazy="joined"
+    )
 
     def to_domain(self) -> Analysis:
         from bb_paxdata.application.domain.enums import RiskLevel
@@ -1638,32 +1637,98 @@ class AISentenceAnalysis(Base):
         )
 
     @classmethod
-    def from_domain(cls, model: Analysis, *, sent_id: str) -> AISentenceAnalysis:
+    def from_domain(
+        cls,
+        model: Analysis,
+        *,
+        sent_id: str,
+        file_id: str | None = None,
+        sentence_code: str | None = None,
+        speaker_name: str | None = None,
+        country: str | None = None,
+        power_level: int = 0,
+        global_sent_order: int | None = None,
+        sentiment_score: float | None = None,
+        sentiment_category: str | None = None,
+        risk_score: int | None = None,
+        ai_sentiment: str | None = None,
+        ai_risk_score: float | None = None,
+        ai_frame_type: str | None = None,
+        hedging_score: float | None = None,
+        politeness_score: float | None = None,
+        logic_result: str | None = None,
+    ) -> AISentenceAnalysis:
         consensus = getattr(model, "consensus_result", None)
-        return cls(
+
+        def _get_val(obj, key, default=None):
+            if obj is None:
+                return default
+            if isinstance(obj, dict):
+                return obj.get(key, default)
+            return getattr(obj, key, default)
+
+        coherence_val = _get_val(consensus, "coherence_score")
+        if coherence_val is None:
+            coherence_val = getattr(model, "coherence_score", None)
+
+        level = _get_val(consensus, "level")
+        level_val = getattr(level, "value", level) if level is not None else None
+
+        ai_result = _get_val(consensus, "ai_result")
+        decision = _get_val(ai_result, "decision")
+        decision_val = (
+            getattr(decision, "value", decision) if decision is not None else None
+        )
+
+        reasoning = _get_val(ai_result, "reasoning")
+        detected_subtype = _get_val(ai_result, "detected_subtype")
+
+        obj = cls(
             sent_id=sent_id,
             prompt_version="v1",
             seg_id=model.segment_id,
             risk_level=model.risk_level.value,
-            sentiment_score=model.sentiment_score,
+            sentiment_score=(
+                model.sentiment_score if sentiment_score is None else sentiment_score
+            ),
             manipulation_score=model.manipulation_score,
             framing=model.framing,
-            coherence_score=(
-                consensus.coherence_score
-                if consensus
-                else getattr(model, "coherence_score", None)
-            ),
-            anomaly_consensus_level=consensus.level.value if consensus else None,
-            anomaly_ai_decision=(
-                consensus.ai_result.decision.value if consensus else None
-            ),
-            anomaly_ai_reasoning=consensus.ai_result.reasoning if consensus else None,
-            anomaly_detected_subtype=(
-                consensus.ai_result.detected_subtype if consensus else None
-            ),
+            coherence_score=coherence_val,
+            anomaly_consensus_level=level_val,
+            anomaly_ai_decision=decision_val,
+            anomaly_ai_reasoning=reasoning,
+            anomaly_detected_subtype=detected_subtype,
             speech_act_json=model.speech_act.model_dump() if model.speech_act else None,
             topic_diversity=model.topic_diversity_score,
         )
+        if file_id is not None:
+            obj.file_id = file_id
+        if sentence_code is not None:
+            obj.sentence_code = sentence_code
+        if speaker_name is not None:
+            obj.speaker_name = speaker_name
+        if country is not None:
+            obj.country = country
+        obj.power_level = power_level
+        if global_sent_order is not None:
+            obj.global_sent_order = global_sent_order
+        if sentiment_category is not None:
+            obj.sentiment_category = sentiment_category
+        if risk_score is not None:
+            obj.risk_score = risk_score
+        if ai_sentiment is not None:
+            obj.ai_sentiment = ai_sentiment
+        if ai_risk_score is not None:
+            obj.ai_risk_score = round(ai_risk_score)
+        if ai_frame_type is not None:
+            obj.ai_frame_type = ai_frame_type
+        if hedging_score is not None:
+            obj.hedging_score = hedging_score
+        if politeness_score is not None:
+            obj.politeness_score = politeness_score
+        if logic_result is not None:
+            obj.logic_result = logic_result
+        return obj
 
 
 class AIValidationLog(Base):
@@ -1776,11 +1841,9 @@ class AISegmentInsight(Base):
     processed_at: Mapped[datetime | None] = mapped_column(
         DateTime, server_default=func.now(), nullable=True
     )
-    segment: Mapped[Segment] = relationship(back_populates="ai_insight")
+    segment: Mapped[Segment] = relationship(back_populates="ai_insight", lazy="joined")
 
     def to_domain(self) -> Metadata:
-        from bb_paxdata.application.domain.models.metadata import Metadata
-
         return Metadata(
             id=f"ai_seg_insight:{self.insight_id}",
             entity_id=self.seg_id,
@@ -1824,8 +1887,6 @@ class AICache(Base):
     )
 
     def to_domain(self) -> Metadata:
-        from bb_paxdata.application.domain.models.metadata import Metadata
-
         return Metadata(
             id=f"ai_cache:{self.hash}",
             entity_id=self.hash,
@@ -1885,8 +1946,6 @@ class AIContextualFlag(Base):
     )
 
     def to_domain(self) -> Metadata:
-        from bb_paxdata.application.domain.models.metadata import Metadata
-
         return Metadata(
             id=f"ai_flag:{self.flag_id}",
             entity_id=self.sent_id,
@@ -1968,13 +2027,11 @@ class AIDemandAnalysis(Base):
         DateTime, server_default=func.now(), nullable=True
     )
     sentence: Mapped[Sentence | None] = relationship(
-        back_populates="ai_demand_analyses"
+        back_populates="ai_demand_analyses", lazy="joined"
     )
-    demand_record: Mapped[DemandRecord | None] = relationship()
+    demand_record: Mapped[DemandRecord | None] = relationship(lazy="joined")
 
     def to_domain(self) -> Metadata:
-        from bb_paxdata.application.domain.models.metadata import Metadata
-
         return Metadata(
             id=f"ai_demand:{self.ai_demand_id}",
             entity_id=str(self.ai_demand_id),
@@ -2027,8 +2084,6 @@ class AIPanelSynthesis(Base):
     )
 
     def to_domain(self) -> Metadata:
-        from bb_paxdata.application.domain.models.metadata import Metadata
-
         return Metadata(
             id=f"ai_panel_synth:{self.synthesis_id}",
             entity_id=self.file_id,
@@ -2131,12 +2186,10 @@ class AIFailAnalysis(Base):
         DateTime, server_default=func.now(), nullable=True
     )
     anomaly_cross_rows: Mapped[list[AIFailAnomalyCross]] = relationship(
-        back_populates="fail_analysis"
+        back_populates="fail_analysis", lazy="selectin"
     )
 
     def to_domain(self) -> Metadata:
-        from bb_paxdata.application.domain.models.metadata import Metadata
-
         return Metadata(
             id=f"ai_fail:{self.fail_id}",
             entity_id=self.sent_id,
@@ -2194,8 +2247,6 @@ class AIFailPattern(Base):
     last_seen_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
 
     def to_domain(self) -> Metadata:
-        from bb_paxdata.application.domain.models.metadata import Metadata
-
         return Metadata(
             id=f"ai_fail_pattern:{self.pattern_id}",
             entity_id=str(self.pattern_id),
@@ -2243,12 +2294,10 @@ class AIFailAnomalyCross(Base):
         DateTime, server_default=func.now(), nullable=True
     )
     fail_analysis: Mapped[AIFailAnalysis | None] = relationship(
-        back_populates="anomaly_cross_rows"
+        back_populates="anomaly_cross_rows", lazy="joined"
     )
 
     def to_domain(self) -> Metadata:
-        from bb_paxdata.application.domain.models.metadata import Metadata
-
         return Metadata(
             id=f"ai_fail_cross:{self.cross_id}",
             entity_id=self.sent_id,
@@ -2294,8 +2343,6 @@ class AIFailCache(Base):
     )
 
     def to_domain(self) -> Metadata:
-        from bb_paxdata.application.domain.models.metadata import Metadata
-
         return Metadata(
             id=f"ai_fail_cache:{self.hash}",
             entity_id=self.hash,
@@ -2453,8 +2500,6 @@ class FormulaValidationLog(Base):
     )
 
     def to_domain(self) -> Metadata:
-        from bb_paxdata.application.domain.models.metadata import Metadata
-
         return Metadata(
             id=f"formula_val:{self.log_id}",
             entity_id=self.entity_id,
@@ -2527,12 +2572,10 @@ class FormulaValidationAudit(Base):
     reviewed_by: Mapped[str | None] = mapped_column(String(100), nullable=True)
     review_status: Mapped[str | None] = mapped_column(String(20), nullable=True)
     log: Mapped[FormulaValidationLog] = relationship(
-        "FormulaValidationLog", back_populates="audit_entries"
+        "FormulaValidationLog", back_populates="audit_entries", lazy="joined"
     )
 
     def to_domain(self) -> Metadata:
-        from bb_paxdata.application.domain.models.metadata import Metadata
-
         return Metadata(
             id=f"formula_audit:{self.audit_id}",
             entity_id=str(self.log_id),
@@ -2721,6 +2764,7 @@ class OutboxEventORM(Base):
         String(36), primary_key=True, default=lambda: str(uuid.uuid4())
     )
     event_type: Mapped[str] = mapped_column(String(100), nullable=False, index=True)
+    event_version: Mapped[int] = mapped_column(Integer, default=1, nullable=False)
     aggregate_id: Mapped[str] = mapped_column(String(36), nullable=False, index=True)
     payload: Mapped[dict[str, Any]] = mapped_column(JSON, nullable=False)
     created_at: Mapped[datetime] = mapped_column(
@@ -2734,6 +2778,9 @@ class OutboxEventORM(Base):
     next_attempt_at: Mapped[datetime | None] = mapped_column(
         DateTime(timezone=True), nullable=True
     )
+    endpoint_url: Mapped[str | None] = mapped_column(String(500), nullable=True)
+    secret: Mapped[str | None] = mapped_column(String(255), nullable=True)
+    endpoint_id: Mapped[str | None] = mapped_column(String(100), nullable=True)
 
 
 class DeadLetterEventORM(Base):
@@ -2745,12 +2792,147 @@ class DeadLetterEventORM(Base):
         String(36), nullable=False, index=True
     )
     event_type: Mapped[str] = mapped_column(String(100), nullable=False)
+    event_version: Mapped[int] = mapped_column(Integer, default=1, nullable=False)
     payload: Mapped[dict[str, Any]] = mapped_column(JSON, nullable=False)
     failure_reason: Mapped[str] = mapped_column(Text, nullable=False)
     moved_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), default=lambda: datetime.now(timezone.utc)
     )
     resolved: Mapped[bool] = mapped_column(Boolean, default=False)
+
+
+class WebhookSubscriptionORM(Base):
+    __tablename__ = "webhook_subscriptions"
+    id: Mapped[str] = mapped_column(
+        String(36), primary_key=True, default=lambda: str(uuid.uuid4())
+    )
+    endpoint_url: Mapped[str] = mapped_column(String(500), nullable=False)
+    secret: Mapped[str] = mapped_column(String(255), nullable=False)
+    event_types: Mapped[list[str]] = mapped_column(JSON, nullable=False)
+    is_active: Mapped[bool] = mapped_column(Boolean, default=True, index=True)
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), default=lambda: datetime.now(timezone.utc)
+    )
+
+
+@event.listens_for(Session, "before_flush")
+def delete_outbox_event_on_resolved_dead_letter(session, flush_context, instances):
+    event_ids_to_delete = set()
+
+    for obj in session.new:
+        if isinstance(obj, DeadLetterEventORM) and obj.resolved:
+            event_ids_to_delete.add(obj.original_event_id)
+
+    for obj in session.dirty:
+        if isinstance(obj, DeadLetterEventORM):
+            from sqlalchemy.orm import PassiveFlag
+
+            state = inspect(obj)
+            history = state.get_history("resolved", PassiveFlag.PASSIVE_NO_FETCH)
+            if history.has_changes() and obj.resolved:
+                event_ids_to_delete.add(obj.original_event_id)
+
+    if event_ids_to_delete:
+        session.execute(
+            delete(OutboxEventORM).where(OutboxEventORM.id.in_(event_ids_to_delete))
+        )
+        for value in list(session.identity_map.values()):
+            if isinstance(value, OutboxEventORM):
+                state = inspect(value)
+                obj_id = state.identity[0] if state.identity else state.dict.get("id")
+                if obj_id in event_ids_to_delete:
+                    session.expunge(value)
+
+
+@event.listens_for(Session, "before_flush")
+def extract_and_persist_domain_events(session, flush_context, instances):
+    # Collect all domain events from session.new, session.dirty, and loaded instances
+    events_to_emit = []
+
+    all_instances = (
+        set(session.new) | set(session.dirty) | set(session.identity_map.values())
+    )
+    for obj in all_instances:
+        if hasattr(obj, "_domain_events") and obj._domain_events:
+            events_to_emit.extend(obj._domain_events)
+            obj._domain_events.clear()
+
+    if not events_to_emit:
+        return
+
+    # Import ORM models locally to avoid circular imports
+    from sqlalchemy import select
+
+    from bb_paxdata.infrastructure.db.models import (
+        DomainEvent,
+        OutboxEventORM,
+        WebhookSubscriptionORM,
+    )
+
+    # Fetch active webhook subscriptions to produce OutboxEventORM rows
+    stmt = select(WebhookSubscriptionORM).where(
+        WebhookSubscriptionORM.is_active.is_(True)
+    )
+    subscriptions = session.execute(stmt).scalars().all()
+
+    for e in events_to_emit:
+        evt_version = e.get("event_version", 1)
+        # 1. Persist the DomainEvent in database
+        event_orm = DomainEvent(
+            aggregate_type=e["aggregate_type"],
+            aggregate_id=e["aggregate_id"],
+            event_type=e["event_type"],
+            event_version=evt_version,
+            payload=e["payload"],
+            actor_id=e.get("actor_id"),
+            correlation_id=e.get("correlation_id"),
+            occurred_at=datetime.now(timezone.utc).replace(tzinfo=None),
+        )
+        session.add(event_orm)
+
+        # 2. Add OutboxEventORM for active subscriptions
+        evt_type = e["event_type"]
+        agg_id = e["aggregate_id"]
+        payl = e["payload"]
+
+        for sub in subscriptions:
+            if "*" in sub.event_types or evt_type in sub.event_types:
+                outbox_event = OutboxEventORM(
+                    event_type=evt_type,
+                    event_version=evt_version,
+                    aggregate_id=agg_id,
+                    payload=payl,
+                    endpoint_url=sub.endpoint_url,
+                    secret=sub.secret,
+                    endpoint_id=sub.id,
+                )
+                session.add(outbox_event)
+
+
+@event.listens_for(Session, "before_flush")
+def detect_outbox_events(session, flush_context, instances):
+    for obj in session.new:
+        if isinstance(obj, OutboxEventORM):
+            session.info["has_outbox_events"] = True
+            break
+
+
+@event.listens_for(Session, "after_commit")
+def trigger_outbox_processing_after_commit(session):
+    if session.info.get("has_outbox_events", False):
+        session.info["has_outbox_events"] = False
+        try:
+            from bb_paxdata.infrastructure.webhooks.tasks import process_outbox_queue
+
+            process_outbox_queue.delay()
+        except Exception:
+            # Prevent breaking application flow if Celery/Redis is not running or misconfigured
+            pass
+
+
+@event.listens_for(Session, "after_rollback")
+def clear_outbox_events_on_rollback(session):
+    session.info["has_outbox_events"] = False
 
 
 class ArgumentGraphNode(Base):
@@ -2829,13 +3011,24 @@ class ArgumentGraphMetadata(Base):
     def to_domain(self) -> ArgumentGraph:
         from bb_paxdata.application.domain.models.argument import ArgumentGraph
 
+        graph_data: dict[str, Any] | None = None
         if isinstance(self.graph_snapshot_json, dict):
+            graph_data = self.graph_snapshot_json
+        elif isinstance(self.graph_snapshot_json, str):
             try:
-                return ArgumentGraph(**self.graph_snapshot_json, skip_validation=True)
-            except Exception as e:
-                import logging
+                loaded = json.loads(self.graph_snapshot_json)
+                if isinstance(loaded, dict):
+                    graph_data = loaded
+            except json.JSONDecodeError:
+                graph_data = None
 
-                logger = logging.getLogger(__name__)
+        if graph_data:
+            try:
+                return ArgumentGraph(**graph_data, skip_validation=True)
+            except Exception as e:
+                import structlog
+
+                logger = structlog.get_logger(__name__)
                 logger.error(f"Failed to deserialize graph snapshot: {e}")
         return ArgumentGraph(
             graph_id=self.graph_id,

@@ -12,7 +12,7 @@ from bb_paxdata.application.domain.models.analysis_delta import (
 
 
 class ContrastReport(BaseModel):
-    model_config = ConfigDict(frozen=True)
+    model_config = ConfigDict(frozen=False)
 
     delta: AnalysisDelta = Field(...)
 

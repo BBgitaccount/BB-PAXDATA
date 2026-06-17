@@ -2,15 +2,16 @@ import asyncio
 import importlib
 import importlib.util
 import inspect
-import logging
 import sys
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
 
+import structlog
+
 from bb_paxdata.application.domain.ports.anomaly_rule import AnomalyRule
 
-logger = logging.getLogger(__name__)
+logger = structlog.get_logger(__name__)
 
 
 class RuleRegistry:

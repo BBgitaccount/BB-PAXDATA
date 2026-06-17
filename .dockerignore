@@ -47,3 +47,8 @@ output/
 logs/
 scratch/
 repomix-output.xml
+
+# Ignore large frontend node_modules and graphify history in build context
+src/bb_paxdata/interfaces/web/node_modules/
+graphify-out/
+
