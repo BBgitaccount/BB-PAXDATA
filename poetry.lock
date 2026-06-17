@@ -6506,31 +6506,35 @@ test = ["Cython", "array-api-strict (>=2.3.1)", "asv", "gmpy2", "hypothesis (>=6
 
 [[package]]
 name = "sentence-transformers"
-version = "3.4.1"
-description = "State-of-the-Art Text Embeddings"
+version = "5.6.0"
+description = "Embeddings, Retrieval, and Reranking"
 optional = false
-python-versions = ">=3.9"
+python-versions = ">=3.10"
 groups = ["main"]
 files = [
-    {file = "sentence_transformers-3.4.1-py3-none-any.whl", hash = "sha256:e026dc6d56801fd83f74ad29a30263f401b4b522165c19386d8bc10dcca805da"},
-    {file = "sentence_transformers-3.4.1.tar.gz", hash = "sha256:68daa57504ff548340e54ff117bd86c1d2f784b21e0fb2689cf3272b8937b24b"},
+    {file = "sentence_transformers-5.6.0-py3-none-any.whl", hash = "sha256:d2075b5e687a1611005e20ab04a6846994d51adfcf39610aed066af3c0c0b81f"},
+    {file = "sentence_transformers-5.6.0.tar.gz", hash = "sha256:0e7164d051e416c1853ade7c274ff52af3f9da0f4be7f0b83d734c27699e1057"},
 ]
 
 [package.dependencies]
-huggingface-hub = ">=0.20.0"
-Pillow = "*"
-scikit-learn = "*"
-scipy = "*"
+huggingface-hub = ">=0.23.0"
+numpy = ">=1.20.0"
+scikit-learn = ">=0.22.0"
+scipy = ">=1.0.0"
 torch = ">=1.11.0"
-tqdm = "*"
-transformers = ">=4.41.0,<5.0.0"
+tqdm = ">=4.0.0"
+transformers = ">=4.41.0,<6.0.0"
+typing_extensions = ">=4.5.0"
 
 [package.extras]
-dev = ["accelerate (>=0.20.3)", "datasets", "peft", "pre-commit", "pytest", "pytest-cov"]
-onnx = ["optimum[onnxruntime] (>=1.23.1)"]
-onnx-gpu = ["optimum[onnxruntime-gpu] (>=1.23.1)"]
-openvino = ["optimum-intel[openvino] (>=1.20.0)"]
-train = ["accelerate (>=0.20.3)", "datasets"]
+audio = ["transformers[audio]"]
+dev = ["accelerate (>=0.20.3)", "datasets (>=2.0.0)", "peft", "pre-commit", "pytest", "pytest-cov", "pytest-env", "pytest-subtests", "pytest-xdist", "transformers[audio,video,vision]"]
+image = ["transformers[vision]"]
+onnx = ["optimum-onnx[onnxruntime]"]
+onnx-gpu = ["optimum-onnx[onnxruntime-gpu]"]
+openvino = ["optimum-intel[openvino]"]
+train = ["accelerate (>=0.20.3)", "datasets (>=2.0.0)"]
+video = ["transformers[video]"]
 
 [[package]]
 name = "sentry-sdk"
@@ -8870,4 +8874,4 @@ graph = ["torch-geometric", "torch-scatter", "torch-sparse"]
 [metadata]
 lock-version = "2.1"
 python-versions = ">=3.12,<3.15"
-content-hash = "f81cc2a5d15f3e8e43d867c2d5e267a6ae163c3a74180230cf2cd5f0ff5890bb"
+content-hash = "02c73cf7103c325d8a4ea2e01faea4d15a9b1890991105b58e44d17e574245d7"
