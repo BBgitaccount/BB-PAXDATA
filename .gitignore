@@ -89,4 +89,4 @@ frontend/
 dashboards/
 
 #whl
-/.docker
+docker/models/
