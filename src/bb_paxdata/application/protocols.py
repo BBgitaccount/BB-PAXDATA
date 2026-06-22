@@ -5,122 +5,30 @@ It provides a clean separation between the application layer and domain layer,
 following the Dependency Inversion Principle.
 """
 
+from __future__ import annotations
+
 from abc import ABC, abstractmethod
-from typing import Any, Protocol
+from typing import TYPE_CHECKING, Any, Protocol
 
-from pydantic import BaseModel, Field
-
-from .domain.enums import (
-    AnomalySeverity,
-    AnomalyType,
-    AppraisalAttitude,
-    AudienceType,
-    EvidenceType,
-    FrameType,
-    HedgeType,
-    RiskLevel,
-    SentimentCategory,
-    TopicCategory,
-)
-from .domain.models.appraisal_vector import AppraisalVector
-from .domain.models.risk_signal import RiskSignal
-from .domain.models.segment import Segment
-from .domain.models.sentence import Sentence
-from .domain.models.srl import SRLFrame
 from .domain.ports.speech_act_port import SpeechActClassifierProtocol
 
-
-class HedgingResult(BaseModel):
-    """Result of hedging analysis."""
-
-    score: float = Field(..., ge=0.0, le=1.0, description="Hedging score from 0 to 1")
-    categories: list[HedgeType] = Field(
-        default_factory=list, description="Detected hedging categories"
-    )
-    confidence: float = Field(
-        default=1.0, ge=0.0, le=1.0, description="Confidence score"
-    )
+if TYPE_CHECKING:
+    from .domain.models.appraisal_vector import AppraisalVector
+    from .domain.models.segment import Segment
+    from .domain.models.sentence import Sentence
+    from .domain.models.srl import SRLFrame
 
 
-# Result models for service outputs
-class SentimentResult(BaseModel):
-    """Result of sentiment analysis."""
+from typing import runtime_checkable
 
-    score: float = Field(
-        ..., ge=-1.0, le=1.0, description="Sentiment score from -1 to 1"
-    )
-    emotion_category: SentimentCategory = Field(..., description="Emotion category")
-    negation_aware_score: float = Field(
-        ..., ge=-1.0, le=1.0, description="Negation-aware sentiment score"
-    )
-    confidence: float = Field(
-        default=1.0, ge=0.0, le=1.0, description="Confidence score"
-    )
-
-
-class RiskAssessment(BaseModel):
-    """Result of risk assessment."""
-
-    sbi_score: float = Field(..., description="Söylemsel Baskı İndeksi score")
-    dki_score: float = Field(..., description="Diplomatik Konum İndeksi score")
-    risk_score: float = Field(..., ge=0.0, le=10.0, description="Overall risk score")
-    risk_signals: list[RiskSignal] = Field(
-        default_factory=list, description="Detected risk signals"
-    )
-    severity: RiskLevel = Field(..., description="Risk severity level")
-    confidence: float = Field(
-        default=1.0, ge=0.0, le=1.0, description="Confidence score"
-    )
-
-
-class FrameResult(BaseModel):
-    """Result of frame detection."""
-
-    frame_type: FrameType = Field(..., description="Detected frame type")
-    evidence_types: list[EvidenceType] = Field(
-        default_factory=list, description="Evidence types used"
-    )
-    appraisal_attitude: AppraisalAttitude = Field(..., description="Appraisal attitude")
-    audience_type: AudienceType = Field(..., description="Target audience type")
-    confidence: float = Field(
-        default=1.0, ge=0.0, le=1.0, description="Confidence score"
-    )
-
-
-class TopicAnalysis(BaseModel):
-    """Result of topic analysis."""
-
-    topic_scores: dict[str, float] = Field(
-        ..., description="Topic scores for each category"
-    )
-    dominant_topic: TopicCategory = Field(..., description="Dominant topic category")
-    specificity: float = Field(
-        ..., ge=0.0, le=1.0, description="Topic specificity score"
-    )
-    confidence: float = Field(
-        default=1.0, ge=0.0, le=1.0, description="Confidence score"
-    )
-
-
-class AnomalyResult(BaseModel):
-    """Result of anomaly detection."""
-
-    type: AnomalyType = Field(..., description="Type of anomaly")
-    severity: AnomalySeverity = Field(..., description="Severity level")
-    category: str = Field(..., description="Anomaly category")
-    description: str = Field(..., description="Description of the anomaly")
-    ai_values: dict[str, Any] = Field(
-        default_factory=dict, description="AI-derived values"
-    )
-    formula_values: dict[str, Any] = Field(
-        default_factory=dict, description="Formula-derived values"
-    )
-    confidence: float = Field(
-        default=1.0, ge=0.0, le=1.0, description="Confidence score"
-    )
-
-
-from typing import runtime_checkable  # noqa: E402
+from .domain.models.service_results import (
+    AnomalyResult,
+    FrameResult,
+    HedgingResult,
+    RiskAssessment,
+    SentimentResult,
+    TopicAnalysis,
+)
 
 
 @runtime_checkable

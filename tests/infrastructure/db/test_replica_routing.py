@@ -3,9 +3,10 @@ from __future__ import annotations
 
 from unittest.mock import MagicMock, PropertyMock, patch
 
+from sqlalchemy.sql import insert, select
+
 from bb_paxdata.infrastructure.db.models import OutboxEventORM
 from bb_paxdata.infrastructure.db.session import RoutingSession
-from sqlalchemy.sql import insert, select
 
 
 def test_routing_session_get_bind_select_outside_transaction():
@@ -18,10 +19,12 @@ def test_routing_session_get_bind_select_outside_transaction():
     mock_engine_replica = MagicMock()
     mock_engine_replica.sync_engine = mock_replica_sync
 
-    with patch("bb_paxdata.infrastructure.db.session.engine", mock_engine), patch(
-        "bb_paxdata.infrastructure.db.session.engine_replica", mock_engine_replica
+    with (
+        patch("bb_paxdata.infrastructure.db.session.engine", mock_engine),
+        patch(
+            "bb_paxdata.infrastructure.db.session.engine_replica", mock_engine_replica
+        ),
     ):
-
         session = RoutingSession()
 
         # Simulate a SELECT statement
@@ -42,10 +45,12 @@ def test_routing_session_get_bind_non_select_outside_transaction():
     mock_engine_replica = MagicMock()
     mock_engine_replica.sync_engine = mock_replica_sync
 
-    with patch("bb_paxdata.infrastructure.db.session.engine", mock_engine), patch(
-        "bb_paxdata.infrastructure.db.session.engine_replica", mock_engine_replica
+    with (
+        patch("bb_paxdata.infrastructure.db.session.engine", mock_engine),
+        patch(
+            "bb_paxdata.infrastructure.db.session.engine_replica", mock_engine_replica
+        ),
     ):
-
         session = RoutingSession()
 
         # Simulate an INSERT statement
@@ -66,10 +71,12 @@ def test_routing_session_get_bind_inside_transaction():
     mock_engine_replica = MagicMock()
     mock_engine_replica.sync_engine = mock_replica_sync
 
-    with patch("bb_paxdata.infrastructure.db.session.engine", mock_engine), patch(
-        "bb_paxdata.infrastructure.db.session.engine_replica", mock_engine_replica
+    with (
+        patch("bb_paxdata.infrastructure.db.session.engine", mock_engine),
+        patch(
+            "bb_paxdata.infrastructure.db.session.engine_replica", mock_engine_replica
+        ),
     ):
-
         session = RoutingSession()
 
         # Mock in_transaction to return True
@@ -91,10 +98,12 @@ def test_routing_session_get_bind_with_modified_objects():
     mock_engine_replica = MagicMock()
     mock_engine_replica.sync_engine = mock_replica_sync
 
-    with patch("bb_paxdata.infrastructure.db.session.engine", mock_engine), patch(
-        "bb_paxdata.infrastructure.db.session.engine_replica", mock_engine_replica
+    with (
+        patch("bb_paxdata.infrastructure.db.session.engine", mock_engine),
+        patch(
+            "bb_paxdata.infrastructure.db.session.engine_replica", mock_engine_replica
+        ),
     ):
-
         session = RoutingSession()
 
         # Mock session to have new objects via PropertyMock

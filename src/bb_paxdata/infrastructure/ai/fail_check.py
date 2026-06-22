@@ -192,8 +192,7 @@ class AIFailCheck:
         elif discrepancy <= tolerance * 2:
             status = ValidationStatus.WARNING
             explanation = (
-                f"Risk scores moderately inconsistent "
-                f"(discrepancy: {discrepancy:.2f})"
+                f"Risk scores moderately inconsistent (discrepancy: {discrepancy:.2f})"
             )
         else:
             status = ValidationStatus.FAIL
@@ -358,7 +357,7 @@ class AIFailCheck:
             status = ValidationStatus.WARNING
             score = 0.5
             explanation = (
-                f"Frame analysis differs: AI={ai_frame}, " f"Formula={formula_frame}"
+                f"Frame analysis differs: AI={ai_frame}, Formula={formula_frame}"
             )
         else:
             status = ValidationStatus.FAIL

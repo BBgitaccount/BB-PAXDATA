@@ -32,7 +32,7 @@ export const AnomalyTimeline = () => {
   const panelsQuery = useQuery({
     queryKey: ['bilateral-timeline'],
     queryFn: () => apiClient.get<PanelTimelineEntry[]>('/api/v1/dashboard/bilateral/timeline'),
-    staleTime: 5 * 60 * 1000,
+    staleTime: 1000 * 60 * 5, // 5 dk - panel list changes infrequently
   });
 
   // Fetch anomalies based on filters

@@ -2,10 +2,8 @@ from fastapi import APIRouter, Depends, Query
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from bb_paxdata.infrastructure.container.service_container import ServiceContainer
 from bb_paxdata.infrastructure.db.models import FormulaValidationLog, Sentence
-from bb_paxdata.infrastructure.db.repositories.formula_validation import (
-    FormulaValidationRepository,
-)
 from bb_paxdata.interfaces.api.dependencies import get_db
 from bb_paxdata.interfaces.api.schemas import (
     FailQueueItemResponse,
@@ -18,15 +16,20 @@ from bb_paxdata.interfaces.api.schemas import (
 router = APIRouter(prefix="/queue", tags=["Queue"])
 
 
+def get_formula_validation_repository(db: AsyncSession = Depends(get_db)):
+    """Dependency injection for FormulaValidationRepository."""
+    container = ServiceContainer.get_instance()
+    return container.formula_validation_repository(db)
+
+
 @router.get("", response_model=list[FailQueueItemResponse])
 async def get_fail_queue(
+    repo=Depends(get_formula_validation_repository),
     formula_name: str | None = Query(None, max_length=200),
     status_filter: str = Query("unreviewed", pattern="^(unreviewed|all|reviewed)$"),
     limit: int = Query(50, ge=1, le=500),
-    db: AsyncSession = Depends(get_db),
 ):
     """Retrieve failed validation logs with sentence details and AI scores, ordered by priority score."""
-    repo = FormulaValidationRepository(db)
     # Map frontend 'Tümü' filter to None
     f_name = None if formula_name == "Tümü" else formula_name
     return await repo.get_fail_queue_with_context(
@@ -35,9 +38,12 @@ async def get_fail_queue(
 
 
 @router.get("/context/{sent_id}", response_model=TripletContextResponse)
-async def get_triplet_context(sent_id: str, db: AsyncSession = Depends(get_db)):
+async def get_triplet_context(
+    sent_id: str,
+    db: AsyncSession = Depends(get_db),
+    repo=Depends(get_formula_validation_repository),
+):
     """Retrieve the target sentence, its previous and next sentence, and speaker/panel metadata."""
-    repo = FormulaValidationRepository(db)
     context_data = await repo.get_triplet_context(sent_id)
 
     # Query database to enrich speaker and panel context from the target sentence
@@ -78,10 +84,9 @@ async def get_similar_cases(
     sent_id: str,
     formula_name: str,
     country: str | None = Query(None),
-    db: AsyncSession = Depends(get_db),
+    repo=Depends(get_formula_validation_repository),
 ):
     """Retrieve similar historical failures for the same validation formula to guide the reviewer."""
-    repo = FormulaValidationRepository(db)
     return await repo.get_similar_cases(
         sent_id=sent_id, formula_name=formula_name, country=country
     )
@@ -89,10 +94,11 @@ async def get_similar_cases(
 
 @router.get("/context/by-log-id/{log_id}", response_model=TripletContextResponse)
 async def get_triplet_context_by_log_id(
-    log_id: int, db: AsyncSession = Depends(get_db)
+    log_id: int,
+    db: AsyncSession = Depends(get_db),
+    repo=Depends(get_formula_validation_repository),
 ):
     """Retrieve triplet context by log_id (resolves sent_id internally)."""
-    repo = FormulaValidationRepository(db)
 
     # First, get the sent_id from the log
     stmt = select(FormulaValidationLog).where(
@@ -149,9 +155,9 @@ async def get_similar_cases_by_log_id(
     log_id: int,
     country: str | None = Query(None),
     db: AsyncSession = Depends(get_db),
+    repo=Depends(get_formula_validation_repository),
 ):
     """Retrieve similar cases by log_id (resolves sent_id and formula_name internally)."""
-    repo = FormulaValidationRepository(db)
 
     # First, get the sent_id and formula_name from the log
     stmt = select(FormulaValidationLog).where(
@@ -179,10 +185,9 @@ async def get_similar_cases_by_log_id(
 @router.get("/log/{log_id}", response_model=FailQueueItemResponse)
 async def get_queue_item_by_log_id(
     log_id: int,
-    db: AsyncSession = Depends(get_db),
+    repo=Depends(get_formula_validation_repository),
 ):
     """Fallback: Retrieve queue item by log_id (returns sent_id and formula_name)."""
-    repo = FormulaValidationRepository(db)
 
     # Get the queue item with context
     queue_items = await repo.get_fail_queue_with_context(

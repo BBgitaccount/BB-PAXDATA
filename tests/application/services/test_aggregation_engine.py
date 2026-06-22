@@ -3,6 +3,7 @@ from datetime import datetime
 
 import numpy as np
 import pytest
+
 from bb_paxdata.application.services.aggregation_engine import AggregationEngine
 from bb_paxdata.infrastructure.db.models import SegmentAnalyzedEvent
 

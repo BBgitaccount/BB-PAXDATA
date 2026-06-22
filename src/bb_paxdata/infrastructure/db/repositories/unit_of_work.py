@@ -37,6 +37,9 @@ from bb_paxdata.infrastructure.db.repositories.reviewer_assignment import (
 )
 from bb_paxdata.infrastructure.db.repositories.segment import SegmentRepository
 from bb_paxdata.infrastructure.db.repositories.sentence import SentenceRepository
+from bb_paxdata.infrastructure.db.repositories.speaker_repository import (
+    SpeakerRepository,
+)
 
 
 class AbstractUnitOfWork(ABC):
@@ -56,6 +59,7 @@ class AbstractUnitOfWork(ABC):
     country_references: CountryReferenceRepository
     discourse_flows: DiscourseFlowRepository
     topic_syntheses: TopicSynthesisRepository
+    speakers: SpeakerRepository
 
     async def __aenter__(self) -> AbstractUnitOfWork:
         return self
@@ -75,6 +79,10 @@ class AbstractUnitOfWork(ABC):
     @abstractmethod
     async def rollback(self) -> None:
         """Discard pending changes."""
+
+    @abstractmethod
+    async def flush(self) -> None:
+        """Flush pending changes to the database."""
 
 
 class SqlAlchemyUnitOfWork(AbstractUnitOfWork):
@@ -110,6 +118,7 @@ class SqlAlchemyUnitOfWork(AbstractUnitOfWork):
         self.country_references = CountryReferenceRepository(self.session)
         self.discourse_flows = DiscourseFlowRepository(self.session)
         self.topic_syntheses = TopicSynthesisRepository(self.session)
+        self.speakers = SpeakerRepository(self.session)
         return self
 
     async def __aexit__(
@@ -139,3 +148,7 @@ class SqlAlchemyUnitOfWork(AbstractUnitOfWork):
     async def rollback(self) -> None:
         if self._session is not None:
             await self.session.rollback()
+
+    async def flush(self) -> None:
+        if self._session is not None:
+            await self.session.flush()

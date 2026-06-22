@@ -9,7 +9,6 @@ from pydantic import BaseModel, Field, computed_field, model_validator
 
 from bb_paxdata.application.domain.utils.json_validation import validate_json_safe
 
-from ...protocols import HedgingResult
 from ..enums import (
     AnomalySeverity,
     AnomalyType,
@@ -33,6 +32,7 @@ from .presupposition import Presupposition
 from .risk_signal import RiskSignal
 from .sbi_models import SBIResult
 from .segment import Segment
+from .service_results import HedgingResult
 from .speech_act import SpeechActClassification
 from .topic_synthesis import TopicSynthesis
 
@@ -88,6 +88,20 @@ class Analysis(AggregateRoot):
     )
     stress_level: float | None = Field(
         default=None, ge=0.0, le=1.0, description="Stress level indicator"
+    )
+
+    # LIWC2015 proxy scores (Faz 7 integration)
+    liwc_clout: float | None = Field(
+        None, ge=0.0, le=1.0, description="LIWC clout score"
+    )
+    liwc_analytic: float | None = Field(
+        None, ge=0.0, le=1.0, description="LIWC analytic score"
+    )
+    liwc_authenticity: float | None = Field(
+        None, ge=0.0, le=1.0, description="LIWC authenticity score"
+    )
+    liwc_tone: float | None = Field(
+        None, ge=-1.0, le=1.0, description="LIWC tone score"
     )
 
     # ── Geleneksel NLP Çıktıları ───────────────────────────────────

@@ -3,12 +3,6 @@
 **/legacy_*.py
 **/legacy/
 
-# Frontend & UI
-frontend/
-**/*.ts
-**/*.tsx
-**/*.css
-
 # Migrations & One-off Scripts
 alembic/versions/
 scripts/backfill_*.py

@@ -175,7 +175,7 @@ async def _run_eval_sentence(
 def eval_dataset(
     limit: int = typer.Option(
         None, "--limit", "-l", help="Değerlendirilecek maksimum cümle sayısı"
-    )
+    ),
 ) -> None:
     """
     Golden Dataset üzerinden tüm kalite değerlendirme (DeepEval) pipeline'ını çalıştırır.

@@ -3,11 +3,12 @@ from typing import Any
 
 import pytest
 import pytest_asyncio
+from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_async_engine
+
 from bb_paxdata.infrastructure.db.base import Base
 from bb_paxdata.infrastructure.messaging.publisher import get_publisher
 from bb_paxdata.interfaces.api.dependencies import get_cache, get_db
 from bb_paxdata.interfaces.api.main import app
-from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_async_engine
 
 # Use in-memory SQLite for fast database integration testing
 TEST_DATABASE_URL = "sqlite+aiosqlite:///:memory:"

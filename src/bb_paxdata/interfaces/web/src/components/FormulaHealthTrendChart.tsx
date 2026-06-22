@@ -6,6 +6,7 @@
  *
  * Data source: GET /api/v1/dashboard/formulas/health/trend?days=30
  */
+import { useMemo } from 'react';
 import {
   CartesianGrid,
   Legend,
@@ -48,19 +49,26 @@ export const FormulaHealthTrendChart = ({
   data,
   title = 'Formül False Positive Oranı — Zamansal Trend (%)',
 }: FormulaHealthTrendChartProps) => {
-  // Pivot flat array into date-keyed rows for Recharts
-  const groupedData = data.reduce<ChartRow[]>((acc, item) => {
-    let row = acc.find((d) => d.date === item.date);
-    if (!row) {
-      row = { date: item.date };
-      acc.push(row);
-    }
-    // Store as percentage, 2 decimal places
-    row[item.formula_name] = +(item.false_positive_rate * 100).toFixed(2);
-    return acc;
-  }, []);
+  // Pivot flat array into date-keyed rows for Recharts (memoized for performance)
+  const groupedData = useMemo(
+    () =>
+      data.reduce<ChartRow[]>((acc, item) => {
+        let row = acc.find((d) => d.date === item.date);
+        if (!row) {
+          row = { date: item.date };
+          acc.push(row);
+        }
+        // Store as percentage, 2 decimal places
+        row[item.formula_name] = +(item.false_positive_rate * 100).toFixed(2);
+        return acc;
+      }, []),
+    [data],
+  );
 
-  const uniqueFormulas = Array.from(new Set(data.map((d) => d.formula_name)));
+  const uniqueFormulas = useMemo(
+    () => Array.from(new Set(data.map((d) => d.formula_name))),
+    [data],
+  );
   const isEmpty = data.length === 0;
 
   return (

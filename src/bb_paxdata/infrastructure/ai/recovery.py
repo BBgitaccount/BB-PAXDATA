@@ -20,6 +20,23 @@ from bb_paxdata.infrastructure.observability.metrics import get_metrics
 logger = structlog.get_logger(__name__)
 
 
+class RecoveryFailureError(Exception):
+    """Tüm kurtarma seviyeleri başarısız olduğunda fırlatılan exception."""
+
+    def __init__(
+        self,
+        message: str,
+        error_trace: list[str],
+        levels_attempted: int,
+        raw_input: str,
+    ) -> None:
+        self.message = message
+        self.error_trace = error_trace
+        self.levels_attempted = levels_attempted
+        self.raw_input = raw_input
+        super().__init__(self.message)
+
+
 class RecoveryLevel(str, Enum):
     """JSON kurtarma seviyeleri."""
 
@@ -91,10 +108,23 @@ class RecoveryEngine:
         text: str,
         default_schema: dict[str, Any] | None = None,
         data_id: str | None = None,
+        raise_on_failure: bool = True,
     ) -> RecoveryResult:
         """
         6 seviyeyi sırayla dener.
         Her seviye deneme loglanır. Başarılı seviye info ile loglanır.
+
+        Args:
+            text: Kurtarılacak ham metin
+            default_schema: Seviye 6 için varsayılan şema
+            data_id: Loglama için veri tanımlayıcısı
+            raise_on_failure: Tüm seviyeler başarısız olursa exception fırlat (varsayılan: True)
+
+        Returns:
+            RecoveryResult: Kurtarma sonucu
+
+        Raises:
+            RecoveryFailureError: Tüm seviyeler başarısız olursa ve raise_on_failure=True
         """
         result = RecoveryResult(success=False, data=None, raw_input=text)
         error_trace: list[str] = []
@@ -104,7 +134,7 @@ class RecoveryEngine:
         levels_attempted += 1
         try:
             data = self._level_direct(text)
-            if data:
+            if data is not None:
                 result.success = True
                 result.data = data
                 result.level_used = RecoveryLevel.DIRECT
@@ -143,7 +173,7 @@ class RecoveryEngine:
         levels_attempted += 1
         try:
             data = self._level_stripped(text)
-            if data:
+            if data is not None:
                 result.success = True
                 result.data = data
                 result.level_used = RecoveryLevel.STRIPPED
@@ -186,7 +216,7 @@ class RecoveryEngine:
         levels_attempted += 1
         try:
             data = self._level_first_block(text)
-            if data:
+            if data is not None:
                 result.success = True
                 result.data = data
                 result.level_used = RecoveryLevel.FIRST_BLOCK
@@ -231,7 +261,7 @@ class RecoveryEngine:
         levels_attempted += 1
         try:
             data = self._level_partial(text)
-            if data:
+            if data is not None:
                 result.success = True
                 result.data = data
                 result.level_used = RecoveryLevel.PARTIAL
@@ -270,7 +300,7 @@ class RecoveryEngine:
         levels_attempted += 1
         try:
             data = self._level_key_value(text)
-            if data:
+            if data is not None:
                 result.success = True
                 result.data = data
                 result.level_used = RecoveryLevel.KEY_VALUE
@@ -313,7 +343,7 @@ class RecoveryEngine:
         levels_attempted += 1
         try:
             data = self._level_schema_default(default_schema)
-            if data:
+            if data is not None:
                 result.success = True
                 result.data = data
                 result.level_used = RecoveryLevel.SCHEMA_DEFAULT
@@ -352,6 +382,24 @@ class RecoveryEngine:
         result.error = "All recovery levels failed"
         self._logger.warning("recovery.failed", text_preview=text[:100])
         self._log_recovery(data_id, levels_attempted, result, error_trace)
+
+        # Exception fırlatma (BUG-SYS-005 fix)
+        if raise_on_failure:
+            error_message = (
+                f"All {levels_attempted} recovery levels failed for JSON recovery"
+            )
+            self._logger.error(
+                "recovery.exception",
+                error_message=error_message,
+                error_trace=error_trace,
+                text_preview=text[:100],
+            )
+            raise RecoveryFailureError(
+                message=error_message,
+                error_trace=error_trace,
+                levels_attempted=levels_attempted,
+                raw_input=text,
+            )
 
         return result
 

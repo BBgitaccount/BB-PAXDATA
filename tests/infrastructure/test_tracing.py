@@ -1,4 +1,5 @@
 import pytest
+
 from bb_paxdata.config.logging import add_otel_trace_info
 from bb_paxdata.infrastructure.ai.base import CompletionOptions, CompletionResult
 from bb_paxdata.infrastructure.observability.tracing import (
@@ -114,9 +115,10 @@ def test_domain_model_auto_populates_correlation_id_from_context():
 
 @pytest.mark.asyncio
 async def test_fastapi_correlation_id_middleware_generates_new_id():
-    from bb_paxdata.application.domain.utils.context import get_correlation_id
     from fastapi import FastAPI, Request
     from httpx import ASGITransport, AsyncClient
+
+    from bb_paxdata.application.domain.utils.context import get_correlation_id
 
     app = FastAPI()
 
@@ -129,6 +131,7 @@ async def test_fastapi_correlation_id_middleware_generates_new_id():
         import uuid
 
         import structlog
+
         from bb_paxdata.application.domain.utils.context import set_correlation_id
 
         correlation_id = request.headers.get("X-Correlation-ID") or request.headers.get(
@@ -166,9 +169,10 @@ async def test_fastapi_correlation_id_middleware_generates_new_id():
 
 @pytest.mark.asyncio
 async def test_fastapi_correlation_id_middleware_preserves_existing_id():
-    from bb_paxdata.application.domain.utils.context import get_correlation_id
     from fastapi import FastAPI, Request
     from httpx import ASGITransport, AsyncClient
+
+    from bb_paxdata.application.domain.utils.context import get_correlation_id
 
     app = FastAPI()
     captured_corr_id = None
@@ -178,6 +182,7 @@ async def test_fastapi_correlation_id_middleware_preserves_existing_id():
         import uuid
 
         import structlog
+
         from bb_paxdata.application.domain.utils.context import set_correlation_id
 
         correlation_id = request.headers.get("X-Correlation-ID") or request.headers.get(

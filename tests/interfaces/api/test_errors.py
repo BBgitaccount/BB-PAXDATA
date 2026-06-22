@@ -1,5 +1,6 @@
-from bb_paxdata.interfaces.api.main import app
 from fastapi.testclient import TestClient
+
+from bb_paxdata.interfaces.api.main import app
 
 client = TestClient(app, raise_server_exceptions=False)
 

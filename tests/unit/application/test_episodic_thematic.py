@@ -1,6 +1,7 @@
 # tests/unit/application/test_episodic_thematic.py
 import pytest
 import spacy
+
 from bb_paxdata.application.domain.enums.frame_type import FrameType
 from bb_paxdata.application.domain.models.segment import Segment
 from bb_paxdata.application.pipeline.frame.episodic_themetic_classifier import (

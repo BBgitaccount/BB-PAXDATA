@@ -5,6 +5,10 @@ from datetime import datetime, timezone
 from unittest.mock import MagicMock, patch
 
 import pytest
+from sqlalchemy import create_engine, select
+from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_async_engine
+from sqlalchemy.orm import sessionmaker
+
 from bb_paxdata.infrastructure.db.base import Base
 from bb_paxdata.infrastructure.db.models import (
     DomainEvent,
@@ -16,9 +20,6 @@ from bb_paxdata.infrastructure.webhooks.tasks import (
     dispatch_webhook,
     process_outbox_queue,
 )
-from sqlalchemy import create_engine, select
-from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_async_engine
-from sqlalchemy.orm import sessionmaker
 
 # --- Async Tests for WORMEventPublisher ---
 

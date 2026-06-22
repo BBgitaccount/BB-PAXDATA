@@ -6,6 +6,7 @@ import threading
 from dataclasses import dataclass, field
 
 import structlog
+
 from bb_paxdata.sdk.protocols import PluginMetadata
 from bb_paxdata.sdk.sandbox import SandboxResult, run_plugin_in_sandbox
 

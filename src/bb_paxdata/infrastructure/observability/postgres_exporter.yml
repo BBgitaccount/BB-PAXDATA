@@ -1,0 +1,51 @@
+# PostgreSQL Exporter Configuration
+# This file configures the postgres-exporter for Prometheus metrics collection
+
+# Disable SSL mode for local development
+sslmode: disable
+
+# Queries to collect metrics from PostgreSQL
+# The exporter uses built-in queries by default, but custom queries can be added here
+# if needed for specific monitoring requirements.
+
+# Example custom queries (commented out):
+# custom_queries:
+#   - name: pg_stat_user_tables
+#     query: |
+#       SELECT
+#         schemaname,
+#         tablename,
+#         seq_scan,
+#         seq_tup_read,
+#         idx_scan,
+#         idx_tup_fetch,
+#         n_tup_ins,
+#         n_tup_upd,
+#         n_tup_del,
+#         n_tup_hot_upd,
+#         n_live_tup,
+#         n_dead_tup,
+#         vacuum_count,
+#         autovacuum_count,
+#         analyze_count,
+#         autoanalyze_count
+#       FROM pg_stat_user_tables
+#     metrics:
+#       - schemaname:
+#           usage: "LABEL"
+#           description: "Schema name"
+#       - tablename:
+#           usage: "LABEL"
+#           description: "Table name"
+#       - seq_scan:
+#           usage: "COUNTER"
+#           description: "Number of sequential scans initiated on this table"
+#       - seq_tup_read:
+#           usage: "COUNTER"
+#           description: "Number of live rows fetched by sequential scans"
+#       - idx_scan:
+#           usage: "COUNTER"
+#           description: "Number of index scans initiated on this table"
+#       - idx_tup_fetch:
+#           usage: "COUNTER"
+#           description: "Number of live rows fetched by index scans"

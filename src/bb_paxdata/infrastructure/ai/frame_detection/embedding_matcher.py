@@ -7,13 +7,14 @@ Universität Göttingen. Word embedding frame matching.]
 
 import numpy as np
 import structlog
+from sklearn.metrics.pairwise import cosine_similarity
+
 from bb_paxdata.application.domain.enums.frame_type import FrameType
 from bb_paxdata.application.domain.models.frame_annotation import FrameAnnotation
 from bb_paxdata.application.domain.models.segment import Segment
 from bb_paxdata.application.domain.services.topic_modeling_protocol import (
     TopicModelingProtocol,
 )
-from sklearn.metrics.pairwise import cosine_similarity
 
 logger = structlog.get_logger(__name__)
 

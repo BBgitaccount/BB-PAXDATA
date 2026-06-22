@@ -77,7 +77,7 @@ def inspect_db(name, path):
                         )
                         filled = cursor.fetchone()[0]
                         print(
-                            f"    {check} filled (non-zero/non-null): {filled}/{total_sents} ({filled/total_sents*100:.1f}%)"
+                            f"    {check} filled (non-zero/non-null): {filled}/{total_sents} ({filled / total_sents * 100:.1f}%)"
                         )
                     else:
                         print(f"    {check} column does not exist!")

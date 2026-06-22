@@ -40,7 +40,7 @@ logger = structlog.get_logger(__name__)
 class PipelineMetrics:
     """Collect performance metrics for monitoring."""
 
-    lock: threading.Lock = field(default_factory=threading.Lock)
+    lock: threading.RLock = field(default_factory=threading.RLock)
 
     total_documents_processed: int = 0
     total_claims_detected: int = 0

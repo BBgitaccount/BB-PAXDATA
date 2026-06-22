@@ -2,6 +2,7 @@
 from unittest.mock import AsyncMock
 
 import pytest
+
 from bb_paxdata.application.domain.models.bilateral_sentiment import BilateralSentiment
 from bb_paxdata.application.use_cases.build_panel_network import (
     BuildPanelNetworkInput,

@@ -2,9 +2,9 @@ name: BB-PAXDATA CI
 
 on:
   push:
-    branches: [ main, master ]
+    branches: [main, master]
   pull_request:
-    branches: [ main, master ]
+    branches: [main, master]
 
 jobs:
   quality-assurance:
@@ -16,7 +16,7 @@ jobs:
       - name: Set up Python 3.12
         uses: actions/setup-python@v5
         with:
-          python-version: '3.12'
+          python-version: "3.12"
 
       - name: Install Poetry
         uses: snok/install-poetry@v1
@@ -25,7 +25,6 @@ jobs:
           virtualenvs-in-project: true
           version: 2.0.1
 
-
       - name: Load cached venv
         id: cached-poetry-dependencies
         uses: actions/cache@v4
@@ -33,11 +32,8 @@ jobs:
           path: .venv
           key: venv-v2-${{ runner.os }}-${{ hashFiles('**/poetry.lock') }}
 
-
       - name: Install dependencies
         run: poetry install --no-interaction
-
-
 
       - name: Run Linting
         run: |
@@ -48,9 +44,9 @@ jobs:
       - name: Set up Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: '20'
-          cache: 'npm'
-          cache-dependency-path: 'src/bb_paxdata/interfaces/web/package-lock.json'
+          node-version: "20"
+          cache: "npm"
+          cache-dependency-path: "src/bb_paxdata/interfaces/web/package-lock.json"
 
       - name: Install Frontend Dependencies
         working-directory: src/bb_paxdata/interfaces/web

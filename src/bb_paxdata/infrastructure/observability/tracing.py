@@ -36,7 +36,7 @@ def get_tracer(name: str = "bb-paxdata") -> Any:
 
 def setup_tracing(
     service_name: str = "bb-paxdata",
-    endpoint: str = "http://localhost:4317",
+    endpoint: str = "http://jaeger:4317",
     enabled: bool = False,
 ) -> None:
     """

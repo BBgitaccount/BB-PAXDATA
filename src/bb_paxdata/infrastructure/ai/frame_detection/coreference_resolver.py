@@ -16,6 +16,7 @@ if TYPE_CHECKING:
 import spacy
 import spacy.tokens
 import structlog
+
 from bb_paxdata.application.domain.models.frame_annotation import ResolvedEntity
 from bb_paxdata.application.domain.models.segment import Segment
 

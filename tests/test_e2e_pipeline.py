@@ -6,6 +6,7 @@
 from unittest.mock import MagicMock
 
 import pytest
+
 from bb_paxdata.application.domain.models.ai_analysis import AIAnalysisResult
 from bb_paxdata.application.domain.models.analysis import Analysis
 from bb_paxdata.application.domain.services.ai_analyst import AIAnalyst

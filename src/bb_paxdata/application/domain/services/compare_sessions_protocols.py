@@ -4,9 +4,6 @@ from typing import TYPE_CHECKING, Protocol
 
 if TYPE_CHECKING:
     from bb_paxdata.application.domain.models.analysis import Analysis
-    from bb_paxdata.application.domain.models.bilateral_sentiment import (
-        BilateralSentiment,
-    )
     from bb_paxdata.application.domain.models.discourse_flow import DiscourseFlow
     from bb_paxdata.application.domain.models.dki import DKIResult
     from bb_paxdata.application.domain.models.sbi_models import SpeakerPosition
@@ -35,7 +32,3 @@ class IAnalysisRepository(Protocol):
 
 class IDiscourseFlowRepository(Protocol):
     async def get_by_session(self, session_id: str) -> list[DiscourseFlow]: ...
-
-
-class IBilateralSentimentRepository(Protocol):
-    async def get_by_panel(self, panel_id: str) -> list[BilateralSentiment]: ...

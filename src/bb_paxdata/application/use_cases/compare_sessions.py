@@ -7,6 +7,7 @@ from datetime import datetime, timezone
 from typing import TYPE_CHECKING, Any
 
 import structlog
+
 from bb_paxdata.application.domain.models.analysis_delta import (
     AnalysisDelta,
     NarrativeLayerDelta,
@@ -66,7 +67,6 @@ class CompareSessionsOutput:
 
 
 class CompareSessionsUseCase:
-
     def __init__(
         self,
         sbi_repository: Any,
@@ -265,7 +265,7 @@ class CompareSessionsUseCase:
                 act_type = a.speech_act.primary_type.value
                 d[act_type] = d.get(act_type, 0.0) + 1.0
         for speaker, value in dist.items():
-            total = sum(dist[speaker].values())
+            total = sum(value.values())
             if total > 0:
                 dist[speaker] = {k: v / total for k, v in dist[speaker].items()}
         return dist

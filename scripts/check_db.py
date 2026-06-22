@@ -1,5 +1,6 @@
-from bb_paxdata.config.settings import get_settings
 from sqlalchemy import create_engine, text
+
+from bb_paxdata.config.settings import get_settings
 
 
 def main():

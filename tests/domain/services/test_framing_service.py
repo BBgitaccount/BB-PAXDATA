@@ -3,6 +3,7 @@
 from unittest.mock import Mock
 
 import pytest
+
 from bb_paxdata.application.domain.enums import (
     AppraisalAttitude,
     AudienceType,

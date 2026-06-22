@@ -5,8 +5,9 @@
 Universität Göttingen. 5W1H extraction stage.]
 """
 
-
 import structlog
+from pydantic import BaseModel, Field
+
 from bb_paxdata.application.domain.models.frame_annotation import FiveWOneH
 from bb_paxdata.application.domain.models.segment import Segment
 from bb_paxdata.application.domain.models.speech_act import (
@@ -15,7 +16,6 @@ from bb_paxdata.application.domain.models.speech_act import (
 )
 from bb_paxdata.infrastructure.ai.clients.llm_client_protocol import LLMClientProtocol
 from bb_paxdata.infrastructure.ai.recovery import RecoveryEngine
-from pydantic import BaseModel, Field
 
 logger = structlog.get_logger(__name__)
 
@@ -77,9 +77,12 @@ class LLMFiveWOneHExtractor:
             )
 
             # Recovery Engine: 6-seviyeli JSON kurtarma
-            recovery_result = self._recovery.recover(raw_response)
+            recovery_result = self._recovery.recover(
+                raw_response,
+                raise_on_failure=False,
+            )
 
-            if not recovery_result.success or not recovery_result.data:
+            if not recovery_result.success or recovery_result.data is None:
                 self._log.warning("5w1h_recovery_failed", segment_id=segment.id)
                 return FiveWOneH()
 

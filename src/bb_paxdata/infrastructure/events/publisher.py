@@ -3,9 +3,10 @@
 from datetime import UTC, datetime
 from typing import Any
 
-from bb_paxdata.infrastructure.db.models import DomainEvent
 from sqlalchemy import insert
 from sqlalchemy.ext.asyncio import AsyncSession
+
+from bb_paxdata.infrastructure.db.models import DomainEvent
 
 
 class WORMEventPublisher:
@@ -52,11 +53,12 @@ class WORMEventPublisher:
         self.db.add(event)
 
         # Generate OutboxEventORM for active subscriptions
+        from sqlalchemy import select
+
         from bb_paxdata.infrastructure.db.models import (
             OutboxEventORM,
             WebhookSubscriptionORM,
         )
-        from sqlalchemy import select
 
         stmt = select(WebhookSubscriptionORM).where(WebhookSubscriptionORM.is_active)
         result = await self.db.execute(stmt)
@@ -101,11 +103,12 @@ class WORMEventPublisher:
         await self.db.execute(stmt)
 
         # Generate OutboxEventORM for active subscriptions
+        from sqlalchemy import select
+
         from bb_paxdata.infrastructure.db.models import (
             OutboxEventORM,
             WebhookSubscriptionORM,
         )
-        from sqlalchemy import select
 
         sub_stmt = select(WebhookSubscriptionORM).where(
             WebhookSubscriptionORM.is_active

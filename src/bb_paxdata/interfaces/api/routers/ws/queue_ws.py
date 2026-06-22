@@ -7,6 +7,14 @@ logger = structlog.get_logger(__name__)
 
 router = APIRouter(prefix="/ws", tags=["WebSockets"])
 
+# Centralized registry of Redis pub/sub channels to subscribe to
+# This ensures all relevant channels are subscribed on startup and reconnection
+REDIS_SUBSCRIBER_CHANNELS = [
+    "verdict_events",  # Queue updates and verdict submissions
+    "rag_events",  # RAG query completions
+    "judge_events",  # Judge verdict renderings
+]
+
 
 class ConnectionManager:
     """Manages active WebSocket connections and handles broadcasting messages."""
@@ -89,7 +97,12 @@ async def websocket_build_endpoint(websocket: WebSocket) -> None:
 
 
 async def listen_to_redis_events() -> None:
-    """Listens to Redis events on 'verdict_events' channel and broadcasts them via WebSocket."""
+    """Listens to Redis events on all registered channels and broadcasts them via WebSocket.
+
+    This function maintains persistent subscriptions to all channels defined in
+    REDIS_SUBSCRIBER_CHANNELS. It automatically re-subscribes to all channels on
+    connection loss or Redis restart, ensuring no events are missed.
+    """
     import asyncio
     import json
 
@@ -98,37 +111,72 @@ async def listen_to_redis_events() -> None:
     from bb_paxdata.config.settings import get_settings
 
     settings = get_settings()
+    retry_delay = 1  # Initial retry delay in seconds
+    max_retry_delay = 30  # Maximum retry delay
+
     while True:
         try:
-            logger.info("Connecting to Redis Pub/Sub...")
+            logger.info(
+                "Connecting to Redis Pub/Sub...",
+                channels=REDIS_SUBSCRIBER_CHANNELS,
+            )
             r = aioredis.Redis.from_url(settings.redis_url, decode_responses=True)
             pubsub = r.pubsub()
-            await pubsub.subscribe("verdict_events")
-            logger.info("Subscribed to Redis channel 'verdict_events'")
+
+            # Subscribe to all registered channels
+            await pubsub.subscribe(*REDIS_SUBSCRIBER_CHANNELS)
+            logger.info(
+                "Subscribed to Redis channels",
+                channels=REDIS_SUBSCRIBER_CHANNELS,
+            )
+
+            # Reset retry delay on successful connection
+            retry_delay = 1
 
             async for message in pubsub.listen():
                 if message["type"] == "message":
+                    channel = message["channel"]
                     try:
                         payload = json.loads(message["data"])
                         event_type = payload.get("event_type")
                         data = payload.get("data", {})
 
-                        if event_type == "new_flagged_item":
-                            msg = {"event": "new_flagged_item", **data}
+                        # Handle verdict_events channel
+                        if channel == "verdict_events":
+                            if event_type == "new_flagged_item":
+                                msg = {"event": "new_flagged_item", **data}
+                                await manager.broadcast(msg)
+                            elif event_type == "verdict_submitted":
+                                msg = {
+                                    "event": "queue_updated",
+                                    "log_id": data.get("log_id"),
+                                    "verdict": data.get("verdict"),
+                                    "reviewer_id": data.get("reviewer_id"),
+                                }
+                                await manager.broadcast(msg)
+                        # Handle rag_events channel
+                        elif channel == "rag_events":
+                            msg = {"event": "rag_query_completed", "data": payload}
                             await manager.broadcast(msg)
-                        elif event_type == "verdict_submitted":
-                            msg = {
-                                "event": "queue_updated",
-                                "log_id": data.get("log_id"),
-                                "verdict": data.get("verdict"),
-                                "reviewer_id": data.get("reviewer_id"),
-                            }
+                        # Handle judge_events channel
+                        elif channel == "judge_events":
+                            msg = {"event": "judge_verdict_rendered", "data": payload}
                             await manager.broadcast(msg)
                     except Exception as parse_ex:
-                        logger.error(f"Error parsing Redis message: {parse_ex}")
+                        logger.error(
+                            "Error parsing Redis message",
+                            channel=channel,
+                            error=str(parse_ex),
+                        )
         except asyncio.CancelledError:
             logger.info("Redis Pub/Sub listener task cancelled")
             break
         except Exception as e:
-            logger.error(f"Redis Pub/Sub listener error: {e}. Retrying in 5 seconds...")
-            await asyncio.sleep(5)
+            logger.error(
+                "Redis Pub/Sub listener error",
+                error=str(e),
+                retry_delay=retry_delay,
+            )
+            await asyncio.sleep(retry_delay)
+            # Exponential backoff with jitter
+            retry_delay = min(retry_delay * 2, max_retry_delay)

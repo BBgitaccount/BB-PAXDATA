@@ -1,6 +1,7 @@
 from unittest.mock import Mock
 
 import pytest
+
 from bb_paxdata.infrastructure.db.models import Sentence
 from bb_paxdata.infrastructure.db.segment_enrichment_gateway import (
     SegmentEnrichmentGateway,

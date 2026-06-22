@@ -6,6 +6,7 @@ from datetime import datetime, timezone
 from typing import Any
 
 import structlog
+
 from bb_paxdata.application.domain.enums.signal_type import SignalType
 from bb_paxdata.application.domain.models.ai_analysis import AIAnalysisResult
 from bb_paxdata.application.domain.models.analysis import Analysis
@@ -157,7 +158,7 @@ class AnalysisAssembler:
                 analysis.topic_diversity_score = topic_div
 
         logger.debug(
-            f"Assembly tamamlandı: id={analysis.id}, " f"language={analysis.language}"
+            f"Assembly tamamlandı: id={analysis.id}, language={analysis.language}"
         )
         return analysis
 

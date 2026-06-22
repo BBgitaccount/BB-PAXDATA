@@ -115,6 +115,7 @@ def downgrade() -> None:
     from sqlalchemy import inspect, text
 
     inspector = inspect(bind)
+    is_postgresql = bind.dialect.name == "postgresql"
 
     # Helper function to check if table exists
     def table_exists(table_name):
@@ -127,24 +128,31 @@ def downgrade() -> None:
         indexes = inspector.get_indexes(table_name)
         return any(idx["name"] == index_name for idx in indexes)
 
+    # Helper function to drop index with dialect-specific syntax
+    def drop_index(table_name, index_name):
+        if is_postgresql:
+            op.execute(text(f"DROP INDEX IF EXISTS {table_name}.{index_name}"))
+        else:
+            op.execute(text(f"DROP INDEX IF EXISTS {index_name}"))
+
     # Drop indexes in reverse order
     if index_exists("discourse_flows", "ix_discourse_flows_file_id"):
-        op.execute(text("DROP INDEX ix_discourse_flows_file_id"))
+        drop_index("discourse_flows", "ix_discourse_flows_file_id")
 
     if index_exists("ai_sentence_analysis", "ix_ai_sentence_analysis_speaker_name"):
-        op.execute(text("DROP INDEX ix_ai_sentence_analysis_speaker_name"))
+        drop_index("ai_sentence_analysis", "ix_ai_sentence_analysis_speaker_name")
 
     if index_exists("ai_sentence_analysis", "ix_ai_sentence_analysis_session_id"):
-        op.execute(text("DROP INDEX ix_ai_sentence_analysis_session_id"))
+        drop_index("ai_sentence_analysis", "ix_ai_sentence_analysis_session_id")
 
     if index_exists("dki_results", "ix_dki_results_speaker_id"):
-        op.execute(text("DROP INDEX ix_dki_results_speaker_id"))
+        drop_index("dki_results", "ix_dki_results_speaker_id")
 
     if index_exists("dki_results", "ix_dki_results_session_id"):
-        op.execute(text("DROP INDEX ix_dki_results_session_id"))
+        drop_index("dki_results", "ix_dki_results_session_id")
 
     if index_exists("speaker_positions", "ix_speaker_positions_speaker_id"):
-        op.execute(text("DROP INDEX ix_speaker_positions_speaker_id"))
+        drop_index("speaker_positions", "ix_speaker_positions_speaker_id")
 
     if index_exists("speaker_positions", "ix_speaker_positions_session_id"):
-        op.execute(text("DROP INDEX ix_speaker_positions_session_id"))
+        drop_index("speaker_positions", "ix_speaker_positions_session_id")

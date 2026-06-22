@@ -15,6 +15,7 @@ from bb_paxdata.infrastructure.cache.redis import RedisCacheBackend
 from bb_paxdata.infrastructure.observability.metrics import get_metrics
 from bb_paxdata.interfaces.api.dependencies import get_cache, get_db
 from bb_paxdata.interfaces.api.routers.v1 import (
+    auth,
     compare,
     dashboard,
     database,
@@ -22,10 +23,9 @@ from bb_paxdata.interfaces.api.routers.v1 import (
     prompts,
     queue,
     search,
-    verdict,
-)
-from bb_paxdata.interfaces.api.routers.v1 import (
     settings as settings_router,
+    speakers,
+    verdict,
 )
 from bb_paxdata.interfaces.api.routers.ws import queue_ws
 from bb_paxdata.interfaces.graphql.router import get_graphql_router
@@ -64,19 +64,31 @@ if settings.sentry_dsn:
 async def lifespan(app: FastAPI):
     import asyncio
 
+    import structlog
+
     from bb_paxdata.interfaces.api.routers.ws.queue_ws import listen_to_redis_events
 
-    # Start Redis listener background task
-    redis_listener_task = asyncio.create_task(listen_to_redis_events())
+    # Start Redis listener background task with graceful fallback
+    redis_listener_task = None
+    try:
+        redis_listener_task = asyncio.create_task(listen_to_redis_events())
+    except Exception as e:
+        logger = structlog.get_logger("bb_paxdata.interfaces.api")
+        logger.warning(
+            "redis_listener_startup_failed",
+            error=str(e),
+            message="Redis listener başlatılamadı, WebSocket bildirimleri çalışmayacak",
+        )
 
     try:
         yield
     finally:
-        redis_listener_task.cancel()
-        try:
-            await redis_listener_task
-        except asyncio.CancelledError:
-            pass
+        if redis_listener_task:
+            redis_listener_task.cancel()
+            try:
+                await redis_listener_task
+            except asyncio.CancelledError:
+                pass
 
         from bb_paxdata.infrastructure.container.service_container import (
             ServiceContainer,
@@ -195,19 +207,14 @@ async def correlation_id_middleware(request: Request, call_next):
 # CORS middleware to allow frontend communication
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=[
-        "http://localhost:3001",
-        "http://localhost:3000",
-        "http://localhost:5173",
-        "http://localhost:5174",
-        "http://localhost:8000",
-    ],
+    allow_origins=settings.cors_allowed_origins or ["http://localhost:5173"],
     allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
+    allow_methods=["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+    allow_headers=["Authorization", "Content-Type", "X-Correlation-ID"],
 )
 
 # Mount versioned API routes
+app.include_router(auth.router, prefix="/api/v1")
 app.include_router(dashboard.router, prefix="/api/v1")
 app.include_router(queue.router, prefix="/api/v1")
 app.include_router(verdict.router, prefix="/api/v1")
@@ -216,6 +223,7 @@ app.include_router(database.router, prefix="/api/v1")
 app.include_router(prompts.router, prefix="/api/v1")
 app.include_router(search.router, prefix="/api/v1")
 app.include_router(compare.router, prefix="/api/v1")
+app.include_router(speakers.router, prefix="/api/v1")
 app.include_router(settings_router.router, prefix="/api/v1")
 app.include_router(queue_ws.router, prefix="/api")
 app.include_router(get_graphql_router(), prefix="/graphql")

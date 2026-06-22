@@ -1,5 +1,6 @@
 # tests/infrastructure/nlp/test_topic_modeling.py
 import pytest
+
 from bb_paxdata.application.domain.models.segment import Segment
 from bb_paxdata.application.domain.models.sentence import Sentence
 from bb_paxdata.infrastructure.nlp.topic_modeling import TopicModelingService

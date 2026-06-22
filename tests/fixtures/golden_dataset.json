@@ -80,7 +80,7 @@
         "AI_Potansiyel_Risk": "medium",
         "AI_Talep_Var": 1,
         "AI_Diplomatik_Ton": "assertive",
-        "AI_Manipulasyon_Skor": 0.10,
+        "AI_Manipulasyon_Skor": 0.1,
         "AI_Cerceveleme": "humanitarian_frame",
         "AI_Birincil_Konu": "İnsani_Yardım"
       },
@@ -124,7 +124,7 @@
         "AI_Potansiyel_Risk": "high",
         "AI_Talep_Var": 0,
         "AI_Diplomatik_Ton": "assertive",
-        "AI_Manipulasyon_Skor": 0.20,
+        "AI_Manipulasyon_Skor": 0.2,
         "AI_Cerceveleme": "legal_frame",
         "AI_Birincil_Konu": "Uluslararası_Hukuk"
       },
@@ -212,7 +212,7 @@
         "AI_Potansiyel_Risk": "low",
         "AI_Talep_Var": 1,
         "AI_Diplomatik_Ton": "assertive",
-        "AI_Manipulasyon_Skor": 0.10,
+        "AI_Manipulasyon_Skor": 0.1,
         "AI_Cerceveleme": "reform_frame",
         "AI_Birincil_Konu": "BM_Reformu"
       },
@@ -272,7 +272,7 @@
       "sent_id": "BB_P003_s0002_sent0002",
       "source_text": "We propose a phased approach to address these complex issues.",
       "ground_truth": {
-        "AI_Duygu_Skoru": 0.20,
+        "AI_Duygu_Skoru": 0.2,
         "AI_Duygu_Kategorisi": "neutral",
         "AI_Risk_Skoru": 2,
         "AI_Potansiyel_Risk": "low",
@@ -294,7 +294,7 @@
       "sent_id": "BB_P004_s0001_sent0001",
       "source_text": "The humanitarian corridor must remain open and accessible to all.",
       "ground_truth": {
-        "AI_Duygu_Skoru": -0.30,
+        "AI_Duygu_Skoru": -0.3,
         "AI_Duygu_Kategorisi": "concerned",
         "AI_Risk_Skoru": 6,
         "AI_Potansiyel_Risk": "medium",
@@ -316,7 +316,7 @@
       "sent_id": "BB_P004_s0001_sent0002",
       "source_text": "We are not prepared to compromise on our fundamental principles.",
       "ground_truth": {
-        "AI_Duygu_Skoru": -0.20,
+        "AI_Duygu_Skoru": -0.2,
         "AI_Duygu_Kategorisi": "serious",
         "AI_Risk_Skoru": 5,
         "AI_Potansiyel_Risk": "medium",
@@ -338,7 +338,7 @@
       "sent_id": "BB_P004_s0002_sent0001",
       "source_text": "Economic sanctions are having a devastating impact on innocent civilians.",
       "ground_truth": {
-        "AI_Duygu_Skoru": -0.60,
+        "AI_Duygu_Skoru": -0.6,
         "AI_Duygu_Kategorisi": "concerned",
         "AI_Risk_Skoru": 7,
         "AI_Potansiyel_Risk": "high",
@@ -360,13 +360,13 @@
       "sent_id": "BB_P004_s0002_sent0002",
       "source_text": "We call for an immediate ceasefire and return to negotiations.",
       "ground_truth": {
-        "AI_Duygu_Skoru": -0.40,
+        "AI_Duygu_Skoru": -0.4,
         "AI_Duygu_Kategorisi": "urgent",
         "AI_Risk_Skoru": 8,
         "AI_Potansiyel_Risk": "high",
         "AI_Talep_Var": 1,
         "AI_Diplomatik_Ton": "assertive",
-        "AI_Manipulasyon_Skor": 0.10,
+        "AI_Manipulasyon_Skor": 0.1,
         "AI_Cerceveleme": "peace_frame",
         "AI_Birincil_Konu": "Güvenlik_Çatışma"
       },
@@ -382,7 +382,7 @@
       "sent_id": "BB_P005_s0001_sent0001",
       "source_text": "The multipolar world order requires new approaches to global governance.",
       "ground_truth": {
-        "AI_Duygu_Skoru": 0.10,
+        "AI_Duygu_Skoru": 0.1,
         "AI_Duygu_Kategorisi": "neutral",
         "AI_Risk_Skoru": 3,
         "AI_Potansiyel_Risk": "low",
@@ -404,7 +404,7 @@
       "sent_id": "BB_P005_s0001_sent0002",
       "source_text": "We believe dialogue is the only path forward for resolving this conflict.",
       "ground_truth": {
-        "AI_Duygu_Skoru": 0.30,
+        "AI_Duygu_Skoru": 0.3,
         "AI_Duygu_Kategorisi": "hopeful",
         "AI_Risk_Skoru": 2,
         "AI_Potansiyel_Risk": "low",
@@ -426,13 +426,13 @@
       "sent_id": "BB_P005_s0002_sent0001",
       "source_text": "This aggression cannot be justified under any circumstances.",
       "ground_truth": {
-        "AI_Duygu_Skoru": -0.70,
+        "AI_Duygu_Skoru": -0.7,
         "AI_Duygu_Kategorisi": "condemnatory",
         "AI_Risk_Skoru": 9,
         "AI_Potansiyel_Risk": "critical",
         "AI_Talep_Var": 0,
         "AI_Diplomatik_Ton": "confrontational",
-        "AI_Manipulasyon_Skor": 0.20,
+        "AI_Manipulasyon_Skor": 0.2,
         "AI_Cerceveleme": "conflict_frame",
         "AI_Birincil_Konu": "Güvenlik_Çatışma"
       },
@@ -448,7 +448,7 @@
       "sent_id": "BB_P006_s0001_sent0001",
       "source_text": "We welcome the initiative and look forward to productive discussions.",
       "ground_truth": {
-        "AI_Duygu_Skoru": 0.50,
+        "AI_Duygu_Skoru": 0.5,
         "AI_Duygu_Kategorisi": "positive",
         "AI_Risk_Skoru": 1,
         "AI_Potansiyel_Risk": "low",
@@ -542,7 +542,7 @@
         "AI_Potansiyel_Risk": "low",
         "AI_Talep_Var": 1,
         "AI_Diplomatik_Ton": "persuasive",
-        "AI_Manipulasyon_Skor": 0.10,
+        "AI_Manipulasyon_Skor": 0.1,
         "AI_Cerceveleme": "monitoring_frame",
         "AI_Birincil_Konu": "Diplomasi"
       },
@@ -558,7 +558,7 @@
       "sent_id": "BB_P007_s0001_sent0002",
       "source_text": "The economic benefits of cooperation far outweigh the costs of conflict.",
       "ground_truth": {
-        "AI_Duygu_Skoru": 0.40,
+        "AI_Duygu_Skoru": 0.4,
         "AI_Duygu_Kategorisi": "positive",
         "AI_Risk_Skoru": 2,
         "AI_Potansiyel_Risk": "low",
@@ -668,7 +668,7 @@
       "sent_id": "BB_P008_s0002_sent0001",
       "source_text": "This provocative action threatens to destabilize the entire region.",
       "ground_truth": {
-        "AI_Duygu_Skoru": -0.60,
+        "AI_Duygu_Skoru": -0.6,
         "AI_Duygu_Kategorisi": "alarmed",
         "AI_Risk_Skoru": 8,
         "AI_Potansiyel_Risk": "high",
@@ -690,7 +690,7 @@
       "sent_id": "BB_P008_s0002_sent0002",
       "source_text": "We support efforts to build bridges between communities.",
       "ground_truth": {
-        "AI_Duygu_Skoru": 0.40,
+        "AI_Duygu_Skoru": 0.4,
         "AI_Duygu_Kategorisi": "supportive",
         "AI_Risk_Skoru": 1,
         "AI_Potansiyel_Risk": "low",
@@ -712,7 +712,7 @@
       "sent_id": "BB_P009_s0001_sent0001",
       "source_text": "The time has come for decisive action on climate change.",
       "ground_truth": {
-        "AI_Duygu_Skoru": -0.30,
+        "AI_Duygu_Skoru": -0.3,
         "AI_Duygu_Kategorisi": "urgent",
         "AI_Risk_Skoru": 6,
         "AI_Potansiyel_Risk": "medium",
@@ -734,13 +734,13 @@
       "sent_id": "BB_P009_s0001_sent0002",
       "source_text": "We do not recognize this illegitimate attempt to seize power.",
       "ground_truth": {
-        "AI_Duygu_Skoru": -0.50,
+        "AI_Duygu_Skoru": -0.5,
         "AI_Duygu_Kategorisi": "condemnatory",
         "AI_Risk_Skoru": 8,
         "AI_Potansiyel_Risk": "high",
         "AI_Talep_Var": 0,
         "AI_Diplomatik_Ton": "confrontational",
-        "AI_Manipulasyon_Skor": 0.20,
+        "AI_Manipulasyon_Skor": 0.2,
         "AI_Cerceveleme": "legitimacy_frame",
         "AI_Birincil_Konu": "Güvenlik_Çatışma"
       },
@@ -756,13 +756,13 @@
       "sent_id": "BB_P009_s0002_sent0001",
       "source_text": "Economic interdependence creates mutual incentives for peace.",
       "ground_truth": {
-        "AI_Duygu_Skoru": 0.30,
+        "AI_Duygu_Skoru": 0.3,
         "AI_Duygu_Kategorisi": "analytical",
         "AI_Risk_Skoru": 2,
         "AI_Potansiyel_Risk": "low",
         "AI_Talep_Var": 0,
         "AI_Diplomatik_Ton": "analytical",
-        "AI_Manipulasyon_Skor": 0.10,
+        "AI_Manipulasyon_Skor": 0.1,
         "AI_Cerceveleme": "economic_frame",
         "AI_Birincil_Konu": "Ekonomi"
       },
@@ -800,7 +800,7 @@
       "sent_id": "BB_P010_s0001_sent0001",
       "source_text": "The reform process should be inclusive of all stakeholders.",
       "ground_truth": {
-        "AI_Duygu_Skoru": 0.20,
+        "AI_Duygu_Skoru": 0.2,
         "AI_Duygu_Kategorisi": "constructive",
         "AI_Risk_Skoru": 3,
         "AI_Potansiyel_Risk": "low",
@@ -822,7 +822,7 @@
       "sent_id": "BB_P010_s0001_sent0002",
       "source_text": "We are deeply troubled by reports of civilian casualties.",
       "ground_truth": {
-        "AI_Duygu_Skoru": -0.70,
+        "AI_Duygu_Skoru": -0.7,
         "AI_Duygu_Kategorisi": "troubled",
         "AI_Risk_Skoru": 8,
         "AI_Potansiyel_Risk": "high",
@@ -872,7 +872,7 @@
         "AI_Potansiyel_Risk": "medium",
         "AI_Talep_Var": 0,
         "AI_Diplomatik_Ton": "defensive",
-        "AI_Manipulasyon_Skor": 0.20,
+        "AI_Manipulasyon_Skor": 0.2,
         "AI_Cerceveleme": "security_frame",
         "AI_Birincil_Konu": "Güvenlik_Çatışma"
       },
@@ -888,7 +888,7 @@
       "sent_id": "BB_P011_s0001_sent0001",
       "source_text": "The new security architecture must reflect current realities.",
       "ground_truth": {
-        "AI_Duygu_Skoru": 0.10,
+        "AI_Duygu_Skoru": 0.1,
         "AI_Duygu_Kategorisi": "analytical",
         "AI_Risk_Skoru": 4,
         "AI_Potansiyel_Risk": "medium",
@@ -960,7 +960,7 @@
         "AI_Potansiyel_Risk": "low",
         "AI_Talep_Var": 1,
         "AI_Diplomatik_Ton": "persuasive",
-        "AI_Manipulasyon_Skor": 0.10,
+        "AI_Manipulasyon_Skor": 0.1,
         "AI_Cerceveleme": "de_escalation_frame",
         "AI_Birincil_Konu": "Güvenlik_Çatışma"
       },
@@ -998,7 +998,7 @@
       "sent_id": "BB_P012_s0001_sent0002",
       "source_text": "We are not seeking confrontation, but we will not be intimidated.",
       "ground_truth": {
-        "AI_Duygu_Skoru": -0.30,
+        "AI_Duygu_Skoru": -0.3,
         "AI_Duygu_Kategorisi": "defensive",
         "AI_Risk_Skoru": 5,
         "AI_Potansiyel_Risk": "medium",
@@ -1026,7 +1026,7 @@
         "AI_Potansiyel_Risk": "low",
         "AI_Talep_Var": 0,
         "AI_Diplomatik_Ton": "analytical",
-        "AI_Manipulasyon_Skor": 0.10,
+        "AI_Manipulasyon_Skor": 0.1,
         "AI_Cerceveleme": "economic_frame",
         "AI_Birincil_Konu": "Ekonomi"
       },
@@ -1042,13 +1042,13 @@
       "sent_id": "BB_P012_s0002_sent0002",
       "source_text": "We demand accountability for violations of international law.",
       "ground_truth": {
-        "AI_Duygu_Skoru": -0.50,
+        "AI_Duygu_Skoru": -0.5,
         "AI_Duygu_Kategorisi": "demanding",
         "AI_Risk_Skoru": 7,
         "AI_Potansiyel_Risk": "high",
         "AI_Talep_Var": 1,
         "AI_Diplomatik_Ton": "assertive",
-        "AI_Manipulasyon_Skor": 0.20,
+        "AI_Manipulasyon_Skor": 0.2,
         "AI_Cerceveleme": "legal_frame",
         "AI_Birincil_Konu": "Uluslararası_Hukuk"
       },
@@ -1130,7 +1130,7 @@
       "sent_id": "BB_P013_s0002_sent0002",
       "source_text": "We believe economic integration fosters mutual understanding.",
       "ground_truth": {
-        "AI_Duygu_Skoru": 0.30,
+        "AI_Duygu_Skoru": 0.3,
         "AI_Duygu_Kategorisi": "positive",
         "AI_Risk_Skoru": 2,
         "AI_Potansiyel_Risk": "low",
@@ -1152,7 +1152,7 @@
       "sent_id": "BB_P014_s0001_sent0001",
       "source_text": "The protection of civilians must be our highest priority.",
       "ground_truth": {
-        "AI_Duygu_Skoru": -0.40,
+        "AI_Duygu_Skoru": -0.4,
         "AI_Duygu_Kategorisi": "concerned",
         "AI_Risk_Skoru": 6,
         "AI_Potansiyel_Risk": "medium",
@@ -1180,7 +1180,7 @@
         "AI_Potansiyel_Risk": "medium",
         "AI_Talep_Var": 0,
         "AI_Diplomatik_Ton": "defensive",
-        "AI_Manipulasyon_Skor": 0.20,
+        "AI_Manipulasyon_Skor": 0.2,
         "AI_Cerceveleme": "sovereignty_frame",
         "AI_Birincil_Konu": "Güvenlik_Çatışma"
       },
@@ -1240,7 +1240,7 @@
       "sent_id": "BB_P015_s0001_sent0001",
       "source_text": "The Security Council must fulfill its responsibilities.",
       "ground_truth": {
-        "AI_Duygu_Skoru": -0.20,
+        "AI_Duygu_Skoru": -0.2,
         "AI_Duygu_Kategorisi": "serious",
         "AI_Risk_Skoru": 5,
         "AI_Potansiyel_Risk": "medium",
@@ -1262,7 +1262,7 @@
       "sent_id": "BB_P015_s0001_sent0002",
       "source_text": "We are encouraged by the willingness to engage in dialogue.",
       "ground_truth": {
-        "AI_Duygu_Skoru": 0.40,
+        "AI_Duygu_Skoru": 0.4,
         "AI_Duygu_Kategorisi": "encouraged",
         "AI_Risk_Skoru": 2,
         "AI_Potansiyel_Risk": "low",
@@ -1284,13 +1284,13 @@
       "sent_id": "BB_P015_s0002_sent0001",
       "source_text": "This military escalation threatens regional peace.",
       "ground_truth": {
-        "AI_Duygu_Skoru": -0.70,
+        "AI_Duygu_Skoru": -0.7,
         "AI_Duygu_Kategorisi": "alarmed",
         "AI_Risk_Skoru": 9,
         "AI_Potansiyel_Risk": "critical",
         "AI_Talep_Var": 0,
         "AI_Diplomatik_Ton": "confrontational",
-        "AI_Manipulasyon_Skor": 0.20,
+        "AI_Manipulasyon_Skor": 0.2,
         "AI_Cerceveleme": "security_frame",
         "AI_Birincil_Konu": "Güvenlik_Çatışma"
       },
@@ -1328,7 +1328,7 @@
       "sent_id": "BB_P016_s0001_sent0001",
       "source_text": "The changing world order requires new diplomatic approaches.",
       "ground_truth": {
-        "AI_Duygu_Skoru": 0.10,
+        "AI_Duygu_Skoru": 0.1,
         "AI_Duygu_Kategorisi": "analytical",
         "AI_Risk_Skoru": 4,
         "AI_Potansiyel_Risk": "medium",
@@ -1400,7 +1400,7 @@
         "AI_Potansiyel_Risk": "high",
         "AI_Talep_Var": 1,
         "AI_Diplomatik_Ton": "assertive",
-        "AI_Manipulasyon_Skor": 0.20,
+        "AI_Manipulasyon_Skor": 0.2,
         "AI_Cerceveleme": "sovereignty_frame",
         "AI_Birincil_Konu": "Güvenlik_Çatışma"
       },
@@ -1416,7 +1416,7 @@
       "sent_id": "BB_P017_s0001_sent0001",
       "source_text": "The humanitarian crisis requires immediate international response.",
       "ground_truth": {
-        "AI_Duygu_Skoru": -0.80,
+        "AI_Duygu_Skoru": -0.8,
         "AI_Duygu_Kategorisi": "alarmed",
         "AI_Risk_Skoru": 9,
         "AI_Potansiyel_Risk": "critical",
@@ -1438,7 +1438,7 @@
       "sent_id": "BB_P017_s0001_sent0002",
       "source_text": "We are not seeking escalation, but our patience has limits.",
       "ground_truth": {
-        "AI_Duygu_Skoru": -0.40,
+        "AI_Duygu_Skoru": -0.4,
         "AI_Duygu_Kategorisi": "warning",
         "AI_Risk_Skoru": 6,
         "AI_Potansiyel_Risk": "medium",
@@ -1466,7 +1466,7 @@
         "AI_Potansiyel_Risk": "low",
         "AI_Talep_Var": 1,
         "AI_Diplomatik_Ton": "persuasive",
-        "AI_Manipulasyon_Skor": 0.10,
+        "AI_Manipulasyon_Skor": 0.1,
         "AI_Cerceveleme": "development_frame",
         "AI_Birincil_Konu": "Diğer"
       },
@@ -1482,7 +1482,7 @@
       "sent_id": "BB_P017_s0002_sent0002",
       "source_text": "We will respond proportionally to any aggression.",
       "ground_truth": {
-        "AI_Duygu_Skoru": -0.30,
+        "AI_Duygu_Skoru": -0.3,
         "AI_Duygu_Kategorisi": "defensive",
         "AI_Risk_Skoru": 5,
         "AI_Potansiyel_Risk": "medium",
@@ -1510,7 +1510,7 @@
         "AI_Potansiyel_Risk": "low",
         "AI_Talep_Var": 1,
         "AI_Diplomatik_Ton": "persuasive",
-        "AI_Manipulasyon_Skor": 0.10,
+        "AI_Manipulasyon_Skor": 0.1,
         "AI_Cerceveleme": "reform_frame",
         "AI_Birincil_Konu": "BM_Reformu"
       },
@@ -1526,7 +1526,7 @@
       "sent_id": "BB_P018_s0001_sent0002",
       "source_text": "We appreciate the spirit of cooperation shown today.",
       "ground_truth": {
-        "AI_Duygu_Skoru": 0.50,
+        "AI_Duygu_Skoru": 0.5,
         "AI_Duygu_Kategorisi": "appreciative",
         "AI_Risk_Skoru": 1,
         "AI_Potansiyel_Risk": "low",
@@ -1548,7 +1548,7 @@
       "sent_id": "BB_P018_s0002_sent0001",
       "source_text": "This violation of international norms cannot be ignored.",
       "ground_truth": {
-        "AI_Duygu_Skoru": -0.60,
+        "AI_Duygu_Skoru": -0.6,
         "AI_Duygu_Kategorisi": "condemnatory",
         "AI_Risk_Skoru": 8,
         "AI_Potansiyel_Risk": "high",
@@ -1570,7 +1570,7 @@
       "sent_id": "BB_P018_s0002_sent0002",
       "source_text": "We propose establishing a framework for regional security.",
       "ground_truth": {
-        "AI_Duygu_Skoru": 0.20,
+        "AI_Duygu_Skoru": 0.2,
         "AI_Duygu_Kategorisi": "constructive",
         "AI_Risk_Skoru": 4,
         "AI_Potansiyel_Risk": "medium",
@@ -1598,7 +1598,7 @@
         "AI_Potansiyel_Risk": "medium",
         "AI_Talep_Var": 1,
         "AI_Diplomatik_Ton": "assertive",
-        "AI_Manipulasyon_Skor": 0.10,
+        "AI_Manipulasyon_Skor": 0.1,
         "AI_Cerceveleme": "cultural_frame",
         "AI_Birincil_Konu": "Diğer"
       },
@@ -1620,7 +1620,7 @@
         "AI_Potansiyel_Risk": "medium",
         "AI_Talep_Var": 0,
         "AI_Diplomatik_Ton": "defensive",
-        "AI_Manipulasyon_Skor": 0.20,
+        "AI_Manipulasyon_Skor": 0.2,
         "AI_Cerceveleme": "security_frame",
         "AI_Birincil_Konu": "Güvenlik_Çatışma"
       },
@@ -1680,7 +1680,7 @@
       "sent_id": "BB_P020_s0001_sent0001",
       "source_text": "The UN system must adapt to 21st century challenges.",
       "ground_truth": {
-        "AI_Duygu_Skoru": 0.00,
+        "AI_Duygu_Skoru": 0.0,
         "AI_Duygu_Kategorisi": "neutral",
         "AI_Risk_Skoru": 4,
         "AI_Potansiyel_Risk": "medium",
@@ -1702,7 +1702,7 @@
       "sent_id": "BB_P020_s0001_sent0002",
       "source_text": "We welcome all constructive contributions to the peace process.",
       "ground_truth": {
-        "AI_Duygu_Skoru": 0.40,
+        "AI_Duygu_Skoru": 0.4,
         "AI_Duygu_Kategorisi": "welcoming",
         "AI_Risk_Skoru": 1,
         "AI_Potansiyel_Risk": "low",
@@ -1812,7 +1812,7 @@
       "sent_id": "BB_P021_s0002_sent0001",
       "source_text": "Economic partnerships create foundations for lasting peace.",
       "ground_truth": {
-        "AI_Duygu_Skoru": 0.40,
+        "AI_Duygu_Skoru": 0.4,
         "AI_Duygu_Kategorisi": "positive",
         "AI_Risk_Skoru": 2,
         "AI_Potansiyel_Risk": "low",
@@ -1834,13 +1834,13 @@
       "sent_id": "BB_P021_s0002_sent0002",
       "source_text": "We insist on compliance with international humanitarian law.",
       "ground_truth": {
-        "AI_Duygu_Skoru": -0.50,
+        "AI_Duygu_Skoru": -0.5,
         "AI_Duygu_Kategorisi": "demanding",
         "AI_Risk_Skoru": 7,
         "AI_Potansiyel_Risk": "high",
         "AI_Talep_Var": 1,
         "AI_Diplomatik_Ton": "assertive",
-        "AI_Manipulasyon_Skor": 0.20,
+        "AI_Manipulasyon_Skor": 0.2,
         "AI_Cerceveleme": "legal_frame",
         "AI_Birincil_Konu": "Uluslararası_Hukuk"
       },
@@ -1856,7 +1856,7 @@
       "sent_id": "BB_P022_s0001_sent0001",
       "source_text": "The refugee situation requires coordinated international action.",
       "ground_truth": {
-        "AI_Duygu_Skoru": -0.70,
+        "AI_Duygu_Skoru": -0.7,
         "AI_Duygu_Kategorisi": "concerned",
         "AI_Risk_Skoru": 8,
         "AI_Potansiyel_Risk": "high",
@@ -1878,7 +1878,7 @@
       "sent_id": "BB_P022_s0001_sent0002",
       "source_text": "We are not prepared to accept violations of our sovereignty.",
       "ground_truth": {
-        "AI_Duygu_Skoru": -0.40,
+        "AI_Duygu_Skoru": -0.4,
         "AI_Duygu_Kategorisi": "defensive",
         "AI_Risk_Skoru": 6,
         "AI_Potansiyel_Risk": "medium",
@@ -1900,7 +1900,7 @@
       "sent_id": "BB_P022_s0002_sent0001",
       "source_text": "Climate action requires commitment from all major economies.",
       "ground_truth": {
-        "AI_Duygu_Skoru": -0.20,
+        "AI_Duygu_Skoru": -0.2,
         "AI_Duygu_Kategorisi": "serious",
         "AI_Risk_Skoru": 5,
         "AI_Potansiyel_Risk": "medium",
@@ -1944,7 +1944,7 @@
       "sent_id": "BB_P023_s0001_sent0001",
       "source_text": "The Security Council needs to become more representative.",
       "ground_truth": {
-        "AI_Duygu_Skoru": 0.00,
+        "AI_Duygu_Skoru": 0.0,
         "AI_Duygu_Kategorisi": "neutral",
         "AI_Risk_Skoru": 4,
         "AI_Potansiyel_Risk": "medium",
@@ -2016,7 +2016,7 @@
         "AI_Potansiyel_Risk": "low",
         "AI_Talep_Var": 1,
         "AI_Diplomatik_Ton": "persuasive",
-        "AI_Manipulasyon_Skor": 0.10,
+        "AI_Manipulasyon_Skor": 0.1,
         "AI_Cerceveleme": "de_escalation_frame",
         "AI_Birincil_Konu": "Güvenlik_Çatışma"
       },
@@ -2032,7 +2032,7 @@
       "sent_id": "BB_P024_s0001_sent0001",
       "source_text": "The protection of children in conflict zones is paramount.",
       "ground_truth": {
-        "AI_Duygu_Skoru": -0.60,
+        "AI_Duygu_Skoru": -0.6,
         "AI_Duygu_Kategorisi": "concerned",
         "AI_Risk_Skoru": 7,
         "AI_Potansiyel_Risk": "high",
@@ -2060,7 +2060,7 @@
         "AI_Potansiyel_Risk": "medium",
         "AI_Talep_Var": 0,
         "AI_Diplomatik_Ton": "defensive",
-        "AI_Manipulasyon_Skor": 0.20,
+        "AI_Manipulasyon_Skor": 0.2,
         "AI_Cerceveleme": "security_frame",
         "AI_Birincil_Konu": "Güvenlik_Çatışma"
       },
@@ -2098,13 +2098,13 @@
       "sent_id": "BB_P024_s0002_sent0002",
       "source_text": "We demand justice for victims of war crimes.",
       "ground_truth": {
-        "AI_Duygu_Skoru": -0.70,
+        "AI_Duygu_Skoru": -0.7,
         "AI_Duygu_Kategorisi": "demanding",
         "AI_Risk_Skoru": 9,
         "AI_Potansiyel_Risk": "critical",
         "AI_Talep_Var": 1,
         "AI_Diplomatik_Ton": "assertive",
-        "AI_Manipulasyon_Skor": 0.20,
+        "AI_Manipulasyon_Skor": 0.2,
         "AI_Cerceveleme": "justice_frame",
         "AI_Birincil_Konu": "Uluslararası_Hukuk"
       },
@@ -2120,7 +2120,7 @@
       "sent_id": "BB_P025_s0001_sent0001",
       "source_text": "The multilateral system must be reformed for greater effectiveness.",
       "ground_truth": {
-        "AI_Duygu_Skoru": 0.00,
+        "AI_Duygu_Skoru": 0.0,
         "AI_Duygu_Kategorisi": "neutral",
         "AI_Risk_Skoru": 4,
         "AI_Potansiyel_Risk": "medium",
@@ -2142,7 +2142,7 @@
       "sent_id": "BB_P025_s0001_sent0002",
       "source_text": "We extend our hand in friendship and cooperation.",
       "ground_truth": {
-        "AI_Duygu_Skoru": 0.60,
+        "AI_Duygu_Skoru": 0.6,
         "AI_Duygu_Kategorisi": "friendly",
         "AI_Risk_Skoru": 1,
         "AI_Potansiyel_Risk": "low",
@@ -2164,13 +2164,13 @@
       "sent_id": "BB_P025_s0002_sent0001",
       "source_text": "This act of aggression will not be left unanswered.",
       "ground_truth": {
-        "AI_Duygu_Skoru": -0.80,
+        "AI_Duygu_Skoru": -0.8,
         "AI_Duygu_Kategorisi": "threatening",
         "AI_Risk_Skoru": 10,
         "AI_Potansiyel_Risk": "critical",
         "AI_Talep_Var": 0,
         "AI_Diplomatik_Ton": "confrontational",
-        "AI_Manipulasyon_Skor": 0.30,
+        "AI_Manipulasyon_Skor": 0.3,
         "AI_Cerceveleme": "conflict_frame",
         "AI_Birincil_Konu": "Güvenlik_Çatışma"
       },
@@ -2186,7 +2186,7 @@
       "sent_id": "BB_P025_s0002_sent0002",
       "source_text": "We remain committed to peaceful resolution of all disputes.",
       "ground_truth": {
-        "AI_Duygu_Skoru": 0.30,
+        "AI_Duygu_Skoru": 0.3,
         "AI_Duygu_Kategorisi": "hopeful",
         "AI_Risk_Skoru": 2,
         "AI_Potansiyel_Risk": "low",

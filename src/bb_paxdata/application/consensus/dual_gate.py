@@ -7,10 +7,12 @@ geçişinde tek geçiş noktasıdır.
 
 from __future__ import annotations
 
+import asyncio
 from dataclasses import dataclass
 from enum import Enum
 
 import structlog
+
 from bb_paxdata.application.domain.models.anomaly import (
     AnomalyResult,
     AnomalyValidationDecision,
@@ -43,7 +45,7 @@ class DualGateConsensusLayer:
     """
     Kullanım:
         layer = DualGateConsensusLayer()
-        consensus = layer.decide(
+        consensus = await layer.decide(
             deterministic=anomaly_result,
             ai_validation=ai_result,
         )
@@ -55,42 +57,47 @@ class DualGateConsensusLayer:
     HIGH_COHERENCE_THRESHOLD = 0.75
     LOW_COHERENCE_THRESHOLD = 0.35
 
-    def decide(
+    def __init__(self) -> None:
+        """Async-safe lock for race condition protection (BUG-SYS-006 fix)."""
+        self._lock = asyncio.Lock()
+
+    async def decide(
         self,
         deterministic: AnomalyResult,
         ai_validation: AnomalyValidationResult,
     ) -> ConsensusResult:
         """Consensus matrisi uygula ve sonuç üret."""
-        level = self._apply_matrix(deterministic, ai_validation)
-        coherence = self._compute_coherence(deterministic, ai_validation)
-        send_to_hitl = level in (
-            ConsensusLevel.HARD_ANOMALY,
-            ConsensusLevel.CRITICAL_ANOMALY,
-        )
+        async with self._lock:
+            level = self._apply_matrix(deterministic, ai_validation)
+            coherence = self._compute_coherence(deterministic, ai_validation)
+            send_to_hitl = level in (
+                ConsensusLevel.HARD_ANOMALY,
+                ConsensusLevel.CRITICAL_ANOMALY,
+            )
 
-        reasoning = (
-            f"[DET:{deterministic.has_anomaly}|AI:{ai_validation.decision.value}] "
-            f"→ {level.value} | coherence={coherence:.3f} | "
-            f"AI reasoning: {ai_validation.reasoning}"
-        )
+            reasoning = (
+                f"[DET:{deterministic.has_anomaly}|AI:{ai_validation.decision.value}] "
+                f"→ {level.value} | coherence={coherence:.3f} | "
+                f"AI reasoning: {ai_validation.reasoning}"
+            )
 
-        logger.info(
-            "Consensus decision",
-            extra={
-                "level": level.value,
-                "coherence": coherence,
-                "send_to_hitl": send_to_hitl,
-            },
-        )
+            logger.info(
+                "Consensus decision",
+                extra={
+                    "level": level.value,
+                    "coherence": coherence,
+                    "send_to_hitl": send_to_hitl,
+                },
+            )
 
-        return ConsensusResult(
-            level=level,
-            coherence_score=coherence,
-            final_reasoning=reasoning,
-            send_to_hitl=send_to_hitl,
-            deterministic_result=deterministic,
-            ai_result=ai_validation,
-        )
+            return ConsensusResult(
+                level=level,
+                coherence_score=coherence,
+                final_reasoning=reasoning,
+                send_to_hitl=send_to_hitl,
+                deterministic_result=deterministic,
+                ai_result=ai_validation,
+            )
 
     @staticmethod
     def _apply_matrix(

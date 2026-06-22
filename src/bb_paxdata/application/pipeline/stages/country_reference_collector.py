@@ -13,18 +13,21 @@ LLM çağrısı yapıldığında:
 - RecoveryEngine üzerinden parse et.
 - quality/evaluator ile doğrula.
 """
+
 from __future__ import annotations
 
 import asyncio
 from typing import TYPE_CHECKING, Any
 
 import structlog
+
 from bb_paxdata.application.domain.enums.country_enums import ReferenceContext
 from bb_paxdata.application.domain.models.country_reference import CountryReference
 from bb_paxdata.application.pipeline.models.collect_result import CountryCollectResult
 
 if TYPE_CHECKING:
     import spacy
+
     from bb_paxdata.application.domain.services.protocols import AIAnalystProtocol
     from bb_paxdata.infrastructure.ai.prompt_registry import PromptRegistry
     from bb_paxdata.infrastructure.ai.recovery import RecoveryEngine
@@ -259,7 +262,7 @@ class CountryReferenceCollector:
                 default_schema={"classifications": []},
             )
 
-            if not recovery_result.success or not recovery_result.data:
+            if not recovery_result.success or recovery_result.data is None:
                 logger.warning(
                     "country_llm_classifier.recovery_failed", panel_id=panel_id
                 )

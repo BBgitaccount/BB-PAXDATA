@@ -105,7 +105,7 @@ export const Dashboard = () => {
   const timelineQuery = useQuery({
     queryKey: ['bilateral-timeline'],
     queryFn: () => apiClient.get<PanelTimelineEntry[]>('/api/v1/dashboard/bilateral/timeline'),
-    staleTime: 5 * 60 * 1000,
+    staleTime: 1000 * 60 * 5, // 5 dk - timeline data changes infrequently
   });
 
   // Panel-specific bilateral data (refetched when slider moves)
@@ -118,7 +118,7 @@ export const Dashboard = () => {
           )
         : Promise.resolve(null),
     enabled: !!selectedPanel,
-    staleTime: 30 * 1000,
+    staleTime: 1000 * 30, // 30 sn - interactive data needs fresher cache
   });
 
   const handleTimelineStep = useCallback((entry: PanelTimelineEntry | null) => {

@@ -1,6 +1,9 @@
 import datetime
 from typing import Any
 
+from sqlalchemy import case, func, select
+from sqlalchemy.ext.asyncio import AsyncSession
+
 from bb_paxdata.application.domain.services.drift_algorithms import (
     calculate_entity_salience_half_life,
     estimate_sentiment_garch_volatility,
@@ -19,8 +22,6 @@ from bb_paxdata.infrastructure.db.models import (
 from bb_paxdata.infrastructure.db.repositories.formula_validation import (
     FormulaValidationRepository,
 )
-from sqlalchemy import case, func, select
-from sqlalchemy.ext.asyncio import AsyncSession
 
 
 def _normalize_count(value: Any) -> int:

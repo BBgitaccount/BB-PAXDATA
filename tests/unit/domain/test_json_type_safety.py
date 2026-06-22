@@ -1,6 +1,8 @@
 from datetime import datetime
 
 import pytest
+from pydantic import ValidationError
+
 from bb_paxdata.application.domain.enums import (
     AnomalySeverity,
     AnomalyType,
@@ -14,7 +16,6 @@ from bb_paxdata.application.domain.models.metadata import Metadata
 from bb_paxdata.application.domain.models.validation_result import (
     ValidationResult,
 )
-from pydantic import ValidationError
 
 
 def test_metadata_json_validation():

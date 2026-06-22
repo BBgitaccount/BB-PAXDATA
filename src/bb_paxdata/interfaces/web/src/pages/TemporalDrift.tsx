@@ -32,7 +32,7 @@ export const TemporalDrift = () => {
       if (selectedSpeaker) params.set('speaker_id', selectedSpeaker);
       return apiClient.get<TemporalDriftData>(`/api/v1/dashboard/drift?${params.toString()}`);
     },
-    staleTime: 30 * 1000,
+    staleTime: 1000 * 30, // 30 sn - drift analysis data for interactive exploration
   });
 
   // Sync selected speaker state on load

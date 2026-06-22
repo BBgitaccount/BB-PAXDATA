@@ -40,6 +40,20 @@ class SpeakerPosition(BaseModel):
     stance_density: float = Field(default=0.0, ge=0.0)
     engagement_score: float = Field(default=0.0, ge=0.0, le=1.0)
 
+    # LIWC2015 proxy scores (Faz 7 integration)
+    liwc_clout: float | None = Field(
+        None, ge=0.0, le=1.0, description="LIWC clout score"
+    )
+    liwc_analytic: float | None = Field(
+        None, ge=0.0, le=1.0, description="LIWC analytic score"
+    )
+    liwc_authenticity: float | None = Field(
+        None, ge=0.0, le=1.0, description="LIWC authenticity score"
+    )
+    liwc_tone: float | None = Field(
+        None, ge=-1.0, le=1.0, description="LIWC tone score"
+    )
+
     # Composite
     sbi: float = Field(..., description="Speaker-Based Index")
 

@@ -5,6 +5,9 @@ import pathlib
 
 import nbformat as nbf
 import structlog
+from celery import Task
+from sqlalchemy import select
+
 from bb_paxdata.infrastructure.db.discourse_network_table import (
     DiscourseNetworkEdgeTable,
 )
@@ -13,8 +16,6 @@ from bb_paxdata.infrastructure.db.session import get_db_session
 from bb_paxdata.infrastructure.export.gexf_builder import GEXFBuilder
 from bb_paxdata.infrastructure.export.latex_utils import render_latex_template
 from bb_paxdata.infrastructure.tasks.celery_app import get_celery_app
-from celery import Task
-from sqlalchemy import select
 
 celery_app = get_celery_app()
 

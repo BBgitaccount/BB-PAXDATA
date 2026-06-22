@@ -5,6 +5,7 @@ from collections.abc import Sequence
 from typing import Any
 
 import structlog
+
 from bb_paxdata.application.domain.services.protocols.rag_protocols import (
     RerankerProtocol,
     RetrievedContext,

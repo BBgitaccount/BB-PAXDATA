@@ -5,6 +5,7 @@ Unit tests for presupposition service.
 from unittest.mock import AsyncMock, Mock
 
 import pytest
+
 from bb_paxdata.application.domain.lexicon.presupposition_triggers import (
     PresuppositionLexicon,
 )

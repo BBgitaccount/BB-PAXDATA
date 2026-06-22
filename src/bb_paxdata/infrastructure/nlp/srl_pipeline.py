@@ -406,7 +406,7 @@ class SRLPipeline:
 
             self.metrics.record_request(latency, cache_hit, success)
             logger.debug(
-                f"SRL extraction completed: {len(frames)} frames " f"in {latency:.2f}ms"
+                f"SRL extraction completed: {len(frames)} frames in {latency:.2f}ms"
             )
 
             return result

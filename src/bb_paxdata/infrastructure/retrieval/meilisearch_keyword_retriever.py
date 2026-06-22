@@ -5,12 +5,13 @@ from collections.abc import Callable, Sequence
 from typing import Any
 
 import structlog
+from sqlalchemy import select
+
 from bb_paxdata.application.domain.services.protocols.rag_protocols import (
     KeywordRetrieverProtocol,
     RAGQueryRequest,
     RetrievedContext,
 )
-from sqlalchemy import select
 
 logger = structlog.get_logger(__name__)
 

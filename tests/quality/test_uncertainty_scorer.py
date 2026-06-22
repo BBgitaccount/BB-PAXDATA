@@ -3,6 +3,7 @@
 from unittest.mock import AsyncMock
 
 import pytest
+
 from bb_paxdata.quality.consistency import ConsistencyCalculator
 from bb_paxdata.quality.uncertainty import UncertaintyScorer
 

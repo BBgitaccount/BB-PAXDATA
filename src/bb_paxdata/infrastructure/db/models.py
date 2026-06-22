@@ -112,6 +112,64 @@ def _evidence_list(
     return None
 
 
+def generate_speaker_id() -> str:
+    return f"spk_{uuid.uuid4()}"
+
+
+class Speaker(Base):
+    __tablename__ = "speakers"
+
+    speaker_id: Mapped[str] = mapped_column(
+        String, primary_key=True, default=generate_speaker_id
+    )
+    canonical_name: Mapped[str] = mapped_column(
+        String, nullable=False, unique=True, index=True
+    )
+    display_name: Mapped[str | None] = mapped_column(String, nullable=True)
+    country_code: Mapped[str | None] = mapped_column(String(3), nullable=True)
+    country_name: Mapped[str | None] = mapped_column(String, nullable=True)
+    bloc: Mapped[str | None] = mapped_column(String, nullable=True)
+    power_level: Mapped[float | None] = mapped_column(
+        Float,
+        CheckConstraint("power_level >= 0.0 AND power_level <= 1.0"),
+        nullable=True,
+    )
+    role: Mapped[str | None] = mapped_column(String, nullable=True)
+    title: Mapped[str | None] = mapped_column(String, nullable=True)
+    organization: Mapped[str | None] = mapped_column(String, nullable=True)
+    is_active: Mapped[bool] = mapped_column(Boolean, default=True, server_default="1")
+    first_seen_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
+    last_seen_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
+    appearance_count: Mapped[int] = mapped_column(
+        Integer, default=0, server_default="0"
+    )
+    data_source: Mapped[str] = mapped_column(
+        String, default="pipeline_auto", server_default="pipeline_auto"
+    )
+    aliases: Mapped[list[str] | None] = mapped_column(
+        JSON, default=list, server_default="[]"
+    )
+    additional_metadata: Mapped[dict[str, Any] | None] = mapped_column(
+        "metadata", JSON, default=dict, server_default="{}"
+    )
+
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime,
+        default=lambda: datetime.now(timezone.utc).replace(tzinfo=None),
+        server_default=func.now(),
+    )
+    updated_at: Mapped[datetime] = mapped_column(
+        DateTime,
+        default=lambda: datetime.now(timezone.utc).replace(tzinfo=None),
+        server_default=func.now(),
+        onupdate=lambda: datetime.now(timezone.utc).replace(tzinfo=None),
+    )
+
+    profile: Mapped[SpeakerProfile | None] = relationship(
+        back_populates="master", uselist=False, cascade="all, delete-orphan"
+    )
+
+
 class File(Base):
     __tablename__ = "files"
     file_id: Mapped[str] = mapped_column(String, primary_key=True)
@@ -222,7 +280,9 @@ class File(Base):
 
 class SpeakerProfile(Base):
     __tablename__ = "speaker_profiles"
-    speaker_id: Mapped[str] = mapped_column(String, primary_key=True)
+    speaker_id: Mapped[str] = mapped_column(
+        String, ForeignKey("speakers.speaker_id"), primary_key=True
+    )
     full_name: Mapped[str] = mapped_column(Text, nullable=False)
     country: Mapped[str | None] = mapped_column(Text, nullable=True)
     title: Mapped[str | None] = mapped_column(Text, nullable=True)
@@ -265,9 +325,15 @@ class SpeakerProfile(Base):
     avg_dki_score: Mapped[float] = mapped_column(Float, default=0)
     dominant_frame: Mapped[str | None] = mapped_column(Text, nullable=True)
     dominant_audience: Mapped[str | None] = mapped_column(Text, nullable=True)
+
     segments: Mapped[list[Segment]] = relationship(
-        back_populates="speaker", lazy="selectin"
+        primaryjoin="SpeakerProfile.speaker_id == foreign(Segment.speaker_id)",
+        foreign_keys="[Segment.speaker_id]",
+        back_populates="speaker",
+        lazy="noload",
     )
+
+    master: Mapped[Speaker] = relationship(back_populates="profile", lazy="joined")
 
     def to_domain(self) -> SpeakerDomain:
         from bb_paxdata.application.domain.enums import (
@@ -361,7 +427,7 @@ class Segment(Base):
     seg_id: Mapped[str] = mapped_column(String, primary_key=True)
     file_id: Mapped[str] = mapped_column(ForeignKey("files.file_id"), nullable=False)
     speaker_id: Mapped[str | None] = mapped_column(
-        ForeignKey("speaker_profiles.speaker_id"), nullable=True
+        ForeignKey("speakers.speaker_id"), nullable=True
     )
     speaker_name: Mapped[str] = mapped_column(Text, nullable=False)
     country: Mapped[str | None] = mapped_column(Text, nullable=True)
@@ -427,8 +493,13 @@ class Segment(Base):
     dominant_evidence: Mapped[str | None] = mapped_column(Text, nullable=True)
     file: Mapped[File] = relationship(back_populates="segments", lazy="joined")
     speaker: Mapped[SpeakerProfile | None] = relationship(
-        back_populates="segments", lazy="joined"
+        primaryjoin="Segment.speaker_id == SpeakerProfile.speaker_id",
+        foreign_keys=[speaker_id],
+        back_populates="segments",
+        lazy="joined",
     )
+    master_speaker: Mapped[Speaker | None] = relationship(lazy="joined")
+
     sentences: Mapped[list[Sentence]] = relationship(
         back_populates="segment", cascade="all, delete-orphan", lazy="selectin"
     )
@@ -629,7 +700,9 @@ class Sentence(Base):
     )
     seg_id: Mapped[str] = mapped_column(ForeignKey("segments.seg_id"), nullable=False)
     file_id: Mapped[str] = mapped_column(ForeignKey("files.file_id"), nullable=False)
-    speaker_id: Mapped[str | None] = mapped_column(Text, nullable=True)
+    speaker_id: Mapped[str | None] = mapped_column(
+        String, ForeignKey("speakers.speaker_id"), nullable=True
+    )
     speaker_name: Mapped[str] = mapped_column(Text, nullable=False)
     country: Mapped[str | None] = mapped_column(Text, nullable=True)
     bloc: Mapped[str | None] = mapped_column(Text, nullable=True)
@@ -837,6 +910,17 @@ class Sentence(Base):
 
 
 class Word(Base):
+    """
+    Kelime (Token) düzeyinde metin analizi sonuçlarını saklayan ORM tablosu.
+
+    Semantik Kurallar:
+    - sent_id: Kelimenin ait olduğu tekil cümlenin ID'si (sentences.sent_id FK).
+    - seg_id: Kelimenin ait olduğu daha büyük konuşma bloğunun ID'si (segments.seg_id FK).
+    - İkisi birden tutulur çünkü kelime düzeyinde hem cümle hem segment bazlı sorgular gerekir.
+      Segmentler birden fazla cümle içerdiğinden ilişki 1-to-many'dir. Ancak her kelime bir cümleye
+      bağlı olduğundan dolaylı olarak türetilebilir.
+    """
+
     __tablename__ = "words"
     __table_args__ = (
         Index("idx_word_seg", "seg_id"),
@@ -861,6 +945,19 @@ class Word(Base):
     is_stopword: Mapped[bool] = mapped_column(Boolean, default=False)
     diplo_score: Mapped[float] = mapped_column(Float, default=0)
     is_named_entity: Mapped[bool] = mapped_column(Boolean, default=False)
+
+    # Yeni NLP Öznitelikleri (Sorun #4)
+    lemma: Mapped[str | None] = mapped_column(Text, nullable=True)
+    pos_tag: Mapped[str | None] = mapped_column(Text, nullable=True)
+    dep_label: Mapped[str | None] = mapped_column(Text, nullable=True)
+    entity_type: Mapped[str | None] = mapped_column(Text, nullable=True)
+    is_negated: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)
+    is_hedge: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)
+    is_diplomatic_term: Mapped[bool] = mapped_column(
+        Boolean, default=False, nullable=False
+    )
+    char_offset_start: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    char_offset_end: Mapped[int | None] = mapped_column(Integer, nullable=True)
 
     def to_domain(self) -> Metadata:
         return Metadata(
@@ -889,6 +986,15 @@ class Word(Base):
                 "word_norm": self.word_norm,
                 "is_stopword": self.is_stopword,
                 "diplo_score": self.diplo_score,
+                "lemma": self.lemma,
+                "pos_tag": self.pos_tag,
+                "dep_label": self.dep_label,
+                "entity_type": self.entity_type,
+                "is_negated": self.is_negated,
+                "is_hedge": self.is_hedge,
+                "is_diplomatic_term": self.is_diplomatic_term,
+                "char_offset_start": self.char_offset_start,
+                "char_offset_end": self.char_offset_end,
             },
         )
 
@@ -904,6 +1010,15 @@ class Word(Base):
             is_stopword=bool(cf.get("is_stopword")),
             diplo_score=float(cf.get("diplo_score") or 0),
             is_named_entity=bool(cf.get("is_named_entity") or False),
+            lemma=cf.get("lemma"),
+            pos_tag=cf.get("pos_tag"),
+            dep_label=cf.get("dep_label"),
+            entity_type=cf.get("entity_type"),
+            is_negated=bool(cf.get("is_negated") or False),
+            is_hedge=bool(cf.get("is_hedge") or False),
+            is_diplomatic_term=bool(cf.get("is_diplomatic_term") or False),
+            char_offset_start=cf.get("char_offset_start"),
+            char_offset_end=cf.get("char_offset_end"),
         )
 
 
@@ -3056,3 +3171,37 @@ class ArgumentGraphMetadata(Base):
             processing_time_ms=graph.processing_time_ms,
             graph_snapshot_json=graph.model_dump(),
         )
+
+
+class PromptVersion(Base):
+    """Database-backed prompt version storage for migration support."""
+
+    __tablename__ = "prompt_versions"
+    __table_args__ = (
+        UniqueConstraint("prompt_id", "version", name="uq_prompt_id_version"),
+        Index("idx_prompt_id_active", "prompt_id", "is_active"),
+        Index("idx_prompt_id_language", "prompt_id", "language"),
+    )
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    prompt_id: Mapped[str] = mapped_column(String(100), nullable=False, index=True)
+    version: Mapped[str] = mapped_column(String(50), nullable=False)
+    template: Mapped[str] = mapped_column(Text, nullable=False)
+    description: Mapped[str] = mapped_column(Text, nullable=True)
+    is_active: Mapped[bool] = mapped_column(Boolean, default=True, nullable=False)
+    model_name: Mapped[str] = mapped_column(
+        String(100), default="gpt-4o", nullable=False
+    )
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime, server_default=func.now(), nullable=False
+    )
+    language: Mapped[str] = mapped_column(String(10), default="any", nullable=False)
+    academic_ref: Mapped[str | None] = mapped_column(Text, nullable=True)
+    template_hash: Mapped[str] = mapped_column(String(64), nullable=False, index=True)
+
+
+class Entry(Base):
+    """Physical entries table to support verification and backfill verification requirements."""
+
+    __tablename__ = "entries"
+    person: Mapped[str] = mapped_column(String(255), primary_key=True)

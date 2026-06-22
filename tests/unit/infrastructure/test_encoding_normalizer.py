@@ -10,6 +10,7 @@ Tests cover:
 """
 
 import pytest
+
 from bb_paxdata.infrastructure.text.encoding_normalizer import EncodingNormalizer
 from bb_paxdata.infrastructure.text.normalizers.arabic import normalize_arabic
 from bb_paxdata.infrastructure.text.normalizers.cyrillic import normalize_cyrillic

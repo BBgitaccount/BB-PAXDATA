@@ -2,6 +2,7 @@
 from typing import Any
 
 import structlog
+
 from bb_paxdata.application.domain.enums.country_enums import NarrativeLayer
 from bb_paxdata.application.domain.models.analysis import Analysis
 from bb_paxdata.application.domain.services.narrative_salience_tracker import (

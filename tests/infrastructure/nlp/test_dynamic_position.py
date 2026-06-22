@@ -1,6 +1,7 @@
 from datetime import datetime, timedelta, timezone
 
 import pytest
+
 from bb_paxdata.application.domain.models.dki import SpeakerTrajectory
 from bb_paxdata.infrastructure.nlp.dynamic_position import PooleRosenthalPositionTracker
 

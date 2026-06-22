@@ -1,4 +1,5 @@
 import pytest
+
 from bb_paxdata.application.domain.models.analysis import Analysis
 from bb_paxdata.application.domain.models.segment import Segment
 from bb_paxdata.application.domain.services.cross_anomaly_service import (

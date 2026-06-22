@@ -2,6 +2,9 @@
 from __future__ import annotations
 
 import pytest
+from sqlalchemy import select
+from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_async_engine
+
 from bb_paxdata.application.domain.models.analysis import Analysis
 from bb_paxdata.infrastructure.db.base import Base
 from bb_paxdata.infrastructure.db.models import (
@@ -12,8 +15,6 @@ from bb_paxdata.infrastructure.db.models import (
     Sentence,
     WebhookSubscriptionORM,
 )
-from sqlalchemy import select
-from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_async_engine
 
 
 @pytest.mark.asyncio

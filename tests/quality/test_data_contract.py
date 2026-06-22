@@ -3,6 +3,7 @@
 from pathlib import Path
 
 import pandas as pd
+
 from bb_paxdata.quality.data_contract import (
     DataContractValidator,
     TranscriptInputContract,

@@ -1,5 +1,4 @@
-"""SQLAlchemy 2.0 ORM: human_reviews ve calibration_reports tabloları.
-"""
+"""SQLAlchemy 2.0 ORM: human_reviews ve calibration_reports tabloları."""
 
 from __future__ import annotations
 

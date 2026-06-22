@@ -10,12 +10,22 @@ import './index.css';
 const queryClient = new QueryClient({
   defaultOptions: {
     queries: {
-      retry: 1,
+      staleTime: 1000 * 60 * 2, // 2 dk - stale-while-revalidate pattern
+      gcTime: 1000 * 60 * 10, // 10 dk bellekte tut (eski adıyla cacheTime)
+      retry: (failureCount, error) => {
+        if ((error as any).status >= 500) return failureCount < 3;
+        return false;
+      },
       refetchOnWindowFocus: false,
-      staleTime: 30_000,
+      refetchOnMount: false,
+      refetchOnReconnect: true,
     },
     mutations: {
       retry: 0,
+      onError: (error) => {
+        // Global error handling
+        console.error('Mutation error:', error);
+      },
     },
   },
 });

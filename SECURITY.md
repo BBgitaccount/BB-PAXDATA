@@ -4,10 +4,10 @@
 
 BB-PAXDATA is a diplomatic discourse analysis engine. Security updates are applied to the following versions:
 
-| Version | Supported |
-| --- | --- |
-| 1.x.x | :white_check_mark: |
-| < 1.0 | :x: |
+| Version | Supported          |
+| ------- | ------------------ |
+| 1.x.x   | :white_check_mark: |
+| < 1.0   | :x:                |
 
 ---
 
@@ -133,15 +133,15 @@ Diplomatic transcripts may contain classified, restricted, or politically sensit
 
 BB-PAXDATA implements the following security features by design:
 
-| Feature | Description | Benefit |
-| --- | --- | --- |
-| **Immutable Domain Models** | All `Analysis`, `Segment`, `DKIResult` models use `frozen=True` | Prevents accidental mutation; supports forensic integrity |
-| **SHA256 Audit Trail** | Every prompt and analysis result carries a SHA256 hash | Non-repudiation; reproducibility |
-| **6-Level JSON Recovery** | `RecoveryEngine` handles malformed LLM outputs safely | Prevents pipeline crashes from untrusted LLM responses |
-| **Structured Logging** | `structlog` with JSON output | Tamper-evident logs; SIEM integration |
-| **Async Isolation** | CPU-bound work in threads, IO in async | Prevents DoS via event loop starvation |
-| **Pydantic v2 Validation** | Strict schema enforcement on all boundaries | Type safety; injection prevention |
-| **Protocol-Based Architecture** | Dependency Inversion via domain protocols | Testability; mock-based security testing |
+| Feature                         | Description                                                     | Benefit                                                   |
+| ------------------------------- | --------------------------------------------------------------- | --------------------------------------------------------- |
+| **Immutable Domain Models**     | All `Analysis`, `Segment`, `DKIResult` models use `frozen=True` | Prevents accidental mutation; supports forensic integrity |
+| **SHA256 Audit Trail**          | Every prompt and analysis result carries a SHA256 hash          | Non-repudiation; reproducibility                          |
+| **6-Level JSON Recovery**       | `RecoveryEngine` handles malformed LLM outputs safely           | Prevents pipeline crashes from untrusted LLM responses    |
+| **Structured Logging**          | `structlog` with JSON output                                    | Tamper-evident logs; SIEM integration                     |
+| **Async Isolation**             | CPU-bound work in threads, IO in async                          | Prevents DoS via event loop starvation                    |
+| **Pydantic v2 Validation**      | Strict schema enforcement on all boundaries                     | Type safety; injection prevention                         |
+| **Protocol-Based Architecture** | Dependency Inversion via domain protocols                       | Testability; mock-based security testing                  |
 
 ---
 
@@ -151,4 +151,4 @@ We thank the security researchers and the open-source community for helping keep
 
 ---
 
-*For questions about this security policy, contact: barisbozkurthello@gmail.com*
+_For questions about this security policy, contact: barisbozkurthello@gmail.com_

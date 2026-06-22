@@ -9,6 +9,13 @@ from collections.abc import AsyncIterator, Sequence
 from typing import TYPE_CHECKING
 
 import structlog
+from tenacity import (
+    retry,
+    retry_if_exception_type,
+    stop_after_attempt,
+    wait_exponential_jitter,
+)
+
 from bb_paxdata.application.domain.services.prompt_registry import PromptRegistry
 from bb_paxdata.application.domain.services.protocols.rag_protocols import (
     DenseRetrieverProtocol,
@@ -22,12 +29,6 @@ from bb_paxdata.application.domain.services.protocols.rag_protocols import (
 from bb_paxdata.application.services.rag_context_assembler import RAGContextAssembler
 from bb_paxdata.infrastructure.ai.rag_synthesis_adapter import (  # noqa: F401
     RAGSynthesisClient,
-)
-from tenacity import (
-    retry,
-    retry_if_exception_type,
-    stop_after_attempt,
-    wait_exponential_jitter,
 )
 
 if TYPE_CHECKING:

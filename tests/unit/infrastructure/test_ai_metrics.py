@@ -3,9 +3,10 @@ from unittest.mock import AsyncMock
 
 import pytest
 import structlog
+from httpx import Request, Response
+
 from bb_paxdata.infrastructure.ai.base import ai_call_instrumented
 from bb_paxdata.infrastructure.observability.metrics import get_metrics
-from httpx import Request, Response
 
 logger = structlog.get_logger("test_ai_metrics")
 

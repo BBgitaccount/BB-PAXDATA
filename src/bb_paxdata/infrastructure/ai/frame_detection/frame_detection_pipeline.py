@@ -10,6 +10,8 @@ from typing import Final
 
 import numpy as np
 import structlog
+from sklearn.metrics.pairwise import cosine_similarity
+
 from bb_paxdata.application.domain.models.frame_annotation import (
     BiasSeverity,
     BiasSignal,
@@ -31,7 +33,6 @@ from bb_paxdata.application.domain.services.topic_modeling_protocol import (
 )
 from bb_paxdata.infrastructure.ai.clients.llm_client_protocol import LLMClientProtocol
 from bb_paxdata.infrastructure.ai.recovery import RecoveryEngine
-from sklearn.metrics.pairwise import cosine_similarity
 
 logger = structlog.get_logger(__name__)
 

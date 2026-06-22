@@ -5,9 +5,10 @@ import pathlib
 import threading
 
 import structlog
-from bb_paxdata.sdk.registry import PluginRegistry
 from watchdog.events import FileSystemEventHandler
 from watchdog.observers import Observer
+
+from bb_paxdata.sdk.registry import PluginRegistry
 
 logger = structlog.get_logger(__name__)
 

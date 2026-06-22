@@ -14,7 +14,10 @@ test.describe('HITL Dashboard E2E Flow', () => {
     await expect(page.locator('text=Özet')).toBeVisible({ timeout: 5000 });
   });
 
-  test('should view review queue, submit verdict offline, and sync online', async ({ page, context }) => {
+  test('should view review queue, submit verdict offline, and sync online', async ({
+    page,
+    context,
+  }) => {
     // 1. Navigate to Review Queue page
     await page.click('text=İnceleme Kuyruğu');
     await expect(page.locator('text=İnceleme Kuyruğu')).toBeVisible();
@@ -32,7 +35,10 @@ test.describe('HITL Dashboard E2E Flow', () => {
 
     // 4. Fill in some verdict information
     await page.click('text=HATA ONAYLANDI');
-    await page.fill('textarea[placeholder*="gerekçesini detaylandırın"]', 'E2E Test justification details.');
+    await page.fill(
+      'textarea[placeholder*="gerekçesini detaylandırın"]',
+      'E2E Test justification details.',
+    );
 
     // 5. Go Offline
     await context.setOffline(true);

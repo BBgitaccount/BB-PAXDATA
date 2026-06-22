@@ -7,13 +7,19 @@ Use Case: BilateralSentiment kayıtlarından DiscourseFlow (ağ kenarı) üretir
 - GATFeatureExtractionService ile actor/concept features çıkar
 - GAT embeddings DB'ye kaydedilir
 """
+
 from __future__ import annotations
 
 from dataclasses import dataclass, field
 from typing import TYPE_CHECKING
 
 import structlog
-from bb_paxdata.application.domain.enums.country_enums import EdgeType, RelationshipType
+
+from bb_paxdata.application.domain.enums.country_enums import (
+    EdgeType,
+    NarrativeLayer,
+    RelationshipType,
+)
 from bb_paxdata.application.domain.models.discourse_flow import DiscourseFlow
 from bb_paxdata.application.domain.ports.i_gat_embedding_repository import (
     IGATEmbeddingRepository,
@@ -25,6 +31,7 @@ from bb_paxdata.application.domain.services.country_repositories import (
 
 if TYPE_CHECKING:
     import networkx as nx
+
     from bb_paxdata.application.domain.models.bilateral_sentiment import (
         BilateralSentiment,
     )
@@ -89,6 +96,25 @@ class BuildPanelNetworkUseCase:
                 errors=(str(exc),),
             )
 
+        # Fetch sentences for the panel to calculate narrative fields
+        db_sentences = []
+        session = getattr(self._sentiment_repo, "_session", None)
+        from unittest.mock import Mock
+
+        if session is not None and not isinstance(session, Mock):
+            try:
+                from sqlalchemy import select
+
+                from bb_paxdata.infrastructure.db.models import Sentence as DBSentence
+
+                stmt = select(DBSentence).where(DBSentence.file_id == panel_id)
+                res = await session.execute(stmt)
+                db_sentences = res.scalars().all()
+            except Exception as exc:
+                logger.warning(
+                    "build_panel_network.fetch_sentences_failed", error=str(exc)
+                )
+
         flows: list[DiscourseFlow] = []
         for s in sentiments:
             if abs(s.affinity_score) <= input_data.weight_threshold:
@@ -96,6 +122,141 @@ class BuildPanelNetworkUseCase:
 
             edge_type = self._classify_edge_type(s.effective_relationship)
             weight = self._calculate_weight(s)
+
+            # Derive narrative fields
+            n_layer = getattr(s, "narrative_layer", None)
+            n_target = getattr(s, "narrative_target_actor", None)
+            n_salience = getattr(s, "narrative_salience", None)
+
+            if n_layer is None or n_target is None or n_salience is None:
+                from_country_lower = s.from_country.lower()
+                to_country_lower = s.to_country.lower()
+
+                actor_sentences = [
+                    sent
+                    for sent in db_sentences
+                    if sent.country and sent.country.lower() == from_country_lower
+                ]
+
+                relevant_sentences = []
+                for sent in actor_sentences:
+                    referenced = False
+                    text_lower = (sent.text or "").lower()
+                    if to_country_lower in text_lower:
+                        referenced = True
+                    else:
+                        for ent_list in [
+                            getattr(sent, "entities_gpe", None),
+                            getattr(sent, "entities_org", None),
+                        ]:
+                            if isinstance(ent_list, list):
+                                for ent in ent_list:
+                                    if (
+                                        isinstance(ent, dict)
+                                        and ent.get("text", "").lower()
+                                        == to_country_lower
+                                    ):
+                                        referenced = True
+                                        break
+                                    elif (
+                                        isinstance(ent, str)
+                                        and ent.lower() == to_country_lower
+                                    ):
+                                        referenced = True
+                                        break
+                            if referenced:
+                                break
+                    if referenced:
+                        relevant_sentences.append(sent)
+
+                if n_target is None:
+                    n_target = s.to_country
+
+                if n_salience is None:
+                    n_salience = (
+                        len(relevant_sentences) / len(actor_sentences)
+                        if actor_sentences
+                        else 0.0
+                    )
+
+                if n_layer is None and relevant_sentences:
+                    scores = {"system": 0, "identity": 0, "issue": 0}
+                    keywords = {
+                        "system": [
+                            "world order",
+                            "international community",
+                            "multipolar",
+                            "unipolar",
+                            "rules-based",
+                            "hegemony",
+                            "global governance",
+                            "united nations",
+                            "sovereign equality",
+                            "coalition",
+                        ],
+                        "identity": [
+                            "national interest",
+                            "historic duty",
+                            "defender",
+                            "mediator",
+                            "reliable partner",
+                            "sovereignty",
+                            "our nation",
+                            "peace-loving",
+                            "aggressor state",
+                            "colonial legacy",
+                        ],
+                        "issue": [
+                            "border conflict",
+                            "ceasefire violation",
+                            "humanitarian passage",
+                            "gas pipeline",
+                            "grain corridor",
+                            "terrorist threat",
+                            "bilateral trade",
+                            "customs dispute",
+                            "sanctions",
+                        ],
+                    }
+                    for sent in relevant_sentences:
+                        text_lower = (sent.text or "").lower()
+                        for layer, kws in keywords.items():
+                            for kw in kws:
+                                if kw in text_lower:
+                                    scores[layer] += 1
+
+                    if sum(scores.values()) > 0:
+                        best_layer = max(scores, key=lambda k: scores[k])
+                        n_layer = NarrativeLayer(best_layer)
+                    else:
+                        from collections import Counter
+
+                        frames = [
+                            sent.dominant_frame
+                            for sent in relevant_sentences
+                            if sent.dominant_frame
+                        ]
+                        if frames:
+                            most_common_frame = Counter(frames).most_common(1)[0][0]
+                            frame_fallback = {
+                                "multilateral_frame": NarrativeLayer.SYSTEM,
+                                "thematic": NarrativeLayer.SYSTEM,
+                                "legal_frame": NarrativeLayer.SYSTEM,
+                                "moral_evaluation": NarrativeLayer.IDENTITY,
+                                "sovereignty_frame": NarrativeLayer.IDENTITY,
+                                "deterrence_frame": NarrativeLayer.IDENTITY,
+                                "conflict_frame": NarrativeLayer.IDENTITY,
+                                "threat_frame": NarrativeLayer.IDENTITY,
+                                "problem_definition": NarrativeLayer.ISSUE,
+                                "cause_interpretation": NarrativeLayer.ISSUE,
+                                "remedy_suggestion": NarrativeLayer.ISSUE,
+                                "episodic": NarrativeLayer.ISSUE,
+                                "humanitarian_frame": NarrativeLayer.ISSUE,
+                                "negotiation_frame": NarrativeLayer.ISSUE,
+                                "two_state_frame": NarrativeLayer.ISSUE,
+                                "occupation_frame": NarrativeLayer.ISSUE,
+                            }
+                            n_layer = frame_fallback.get(str(most_common_frame))
 
             flows.append(
                 DiscourseFlow(
@@ -107,9 +268,9 @@ class BuildPanelNetworkUseCase:
                     sentiment_toward=s.avg_sentiment,
                     confrontational_count=self._count_confrontational(s),
                     cooperative_count=self._count_cooperative(s),
-                    narrative_layer=getattr(s, "narrative_layer", None),
-                    narrative_target_actor=getattr(s, "narrative_target_actor", None),
-                    narrative_salience=getattr(s, "narrative_salience", 0.0),
+                    narrative_layer=n_layer,
+                    narrative_target_actor=n_target,
+                    narrative_salience=n_salience or 0.0,
                 )
             )
 

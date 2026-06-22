@@ -3,6 +3,7 @@ import tempfile
 from pathlib import Path
 
 import pytest
+
 from bb_paxdata.application.domain.services.cross_anomaly_service import (
     CrossAnomalyService,
 )

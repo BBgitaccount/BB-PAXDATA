@@ -1,12 +1,13 @@
 # tests/interfaces/test_analyze_commands.py
 from unittest.mock import AsyncMock, MagicMock, patch
 
+from typer.testing import CliRunner
+
 from bb_paxdata.application.use_cases.aggregate_bilateral_sentiment import (
     AggregateBilateralSentimentOutput,
 )
 from bb_paxdata.application.use_cases.build_panel_network import BuildPanelNetworkOutput
 from bb_paxdata.interfaces.cli.commands.analyze import app
-from typer.testing import CliRunner
 
 runner = CliRunner()
 
@@ -19,13 +20,15 @@ def test_country_refs_command_success() -> None:
         total_pairs=4,
     )
 
-    with patch(
-        "bb_paxdata.interfaces.cli.commands.analyze.get_session"
-    ) as mock_session, patch(
-        "bb_paxdata.interfaces.cli.commands.analyze.make_aggregate_bilateral_use_case"
-    ) as mock_factory, patch(
-        "bb_paxdata.infrastructure.db.repositories.country_repository.BilateralSentimentRepository"
-    ) as mock_repo_class:
+    with (
+        patch("bb_paxdata.interfaces.cli.commands.analyze.get_session") as mock_session,
+        patch(
+            "bb_paxdata.interfaces.cli.commands.analyze.make_aggregate_bilateral_use_case"
+        ) as mock_factory,
+        patch(
+            "bb_paxdata.infrastructure.db.repositories.country_repository.BilateralSentimentRepository"
+        ) as mock_repo_class,
+    ):
         mock_use_case = AsyncMock()
         mock_use_case.execute.return_value = mock_output
         mock_factory.return_value = mock_use_case
@@ -51,11 +54,12 @@ def test_country_refs_command_exits_1_on_full_failure() -> None:
         errors=("DB bağlantısı kesildi",),
     )
 
-    with patch(
-        "bb_paxdata.interfaces.cli.commands.analyze.get_session"
-    ) as mock_session, patch(
-        "bb_paxdata.interfaces.cli.commands.analyze.make_aggregate_bilateral_use_case"
-    ) as mock_factory:
+    with (
+        patch("bb_paxdata.interfaces.cli.commands.analyze.get_session") as mock_session,
+        patch(
+            "bb_paxdata.interfaces.cli.commands.analyze.make_aggregate_bilateral_use_case"
+        ) as mock_factory,
+    ):
         mock_use_case = AsyncMock()
         mock_use_case.execute.return_value = mock_output
         mock_factory.return_value = mock_use_case
@@ -75,11 +79,12 @@ def test_network_command_shows_centrality() -> None:
         centrality={"TR": 0.8, "US": 0.6, "DE": 0.3},
     )
 
-    with patch(
-        "bb_paxdata.interfaces.cli.commands.analyze.get_session"
-    ) as mock_session, patch(
-        "bb_paxdata.interfaces.cli.commands.analyze.make_build_network_use_case"
-    ) as mock_factory:
+    with (
+        patch("bb_paxdata.interfaces.cli.commands.analyze.get_session") as mock_session,
+        patch(
+            "bb_paxdata.interfaces.cli.commands.analyze.make_build_network_use_case"
+        ) as mock_factory,
+    ):
         mock_use_case = AsyncMock()
         mock_use_case.execute.return_value = mock_output
         mock_factory.return_value = mock_use_case

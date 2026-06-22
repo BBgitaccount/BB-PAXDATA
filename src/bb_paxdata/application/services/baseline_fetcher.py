@@ -6,10 +6,11 @@ from collections.abc import Callable
 from typing import Any
 
 import numpy as np
+from sqlalchemy import select
+
 from bb_paxdata.application.domain.services.protocols.judge_protocols import (
     BaselineMetrics,
 )
-from sqlalchemy import select
 
 
 class RollingWindowBaselineFetcher:

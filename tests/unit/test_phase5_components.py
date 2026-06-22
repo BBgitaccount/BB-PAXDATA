@@ -6,6 +6,9 @@ from unittest.mock import AsyncMock, MagicMock
 
 import numpy as np
 import pytest
+from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_async_engine
+from sqlalchemy.pool import StaticPool
+
 from bb_paxdata.application.domain.models.forecast import TimeSlice
 from bb_paxdata.application.domain.services.forecasting import RiskForecaster
 from bb_paxdata.application.domain.services.prompt_registry import (
@@ -41,8 +44,6 @@ from bb_paxdata.infrastructure.retrieval.meilisearch_keyword_retriever import (
 from bb_paxdata.infrastructure.retrieval.pgvector_dense_retriever import (
     PgvectorDenseRetriever,
 )
-from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_async_engine
-from sqlalchemy.pool import StaticPool
 
 
 @pytest.fixture

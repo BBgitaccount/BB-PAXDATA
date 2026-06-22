@@ -1,6 +1,7 @@
 """Celery tasks for graph and community management."""
 
 import structlog
+
 from bb_paxdata.infrastructure.tasks.celery_app import get_celery_app
 
 app = get_celery_app()

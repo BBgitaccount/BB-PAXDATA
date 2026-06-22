@@ -15,6 +15,8 @@ Tests cover:
 from __future__ import annotations
 
 import pytest
+from pydantic import ValidationError
+
 from bb_paxdata.application.domain.enums import (
     RiskLevel,
 )
@@ -25,7 +27,6 @@ from bb_paxdata.application.domain.models.negation_cue import NegationCue
 from bb_paxdata.application.domain.models.risk_signal import RiskSignal
 from bb_paxdata.application.domain.models.segment import Segment
 from bb_paxdata.application.domain.models.sentence import Sentence
-from pydantic import ValidationError
 
 # ─── Factory helpers for models with required positional fields ───
 

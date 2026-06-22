@@ -1,5 +1,4 @@
-"""CalibrationService — computes inter‑rater agreement and persists reports.
-"""
+"""CalibrationService — computes inter‑rater agreement and persists reports."""
 
 from __future__ import annotations
 
@@ -8,6 +7,7 @@ from datetime import datetime, timedelta, timezone
 from typing import Any
 
 import structlog
+
 from bb_paxdata.application.domain.models.calibration import CalibrationReport
 from bb_paxdata.application.domain.models.human_review import (
     AgreementStatus,

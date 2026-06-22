@@ -1,5 +1,4 @@
-"""review_commands.py — CLI interface for human review submission, calibration runs, and viewing disagreements.
-"""
+"""review_commands.py — CLI interface for human review submission, calibration runs, and viewing disagreements."""
 
 from __future__ import annotations
 

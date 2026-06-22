@@ -4,6 +4,7 @@ from __future__ import annotations
 from typing import Any
 
 import structlog
+
 from bb_paxdata.application.services.dynamic_few_shot_optimizer import (
     VectorSimilaritySelector,
 )

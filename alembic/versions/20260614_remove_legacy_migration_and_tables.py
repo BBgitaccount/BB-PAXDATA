@@ -17,16 +17,20 @@ depends_on: str | Sequence[str] | None = None
 
 
 def upgrade() -> None:
-    # Drop all dependent views first (CASCADE handles transitive dependencies)
-    op.execute("DROP VIEW IF EXISTS v_f_fail_network_context CASCADE")
-    op.execute("DROP VIEW IF EXISTS v_transcript_summary CASCADE")
-    op.execute("DROP VIEW IF EXISTS v_analytics_summary CASCADE")
+    bind = op.get_bind()
+    is_sqlite = bind.dialect.name == "sqlite"
+    cascade = "" if is_sqlite else " CASCADE"
 
-    # Drop legacy tables with CASCADE to handle any remaining FK/view dependencies
-    op.execute("DROP TABLE IF EXISTS transcripts CASCADE")
-    op.execute("DROP TABLE IF EXISTS analytics CASCADE")
-    op.execute("DROP TABLE IF EXISTS discourse_network_edges_legacy CASCADE")
-    op.execute("DROP TABLE IF EXISTS legacy_country_references CASCADE")
+    # Drop all dependent views first
+    op.execute(f"DROP VIEW IF EXISTS v_f_fail_network_context{cascade}")
+    op.execute(f"DROP VIEW IF EXISTS v_transcript_summary{cascade}")
+    op.execute(f"DROP VIEW IF EXISTS v_analytics_summary{cascade}")
+
+    # Drop legacy tables
+    op.execute(f"DROP TABLE IF EXISTS transcripts{cascade}")
+    op.execute(f"DROP TABLE IF EXISTS analytics{cascade}")
+    op.execute(f"DROP TABLE IF EXISTS discourse_network_edges_legacy{cascade}")
+    op.execute(f"DROP TABLE IF EXISTS legacy_country_references{cascade}")
 
 
 def downgrade() -> None:

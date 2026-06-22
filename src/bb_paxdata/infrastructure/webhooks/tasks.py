@@ -4,10 +4,11 @@ from __future__ import annotations
 import random
 
 import httpx
-from bb_paxdata.infrastructure.tasks.celery_app import get_celery_app
-from bb_paxdata.infrastructure.webhooks.signature import generate_webhook_signature
 from celery import Task
 from celery.utils.log import get_task_logger
+
+from bb_paxdata.infrastructure.tasks.celery_app import get_celery_app
+from bb_paxdata.infrastructure.webhooks.signature import generate_webhook_signature
 
 celery_app = get_celery_app()
 
@@ -69,6 +70,7 @@ def dispatch_webhook(
     cb_allowed = True
     try:
         import redis.asyncio as aioredis
+
         from bb_paxdata.config.settings import get_settings
         from bb_paxdata.infrastructure.webhooks.circuit_breaker import CircuitBreaker
 

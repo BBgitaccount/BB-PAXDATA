@@ -10,8 +10,10 @@ if TYPE_CHECKING:
     from bb_paxdata.application.consensus.dual_gate import ConsensusResult
     from bb_paxdata.infrastructure.ai.prompt_registry import PromptRegistry
 
-from bb_paxdata.application.domain.models.analysis import Analysis as AnalysisDomain
-from bb_paxdata.application.domain.models.analysis import SentenceAnalysis
+from bb_paxdata.application.domain.models.analysis import (
+    Analysis as AnalysisDomain,
+    SentenceAnalysis,
+)
 from bb_paxdata.application.domain.services.compare_sessions_protocols import (
     IAnalysisRepository,
 )

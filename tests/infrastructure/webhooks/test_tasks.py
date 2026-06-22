@@ -5,6 +5,9 @@ from datetime import datetime, timedelta, timezone
 from unittest.mock import MagicMock, patch
 
 import pytest
+from sqlalchemy import create_engine
+from sqlalchemy.orm import sessionmaker
+
 from bb_paxdata.infrastructure.db.base import Base
 from bb_paxdata.infrastructure.db.models import DeadLetterEventORM, OutboxEventORM
 from bb_paxdata.infrastructure.webhooks.tasks import (
@@ -12,8 +15,6 @@ from bb_paxdata.infrastructure.webhooks.tasks import (
     _release_lease_for_retry,
     dispatch_webhook,
 )
-from sqlalchemy import create_engine
-from sqlalchemy.orm import sessionmaker
 
 
 @pytest.fixture

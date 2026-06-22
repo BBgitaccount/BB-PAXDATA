@@ -1,4 +1,7 @@
 import pytest
+from fastapi.testclient import TestClient
+from sqlalchemy import select
+
 from bb_paxdata.infrastructure.auth.jwt_auth import create_jwt
 from bb_paxdata.infrastructure.db.human_review_queue import HumanReviewQueue
 from bb_paxdata.infrastructure.db.models import (
@@ -7,8 +10,6 @@ from bb_paxdata.infrastructure.db.models import (
     Sentence,
 )
 from bb_paxdata.interfaces.api.main import app
-from fastapi.testclient import TestClient
-from sqlalchemy import select
 
 client = TestClient(app)
 

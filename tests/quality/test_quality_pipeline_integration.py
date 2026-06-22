@@ -6,6 +6,7 @@ from typing import Any
 from unittest.mock import AsyncMock, MagicMock, Mock, patch
 
 import pytest
+
 from bb_paxdata.application.domain.services.duplicate_protection import (
     DuplicateProtectionService,
 )
@@ -14,7 +15,6 @@ from bb_paxdata.quality.data_contract import DataContractValidator
 from bb_paxdata.quality.evaluator import QualityEvaluator, QualityReport
 from bb_paxdata.quality.review_queue import ReviewFlagger, ReviewQueueManager
 from bb_paxdata.quality.uncertainty import UncertaintyScore, UncertaintyScorer
-
 from tests.fixtures.golden_dataset import GoldenDataset
 
 
@@ -24,14 +24,16 @@ class TestQualityPipelineIntegration:
     @pytest.fixture(autouse=True)
     def mock_deepeval_metrics(self):
         """Mock all deepeval metrics to avoid real API calls."""
-        with patch("bb_paxdata.quality.evaluator.GEval") as mock_geval, patch(
-            "bb_paxdata.quality.evaluator.AnswerRelevancyMetric"
-        ) as mock_relevancy, patch(
-            "bb_paxdata.quality.evaluator.JsonCorrectnessMetric"
-        ) as mock_json, patch(
-            "bb_paxdata.quality.evaluator.TopicCoherenceEvaluator"
-        ) as mock_coherence:
-
+        with (
+            patch("bb_paxdata.quality.evaluator.GEval") as mock_geval,
+            patch(
+                "bb_paxdata.quality.evaluator.AnswerRelevancyMetric"
+            ) as mock_relevancy,
+            patch("bb_paxdata.quality.evaluator.JsonCorrectnessMetric") as mock_json,
+            patch(
+                "bb_paxdata.quality.evaluator.TopicCoherenceEvaluator"
+            ) as mock_coherence,
+        ):
             # Setup mocks for geval
             mock_geval_instance = MagicMock()
             mock_geval_instance.score = 1.0

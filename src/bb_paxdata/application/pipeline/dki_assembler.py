@@ -1,4 +1,5 @@
 import structlog
+
 from bb_paxdata.application.domain.models.analysis import Analysis
 from bb_paxdata.application.domain.models.appraisal_vector import EngagementType
 from bb_paxdata.application.domain.models.dki import (

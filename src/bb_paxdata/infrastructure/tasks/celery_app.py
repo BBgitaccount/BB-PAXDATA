@@ -1,7 +1,8 @@
 """Celery application configuration."""
 
-from bb_paxdata.config.settings import Settings, get_settings
 from celery import Celery
+
+from bb_paxdata.config.settings import Settings, get_settings
 
 _settings: Settings | None = None
 

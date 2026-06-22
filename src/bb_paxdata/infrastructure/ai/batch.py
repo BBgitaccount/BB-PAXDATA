@@ -255,7 +255,9 @@ class BatchProcessor:
                 return None
 
             # Use RecoveryEngine to parse JSON response
-            recovery_result = self._recovery.recover(completion.content)
+            recovery_result = self._recovery.recover(
+                completion.content, raise_on_failure=False
+            )
             if not recovery_result.success:
                 logger.warning(
                     "RecoveryEngine failed to parse batch response",
@@ -327,7 +329,9 @@ class BatchProcessor:
 
                 if completion.success and completion.content:
                     # Use RecoveryEngine to parse JSON response
-                    recovery_result = self._recovery.recover(completion.content)
+                    recovery_result = self._recovery.recover(
+                        completion.content, raise_on_failure=False
+                    )
 
                     result = BatchResult(
                         item_id=item.item_id,

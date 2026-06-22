@@ -6,7 +6,12 @@ import sys
 from typing import Any
 
 import structlog
+
 from bb_paxdata.infrastructure.tasks.celery_app import get_celery_app
+from bb_paxdata.infrastructure.tasks.circuit_breaker import (
+    CircuitBreakerError,
+    llm_service_circuit_breaker,
+)
 
 app = get_celery_app()
 
@@ -21,6 +26,7 @@ logger = structlog.get_logger(__name__)
     autoretry_for=(TimeoutError, ConnectionError),
     queue="ai_cpu",
 )
+@llm_service_circuit_breaker
 def analyze_sentence_task(
     self, sent_id: str, text: str, context: dict[str, Any]
 ) -> dict[str, Any]:
@@ -29,33 +35,47 @@ def analyze_sentence_task(
     INVARIANT: Must use asyncio.run() with a FRESH event loop.
     INVARIANT: Must use SessionLocalCLI (NullPool) to avoid connection sharing across forks.
     INVARIANT: Must emit DomainEvent via EventPublisher after success.
+
+    BUG-SYS-007: Protected by circuit breaker to prevent infinite retries when LLM service is down.
     """
     from bb_paxdata.application.services.analysis_service import run_sentence_analysis
     from bb_paxdata.infrastructure.db.session import SessionLocalCLI
     from bb_paxdata.infrastructure.events.publisher import WORMEventPublisher
 
-    async def _run():
-        import structlog
-        from bb_paxdata.application.domain.utils.context import set_correlation_id
+    try:
 
-        set_correlation_id(self.request.id)
-        structlog.contextvars.bind_contextvars(correlation_id=self.request.id)
+        async def _run():
+            import structlog
 
-        async with SessionLocalCLI() as db:
-            publisher = WORMEventPublisher(db)
-            result = await run_sentence_analysis(sent_id, text, context)
-            await publisher.emit(
-                aggregate_type="AISentenceAnalysis",
-                aggregate_id=sent_id,
-                event_type="AnalysisCompleted",
-                payload=result,
-                actor_id="system",
-                correlation_id=self.request.id,
-            )
-            await db.commit()
-            return result
+            from bb_paxdata.application.domain.utils.context import set_correlation_id
 
-    return asyncio.run(_run())
+            set_correlation_id(self.request.id)
+            structlog.contextvars.bind_contextvars(correlation_id=self.request.id)
+
+            async with SessionLocalCLI() as db:
+                publisher = WORMEventPublisher(db)
+                result = await run_sentence_analysis(sent_id, text, context)
+                await publisher.emit(
+                    aggregate_type="AISentenceAnalysis",
+                    aggregate_id=sent_id,
+                    event_type="AnalysisCompleted",
+                    payload=result,
+                    actor_id="system",
+                    correlation_id=self.request.id,
+                )
+                await db.commit()
+                return result
+
+        return asyncio.run(_run())
+    except CircuitBreakerError as e:
+        logger.error(
+            "circuitbreaker.open",
+            sent_id=sent_id,
+            error=str(e),
+            task_id=self.request.id,
+        )
+        # Re-raise to let Celery handle retry with exponential backoff
+        raise
 
 
 @app.task(

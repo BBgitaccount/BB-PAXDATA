@@ -10,8 +10,9 @@ from typing import TYPE_CHECKING, Any
 import structlog
 
 if TYPE_CHECKING:
-    from bb_paxdata.application.protocols import AppraisalServiceProtocol
     from sqlalchemy.ext.asyncio import AsyncSession
+
+    from bb_paxdata.application.protocols import AppraisalServiceProtocol
 
 from bb_paxdata.application.consensus.dual_gate import DualGateConsensusLayer
 from bb_paxdata.application.domain.models.anomaly import AnomalyResult, RuleIndicator
@@ -229,6 +230,7 @@ class AnalysisPipeline:
                 services_config=services_config,
                 lazy_ai_risk_threshold=lazy_threshold,
                 lazy_ai_risk_formula=lazy_formula,
+                session=session,
             )
             errors.extend(collect_result.errors)
         else:
@@ -318,6 +320,7 @@ class AnalysisPipeline:
                     if collect_result.stance_density
                     else None
                 )
+                analysis.speaker_id = collect_result.speaker_id or speaker_id
 
                 if (
                     collect_result.frame_detection
@@ -438,7 +441,7 @@ class AnalysisPipeline:
                 )
 
                 # 4. Consensus Kararını Al
-                consensus = self.dual_gate_layer.decide(
+                consensus = await self.dual_gate_layer.decide(
                     deterministic=det_result,
                     ai_validation=ai_validation,
                 )

@@ -49,6 +49,7 @@ export const ReviewQueue = ({ mode = 'logic' }: { mode?: 'logic' | 'ai' }) => {
 
       return apiClient.get<FailQueueItem[]>(`/api/v1/queue?${params.toString()}`);
     },
+    staleTime: 1000 * 60 * 2, // 2 dk - queue data changes frequently
   });
 
   useEffect(() => {

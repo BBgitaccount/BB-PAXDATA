@@ -17,13 +17,9 @@ class ApiClient {
   private async request<T>(path: string, options: RequestInit = {}): Promise<T> {
     const url = `${API_BASE}${path}`;
 
-    // Auto-inject JWT auth token from localStorage if present
-    const token = localStorage.getItem('paxdata_token');
+    // Note: JWT authentication is now handled via httpOnly cookies for better security
+    // Cookies are sent automatically by the browser, no manual injection needed
     const headers = new Headers(options.headers || {});
-
-    if (token && !headers.has('Authorization')) {
-      headers.set('Authorization', `Bearer ${token}`);
-    }
 
     if (!headers.has('Content-Type') && !(options.body instanceof FormData)) {
       headers.set('Content-Type', 'application/json');

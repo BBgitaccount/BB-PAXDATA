@@ -11,6 +11,7 @@ export const PromptRegistry = () => {
     queryFn: async () => {
       return apiClient.get<PromptListResponse>('/api/v1/prompts/');
     },
+    staleTime: 1000 * 60 * 10, // 10 dk - prompt registry changes infrequently
   });
 
   if (isPending) {

@@ -14,6 +14,7 @@ paxdata = "bb_paxdata.interfaces.cli.main:entrypoint"
 python          = ">=3.12,<3.15"
 pydantic        = "^2.7"
 pydantic-settings = "^2.3"
+email-validator = "^2.0"
 sqlalchemy      = {version = "^2.0", extras = ["asyncio"]}
 aiosqlite       = "^0.20"
 alembic         = "^1.13"
@@ -57,6 +58,7 @@ redis = "^5.0.2"
 meilisearch-python-sdk = "^4.0"
 celery = {version = "^5.4", extras = ["redis"]}
 flower = "^2.0"
+circuitbreaker = "^2.0"
 boto3 = "^1.38"
 pyarrow = "^19.0"
 aiohttp = "^3.14.0"
@@ -127,9 +129,14 @@ ignore = [
     "E501", "PLW0603", "PLW2901", "PLC0415"
 ]
 
+[tool.ruff.lint.isort]
+known-first-party = ["bb_paxdata"]
+combine-as-imports = true
+
 [tool.ruff.lint.per-file-ignores]
 "src/bb_paxdata/interfaces/cli/main.py" = ["PLC0415", "E402"]
 "src/bb_paxdata/application/commands/build.py" = ["E402"]
+"scripts/**/*.py" = ["E402"]
 
 [tool.pytest.ini_options]
 asyncio_mode = "auto"

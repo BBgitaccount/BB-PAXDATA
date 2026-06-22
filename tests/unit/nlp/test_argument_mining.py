@@ -3,6 +3,8 @@ Comprehensive Argument Mining Test Suite
 """
 
 import pytest
+from pydantic import ValidationError
+
 from bb_paxdata.application.domain.models.argument import (
     ArgumentEdge,
     ArgumentGraph,
@@ -17,7 +19,6 @@ from bb_paxdata.application.domain.services.argument_structure_pipeline import (
 from bb_paxdata.infrastructure.nlp.cross_anomaly_service_impl import (
     CrossAnomalyServiceImpl,
 )
-from pydantic import ValidationError
 
 # ============================================================
 # TEST GROUP 1: Domain Model Validation
@@ -25,7 +26,6 @@ from pydantic import ValidationError
 
 
 class TestArgumentNodeValidation:
-
     def test_valid_node_creation(self):
         node = ArgumentNode(
             segment_id="seg_001",
@@ -112,7 +112,6 @@ class TestArgumentNodeValidation:
 
 
 class TestArgumentEdgeValidation:
-
     def test_valid_edge_creation(self):
         edge = ArgumentEdge(
             source_id="seg_001",
@@ -155,7 +154,6 @@ class TestArgumentEdgeValidation:
 
 
 class TestArgumentGraphValidation:
-
     def _create_sample_graph(self) -> ArgumentGraph:
         nodes = [
             ArgumentNode(
@@ -378,7 +376,6 @@ class TestArgumentGraphValidation:
 
 
 class TestArgumentPipelineIntegration:
-
     @pytest.fixture
     def pipeline(self):
         p = ArgumentStructurePipeline.__new__(ArgumentStructurePipeline)
@@ -393,13 +390,10 @@ class TestArgumentPipelineIntegration:
         assert "metrics" in health
         assert "cache" in health
 
-    def test_empty_input_rejection(self, pipeline):
-        import asyncio
-
+    @pytest.mark.asyncio
+    async def test_empty_input_rejection(self, pipeline):
         with pytest.raises(ValueError, match="cannot be empty"):
-            asyncio.get_event_loop().run_until_complete(
-                pipeline.extract_argument_structure("", "Speaker")
-            )
+            await pipeline.extract_argument_structure("", "Speaker")
 
     def test_naive_segmentation_fallback(self, pipeline):
         text = "First sentence. Second sentence. Third sentence."
@@ -414,7 +408,6 @@ class TestArgumentPipelineIntegration:
 
 
 class TestArgumentAnomalyDetection:
-
     @pytest.fixture
     def service(self):
         return CrossAnomalyServiceImpl()

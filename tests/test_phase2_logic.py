@@ -1,4 +1,5 @@
 import pytest
+
 from bb_paxdata.application.domain.enums import RiskLevel
 from bb_paxdata.application.domain.models.analysis import Analysis
 from bb_paxdata.application.domain.services.cross_anomaly_service import (
@@ -8,7 +9,6 @@ from bb_paxdata.application.domain.services.prompt_registry import (
     PromptRegistry,
     PromptVersion,
 )
-
 from tests.mocks.analysis_repository import (
     AnalysisRepository,
     IntegrityError,

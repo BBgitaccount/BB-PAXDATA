@@ -1,11 +1,12 @@
 import structlog
+from deepeval.metrics import GEval
+from deepeval.test_case import LLMTestCase, SingleTurnParams
+
 from bb_paxdata.application.domain.models.dki import (
     DynamicPositionResult,
     PositionCalibration,
     SemanticShiftResult,
 )
-from deepeval.metrics import GEval
-from deepeval.test_case import LLMTestCase, SingleTurnParams
 
 logger = structlog.get_logger()
 

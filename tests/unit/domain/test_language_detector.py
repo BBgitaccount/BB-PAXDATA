@@ -4,9 +4,10 @@ Unit tests for LanguageDetector and LanguageRouter.
 
 from unittest.mock import MagicMock, patch
 
+from langdetect.lang_detect_exception import LangDetectException  # type: ignore
+
 from bb_paxdata.application.domain.services.language_detector import LanguageDetector
 from bb_paxdata.application.domain.services.language_router import LanguageRouter
-from langdetect.lang_detect_exception import LangDetectException  # type: ignore
 
 
 class TestLanguageDetector:

@@ -3,11 +3,12 @@ from __future__ import annotations
 
 from typing import Any
 
+from fastapi import Depends, Request
+from sqlalchemy.ext.asyncio import AsyncSession
+
 from bb_paxdata.infrastructure.db.session import get_db
 from bb_paxdata.interfaces.api.dependencies import get_cache
 from bb_paxdata.interfaces.graphql.loaders import SegmentLoader, SentenceLoader
-from fastapi import Depends, Request
-from sqlalchemy.ext.asyncio import AsyncSession
 
 
 async def get_graphql_context(

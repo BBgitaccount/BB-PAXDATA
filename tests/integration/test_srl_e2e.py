@@ -1,6 +1,8 @@
 from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
+from sqlalchemy.ext.asyncio import AsyncSession
+
 from bb_paxdata.application.domain.models.analysis import Analysis
 from bb_paxdata.application.domain.models.bilateral_sentiment import BilateralSentiment
 from bb_paxdata.application.domain.models.segment import Segment
@@ -12,7 +14,6 @@ from bb_paxdata.application.pipeline.stages.finalize_network import NetworkFinal
 from bb_paxdata.infrastructure.nlp.fischer_dna_service import FischerDNAService
 from bb_paxdata.infrastructure.nlp.maoz_dyadic_service import MaozDyadicService
 from bb_paxdata.infrastructure.nlp.srl_pipeline import SRLPipeline
-from sqlalchemy.ext.asyncio import AsyncSession
 
 
 @pytest.mark.asyncio

@@ -6,6 +6,7 @@ export const en: typeof tr = {
   'nav.group.logic': 'HITL LOGIC',
   'nav.group.ai': 'HITL AI',
   'nav.dashboard': 'Summary',
+  'nav.speakers': 'Speaker Database',
   'nav.discourse': 'Discourse Network',
   'nav.anomalies': 'Anomaly Timeline',
   'nav.drift': 'Temporal Drift',

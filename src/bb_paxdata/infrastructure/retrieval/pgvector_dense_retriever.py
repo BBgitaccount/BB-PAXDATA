@@ -7,13 +7,14 @@ from typing import Any
 
 import numpy as np
 import structlog
+from sqlalchemy import select, text
+
 from bb_paxdata.application.domain.services.protocols.rag_protocols import (
     DenseRetrieverProtocol,
     RAGQueryRequest,
     RetrievedContext,
 )
 from bb_paxdata.infrastructure.nlp.sbert_embedding_service import SBERTEmbeddingService
-from sqlalchemy import select, text
 
 logger = structlog.get_logger()
 

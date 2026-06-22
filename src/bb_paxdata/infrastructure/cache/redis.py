@@ -38,7 +38,7 @@ class RedisCacheBackend(CacheBackend):
     ) -> None:
         if not REDIS_AVAILABLE:
             raise ImportError(
-                "redis paketi kurulu değil. " "Kurmak için: poetry add 'redis[asyncio]'"
+                "redis paketi kurulu değil. Kurmak için: poetry add 'redis[asyncio]'"
             )
         self._url = url
         self._key_prefix = key_prefix

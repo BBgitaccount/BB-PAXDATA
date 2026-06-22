@@ -4,6 +4,8 @@ from __future__ import annotations
 from collections.abc import AsyncGenerator
 
 import strawberry
+from strawberry.extensions import MaxAliasesLimiter, QueryDepthLimiter
+
 from bb_paxdata.interfaces.graphql.resolvers import (
     resolve_analyses_connection,
     resolve_analysis,
@@ -16,7 +18,6 @@ from bb_paxdata.interfaces.graphql.types import (
     CreateAnalysisInput,
     SentenceType,
 )
-from strawberry.extensions import MaxAliasesLimiter, QueryDepthLimiter
 
 
 @strawberry.type

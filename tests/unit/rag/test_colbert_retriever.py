@@ -9,6 +9,7 @@ from unittest.mock import Mock
 
 import numpy as np
 import pytest
+
 from bb_paxdata.application.domain.services.colbert_embedding_service import (
     RAGatoulleColBERTService,
 )
@@ -180,7 +181,7 @@ def test_colbert_service_build_index(tmp_path):
         pytest.skip("ragatouille not installed")
 
     # Mock the actual index build to avoid long computation
-    with pytest.raises(ValueError, match="passages.*must have equal length"):
+    with pytest.raises(ValueError, match=r"passages.*must have equal length"):
         service.build_index(
             passages=["test"],
             passage_ids=["id1", "id2"],  # Mismatched lengths

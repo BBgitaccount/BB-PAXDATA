@@ -8,6 +8,11 @@ from decimal import Decimal
 from typing import Any
 
 import structlog
+
+from bb_paxdata.application.domain.lexicon.country_bloc_mapping import (
+    COUNTRY_BLOC_MAP,
+    normalize_country,
+)
 from bb_paxdata.application.domain.models.analysis import Analysis
 from bb_paxdata.application.domain.models.bilateral_sentiment import BilateralSentiment
 from bb_paxdata.application.domain.models.segment import Segment
@@ -63,6 +68,75 @@ class ActionTriplet:
             ),
             count=self.count + other.count,
         )
+
+
+def calculate_alliance_score(country_a: str, country_b: str) -> Decimal:
+    """
+    İki ülke arasındaki ittifak yoğunluğunu (0-1) hesaplar.
+    NATO üyeleri, bloc üyeliği ve diğer diplomatik ilişkiler üzerinden proxy oluşturulur.
+    """
+    iso_a, _, bloc_a = normalize_country(country_a)
+    iso_b, _, bloc_b = normalize_country(country_b)
+
+    # NATO Üyeleri listesi (Standardized ISO3 codes)
+    NATO_MEMBERS = {
+        "USA",
+        "CAN",
+        "GBR",
+        "FRA",
+        "DEU",
+        "ITA",
+        "ESP",
+        "POL",
+        "SWE",
+        "NOR",
+        "GRC",
+        "LVA",
+        "LTU",
+        "MKD",
+        "TUR",
+    }
+
+    # 1. Her iki ülke de NATO üyesi -> 1.0
+    if iso_a in NATO_MEMBERS and iso_b in NATO_MEMBERS:
+        return Decimal("1.0")
+
+    # 2. Biri NATO üyesi, diğeri Rusya/Doğu Bloku -> 0.0
+    is_a_nato = iso_a in NATO_MEMBERS
+    is_b_nato = iso_b in NATO_MEMBERS
+    is_a_east = bloc_a == "Eastern Bloc / Russian Sphere" or iso_a in {
+        "RUS",
+        "BLR",
+        "PRK",
+    }
+    is_b_east = bloc_b == "Eastern Bloc / Russian Sphere" or iso_b in {
+        "RUS",
+        "BLR",
+        "PRK",
+    }
+
+    if (is_a_nato and is_b_east) or (is_b_nato and is_a_east):
+        return Decimal("0.0")
+
+    # 3. Her iki ülke de Non-Aligned / tarafsız veya bölgesel paktlar -> 0.5
+    non_aligned_blocs = {
+        "Non-Aligned / Global South",
+        "African Union Aligned",
+        "Arab League",
+        "ASEAN Aligned",
+        "Central Asian Sphere",
+        "Other",
+        "unknown",
+    }
+    if bloc_a in non_aligned_blocs and bloc_b in non_aligned_blocs:
+        return Decimal("0.5")
+
+    # 4. Aynı diplomatik blok -> 0.8
+    if bloc_a == bloc_b and bloc_a != "unknown":
+        return Decimal("0.8")
+
+    # 5. Diğer durumlar için default -> 0.5
+    return Decimal("0.5")
 
 
 class NetworkAssemblyStage(BaseAssemblyStage):
@@ -272,19 +346,26 @@ class NetworkAssemblyStage(BaseAssemblyStage):
         """Aggregate concepts per actor from segments."""
         actor_data: dict[str, dict[str, int]] = defaultdict(lambda: defaultdict(int))
         actor_tokens: dict[str, int] = defaultdict(int)
+        actor_concept_segments: dict[str, dict[str, str]] = defaultdict(dict)
 
-        for seg in segments:
+        # Sort segments to determine the first mention in temporal/logical order
+        sorted_segs = sorted(segments, key=lambda s: (s.start_time or 0.0, s.id or ""))
+
+        for seg in sorted_segs:
             actor = seg.primary_speaker_id or "unknown"
             actor_tokens[actor] += len(seg.tokens)
             # Concepts extracted during COLLECT
             for concept in seg.key_concepts:
                 actor_data[actor][concept] += 1
+                if concept not in actor_concept_segments[actor]:
+                    actor_concept_segments[actor][concept] = seg.id
 
         return [
             ActorConceptProfile(
                 actor_id=aid,
                 concept_counts=dict(counts),
                 total_tokens=actor_tokens[aid],
+                concept_segments=actor_concept_segments[aid],
             )
             for aid, counts in actor_data.items()
         ]
@@ -305,27 +386,33 @@ class NetworkAssemblyStage(BaseAssemblyStage):
 
         for i, a in enumerate(actor_ids):
             for b in actor_ids[i + 1 :]:
-                bil = existing_map.get((a, b)) or existing_map.get((b, a))
+                bil_ab = existing_map.get((a, b))
+                bil_ba = existing_map.get((b, a))
 
-                # Sentiment delta from Faz 1 effective_sentiment
-                sent_a = self._get_actor_sentiment(analysis, a)
-                sent_b = self._get_actor_sentiment(analysis, b)
-                delta = (
-                    abs(sent_a - sent_b)
-                    if sent_a is not None and sent_b is not None
-                    else None
-                )
+                # signed discourse_sentiment_delta = avg_sentiment(A talking about B) - avg_sentiment(B talking about A)
+                if bil_ab is not None or bil_ba is not None:
+                    avg_a_b = bil_ab.avg_sentiment if bil_ab is not None else 0.0
+                    avg_b_a = bil_ba.avg_sentiment if bil_ba is not None else 0.0
+                    delta = Decimal(str(avg_a_b - avg_b_a))
+                else:
+                    delta = None
+
+                # Calculate structural_distance from standard country power levels
+                iso_a, _, _ = normalize_country(a)
+                iso_b, _, _ = normalize_country(b)
+                info_a = COUNTRY_BLOC_MAP.get(iso_a)
+                info_b = COUNTRY_BLOC_MAP.get(iso_b)
+                power_a = info_a["power_level"] if info_a else 0.5
+                power_b = info_b["power_level"] if info_b else 0.5
+                structural = Decimal(str(abs(power_a - power_b)))
+
+                # Calculate alliance_score using our dynamic helper
+                alliance = calculate_alliance_score(a, b)
 
                 pairwise[(a, b)] = {
-                    "vote_affinity": (
-                        Decimal(str(bil.power_weighted_score)) if bil else None
-                    ),
-                    "alliance_score": (
-                        Decimal(str(bil.combined_demand_pressure)) if bil else None
-                    ),
-                    "structural_distance": (
-                        Decimal(str(bil.asymmetry_score)) if bil else None
-                    ),
+                    "vote_affinity": None,  # TODO: UN voting dataset integration required (Maoz academic metric)
+                    "alliance_score": alliance,
+                    "structural_distance": structural,
                     "discourse_sentiment_delta": delta,
                 }
 

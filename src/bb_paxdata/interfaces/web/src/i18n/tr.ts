@@ -4,6 +4,7 @@ export const tr = {
   'nav.group.logic': 'HITL LOGIC',
   'nav.group.ai': 'HITL AI',
   'nav.dashboard': 'Özet',
+  'nav.speakers': 'Konuşmacı Veri Tabanı',
   'nav.discourse': 'Söylem Ağı',
   'nav.anomalies': 'Anomali Zaman Çizelgesi',
   'nav.drift': 'Zamansal Kayma',

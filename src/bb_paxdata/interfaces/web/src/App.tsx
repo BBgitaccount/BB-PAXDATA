@@ -13,6 +13,7 @@ import { AnomalyTimeline } from '@/pages/AnomalyTimeline';
 import { TemporalDrift } from '@/pages/TemporalDrift';
 import { SystemHealth } from '@/pages/SystemHealth';
 import { PipelineMonitor } from '@/pages/PipelineMonitor';
+import { SpeakersPage } from '@/pages/SpeakersPage';
 import { ErrorBoundary } from '@/components/ErrorBoundary';
 
 export const App = () => {
@@ -21,6 +22,7 @@ export const App = () => {
       <Routes>
         <Route element={<Layout />}>
           <Route path="/" element={<Dashboard />} />
+          <Route path="/speakers" element={<SpeakersPage />} />
           <Route path="/discourse" element={<DiscourseNetwork />} />
           <Route path="/anomalies" element={<AnomalyTimeline />} />
           <Route path="/drift" element={<TemporalDrift />} />

@@ -1,13 +1,14 @@
 from datetime import datetime, timezone
 
 import pytest
+from pydantic import ValidationError
+
 from bb_paxdata.application.domain.models.calibration import CalibrationReport
 from bb_paxdata.application.domain.models.human_review import (
     AgreementStatus,
     HumanReview,
     RiskLevel,
 )
-from pydantic import ValidationError
 
 
 def test_human_review_immutability() -> None:

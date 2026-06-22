@@ -2,11 +2,13 @@
 """
 Use Case: Bir paneldeki tüm CountryReference'lardan BilateralSentiment aggregate'lerini üretir.
 """
+
 from __future__ import annotations
 
 from dataclasses import dataclass
 
 import structlog
+
 from bb_paxdata.application.domain.models.bilateral_sentiment import BilateralSentiment
 from bb_paxdata.application.domain.models.country_reference import CountryReference
 from bb_paxdata.application.domain.services.country_repositories import (

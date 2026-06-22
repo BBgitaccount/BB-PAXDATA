@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+from sqlalchemy.ext.asyncio import AsyncSession
+
 from bb_paxdata.application.domain.enums import RiskLevel
 from bb_paxdata.application.domain.models.analysis import Analysis
 from bb_paxdata.application.domain.models.sentence import Sentence
@@ -9,8 +11,6 @@ from bb_paxdata.application.domain.models.validation_result import ValidationRes
 from bb_paxdata.infrastructure.db import models as m
 from bb_paxdata.infrastructure.db.repositories.analysis import AnalysisRepository
 from bb_paxdata.infrastructure.db.repositories.sentence import SentenceRepository
-from sqlalchemy.ext.asyncio import AsyncSession
-
 from tests.infrastructure.db.repositories.conftest import seed_panel_speaker_segment
 
 

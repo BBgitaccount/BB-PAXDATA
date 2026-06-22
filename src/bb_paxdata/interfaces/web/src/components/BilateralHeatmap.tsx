@@ -21,6 +21,7 @@ import type { TooltipProps } from 'recharts';
 import { Play, Pause, SkipBack, SkipForward, Globe } from 'lucide-react';
 import type { BilateralSentimentData, PanelTimelineEntry } from '@/types';
 import { useUIStore } from '@/store/uiStore';
+import { sampleData } from '@/utils/helpers';
 
 // ─── Tooltip ───────────────────────────────────────────────────────────────
 
@@ -450,15 +451,18 @@ export const BilateralHeatmap = ({
     [data],
   );
 
+  // Sample data for performance if dataset is large (>1000 points)
+  const sampledData = useMemo(() => sampleData(data, 1000), [data]);
+
   const processedData = useMemo(
     () =>
-      data.map((d) => ({
+      sampledData.map((d) => ({
         ...d,
         x: uniqueCountries.indexOf(d.to_country),
         y: uniqueCountries.indexOf(d.from_country),
         z: Math.abs(d.affinity_score) * 200 + 40,
       })),
-    [data, uniqueCountries],
+    [sampledData, uniqueCountries],
   );
 
   if (!data || data.length === 0) {

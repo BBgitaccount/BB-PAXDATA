@@ -10,6 +10,7 @@ Success criterion: ColBERT Recall@10 ≥ SBERT Recall@10 × 1.20
 """
 
 import pytest
+
 from bb_paxdata.application.domain.services.protocols.rag_protocols import (
     RAGQueryRequest,
     RetrievedContext,

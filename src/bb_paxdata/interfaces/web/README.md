@@ -42,16 +42,16 @@ Tüm API çağrıları `src/services/mockApi.ts` üzerinden simüle edilir. Ger�
 
 ## Renk Paleti
 
-| Rol | Kod |
-|-----|-----|
-| Arka Plan | #0A0A0A |
-| Kart | #161616 |
-| Kenarlık | #2A2A2A |
+| Rol            | Kod     |
+| -------------- | ------- |
+| Arka Plan      | #0A0A0A |
+| Kart           | #161616 |
+| Kenarlık       | #2A2A2A |
 | Birincil Metin | #F5F5F5 |
-| İkincil Metin | #8A8A8A |
-| Pasif | #505050 |
-| Fail Signal | #5C2626 |
-| Pass Signal | #264D26 |
+| İkincil Metin  | #8A8A8A |
+| Pasif          | #505050 |
+| Fail Signal    | #5C2626 |
+| Pass Signal    | #264D26 |
 
 ## Tipografi
 

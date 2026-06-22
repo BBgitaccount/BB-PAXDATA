@@ -3,10 +3,11 @@ from __future__ import annotations
 
 from typing import Any
 
+from strawberry.fastapi import GraphQLRouter
+
 from bb_paxdata.config.settings import Settings, get_settings
 from bb_paxdata.interfaces.graphql.context import get_graphql_context
 from bb_paxdata.interfaces.graphql.schema import schema
-from strawberry.fastapi import GraphQLRouter
 
 
 def create_graphql_router(

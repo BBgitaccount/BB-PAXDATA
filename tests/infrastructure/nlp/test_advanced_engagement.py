@@ -1,4 +1,5 @@
 import pytest
+
 from bb_paxdata.infrastructure.nlp.engagement_analyzer import (
     DetailedEngagementScore,
     EngagementAnalyzer,

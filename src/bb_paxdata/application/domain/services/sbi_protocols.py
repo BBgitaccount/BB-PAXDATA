@@ -63,6 +63,16 @@ class EngagementScorerProtocol(Protocol):
 
 
 @runtime_checkable
+class LIWCProtocol(Protocol):
+    """Protocol for LIWC2015 proxy text analysis."""
+
+    @abstractmethod
+    def analyze(self, text: str):
+        """Return LIWCScores with clout, analytic, authenticity, tone."""
+        ...
+
+
+@runtime_checkable
 class SBICalculatorProtocol(Protocol):
     """Protocol for composite Speaker-Based Index orchestration.
 

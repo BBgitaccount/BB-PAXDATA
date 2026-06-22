@@ -1,6 +1,7 @@
 from unittest.mock import MagicMock
 
 import pytest
+
 from bb_paxdata.application.consensus.dual_gate import (
     ConsensusLevel,
     DualGateConsensusLayer,
@@ -28,8 +29,9 @@ def layer():
     return DualGateConsensusLayer()
 
 
-def test_hard_anomaly_when_both_confirm(layer):
-    result = layer.decide(
+@pytest.mark.asyncio
+async def test_hard_anomaly_when_both_confirm(layer):
+    result = await layer.decide(
         deterministic=make_det(True),
         ai_validation=make_ai(AnomalyValidationDecision.CONFIRMED),
     )
@@ -37,8 +39,9 @@ def test_hard_anomaly_when_both_confirm(layer):
     assert result.send_to_hitl is True
 
 
-def test_soft_anomaly_when_ai_dismisses(layer):
-    result = layer.decide(
+@pytest.mark.asyncio
+async def test_soft_anomaly_when_ai_dismisses(layer):
+    result = await layer.decide(
         deterministic=make_det(True),
         ai_validation=make_ai(AnomalyValidationDecision.DISMISSED),
     )
@@ -46,8 +49,9 @@ def test_soft_anomaly_when_ai_dismisses(layer):
     assert result.send_to_hitl is False
 
 
-def test_critical_when_escalated(layer):
-    result = layer.decide(
+@pytest.mark.asyncio
+async def test_critical_when_escalated(layer):
+    result = await layer.decide(
         deterministic=make_det(True),
         ai_validation=make_ai(AnomalyValidationDecision.ESCALATED),
     )
@@ -55,8 +59,9 @@ def test_critical_when_escalated(layer):
     assert result.send_to_hitl is True
 
 
-def test_clean_when_no_anomaly_and_dismissed(layer):
-    result = layer.decide(
+@pytest.mark.asyncio
+async def test_clean_when_no_anomaly_and_dismissed(layer):
+    result = await layer.decide(
         deterministic=make_det(False),
         ai_validation=make_ai(AnomalyValidationDecision.DISMISSED, coherence=0.95),
     )
@@ -64,9 +69,10 @@ def test_clean_when_no_anomaly_and_dismissed(layer):
     assert result.send_to_hitl is False
 
 
-def test_coherence_penalty_on_conflict(layer):
+@pytest.mark.asyncio
+async def test_coherence_penalty_on_conflict(layer):
     """Det anomali VAR ama AI dismiss → coherence penalized."""
-    result = layer.decide(
+    result = await layer.decide(
         deterministic=make_det(True),
         ai_validation=make_ai(AnomalyValidationDecision.DISMISSED, coherence=0.8),
     )

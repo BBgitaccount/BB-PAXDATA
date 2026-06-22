@@ -1,18 +1,16 @@
 from collections.abc import AsyncGenerator
 from typing import Annotated, Any
 
-from fastapi import Depends, HTTPException, status
+from fastapi import Depends, Request
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from bb_paxdata.config.settings import get_settings
-from bb_paxdata.infrastructure.auth.rbac import check_formula_permission
 from bb_paxdata.infrastructure.cache.redis import RedisCacheBackend
 from bb_paxdata.infrastructure.container.service_container import ServiceContainer
 from bb_paxdata.infrastructure.db.session import SessionLocal
-from bb_paxdata.interfaces.http.auth.jwt_service import JWTService
 
-security = HTTPBearer()
+security = HTTPBearer(auto_error=False)
 settings = get_settings()
 
 _cache: RedisCacheBackend | None = None
@@ -36,23 +34,26 @@ async def get_db() -> AsyncGenerator[AsyncSession, None]:
 
 
 async def get_current_reviewer(
-    credentials: Annotated[HTTPAuthorizationCredentials, Depends(security)]
+    request: Request,
+    credentials: Annotated[HTTPAuthorizationCredentials | None, Depends(security)],
 ) -> dict[str, Any]:
-    """JWT token'ı çözümler ve aktif reviewer bilgilerini döner."""
-    token = credentials.credentials
-    try:
-        payload = JWTService.verify_access_token(token)
-        return payload
-    except ValueError as e:
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail=str(e),
-            headers={"WWW-Authenticate": "Bearer"},
-        )
+    """
+    JWT token'ı çözümler ve aktif reviewer bilgilerini dönderir.
+    DISABLED: Authentication devre dışı bırakıldı, her zaman admin döner.
+    """
+    # Authentication disabled - always return admin user
+    return {
+        "reviewer_id": "admin",
+        "roles": ["admin"],
+        "scope_type": "global",
+        "scope_value": "*",
+    }
 
 
 class PermissionChecker:
-    """Rol ve kapsam tabanlı erişim kontrolü sağlayan dependency sınıfı."""
+    """Rol ve kapsam tabanlı erişim kontrolü sağlayan dependency sınıfı.
+    DISABLED: Permission check devre dışı bırakıldı, her zaman True döner.
+    """
 
     def __init__(
         self,
@@ -69,17 +70,8 @@ class PermissionChecker:
         reviewer: Annotated[dict[str, Any], Depends(get_current_reviewer)],
         db: Annotated[AsyncSession, Depends(get_db)],
     ) -> bool:
-        try:
-            await check_formula_permission(
-                reviewer_id=reviewer["reviewer_id"],
-                required_level=self.required_level,
-                scope_type=self.scope_type,
-                scope_value=self.scope_value,
-                session=db,
-            )
-            return True
-        except PermissionError as e:
-            raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail=str(e))
+        # Permission check disabled - always return True
+        return True
 
 
 def get_service_container() -> ServiceContainer:

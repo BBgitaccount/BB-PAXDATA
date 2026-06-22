@@ -18,4 +18,4 @@ with open("scratch/matches.txt", "w", encoding="utf-8") as out:
         out.write(f"=== Matches for {target} ===\n")
         for idx, line in enumerate(lines):
             if target in line:
-                out.write(f"Line {idx+1}: {line.strip()}\n")
+                out.write(f"Line {idx + 1}: {line.strip()}\n")

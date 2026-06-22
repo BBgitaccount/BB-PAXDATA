@@ -10,6 +10,9 @@ from typing import Any
 
 import structlog
 import typer
+from rich.console import Console
+from sqlalchemy import delete, func, select
+
 from bb_paxdata.application.domain.services.analysis_trigger import (
     AnalysisTriggerService,
     rebuild_network_for_file,
@@ -24,8 +27,6 @@ from bb_paxdata.infrastructure.text.file_io_handler import (
     standardize_file_content,
     utc_now,
 )
-from rich.console import Console
-from sqlalchemy import delete, func, select
 
 # Add src to path for imports
 sys.path.insert(0, str(Path(__file__).parent.parent.parent.parent / "src"))
@@ -132,9 +133,18 @@ async def _process_single_file(
     pipeline: Any,
 ) -> str:
     """Processes, standardizes, and ingests a single transcript file into the database."""
-    # 1. Read raw content
-    with open(file_path, encoding="utf-8") as f:
-        raw_content = f.read()
+    # 1. Read raw content with automatic encoding detection
+    try:
+        import charset_normalizer
+
+        with open(file_path, "rb") as f:
+            raw_bytes = f.read()
+        detection = charset_normalizer.detect(raw_bytes)
+        encoding = detection.get("encoding") or "utf-8"
+        raw_content = raw_bytes.decode(encoding)
+    except Exception:
+        with open(file_path, encoding="utf-8", errors="replace") as f:
+            raw_content = f.read()
 
     # 2. Automatically standardize content (pre-ingestion formatting)
     standardized_content = standardize_file_content(file_path, raw_content)
@@ -195,7 +205,6 @@ async def _process_single_file(
         BilateralSentimentTable,
         CountryReferenceTable,
         DiscourseFlowTable,
-        TopicMatrixTable,
     )
     from bb_paxdata.infrastructure.db.discourse_network_table import (
         DiscourseNetworkEdgeTable,
@@ -227,9 +236,6 @@ async def _process_single_file(
 
     await session.execute(
         delete(SegmentAnalyzedEvent).where(SegmentAnalyzedEvent.file_id == file_id)
-    )
-    await session.execute(
-        delete(TopicMatrixTable).where(TopicMatrixTable.file_id == file_id)
     )
     await session.execute(
         delete(TopicMatrixORM).where(TopicMatrixORM.file_id == file_id)
@@ -422,9 +428,10 @@ async def update_speaker_profiles(session: Any) -> None:
         sp.total_duration_sec = sum(s.duration_sec for s in segments if s.duration_sec)
 
         if sentences:
-            # Average sentiment
             sentiments = [
-                s.vader_compound for s in sentences if s.vader_compound is not None
+                s.vader_compound
+                for s in sentences
+                if s.vader_compound is not None and s.vader_compound != 0.0
             ]
             sp.avg_sentiment = sum(sentiments) / len(sentiments) if sentiments else 0.0
 
@@ -434,9 +441,68 @@ async def update_speaker_profiles(session: Any) -> None:
                 Counter(emotions).most_common(1)[0][0] if emotions else None
             )
 
-            # Dominant topic
-            topics = [s.dominant_topic for s in sentences if s.dominant_topic]
-            sp.dominant_topic = Counter(topics).most_common(1)[0][0] if topics else None
+            # Dominant topic — #19 FIX: use topic_assignments.topic_label (human-readable)
+            # instead of sentences.dominant_topic (raw BERTopic IDs / stop-word lists)
+            from bb_paxdata.infrastructure.db.topic_models import TopicAssignmentORM
+
+            sent_ids_for_topics = [s.sent_id for s in sentences]
+            _STOP_WORDS = {
+                "the",
+                "a",
+                "an",
+                "is",
+                "are",
+                "to",
+                "of",
+                "and",
+                "or",
+                "in",
+                "on",
+                "at",
+                "for",
+                "that",
+                "this",
+                "we",
+                "it",
+                "he",
+            }
+
+            def _is_stop_word_topic(t: str) -> bool:
+                parts = [p.strip() for p in t.split(",")]
+                stop_cnt = sum(1 for p in parts if p.lower() in _STOP_WORDS)
+                return stop_cnt >= max(1, len(parts) // 2)
+
+            ta_stmt = select(TopicAssignmentORM).where(
+                TopicAssignmentORM.analysis_id.in_(sent_ids_for_topics),
+                TopicAssignmentORM.topic_label.isnot(None),
+                TopicAssignmentORM.topic_label != "-1",
+            )
+            ta_res = await session.execute(ta_stmt)
+            ta_rows = ta_res.scalars().all()
+            clean_labels = [
+                r.topic_label
+                for r in ta_rows
+                if r.topic_label and not _is_stop_word_topic(r.topic_label)
+            ]
+            if clean_labels:
+                topic_counter = Counter(clean_labels)
+                sp.dominant_topic = topic_counter.most_common(1)[0][0]
+                sp.top_topics = ", ".join(t for t, _ in topic_counter.most_common(3))
+            else:
+                # Fallback: sentences.dominant_topic filtered by stop-word heuristic
+                raw_topics = [
+                    s.dominant_topic
+                    for s in sentences
+                    if s.dominant_topic
+                    and s.dominant_topic.strip() not in {"-1", ""}
+                    and not _is_stop_word_topic(s.dominant_topic)
+                ]
+                if raw_topics:
+                    tc = Counter(raw_topics)
+                    sp.dominant_topic = tc.most_common(1)[0][0]
+                    sp.top_topics = ", ".join(t for t, _ in tc.most_common(3))
+                else:
+                    sp.dominant_topic = "uncategorized"
 
             # Behavioral percentages
             cooperative_cnt = sum(
@@ -464,14 +530,36 @@ async def update_speaker_profiles(session: Any) -> None:
                 confrontational_cnt / total_sents if total_sents else 0.0
             )
 
-            # Risk event count
-            sp.risk_event_count = sum(
-                1 for s in sentences if s.risk_score and s.risk_score >= 7
-            )
+            # Risk event count — join ai_sentence_analysis for authoritative risk data
+            # #16 FIX: use AISentenceAnalysis.risk_score/risk_level instead of sentences.risk_score
+            from bb_paxdata.infrastructure.db.models import AISentenceAnalysis
 
-            # Top topics
-            top_topics_list = [t[0] for t in Counter(topics).most_common(3)]
-            sp.top_topics = ", ".join(top_topics_list) if top_topics_list else None
+            sent_id_list = [s.sent_id for s in sentences]
+            if sent_id_list:
+                ai_stmt = select(AISentenceAnalysis).where(
+                    AISentenceAnalysis.sent_id.in_(sent_id_list)
+                )
+                ai_res = await session.execute(ai_stmt)
+                ai_analyses = ai_res.scalars().all()
+                _HIGH = {"HIGH", "CRITICAL"}
+                risk_event_count = sum(
+                    1
+                    for a in ai_analyses
+                    if (a.risk_score is not None and a.risk_score >= 5)
+                    or (a.risk_level is not None and str(a.risk_level).upper() in _HIGH)
+                )
+                # Fallback: count any risk_score >= 1 if nothing above threshold
+                if risk_event_count == 0:
+                    risk_event_count = sum(
+                        1
+                        for a in ai_analyses
+                        if a.risk_score is not None and a.risk_score >= 1
+                    )
+                sp.risk_event_count = risk_event_count
+            else:
+                sp.risk_event_count = 0
+
+            # sp.top_topics is already set inside the dominant_topic block above
 
             # Average sentence length
             word_counts = [s.word_count for s in sentences if s.word_count]
@@ -482,9 +570,23 @@ async def update_speaker_profiles(session: Any) -> None:
             # Demand count
             sp.demand_count = sum(1 for s in sentences if s.demand_type is not None)
 
-            # Rhetoric/pattern diversity
-            rhetoric_types = {s.rhetoric_type for s in sentences if s.rhetoric_type}
-            sp.pattern_diversity = len(rhetoric_types) / 5.0
+            # Rhetoric/pattern diversity — #20 FIX: Shannon entropy (normalized)
+            rhetoric_counter: dict[str, int] = {}
+            for s in sentences:
+                if s.rhetoric_type:
+                    rhetoric_counter[s.rhetoric_type] = (
+                        rhetoric_counter.get(s.rhetoric_type, 0) + 1
+                    )
+            if len(rhetoric_counter) >= 2:
+                import math
+
+                total_rt = sum(rhetoric_counter.values())
+                probs = [c / total_rt for c in rhetoric_counter.values() if c > 0]
+                entropy = -sum(p * math.log2(p) for p in probs)
+                max_entropy = math.log2(len(probs))
+                sp.pattern_diversity = entropy / max_entropy if max_entropy > 0 else 0.0
+            else:
+                sp.pattern_diversity = 0.0
 
             # Average hedging and politeness
             hedgings = [
@@ -571,14 +673,18 @@ async def update_speaker_profiles(session: Any) -> None:
 
 
 async def backfill_segment_events(session: Any) -> None:
+    from collections import Counter
+
+    from sqlalchemy import func, select
+
     from bb_paxdata.application.domain.services.linguistic_helpers import (
         classify_speech_act,
-        get_frame_distribution,
         get_vad_vector,
     )
-    from bb_paxdata.infrastructure.db.models import Segment as SegmentORM
-    from bb_paxdata.infrastructure.db.models import SegmentAnalyzedEvent
-    from sqlalchemy import func, select
+    from bb_paxdata.infrastructure.db.models import (
+        Segment as SegmentORM,
+        SegmentAnalyzedEvent,
+    )
 
     # Check if segment_events is empty
     cnt_res = await session.execute(select(func.count(SegmentAnalyzedEvent.event_id)))
@@ -601,7 +707,15 @@ async def backfill_segment_events(session: Any) -> None:
     for s in segments:
         vad = get_vad_vector(s.diplo_compound or 0.0, s.emotion_category)
         act = classify_speech_act(s.text or "", s.demand_count or 0)
-        frames = get_frame_distribution(s.text or "", s.dominant_frame)
+        frame_counts = Counter(
+            sent.dominant_frame for sent in s.sentences if sent.dominant_frame
+        )
+        total = sum(frame_counts.values())
+        frames = (
+            {str(k): round(v / total, 3) for k, v in frame_counts.items()}
+            if total
+            else {}
+        )
 
         event = SegmentAnalyzedEvent(
             event_id=str(uuid.uuid4()),
@@ -635,27 +749,55 @@ async def backfill_segment_events(session: Any) -> None:
     )
 
 
+async def update_panel_dynamics_risk_delta(session: Any) -> None:
+    from sqlalchemy import text
+
+    await session.execute(
+        text(
+            """
+        WITH panel_risks AS (
+          SELECT f.file_id, AVG(s.risk_score) as avg_risk,
+                 ROW_NUMBER() OVER (ORDER BY f.first_processed_at) as rn
+          FROM files f
+          JOIN sentences s ON f.file_id = s.file_id
+          GROUP BY f.file_id, f.first_processed_at
+        )
+        UPDATE panel_dynamics
+        SET risk_delta = COALESCE((
+          SELECT curr.avg_risk - COALESCE(prev.avg_risk, curr.avg_risk)
+          FROM panel_risks curr
+          LEFT JOIN panel_risks prev ON prev.rn = curr.rn - 1
+          WHERE curr.file_id = panel_dynamics.file_id
+        ), 0.0)
+    """
+        )
+    )
+    await session.flush()
+
+
 async def update_country_stats(session: Any) -> None:
+    from sqlalchemy import delete, select
+
     from bb_paxdata.application.services.aggregation_engine import AggregationEngine
-    from bb_paxdata.infrastructure.db.country_models import TopicMatrixTable
     from bb_paxdata.infrastructure.db.models import (
         ActorTopicDocument,
         ActorTopicProjection,
         CountryStat,
+        DemandRecord,
         SegmentAnalyzedEvent,
+        Sentence,
         TopicMatrix,
     )
-    from sqlalchemy import delete, select
+    from bb_paxdata.infrastructure.db.topic_models import TopicAssignmentORM
 
     # 1. Run backfill if necessary
     await backfill_segment_events(session)
 
-    # 2. Clear existing projections, documents and stats
+    # 2. Clear existing projections, documents, stats, and topic matrix
     await session.execute(delete(ActorTopicProjection))
     await session.execute(delete(ActorTopicDocument))
     await session.execute(delete(CountryStat))
     await session.execute(delete(TopicMatrix))
-    await session.execute(delete(TopicMatrixTable))
 
     # 3. Load all events
     res = await session.execute(select(SegmentAnalyzedEvent))
@@ -673,55 +815,102 @@ async def update_country_stats(session: Any) -> None:
     for doc in documents:
         session.add(doc)
 
-    # 6. Rebuild legacy compatibility records (TopicMatrixTable, TopicMatrix, CountryStat)
+    # 6. Rebuild legacy compatibility records (TopicMatrix, CountryStat)
+    # Fetch sentences for this run
+    sentences_res = await session.execute(select(Sentence))
+    sentences = sentences_res.scalars().all()
+    sent_map = {s.sent_id: s for s in sentences}
+
+    # Fetch topic assignments
+    ta_res = await session.execute(select(TopicAssignmentORM))
+    assignments = ta_res.scalars().all()
+
+    # Fetch demand records
+    dr_res = await session.execute(select(DemandRecord))
+    demands = dr_res.scalars().all()
+    demand_sent_ids = {d.sent_id for d in demands if d.sent_id}
+
+    # Build topic ID to human readable label mapping
+    topic_mapping = {}
+    for ta in assignments:
+        if ta.primary_topic:
+            topic_mapping[ta.primary_topic] = ta.topic_label or ta.primary_topic
+
+    # Group assignments by (file_id, country, topic_label)
+    from collections import defaultdict
+
+    grouped = defaultdict(list)
+
+    for ta in assignments:
+        sent = sent_map.get(ta.analysis_id)
+        if not sent or not sent.country or sent.country.lower() == "unknown":
+            continue
+
+        p_topic = ta.primary_topic
+        score = ta.topic_scores.get(p_topic, 0.0) if ta.topic_scores else 0.0
+
+        # Filter by confidence score > 0.5
+        if score > 0.5:
+            label = topic_mapping.get(p_topic)
+            if p_topic == "-1" or not label:
+                label = "uncategorized"
+
+            grouped[(sent.file_id, sent.country, label)].append((sent, score))
+
+    # Add TopicMatrix records
+    for (file_id, country, label), items in grouped.items():
+        scores = [score for _, score in items]
+        avg_score = sum(scores) / len(scores) if scores else 0.0
+
+        mention_count = len(items)
+
+        sentiments = [
+            sent.vader_compound for sent, _ in items if sent.vader_compound is not None
+        ]
+        avg_sentiment = sum(sentiments) / len(sentiments) if sentiments else 0.0
+
+        risks = [sent.risk_score for sent, _ in items if sent.risk_score is not None]
+        avg_risk = sum(risks) / len(risks) if risks else 0.0
+
+        demand_count = sum(1 for sent, _ in items if sent.sent_id in demand_sent_ids)
+
+        emotions = [sent.emotion_category for sent, _ in items if sent.emotion_category]
+        dominant_emotion = max(set(emotions), key=emotions.count) if emotions else None
+
+        frames = [sent.dominant_frame for sent, _ in items if sent.dominant_frame]
+        dominant_frame = max(set(frames), key=frames.count) if frames else None
+
+        tm = TopicMatrix(
+            file_id=file_id,
+            country=country,
+            topic=label,
+            score=avg_score,
+            mention_count=mention_count,
+            avg_sentiment=avg_sentiment,
+            risk_score=avg_risk,
+            demand_count=demand_count,
+            dominant_emotion=dominant_emotion,
+            dominant_frame=dominant_frame,
+        )
+        session.add(tm)
+
+    # Rebuild CountryStat records
     for doc in documents:
         if not doc.topic_details:
             continue
 
-        dominant_topic = (
+        dominant_topic_id = (
             max(doc.topic_details, key=lambda t: doc.topic_details[t])
             if doc.topic_details
             else None
         )
-        topic_scores_compat = {t: val for t, val in doc.topic_details.items()}
+        dominant_topic_label = topic_mapping.get(dominant_topic_id)
+        if dominant_topic_id == "-1" or not dominant_topic_label:
+            dominant_topic_label = "uncategorized"
 
-        # Write to TopicMatrixTable (topic_matrices)
-        tmt = TopicMatrixTable(
-            file_id=doc.file_id,
-            country=doc.country,
-            topic_scores=topic_scores_compat,
-            dominant_topic=dominant_topic,
-            topic_details=doc.topic_details,
-        )
-        session.add(tmt)
-
-        # Write to TopicMatrix (topic_matrix)
-        for t, val in doc.topic_details.items():
-            # Find the corresponding projection
-            found_proj: ActorTopicProjection | None = next(
-                (
-                    p
-                    for p in projections
-                    if p.file_id == doc.file_id
-                    and p.country == doc.country
-                    and p.topic == t
-                ),
-                None,
-            )
-            if found_proj:
-                tm = TopicMatrix(
-                    file_id=doc.file_id,
-                    country=doc.country,
-                    topic=t,
-                    score=val,
-                    mention_count=found_proj.mention_count,
-                    avg_sentiment=found_proj.avg_sentiment,
-                    risk_score=found_proj.risk_score,
-                    demand_count=int(found_proj.demand_count),
-                    dominant_emotion=found_proj.dominant_emotion,
-                    dominant_frame=found_proj.dominant_frame,
-                )
-                session.add(tm)
+        topic_scores_compat = {
+            (topic_mapping.get(t) or t): val for t, val in doc.topic_details.items()
+        }
 
         # Extract stats for CountryStat
         actor_projs = [
@@ -745,7 +934,7 @@ async def update_country_stats(session: Any) -> None:
             total_words=word_count,
             avg_sentiment=avg_s,
             dominant_emotion=dom_emo,
-            dominant_topic=dominant_topic,
+            dominant_topic=dominant_topic_label,
             topic_scores=dict(
                 sorted(
                     topic_scores_compat.items(), key=lambda item: item[1], reverse=True
@@ -858,6 +1047,8 @@ async def _async_build(
             await rebuild_network_for_file(session, fid)
         console.print("Updating country pair sentiments...")
         await update_country_pair_sentiments(session)
+        console.print("Updating panel dynamics risk deltas...")
+        await update_panel_dynamics_risk_delta(session)
         await session.commit()
 
         # Summary
@@ -1081,7 +1272,7 @@ def watch(
 
 @app.command("status")
 def status(
-    file_path: str = typer.Argument(..., help="Path to transcript file")
+    file_path: str = typer.Argument(..., help="Path to transcript file"),
 ) -> None:
     """Check processing status of a specific file."""
     try:
@@ -1090,9 +1281,18 @@ def status(
             console.print(f"[red]File not found: {file_path}")
             raise typer.Exit(1)
 
-        # Read file content
-        with open(path, encoding="utf-8") as f:
-            file_content = f.read()
+        # Read file content with automatic encoding detection
+        try:
+            import charset_normalizer
+
+            with open(path, "rb") as f:
+                raw_bytes = f.read()
+            detection = charset_normalizer.detect(raw_bytes)
+            encoding = detection.get("encoding") or "utf-8"
+            file_content = raw_bytes.decode(encoding)
+        except Exception:
+            with open(path, encoding="utf-8", errors="replace") as f:
+                file_content = f.read()
 
         # Calculate idempotency key
         idempotency_key = calculate_idempotency_key(

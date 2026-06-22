@@ -1,8 +1,8 @@
 # src/bb_paxdata/quality/frame_evaluator.py
 """Frame analysis quality evaluation gates.
 
-[Academic Reference: Grimmer, J. & Stewart, B.M. (2013). Text as Data: The Promise 
-and Pitfalls of Automatic Content Analysis Methods for Political Texts. 
+[Academic Reference: Grimmer, J. & Stewart, B.M. (2013). Text as Data: The Promise
+and Pitfalls of Automatic Content Analysis Methods for Political Texts.
 Validation of automated framing via consistency and salience checks.]
 """
 

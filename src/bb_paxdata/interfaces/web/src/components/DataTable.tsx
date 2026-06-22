@@ -30,7 +30,7 @@ export function DataTable<T>({
 }: DataTableProps<T>) {
   const [page, setPage] = useState(1);
   const [pageSize, setPageSize] = useState(25);
-  const totalPages = Math.ceil(data.length / pageSize);
+  const totalPages = Math.ceil(data.length / pageSize) || 1;
   const paginated = data.slice((page - 1) * pageSize, page * pageSize);
 
   if (loading) {
@@ -74,32 +74,34 @@ export function DataTable<T>({
                 </td>
               </tr>
             ) : (
-              paginated.map((row) => (
-                <tr
-                  key={keyExtractor(row)}
-                  onClick={() => onRowClick?.(row)}
-                  className={cn(
-                    'border-b border-hair border-carbon-550/50 table-row-hover',
-                    onRowClick && 'cursor-pointer',
-                    getRowClassName?.(row),
-                  )}
-                >
-                  {columns.map((col) => (
-                    <td
-                      key={col.key}
-                      className={cn(
-                        'px-4 py-3 text-sm text-carbon-200',
-                        col.align === 'center' && 'text-center',
-                        col.align === 'right' && 'text-right',
-                      )}
-                    >
-                      {col.render
-                        ? col.render(row)
-                        : ((row as Record<string, unknown>)[col.key] as React.ReactNode)}
-                    </td>
-                  ))}
-                </tr>
-              ))
+              paginated.map((row) => {
+                return (
+                  <tr
+                    key={keyExtractor(row)}
+                    onClick={() => onRowClick?.(row)}
+                    className={cn(
+                      'border-b border-hair border-carbon-550/50 hover:bg-carbon-800/40 transition-colors',
+                      onRowClick && 'cursor-pointer',
+                      getRowClassName?.(row),
+                    )}
+                  >
+                    {columns.map((col) => (
+                      <td
+                        key={col.key}
+                        className={cn(
+                          'px-4 py-3 text-sm text-carbon-200',
+                          col.align === 'center' && 'text-center',
+                          col.align === 'right' && 'text-right',
+                        )}
+                      >
+                        {col.render
+                          ? col.render(row)
+                          : ((row as Record<string, unknown>)[col.key] as React.ReactNode)}
+                      </td>
+                    ))}
+                  </tr>
+                );
+              })
             )}
           </tbody>
         </table>

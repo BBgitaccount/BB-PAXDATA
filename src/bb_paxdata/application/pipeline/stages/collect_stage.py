@@ -3,6 +3,7 @@
 Pipeline COLLECT aşaması.
 Tüm alt-servisleri paralel/iki aşamalı (Phase 1 Local ve Phase 2 Heavy) çalıştırır.
 """
+
 from __future__ import annotations
 
 import asyncio
@@ -11,6 +12,8 @@ from enum import Enum
 from typing import TYPE_CHECKING, Any, cast
 
 import structlog
+from sqlalchemy.ext.asyncio import AsyncSession
+
 from bb_paxdata.application.domain.models.segment import Segment
 from bb_paxdata.application.domain.services.risk_scoring import (
     DeterministicRiskScorer,
@@ -155,6 +158,7 @@ class CollectStage:
         services_config: list[str] | None = None,
         lazy_ai_risk_threshold: float = 0.5,
         lazy_ai_risk_formula: str = "max",
+        session: AsyncSession | None = None,
     ) -> CollectResult:
         """
         Tüm servisleri paralel/iki aşamalı çalıştırır.
@@ -166,6 +170,57 @@ class CollectStage:
             language=language,
             threshold=lazy_ai_risk_threshold,
         )
+
+        resolved_speaker_id = speaker_id
+        if session and speaker_id:
+            from bb_paxdata.application.use_cases.speaker_registry_use_case import (
+                SpeakerRegistryUseCase,
+            )
+            from bb_paxdata.infrastructure.db.repositories.speaker_repository import (
+                SpeakerRepository,
+            )
+            from bb_paxdata.infrastructure.db.repositories.unit_of_work import (
+                SqlAlchemyUnitOfWork,
+            )
+
+            uow = SqlAlchemyUnitOfWork(lambda: session)
+            uow._session = session
+            uow.speakers = SpeakerRepository(session)
+            speaker_registry = SpeakerRegistryUseCase(uow)
+
+            # Resolve country code (2-3 chars) from speaker_country name
+            from bb_paxdata.infrastructure.text.file_io_handler import (
+                COUNTRY_NORM_MAP,
+                resolve_country,
+            )
+
+            resolved_code = None
+            for code, name in COUNTRY_NORM_MAP.items():
+                if name.lower() == speaker_country.lower() and len(code) <= 3:
+                    resolved_code = code
+                    break
+            if not resolved_code and speaker_id:
+                resolved_code = resolve_country(speaker_id)
+            if resolved_code == "unknown":
+                resolved_code = None
+
+            context = {
+                "country_code": resolved_code,
+                "country_name": speaker_country,
+                "power_level": speaker_power_level,
+            }
+            try:
+                if speaker_id.startswith("spk_"):
+                    spk = await uow.speakers.get_by_id(speaker_id)
+                    if spk:
+                        resolved_speaker_id = spk.speaker_id
+                else:
+                    spk = await speaker_registry.detect_or_create_speaker(
+                        speaker_id, context
+                    )
+                    resolved_speaker_id = spk.speaker_id
+            except Exception as e:
+                logger.error("collect_stage.speaker_resolution_failed", error=str(e))
 
         # ── PHASE 1: Local Fast-Path ──
         local = await self._execute_phase_local(
@@ -257,6 +312,7 @@ class CollectStage:
             semantic_shift=heavy.semantic_shift,
             appraisal_vector=local.appraisal_vector,
             appraisal_document=appraisal_document,
+            speaker_id=resolved_speaker_id,
             errors=all_errors,
         )
 

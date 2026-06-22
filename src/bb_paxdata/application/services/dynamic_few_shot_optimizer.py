@@ -7,6 +7,9 @@ from typing import Any, cast
 
 import numpy as np
 import structlog
+from redis.asyncio import Redis
+from sqlalchemy import select
+
 from bb_paxdata.application.domain.services.protocols.few_shot_protocols import (
     EmbeddingCacheProtocol,
     ExampleStoreProtocol,
@@ -14,8 +17,6 @@ from bb_paxdata.application.domain.services.protocols.few_shot_protocols import 
     SimilaritySelectorProtocol,
 )
 from bb_paxdata.infrastructure.nlp.sbert_embedding_service import SBERTEmbeddingService
-from redis.asyncio import Redis
-from sqlalchemy import select
 
 logger = structlog.get_logger()
 

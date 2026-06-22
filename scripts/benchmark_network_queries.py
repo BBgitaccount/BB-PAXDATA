@@ -3,8 +3,9 @@
 import asyncio
 import time
 
-from bb_paxdata.infrastructure.db.session import SessionLocalCLI
 from sqlalchemy import text
+
+from bb_paxdata.infrastructure.db.session import SessionLocalCLI
 
 QUERIES = [
     # Multi-hop actor-to-concept influence (2-hop)
@@ -34,9 +35,9 @@ async def benchmark() -> None:
             try:
                 await db.execute(text(q), {"start": "TURKEY"})
                 elapsed = time.monotonic() - t0
-                print(f"Query {i+1} completed in: {elapsed*1000:.1f}ms")
+                print(f"Query {i + 1} completed in: {elapsed * 1000:.1f}ms")
             except Exception as e:
-                print(f"Query {i+1} failed: {e}")
+                print(f"Query {i + 1} failed: {e}")
 
 
 if __name__ == "__main__":

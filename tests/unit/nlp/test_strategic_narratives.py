@@ -11,6 +11,7 @@ Coverage:
 """
 
 import pytest
+
 from bb_paxdata.application.domain.enums.country_enums import NarrativeLayer
 from bb_paxdata.application.domain.enums.frame_type import FrameType
 from bb_paxdata.application.domain.models.analysis import Analysis

@@ -91,7 +91,17 @@ class Settings(BaseSettings):
     log_level: LogLevel = Field(default=LogLevel.INFO)
     environment: str = Field(default="production")  # production | staging | test
     cors_allowed_origins: list[str] = Field(
-        default=["*"], description="CORS allowed origins"
+        default=[
+            "http://localhost:5173",
+            "http://127.0.0.1:5173",
+            "http://localhost:5174",
+            "http://127.0.0.1:5174",
+            "http://localhost:5175",
+            "http://127.0.0.1:5175",
+            "http://localhost:5176",
+            "http://127.0.0.1:5176",
+        ],
+        description="CORS allowed origins. Use specific origins in production, never use ['*']",
     )
 
     # ── Veritabanı ────────────────────────────────────────────────────────

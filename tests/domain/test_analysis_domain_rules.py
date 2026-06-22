@@ -1,6 +1,7 @@
 """Unit tests for stateless domain rules in Analysis model."""
 
 import pytest
+
 from bb_paxdata.application.domain.enums import (
     SignalType,
 )
@@ -104,7 +105,7 @@ def test_evaluate_power_asymmetry_anomaly():
 def test_evaluate_cheap_talk_anomaly():
     """Test cheap talk anomaly rule logic on Analysis model."""
     analysis = Analysis()
-    triggered, contribution, msg = analysis.evaluate_cheap_talk_anomaly()
+    triggered, _contribution, _msg = analysis.evaluate_cheap_talk_anomaly()
     assert not triggered
 
     # With risk signals and low power
@@ -122,7 +123,7 @@ def test_evaluate_cheap_talk_anomaly():
             "A": PowerIndex(speaker_id="A", segment_id="seg1", base_power=0.0)
         },
     )
-    triggered, contribution, msg = analysis.evaluate_cheap_talk_anomaly()
+    triggered, _contribution, _msg = analysis.evaluate_cheap_talk_anomaly()
     assert not triggered
 
 
@@ -130,7 +131,7 @@ def test_evaluate_topic_diversity_anomaly():
     """Test topic diversity anomaly rule logic on Analysis model."""
     # Without topic synthesis
     analysis = Analysis(ai_risk_score=0.5, prompt_version="v1")
-    triggered, contribution, msg = analysis.evaluate_topic_diversity_anomaly()
+    triggered, _contribution, _msg = analysis.evaluate_topic_diversity_anomaly()
     assert not triggered
 
     # With low diversity
@@ -141,5 +142,5 @@ def test_evaluate_topic_diversity_anomaly():
         dominant_topic="economy",
     )
     analysis = Analysis(ai_risk_score=0.5, prompt_version="v1", topic_synthesis=ts)
-    triggered, contribution, msg = analysis.evaluate_topic_diversity_anomaly()
+    triggered, _contribution, _msg = analysis.evaluate_topic_diversity_anomaly()
     assert not triggered

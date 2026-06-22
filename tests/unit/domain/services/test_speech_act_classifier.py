@@ -1,4 +1,5 @@
 import pytest
+
 from bb_paxdata.application.domain.models.speech_act import SpeechActType
 from bb_paxdata.application.domain.services.speech_act_classifier import (
     SpeechActClassifierService,

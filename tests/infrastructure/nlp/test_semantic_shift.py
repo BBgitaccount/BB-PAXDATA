@@ -1,4 +1,5 @@
 import pytest
+
 from bb_paxdata.application.domain.models.dki import SegmentWindow
 from bb_paxdata.infrastructure.nlp.semantic_shift import (
     AzarbonyadSemanticShiftCalculator,

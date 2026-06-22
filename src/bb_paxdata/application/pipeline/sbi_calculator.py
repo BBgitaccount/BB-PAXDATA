@@ -6,17 +6,19 @@ from typing import TYPE_CHECKING, Any
 
 import numpy as np
 import structlog
+from sklearn.feature_extraction.text import CountVectorizer
+
 from bb_paxdata.application.domain.models.sbi_models import (
     SBIResult,
     SpeakerPosition,
 )
 from bb_paxdata.application.domain.services.sbi_protocols import (
     EngagementScorerProtocol,
+    LIWCProtocol,
     StanceDensityProtocol,
     WordfishProtocol,
     WordscoresProtocol,
 )
-from sklearn.feature_extraction.text import CountVectorizer
 
 if TYPE_CHECKING:
     from bb_paxdata.application.domain.models.analysis import Analysis
@@ -44,6 +46,7 @@ class SBICalculator:
         stance: StanceDensityProtocol,
         engagement: EngagementScorerProtocol,
         wordscores: WordscoresProtocol | None = None,
+        liwc: LIWCProtocol | None = None,
         weights: tuple[float, float, float] = (0.6, 0.25, 0.15),
         gat_repo: IGATEmbeddingRepository | None = None,
     ):
@@ -51,6 +54,7 @@ class SBICalculator:
         self.stance = stance
         self.engagement = engagement
         self.wordscores = wordscores
+        self.liwc = liwc
         self.weights = weights
         self._gat_repo = gat_repo
 
@@ -144,6 +148,20 @@ class SBICalculator:
                 else 0.0
             )
 
+            # Calculate LIWC scores if available
+            liwc_clout = None
+            liwc_analytic = None
+            liwc_authenticity = None
+            liwc_tone = None
+
+            if self.liwc:
+                speaker_text = " ".join(speaker_texts[sid])
+                liwc_result = self.liwc.analyze(speaker_text)
+                liwc_clout = liwc_result.clout
+                liwc_analytic = liwc_result.analytic
+                liwc_authenticity = liwc_result.authenticity
+                liwc_tone = liwc_result.tone
+
             # Composite SBI
             sbi = alpha * theta + beta * stance + gamma * engagement
 
@@ -153,6 +171,10 @@ class SBICalculator:
                 wordfish_theta=theta,
                 stance_density=stance,
                 engagement_score=engagement,
+                liwc_clout=liwc_clout,
+                liwc_analytic=liwc_analytic,
+                liwc_authenticity=liwc_authenticity,
+                liwc_tone=liwc_tone,
                 sbi=sbi,
                 alpha=alpha,
                 beta=beta,

@@ -1,4 +1,7 @@
 import pytest
+from fastapi import APIRouter, Depends
+from fastapi.testclient import TestClient
+
 from bb_paxdata.infrastructure.auth.jwt_auth import create_jwt, decode_jwt
 from bb_paxdata.infrastructure.db.models import ReviewerAssignment
 from bb_paxdata.interfaces.api.dependencies import (
@@ -6,8 +9,6 @@ from bb_paxdata.interfaces.api.dependencies import (
     get_current_reviewer,
 )
 from bb_paxdata.interfaces.api.main import app
-from fastapi import APIRouter, Depends
-from fastapi.testclient import TestClient
 
 # Create test router to mount endpoints that verify JWT and RBAC logic
 router = APIRouter(prefix="/test-auth")

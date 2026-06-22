@@ -9,6 +9,7 @@ import threading
 from typing import Any, cast
 
 import structlog
+from sqlalchemy.ext.asyncio import AsyncSession
 
 from ...application.domain.services.ai_analyst import AIAnalyst
 from ...application.domain.services.appraisal_service import get_appraisal_service
@@ -77,6 +78,7 @@ class ServiceContainer:
 
         # SBERT Embedding Cache (Faz 2.4) - Initialized early for use in other components
         import redis.asyncio as aioredis
+
         from bb_paxdata.infrastructure.nlp.sbert_embedding_service import (
             SBERTEmbeddingService,
         )
@@ -95,6 +97,10 @@ class ServiceContainer:
         self.appraisal_service = get_appraisal_service()
         self.maoz_dyadic_service = MaozDyadicService()
 
+        from ..nlp.liwc_proxy import LIWCProxyService
+
+        self.liwc_proxy = LIWCProxyService()
+
         from bb_paxdata.application.domain.services.speech_act_classifier import (
             SpeechActClassifierService,
         )
@@ -111,7 +117,15 @@ class ServiceContainer:
                 LogicOnlyAIAnalyst,
             )
 
-            self.prompt_registry = build_default_registry()
+            # Try to use database-backed registry if available
+            try:
+                from ..db.session import SessionLocalSync
+
+                self.prompt_registry = build_default_registry(
+                    db_session=SessionLocalSync()
+                )
+            except Exception:
+                self.prompt_registry = build_default_registry()
             self.few_shot_injector = None
             self.ai_analyst: Any = LogicOnlyAIAnalyst()
             logger.info(
@@ -141,7 +155,15 @@ class ServiceContainer:
                 selector=self.few_shot_selector,
                 uow_factory=uow_factory,
             )
-            self.prompt_registry = build_default_registry()
+            # Try to use database-backed registry if available
+            try:
+                from ..db.session import SessionLocalSync
+
+                self.prompt_registry = build_default_registry(
+                    db_session=SessionLocalSync()
+                )
+            except Exception:
+                self.prompt_registry = build_default_registry()
 
             # Initialize infra analyst
             settings = get_settings()
@@ -210,7 +232,18 @@ class ServiceContainer:
         )
 
         # ── GAT Embedding Service (TASK-E02) ───────────────────────
-        self.gat_embedding_service = GATEmbeddingService()
+        # torch-geometric opsiyonel bir bağımlılıktır; yüklü değilse
+        # GAT özellikleri devre dışı kalır ama pipeline çalışmaya devam eder.
+        try:
+            self.gat_embedding_service = GATEmbeddingService()
+        except ImportError as _pyg_err:
+            self.gat_embedding_service = None
+            logger.warning(
+                "GAT Embedding Service başlatılamadı — torch_geometric yüklü değil. "
+                "GAT özellikleri devre dışı. "
+                "Yüklemek için: pip install torch-geometric",
+                error=str(_pyg_err),
+            )
 
         from ..nlp.semantic_shift import AzarbonyadSemanticShiftCalculator
 
@@ -248,8 +281,15 @@ class ServiceContainer:
 
         presupposition_ai_client = AIClientFactory.from_settings(get_settings())
 
-        # Create cache backend
-        presupposition_cache = DiskCacheBackend()
+        # Create cache backend with coordinator for consistency
+        from ..cache.cache_coordinator import CacheCoordinator
+
+        presupposition_disk_cache = DiskCacheBackend()
+        presupposition_cache = CacheCoordinator(
+            primary_backend=presupposition_disk_cache,
+            secondary_backends=[],
+            enable_pubsub=False,  # Disk cache doesn't need pub/sub
+        )
 
         # Create verifier
         self.presupposition_verifier = PresuppositionVerifier(
@@ -386,6 +426,7 @@ class ServiceContainer:
             stance=self.stance_calculator,
             engagement=self.engagement_analyzer,
             wordscores=self.wordscores_calibrator,
+            liwc=self.liwc_proxy,
         )
 
         # ── Framing Servisleri (Faz 6) ─────────────────────────────
@@ -562,17 +603,51 @@ class ServiceContainer:
             AICacheService,
             AIFailCacheService,
         )
+        from bb_paxdata.infrastructure.cache.cache_coordinator import CacheCoordinator
         from bb_paxdata.infrastructure.cache.redis import RedisCacheBackend
         from bb_paxdata.infrastructure.db.repositories.analysis import (
             AnalysisRepository,
         )
 
-        # Create Redis cache backend
-        self.redis_cache_backend = RedisCacheBackend(
+        # Create Redis cache backend with coordinator for consistency
+        redis_cache_backend_raw = RedisCacheBackend(
             url=settings.redis_url,
             key_prefix="bbpax:ai:",
             default_ttl=3600,
         )
+        self.redis_cache_backend = CacheCoordinator(
+            primary_backend=redis_cache_backend_raw,
+            secondary_backends=[],
+            redis_url=settings.redis_url,
+            enable_pubsub=True,
+            pubsub_channel="bbpax:cache_invalidation",
+        )
+
+        # Start pub/sub listener for distributed invalidation
+        try:
+            import asyncio
+
+            # Try to get existing event loop
+            try:
+                loop = asyncio.get_event_loop()
+                if loop.is_running():
+                    # Schedule the coroutine to run in the background
+                    task = asyncio.create_task(
+                        self.redis_cache_backend.start_pubsub_listener()
+                    )
+                    del task  # Explicitly discard to avoid unused warning
+                else:
+                    loop.run_until_complete(
+                        self.redis_cache_backend.start_pubsub_listener()
+                    )
+            except RuntimeError:
+                # No event loop, create a new one
+                asyncio.run(self.redis_cache_backend.start_pubsub_listener())
+            logger.info("CacheCoordinator pub/sub listener started")
+        except Exception as e:
+            logger.warning(
+                "Failed to start CacheCoordinator pub/sub listener", error=str(e)
+            )
 
         # Create cache services (pass analysis_repository later after it's created)
         self.ai_cache_service = AICacheService(
@@ -627,6 +702,14 @@ class ServiceContainer:
 
         self.risk_forecaster = RiskForecaster()
 
+        # ── API Services (WIRING-001) ───────────────────────────────
+        from ...application.services.dashboard_query import DashboardQueryService
+        from ..db.repositories.formula_validation import FormulaValidationRepository
+
+        # These are factory methods that accept db session
+        self._dashboard_query_service_class = DashboardQueryService
+        self._formula_validation_repository_class = FormulaValidationRepository
+
         logger.info("ServiceContainer hazır — tüm servisler aktif.")
 
     @classmethod
@@ -662,8 +745,26 @@ class ServiceContainer:
         ):
             await self.presupposition_verifier._ai_client._client.aclose()
 
+        # Close cache coordinators
+        if hasattr(self, "redis_cache_backend") and hasattr(
+            self.redis_cache_backend, "close"
+        ):
+            await self.redis_cache_backend.close()
+        if hasattr(self, "presupposition_cache") and hasattr(
+            self.presupposition_cache, "close"
+        ):
+            await self.presupposition_cache.close()
+
     @classmethod
     def reset_instance(cls) -> None:
         """Singleton'ı sıfırlar (test ve mod değişikliği için)."""
         with cls._lock:
             cls._instance = None
+
+    def dashboard_query_service(self, db: AsyncSession):
+        """Factory method for DashboardQueryService."""
+        return self._dashboard_query_service_class(db)
+
+    def formula_validation_repository(self, db: AsyncSession):
+        """Factory method for FormulaValidationRepository."""
+        return self._formula_validation_repository_class(db)

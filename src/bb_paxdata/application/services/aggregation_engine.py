@@ -3,6 +3,7 @@ import uuid
 from datetime import datetime, timezone
 
 import numpy as np
+
 from bb_paxdata.infrastructure.db.models import (
     ActorTopicDocument,
     ActorTopicProjection,

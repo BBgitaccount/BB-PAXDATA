@@ -192,7 +192,7 @@ class FormulaValidationRepository(BaseRepository[FormulaValidationLog]):
             )
             .outerjoin(
                 Sentence,
-                FormulaValidationLog.entity_id == Sentence.sent_id,
+                FormulaValidationLog.sentence_code == Sentence.sentence_code,
             )
             .outerjoin(
                 AISentenceAnalysis,
@@ -599,7 +599,7 @@ class FormulaValidationRepository(BaseRepository[FormulaValidationLog]):
             )
             .outerjoin(
                 Sentence,
-                FormulaValidationLog.entity_id == Sentence.sent_id,
+                FormulaValidationLog.sentence_code == Sentence.sentence_code,
             )
             .where(
                 FormulaValidationLog.formula_name == formula_name,

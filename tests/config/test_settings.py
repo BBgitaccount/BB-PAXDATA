@@ -3,6 +3,7 @@ from __future__ import annotations
 from pathlib import Path
 
 import pytest
+
 from bb_paxdata.application.domain.enums import AIProvider, DatabaseMode, LogLevel
 from bb_paxdata.config.settings import (
     Settings,

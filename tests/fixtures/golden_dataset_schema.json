@@ -66,21 +66,12 @@
         },
         "AI_Potansiyel_Risk": {
           "type": "string",
-          "enum": [
-            "none",
-            "low",
-            "medium",
-            "high",
-            "critical"
-          ],
+          "enum": ["none", "low", "medium", "high", "critical"],
           "description": "Potential risk level"
         },
         "AI_Talep_Var": {
           "type": "integer",
-          "enum": [
-            0,
-            1
-          ],
+          "enum": [0, 1],
           "description": "Whether sentence contains a demand (0=no, 1=yes)"
         },
         "AI_Diplomatik_Ton": {
@@ -145,12 +136,7 @@
           "description": "Version of the annotation (e.g., 1.0)"
         }
       },
-      "required": [
-        "why_selected",
-        "annotator",
-        "annotated_at",
-        "version"
-      ],
+      "required": ["why_selected", "annotator", "annotated_at", "version"],
       "additionalProperties": false
     }
   },

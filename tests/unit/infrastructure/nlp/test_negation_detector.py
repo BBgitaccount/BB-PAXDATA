@@ -1,5 +1,6 @@
 import pytest
 import spacy
+
 from bb_paxdata.application.domain.enums.negation_type import NegationType
 from bb_paxdata.infrastructure.nlp.negation_detector import SpacyNegationDetector
 

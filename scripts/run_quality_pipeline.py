@@ -5,6 +5,7 @@ Dual-mode: MOCK (CI, no API key) vs LIVE (scheduled, with API key).
 
 Exit code 0: passed | Exit code 1: regression detected or error.
 """
+
 import os
 import sys
 import time
@@ -16,9 +17,8 @@ _REPO_ROOT = Path(__file__).parent.parent
 sys.path.insert(0, str(_REPO_ROOT / "src"))
 sys.path.insert(0, str(_REPO_ROOT))
 
-from bb_paxdata.quality.evaluator import QualityEvaluator  # noqa: E402
-
-from tests.fixtures.golden_dataset import GoldenDataset  # noqa: E402
+from bb_paxdata.quality.evaluator import QualityEvaluator
+from tests.fixtures.golden_dataset import GoldenDataset
 
 QUALITY_THRESHOLD = 0.80
 REPORT_PATH = Path("output/quality_regression_report.md")
@@ -140,14 +140,14 @@ def run_regression_eval() -> None:
             for i, r in enumerate(individual[:20]):
                 passed_icon = "✅" if r.get("passed") else "❌"
                 f.write(
-                    f"| {i+1} | `{r.get('sent_id', '—')}` "
+                    f"| {i + 1} | `{r.get('sent_id', '—')}` "
                     f"| {r.get('score', 0):.3f} | {passed_icon} |\n"
                 )
 
     print(f"📝 Report written to: {REPORT_PATH}")
     print(
         f"📊 Overall mean score: {overall_score:.4f} "
-        f"(threshold: {QUALITY_THRESHOLD}, pass rate: {overall_pass_rate*100:.1f}%)"
+        f"(threshold: {QUALITY_THRESHOLD}, pass rate: {overall_pass_rate * 100:.1f}%)"
     )
 
     # ── 6. Gate on threshold ────────────────────────────────────────────────

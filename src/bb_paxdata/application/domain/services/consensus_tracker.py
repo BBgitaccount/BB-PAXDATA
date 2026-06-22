@@ -173,7 +173,9 @@ class ConsensusTrackerService(IConsensusTrackerService):
         distance_matrix = squareform(condensed)
 
         # DBSCAN clustering
-        clustering = DBSCAN(eps=eps, min_samples=2, metric="precomputed").fit(distance_matrix)  # type: ignore
+        clustering = DBSCAN(eps=eps, min_samples=2, metric="precomputed").fit(
+            distance_matrix
+        )  # type: ignore
         labels = clustering.labels_
 
         # Build CoalitionCluster objects

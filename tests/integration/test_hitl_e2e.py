@@ -1,4 +1,7 @@
 import pytest
+from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_async_engine
+from sqlalchemy.pool import StaticPool
+
 from bb_paxdata.application.domain.models.human_review import AgreementStatus
 from bb_paxdata.application.services.calibration_service import CalibrationService
 from bb_paxdata.application.services.few_shot_injector import FewShotInjector
@@ -9,8 +12,6 @@ from bb_paxdata.application.use_cases.submit_human_review import (
 from bb_paxdata.infrastructure.db import models as m
 from bb_paxdata.infrastructure.db.base import Base
 from bb_paxdata.infrastructure.db.repositories.unit_of_work import SqlAlchemyUnitOfWork
-from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_async_engine
-from sqlalchemy.pool import StaticPool
 
 
 @pytest.fixture
@@ -140,8 +141,9 @@ async def test_hitl_e2e_flow(session_factory):
 
     # Verify both exist in the DB
     async with session_factory() as session:
-        from bb_paxdata.infrastructure.db.human_review_table import HumanReviewORM
         from sqlalchemy import select
+
+        from bb_paxdata.infrastructure.db.human_review_table import HumanReviewORM
 
         res = await session.execute(select(HumanReviewORM))
         rows = res.scalars().all()

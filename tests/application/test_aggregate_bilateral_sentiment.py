@@ -2,6 +2,7 @@
 from unittest.mock import AsyncMock
 
 import pytest
+
 from bb_paxdata.application.domain.enums.country_enums import ReferenceContext
 from bb_paxdata.application.domain.models.bilateral_sentiment import BilateralSentiment
 from bb_paxdata.application.domain.models.country_reference import CountryReference

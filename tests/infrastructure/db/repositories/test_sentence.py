@@ -2,10 +2,10 @@
 
 from __future__ import annotations
 
-from bb_paxdata.application.domain.models.sentence import Sentence
-from bb_paxdata.infrastructure.db.repositories.sentence import SentenceRepository
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from bb_paxdata.application.domain.models.sentence import Sentence
+from bb_paxdata.infrastructure.db.repositories.sentence import SentenceRepository
 from tests.infrastructure.db.repositories.conftest import seed_panel_speaker_segment
 
 

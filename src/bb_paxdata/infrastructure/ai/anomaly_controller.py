@@ -100,7 +100,7 @@ class AIAnomalyController:
         context: list[Sentence],
     ) -> str:
         ctx_block = "\n".join(
-            f"[{i+1}] {s.text}" for i, s in enumerate(context[-self._max_ctx :])
+            f"[{i + 1}] {s.text}" for i, s in enumerate(context[-self._max_ctx :])
         )
 
         # Guard in case det_result structure is different, though we matched it in anomaly.py

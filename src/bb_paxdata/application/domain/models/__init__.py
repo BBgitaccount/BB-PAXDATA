@@ -32,6 +32,14 @@ from .rhetorical_element import RhetoricalElement
 from .risk_signal import RiskSignal
 from .segment import Segment, TemporalSegmentAnalysis
 from .sentence import Sentence
+from .service_results import (
+    AnomalyResult,
+    FrameResult,
+    HedgingResult,
+    RiskAssessment,
+    SentimentResult,
+    TopicAnalysis,
+)
 from .speaker import Speaker
 from .speech_act import SpeechActClassification, SpeechActType
 from .topic import Topic
@@ -47,6 +55,7 @@ __all__ = [
     "Analysis",
     "AnalysisDelta",
     "Anomaly",
+    "AnomalyResult",
     "AppraisalDocumentResult",
     "AppraisalVector",
     "AppreciationType",
@@ -58,7 +67,9 @@ __all__ = [
     "DiscourseFlow",
     "EngagementType",
     "Frame",
+    "FrameResult",
     "GATEmbedding",
+    "HedgingResult",
     "HumanReview",
     "JudgmentType",
     "Metadata",
@@ -67,11 +78,13 @@ __all__ = [
     "PowerIndex",
     "Relationship",
     "RhetoricalElement",
+    "RiskAssessment",
     "RiskAssessmentLevel",
     "RiskLevel",
     "RiskSignal",
     "Segment",
     "Sentence",
+    "SentimentResult",
     "SignificantChange",
     "Speaker",
     "SpeechActClassification",
@@ -79,6 +92,7 @@ __all__ = [
     "SpeechActType",
     "TemporalSegmentAnalysis",
     "Topic",
+    "TopicAnalysis",
     "TopicSynthesis",
     "Transcript",
     "ValidationResult",

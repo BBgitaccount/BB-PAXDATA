@@ -15,6 +15,7 @@ Reference: TASK-A07 Engineering Review v2.0 (commit 8d37ef99)
 
 import numpy as np
 import pytest
+
 from bb_paxdata.application.domain.models.bayesian_models import (
     EmpiricalDistribution,
     GaussianDistribution,

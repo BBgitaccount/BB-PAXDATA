@@ -5,6 +5,7 @@ Repository Protocol tanımları — saf domain katmanı.
 Concrete implementasyonlar infrastructure/repositories/ içinde bulunur.
 Bu dosya sadece sözleşmeyi (contract) tanımlar; hiçbir import dışa bağımlı değil.
 """
+
 from __future__ import annotations
 
 from collections.abc import Sequence

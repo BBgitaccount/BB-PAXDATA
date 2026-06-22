@@ -3,10 +3,11 @@
 from collections.abc import AsyncGenerator, Callable
 
 import pytest
-from bb_paxdata.infrastructure.db import models as m
-from bb_paxdata.infrastructure.db.base import Base
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_async_engine
 from sqlalchemy.pool import StaticPool
+
+from bb_paxdata.infrastructure.db import models as m
+from bb_paxdata.infrastructure.db.base import Base
 
 
 @pytest.fixture

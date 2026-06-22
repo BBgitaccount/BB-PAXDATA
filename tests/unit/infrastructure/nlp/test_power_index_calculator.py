@@ -1,5 +1,6 @@
 import pytest
 import spacy
+
 from bb_paxdata.infrastructure.nlp.power_index_calculator import PowerIndexCalculator
 
 

@@ -43,7 +43,7 @@ def _completion_script(shell: str) -> str:
     )
     if result.returncode != 0:
         raise RuntimeError(
-            f"Completion script could not be generated.\n" f"stderr: {result.stderr}"
+            f"Completion script could not be generated.\nstderr: {result.stderr}"
         )
     return result.stdout
 

@@ -1,5 +1,4 @@
-"""HumanReviewRepository — domain ↔ ORM mapping and async CRUD.
-"""
+"""HumanReviewRepository — domain ↔ ORM mapping and async CRUD."""
 
 from __future__ import annotations
 

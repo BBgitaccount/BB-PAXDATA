@@ -11,8 +11,8 @@ with open("scratch/patterns_def.txt", "w", encoding="utf-8") as out:
         out.write(f"=== Matches for {target} ===\n")
         for idx, line in enumerate(lines):
             if target in line:
-                out.write(f"Line {idx+1}: {line.strip()}\n")
+                out.write(f"Line {idx + 1}: {line.strip()}\n")
                 # print 30 lines after the match
                 for offset in range(1, 40):
                     if idx + offset < len(lines):
-                        out.write(f"  +{offset}: {lines[idx+offset].rstrip()}\n")
+                        out.write(f"  +{offset}: {lines[idx + offset].rstrip()}\n")

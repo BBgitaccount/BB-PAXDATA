@@ -332,7 +332,9 @@ class ArgumentPath(BaseModel):
     """
 
     path_id: str = Field(
-        default_factory=lambda: f"path_{hashlib.sha256(str(datetime.now().timestamp()).encode()).hexdigest()}"
+        default_factory=lambda: (
+            f"path_{hashlib.sha256(str(datetime.now().timestamp()).encode()).hexdigest()}"
+        )
     )
     nodes: list[ArgumentNode] = Field(default_factory=list)
     edges: list[ArgumentEdge] = Field(default_factory=list)
@@ -586,12 +588,16 @@ class ArgumentGraph(BaseModel):
             root_claim_ids=list(root_claim_ids),
             **kwargs,
         )
-        # Manually initialize PrivateAttrs
+        # Initialize __pydantic_private__ if not present
+        if not hasattr(obj, "__pydantic_private__") or obj.__pydantic_private__ is None:
+            object.__setattr__(obj, "__pydantic_private__", {})
+
         from collections import defaultdict
 
-        object.__setattr__(obj, "_node_index", {})
-        object.__setattr__(obj, "_adjacency_list", defaultdict(list))
-        object.__setattr__(obj, "_reverse_adjacency", defaultdict(list))
+        obj.__pydantic_private__["_node_index"] = {}
+        obj.__pydantic_private__["_adjacency_list"] = defaultdict(list)
+        obj.__pydantic_private__["_reverse_adjacency"] = defaultdict(list)
+
         obj._rebuild_indexes()
         obj._compute_analytics()
         return obj
@@ -600,14 +606,15 @@ class ArgumentGraph(BaseModel):
         cycles = self.detect_cycles()
         if not cycles:
             return None
-        cycle_edges = set()
+        cycle_edges = []
         for cycle in cycles:
             for i in range(len(cycle)):
                 src = cycle[i]
                 tgt = cycle[(i + 1) % len(cycle)]
                 for neighbor_id, edge in self._adjacency_list.get(src, []):
                     if neighbor_id == tgt:
-                        cycle_edges.add(edge)
+                        if edge not in cycle_edges:
+                            cycle_edges.append(edge)
         if not cycle_edges:
             return None
         weakest = min(cycle_edges, key=lambda e: e.confidence)

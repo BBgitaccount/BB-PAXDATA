@@ -9,6 +9,7 @@ Kurallar:
 - JSON sütunlar için SQLAlchemy JSON tipi kullanılır.
 - Bu modeller domain entity'lerine dönüştürücü metotlar içerir (to_domain / from_domain).
 """
+
 from __future__ import annotations
 
 import uuid
@@ -17,7 +18,6 @@ from decimal import Decimal
 from typing import TYPE_CHECKING, Any
 
 from sqlalchemy import DateTime, Float, Index, Integer, Numeric, String
-from sqlalchemy.dialects.sqlite import JSON
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column
 
 if TYPE_CHECKING:
@@ -26,7 +26,6 @@ if TYPE_CHECKING:
     )
     from bb_paxdata.application.domain.models.country_reference import CountryReference
     from bb_paxdata.application.domain.models.discourse_flow import DiscourseFlow
-    from bb_paxdata.application.domain.models.topic_synthesis import TopicSynthesis
 
 
 class Base(DeclarativeBase):
@@ -225,6 +224,28 @@ class BilateralSentimentTable(Base):
         from bb_paxdata.application.domain.models.bilateral_sentiment import (
             BilateralSentiment,
         )
+        from bb_paxdata.application.domain.models.discourse_flow import (
+            DyadicMetrics,
+        )
+
+        dm = None
+        if (
+            self.vote_affinity is not None
+            or self.alliance_score is not None
+            or self.structural_distance is not None
+            or self.discourse_sentiment_delta is not None
+        ):
+            dm = DyadicMetrics(
+                actor_a_id=self.from_country,
+                actor_b_id=self.to_country,
+                session_id=self.file_id,
+                vote_affinity=self.vote_affinity,
+                alliance_score=self.alliance_score,
+                structural_distance=self.structural_distance,
+                discourse_sentiment_delta=self.discourse_sentiment_delta,
+                diplomatic_distance=self.maoz_diplomatic_distance,
+                affinity_score=self.maoz_affinity_score,
+            )
 
         return BilateralSentiment(
             id=uuid.UUID(self.id),
@@ -243,10 +264,12 @@ class BilateralSentimentTable(Base):
             power_level_b=float(getattr(self, "power_level_b", 1.0) or 1.0),
             demand_weight=float(getattr(self, "demand_weight", 1.0) or 1.0),
             risk_severity=float(getattr(self, "risk_severity", 1.0) or 1.0),
+            dyadic_metrics=dm,
         )
 
     @classmethod
     def from_domain(cls, entity: BilateralSentiment) -> BilateralSentimentTable:
+        m = entity.dyadic_metrics
         return cls(
             id=str(entity.id),
             file_id=entity.panel_id,
@@ -263,6 +286,13 @@ class BilateralSentimentTable(Base):
             power_level_b=entity.power_level_b,
             demand_weight=entity.demand_weight,
             risk_severity=entity.risk_severity,
+            # Phase 4 columns
+            vote_affinity=m.vote_affinity if m else None,
+            alliance_score=m.alliance_score if m else None,
+            structural_distance=m.structural_distance if m else None,
+            discourse_sentiment_delta=m.discourse_sentiment_delta if m else None,
+            maoz_diplomatic_distance=m.diplomatic_distance if m else None,
+            maoz_affinity_score=m.affinity_score if m else None,
             last_updated=(
                 entity.last_updated.replace(tzinfo=None)
                 if entity.last_updated
@@ -344,43 +374,4 @@ class DiscourseFlowTable(Base):
             ),
             narrative_target_actor=entity.narrative_target_actor,
             narrative_salience=entity.narrative_salience,
-        )
-
-
-class TopicMatrixTable(Base):
-    __tablename__ = "topic_matrices"
-    __table_args__ = (Index("ix_tm_panel_country", "file_id", "country", unique=True),)
-
-    id: Mapped[str] = mapped_column(
-        String(36), primary_key=True, default=lambda: str(uuid.uuid4())
-    )
-    file_id: Mapped[str] = mapped_column(String(255), nullable=False)
-    country: Mapped[str] = mapped_column(String(100), nullable=False)
-    topic_scores: Mapped[dict[str, Any]] = mapped_column(
-        JSON, nullable=False, default=dict
-    )
-    dominant_topic: Mapped[str | None] = mapped_column(String(200), nullable=True)
-    topic_details: Mapped[dict[str, Any] | None] = mapped_column(JSON, nullable=True)
-
-    def to_domain(self) -> TopicSynthesis:
-        from bb_paxdata.application.domain.models.topic_synthesis import (
-            TopicSynthesis,
-        )
-
-        return TopicSynthesis(
-            id=uuid.UUID(self.id),
-            panel_id=self.file_id,
-            country=self.country,
-            topic_scores=self.topic_scores,
-            topic_label=self.dominant_topic,
-        )
-
-    @classmethod
-    def from_domain(cls, entity: TopicSynthesis) -> TopicMatrixTable:
-        return cls(
-            id=str(entity.id),
-            file_id=entity.panel_id,
-            country=entity.country,
-            topic_scores=entity.topic_scores,
-            dominant_topic=entity.topic_label,
         )

@@ -10,9 +10,10 @@ import pandas as pd
 import pyarrow as pa
 import pyarrow.parquet as pq
 import structlog
-from bb_paxdata.infrastructure.db.models import AISentenceAnalysis, Sentence
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
+
+from bb_paxdata.infrastructure.db.models import AISentenceAnalysis, Sentence
 
 logger = structlog.get_logger(__name__)
 

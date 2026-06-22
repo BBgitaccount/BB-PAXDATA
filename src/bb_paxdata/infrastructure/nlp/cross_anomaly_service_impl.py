@@ -367,7 +367,9 @@ class CrossAnomalyServiceImpl(CrossAnomalyService):
             detail = ArgumentContradictionDetail(
                 pattern=ContradictionPattern.ARGUMENTATIVE_ATTACK,
                 edge=ArgumentEdge(
-                    source_id="", target_id="", relation_type=RelationType.ATTACK
+                    source_id="_system_src",
+                    target_id="_system_tgt",
+                    relation_type=RelationType.ATTACK,
                 ),
                 source_node=ArgumentNode(
                     segment_id="_system",
@@ -400,7 +402,9 @@ class CrossAnomalyServiceImpl(CrossAnomalyService):
             detail = ArgumentContradictionDetail(
                 pattern=ContradictionPattern.ARGUMENTATIVE_ATTACK,
                 edge=ArgumentEdge(
-                    source_id="", target_id="", relation_type=RelationType.SUPPORT
+                    source_id="_system_src",
+                    target_id="_system_tgt",
+                    relation_type=RelationType.SUPPORT,
                 ),
                 source_node=claim_node,
                 target_node=claim_node,

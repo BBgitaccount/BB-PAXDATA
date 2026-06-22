@@ -119,7 +119,7 @@ class DyadicMetrics(BaseModel):
         default=None, ge=Decimal("0"), le=Decimal("1")
     )
     structural_distance: Decimal | None = Field(default=None, ge=Decimal("0"))
-    discourse_sentiment_delta: Decimal | None = Field(default=None, ge=Decimal("0"))
+    discourse_sentiment_delta: Decimal | None = Field(default=None)
 
     # Computed outputs
     diplomatic_distance: Decimal | None = Field(

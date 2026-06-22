@@ -182,6 +182,7 @@ class SentimentService(BaseService, SentimentServiceProtocol):
 
         Args:
             sentence: The sentence to analyze
+            **kwargs: Optional LIWC proxy for LIWC analysis
 
         Returns:
             SentimentResult containing sentiment scores and categories
@@ -206,9 +207,13 @@ class SentimentService(BaseService, SentimentServiceProtocol):
         confidence = 1.0 - abs(negation_aware_score - vader_compound) / 2.0
         confidence = max(0.3, min(1.0, confidence))  # Clamp between 0.3 and 1.0
 
+        # LIWC analysis if proxy provided
+        liwc_scores = kwargs.get("liwc_scores")
+
         return SentimentResult(
             score=final_score,
             emotion_category=emotion_category,
             negation_aware_score=negation_aware_score,
             confidence=confidence,
+            liwc_scores=liwc_scores,
         )

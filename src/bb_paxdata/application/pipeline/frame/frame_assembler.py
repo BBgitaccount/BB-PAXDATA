@@ -1,8 +1,8 @@
 # src/bb_paxdata/application/pipeline/frame/frame_assembler.py
 """Entman (1993) FrameSalience calculation and assembly.
 
-[Academic Reference: Entman, R.M. (1993). Framing: Toward Clarification of a Fractured 
-Paradigm. Journal of Communication, 43(4), 51–58. 
+[Academic Reference: Entman, R.M. (1993). Framing: Toward Clarification of a Fractured
+Paradigm. Journal of Communication, 43(4), 51–58.
 FrameSalience_k = Σ(KeywordWeight_i × PositionBoost_i) / SegmentLength]
 """
 
@@ -12,6 +12,8 @@ import asyncio
 from typing import TYPE_CHECKING, Final
 
 import structlog
+from spacy.tokens import Doc
+
 from bb_paxdata.application.domain.enums.frame_type import FrameType
 from bb_paxdata.application.domain.models.frame_annotation import (
     CueMatch,
@@ -22,7 +24,6 @@ from bb_paxdata.application.domain.models.segment import Segment
 from bb_paxdata.infrastructure.ai.frame_detection.frame_lexicon_service import (
     FrameLexiconService,
 )
-from spacy.tokens import Doc
 
 if TYPE_CHECKING:
     from spacy.language import Language

@@ -116,9 +116,34 @@ class AnalysisTriggerService:
         segments_data: list[Any],
         file_speakers_metadata: dict[str, Any],
     ) -> str:
+        from uuid import uuid4
+
+        from bb_paxdata.application.domain.utils.context import (
+            get_correlation_id,
+            set_correlation_id,
+        )
+
+        if not get_correlation_id():
+            set_correlation_id(str(uuid4()))
+
         session = self.session
         container = self.container
         pipeline = self.pipeline
+
+        from bb_paxdata.application.use_cases.speaker_registry_use_case import (
+            SpeakerRegistryUseCase,
+        )
+        from bb_paxdata.infrastructure.db.repositories.speaker_repository import (
+            SpeakerRepository,
+        )
+        from bb_paxdata.infrastructure.db.repositories.unit_of_work import (
+            SqlAlchemyUnitOfWork,
+        )
+
+        uow = SqlAlchemyUnitOfWork(lambda: session)
+        uow._session = session
+        uow.speakers = SpeakerRepository(session)
+        speaker_registry = SpeakerRegistryUseCase(uow)
 
         # Fetch File from database to update aggregate stats at the end
         db_file_stmt = select(File).where(File.file_id == file_id)
@@ -145,7 +170,73 @@ class AnalysisTriggerService:
 
         for seg_idx, seg in enumerate(segments_data, 1):
             speaker_name = seg["speaker"]
-            speaker_id = speaker_name.lower().replace(" ", "_")
+            country = seg["country"]
+            unique_countries_in_file.add(country)
+
+            file_speaker_info = file_speakers_metadata.get(speaker_name.lower())
+
+            if file_speaker_info:
+                sp_country = file_speaker_info["country"]
+                sp_power = file_speaker_info["power_level"]
+                sp_info = SPEAKER_MAP.get(speaker_name)
+                if not sp_info:
+                    for name, info in SPEAKER_MAP.items():
+                        if name.lower() == speaker_name.lower():
+                            sp_info = info
+                            break
+                if sp_info:
+                    _, sp_title, sp_role = sp_info
+                else:
+                    sp_title = "Participant"
+                    sp_role = "panelist"
+                    for r, p in POWER_LEVELS.items():
+                        if p == sp_power:
+                            sp_role = r
+                            sp_title = r.replace("_", " ").title()
+                            break
+                sp_bloc = BLOC_MAP.get(sp_country, "unknown")
+                sp_tier = power_to_tier(sp_power)
+            else:
+                sp_info = SPEAKER_MAP.get(speaker_name)
+                if not sp_info:
+                    for name, info in SPEAKER_MAP.items():
+                        if name.lower() == speaker_name.lower():
+                            sp_info = info
+                            break
+
+                if sp_info:
+                    sp_country, sp_title, sp_role = sp_info
+                    sp_bloc = BLOC_MAP.get(sp_country, "unknown")
+                    sp_power = POWER_LEVELS.get(sp_role, 3)
+                    sp_tier = power_to_tier(sp_power)
+                else:
+                    sp_country = country
+                    sp_title = "Participant"
+                    sp_role = "panelist"
+                    sp_bloc = (
+                        BLOC_MAP.get(sp_country, "unknown")
+                        if sp_country != "unknown"
+                        else "unknown"
+                    )
+                    sp_power = 3
+                    sp_tier = "TIER4_EXPERT"
+
+            # Create or resolve master speaker
+            sp_context = {
+                "country_code": sp_country,
+                "country_name": sp_country,
+                "bloc": sp_bloc,
+                "power_level": (
+                    float(sp_power) / 10.0 if sp_power > 1.0 else float(sp_power)
+                ),
+                "role": sp_role,
+                "title": sp_title,
+                "data_source": "pipeline_auto",
+            }
+            master_speaker = await speaker_registry.detect_or_create_speaker(
+                speaker_name, sp_context
+            )
+            speaker_id = master_speaker.speaker_id
             unique_speakers_in_file.add(speaker_id)
 
             # Get or create speaker profile
@@ -154,58 +245,8 @@ class AnalysisTriggerService:
             )
             res = await session.execute(speaker_stmt)
             db_speaker = res.scalar_one_or_none()
-            country = seg["country"]
-            unique_countries_in_file.add(country)
-
-            file_speaker_info = file_speakers_metadata.get(speaker_name.lower())
 
             if not db_speaker:
-                if file_speaker_info:
-                    sp_country = file_speaker_info["country"]
-                    sp_power = file_speaker_info["power_level"]
-                    sp_info = SPEAKER_MAP.get(speaker_name)
-                    if not sp_info:
-                        for name, info in SPEAKER_MAP.items():
-                            if name.lower() == speaker_name.lower():
-                                sp_info = info
-                                break
-                    if sp_info:
-                        _, sp_title, sp_role = sp_info
-                    else:
-                        sp_title = "Participant"
-                        sp_role = "panelist"
-                        for r, p in POWER_LEVELS.items():
-                            if p == sp_power:
-                                sp_role = r
-                                sp_title = r.replace("_", " ").title()
-                                break
-                    sp_bloc = BLOC_MAP.get(sp_country, "unknown")
-                    sp_tier = power_to_tier(sp_power)
-                else:
-                    sp_info = SPEAKER_MAP.get(speaker_name)
-                    if not sp_info:
-                        for name, info in SPEAKER_MAP.items():
-                            if name.lower() == speaker_name.lower():
-                                sp_info = info
-                                break
-
-                    if sp_info:
-                        sp_country, sp_title, sp_role = sp_info
-                        sp_bloc = BLOC_MAP.get(sp_country, "unknown")
-                        sp_power = POWER_LEVELS.get(sp_role, 3)
-                        sp_tier = power_to_tier(sp_power)
-                    else:
-                        sp_country = country
-                        sp_title = "Participant"
-                        sp_role = "panelist"
-                        sp_bloc = (
-                            BLOC_MAP.get(sp_country, "unknown")
-                            if sp_country != "unknown"
-                            else "unknown"
-                        )
-                        sp_power = 3
-                        sp_tier = "TIER4_EXPERT"
-
                 db_speaker = SpeakerProfile(
                     speaker_id=speaker_id,
                     full_name=speaker_name,
@@ -331,31 +372,97 @@ class AnalysisTriggerService:
                     min(1.0, _hedging_keywords * 0.25) if _hedging_keywords else 0.0
                 )
 
-                # politeness_ratio: face_save / (face_save + face_threat + 1)
-                _face_save = sum(
-                    1
-                    for k in [
-                        "please",
-                        "lütfen",
-                        "thank",
-                        "teşekkür",
-                        "respectfully",
-                        "saygıyla",
-                    ]
-                    if k in sentence_text.lower()
-                )
-                _face_threat = sum(
-                    1
-                    for k in [
-                        "demand",
-                        "threat",
-                        "ultimatum",
-                        "warn",
-                        "tehdit",
-                        "talep",
-                    ]
-                    if k in sentence_text.lower()
-                )
+                # #23 FIX: Genişletilmiş Face Threat/Save Lexiconu
+                # Brown & Levinson (1987) Politeness Theory terminolojisi
+                _FACE_SAVE_MARKERS = {
+                    # English positive politeness
+                    "please",
+                    "thank",
+                    "appreciate",
+                    "acknowledge",
+                    "respect",
+                    "understand",
+                    "commend",
+                    "welcome",
+                    "recognize",
+                    "value",
+                    "congratulate",
+                    "honor",
+                    "grateful",
+                    "constructive",
+                    "with all due respect",
+                    "we appreciate",
+                    "we acknowledge",
+                    "we welcome",
+                    "we value",
+                    "we understand",
+                    "we commend",
+                    "we recognize",
+                    "i appreciate",
+                    "i acknowledge",
+                    "respectfully",
+                    # Turkish
+                    "lütfen",
+                    "teşekkür",
+                    "takdir",
+                    "saygı",
+                    "anlıyoruz",
+                    "tebrik",
+                    "memnuniyet",
+                    "değer",
+                    "saygıyla",
+                    "katkı",
+                }
+                _FACE_THREAT_MARKERS = {
+                    # English face-threatening acts (FTA)
+                    "demand",
+                    "insist",
+                    "reject",
+                    "refuse",
+                    "condemn",
+                    "accuse",
+                    "violate",
+                    "breach",
+                    "illegal",
+                    "unacceptable",
+                    "irresponsible",
+                    "threaten",
+                    "warn",
+                    "ultimatum",
+                    "sanction",
+                    "punish",
+                    "impose",
+                    "force",
+                    "criticize",
+                    "blame",
+                    "failure",
+                    "failed",
+                    "must comply",
+                    "must stop",
+                    "will not tolerate",
+                    "strongly urge",
+                    "call upon",
+                    "deeply concerned",
+                    "gross violation",
+                    # Turkish
+                    "talep",
+                    "reddet",
+                    "kına",
+                    "yasadışı",
+                    "kabul edilemez",
+                    "tehdit",
+                    "baskı",
+                    "zorla",
+                    "yaptırım",
+                    "suçla",
+                    "ihlal",
+                    "uygunsuz",
+                    "sorumlu",
+                    "eleştir",
+                }
+                _sent_lower = sentence_text.lower()
+                _face_save = sum(1 for k in _FACE_SAVE_MARKERS if k in _sent_lower)
+                _face_threat = sum(1 for k in _FACE_THREAT_MARKERS if k in _sent_lower)
                 _politeness_ratio = _face_save / (_face_save + _face_threat + 1)
 
                 # ── Risk score normalizasyonu: float 0-1 -> int 0-10 ──
@@ -363,15 +470,29 @@ class AnalysisTriggerService:
                 _normalized_risk = round(_raw_risk * 10)
                 _normalized_risk = max(0, min(10, _normalized_risk))
 
-                # ── Logic result ──
-                _logic_result = (
-                    "FAIL"
-                    if (
-                        pipeline_res.analysis.anomaly_flags
-                        and len(pipeline_res.analysis.anomaly_flags) > 0
-                    )
-                    else "PASS"
+                # #24 FIX: 3 Seviyeli Logic Result (PASS / WARN / FAIL)
+                # FAIL: yüksek-önem anomaliler (risk, sentiment, güç asimetrisi)
+                # WARN: düşük-önem anomaliler (topic diversity, cheap talk)
+                # PASS: anomali yok
+                _HIGH_SEVERITY_ANOMALY_PREFIXES = (
+                    "HIGH_RISK_THRESHOLD",
+                    "EXTREME_NEGATIVE_SENTIMENT",
+                    "POWER_ASYMMETRY_ANOMALY",
+                    "PLAY_TALK_ANOMALY",
                 )
+                _flags = pipeline_res.analysis.anomaly_flags or []
+                if not _flags:
+                    _logic_result = "PASS"
+                elif any(
+                    any(
+                        f.startswith(prefix)
+                        for prefix in _HIGH_SEVERITY_ANOMALY_PREFIXES
+                    )
+                    for f in _flags
+                ):
+                    _logic_result = "FAIL"
+                else:
+                    _logic_result = "WARN"
 
                 # ── Extract entities (GPE + Person + Org) from NER results ──
                 _entities_gpe = []
@@ -585,7 +706,11 @@ class AnalysisTriggerService:
                 )
                 formula_incons = round(abs(emotion_s) * 0.6 + topic_c * 0.4, 4)
                 db_sentence.formula_inconsistency_score = formula_incons
-                db_sentence.discrepancy_score = 0.0
+                # #25a FIX: |AI sentiment - rule-based diplo| / 2.0 (normalize 0-1)
+                # _ai_sent = AI sentiment score (-1..1), _diplo_compound = rule-based (-1..1)
+                db_sentence.discrepancy_score = round(
+                    abs(_ai_sent - _diplo_compound) / 2.0, 4
+                )
 
                 # Update temporal state for next sentence
                 last_risk = _normalized_risk
@@ -1118,9 +1243,30 @@ class AnalysisTriggerService:
                         for word in ent_text.split():
                             named_entity_words.add(word.lower().strip(",.!?;:()\"'"))
 
-                    for w_idx, token in enumerate(pipeline_res.analysis.tokens):
+                    # Load spaCy doc to extract rich token features (lemma, pos, dep, offsets, entity_type)
+                    from bb_paxdata.application.domain.services.hedging_service import (
+                        HedgingService,
+                    )
+                    from bb_paxdata.infrastructure.nlp.spacy_manager import (
+                        SpacyModelManager,
+                    )
+
+                    nlp = SpacyModelManager.get_model(lang)
+                    doc = nlp(sentence_text)
+                    spacy_tokens = [t for t in doc if not t.is_space]
+
+                    # Hedging spans to match tokens
+                    hedging_svc = HedgingService()
+                    hedging_spans = []
+                    for h_cat, h_pattern in hedging_svc._patterns.items():
+                        if h_cat == "anti_hedge":
+                            continue
+                        for match in h_pattern.finditer(sentence_text):
+                            hedging_spans.append((match.start(), match.end()))
+
+                    for w_idx, spacy_token in enumerate(spacy_tokens):
                         # Clean trailing/leading punctuation
-                        token_clean = token.strip(",.!?;:()\"'")
+                        token_clean = spacy_token.text.strip(",.!?;:()\"'")
                         token_lower = token_clean.lower()
 
                         # Skip if token is purely composed of punctuation
@@ -1146,7 +1292,38 @@ class AnalysisTriggerService:
 
                                 w_score = DIPLO_LEXICON_TR.get(token_lower, 0.0)
 
-                        is_ne = token_lower in named_entity_words
+                        is_ne = token_lower in named_entity_words or (
+                            spacy_token.ent_type_ != ""
+                        )
+
+                        # Determine negation scope
+                        is_neg = False
+                        if (
+                            hasattr(pipeline_res, "negation_cues")
+                            and pipeline_res.negation_cues
+                        ):
+                            for cue in pipeline_res.negation_cues:
+                                if spacy_token.i in getattr(
+                                    cue, "scope_token_indices", []
+                                ):
+                                    is_neg = True
+                                    break
+                                if spacy_token.text in getattr(cue, "scope_tokens", []):
+                                    is_neg = True
+                                    break
+                                if (
+                                    getattr(cue, "cue_start", -1)
+                                    <= spacy_token.idx
+                                    < getattr(cue, "cue_end", -1)
+                                ):
+                                    is_neg = True
+                                    break
+
+                        # Determine hedging
+                        is_hdg = any(
+                            start <= spacy_token.idx < end
+                            for start, end in hedging_spans
+                        )
 
                         db_word = Word(
                             sent_id=sent_id,
@@ -1163,6 +1340,15 @@ class AnalysisTriggerService:
                             is_stopword=token_lower in stop_words,
                             diplo_score=w_score,
                             is_named_entity=is_ne,
+                            lemma=spacy_token.lemma_,
+                            pos_tag=spacy_token.pos_,
+                            dep_label=spacy_token.dep_,
+                            entity_type=spacy_token.ent_type_ or None,
+                            is_negated=is_neg,
+                            is_hedge=is_hdg,
+                            is_diplomatic_term=w_score != 0.0,
+                            char_offset_start=spacy_token.idx,
+                            char_offset_end=spacy_token.idx + len(spacy_token.text),
                         )
                         session.add(db_word)
 
@@ -1444,6 +1630,83 @@ class AnalysisTriggerService:
             db_segment.demand_concentration = enriched_data.demand_concentration
             db_segment.inconsistency_score = enriched_data.inconsistency_score
             db_segment.dominant_frame = enriched_data.dominant_frame
+
+        # ── KeyBERT and TF-IDF Keyphrase Extraction (TASK-DB-007) ──
+        if all_processed_segments:
+            try:
+                import json
+
+                # 1. Load KeyBERT once
+                from keybert import KeyBERT
+
+                kw_model = KeyBERT()
+
+                # 2. Fit TF-IDF on all segment texts in the panel
+                from sklearn.feature_extraction.text import TfidfVectorizer
+
+                vectorizer = TfidfVectorizer(max_features=50, stop_words="english")
+                corpus = [seg.text for seg in all_processed_segments if seg.text]
+
+                tfidf_matrix = None
+                feature_names = None
+                if corpus:
+                    tfidf_matrix = vectorizer.fit_transform(corpus)
+                    feature_names = vectorizer.get_feature_names_out()
+
+                corpus_idx = 0
+                for segment in all_processed_segments:
+                    if not segment.text:
+                        continue
+
+                    # A. KeyBERT keyword extraction
+                    try:
+                        keywords = kw_model.extract_keywords(
+                            segment.text, keyphrase_ngram_range=(1, 3), top_n=10
+                        )
+                        key_phrases = [kw[0] for kw in keywords]
+                        segment.key_phrases = json.dumps(
+                            key_phrases, ensure_ascii=False
+                        )
+                    except Exception as e_kb:
+                        logger.warning(
+                            "KeyBERT extraction failed for segment",
+                            seg_id=segment.seg_id,
+                            error=str(e_kb),
+                        )
+
+                    # B. TF-IDF keywords and scores
+                    if tfidf_matrix is not None and feature_names is not None:
+                        try:
+                            row = tfidf_matrix.getrow(corpus_idx)
+                            words_scores = {}
+                            for col_idx, score in zip(row.indices, row.data):
+                                words_scores[feature_names[col_idx]] = round(
+                                    float(score), 4
+                                )
+                            # Sort by score descending
+                            sorted_words_scores = dict(
+                                sorted(
+                                    words_scores.items(),
+                                    key=lambda x: x[1],
+                                    reverse=True,
+                                )
+                            )
+                            segment.tfidf_keywords = json.dumps(
+                                sorted_words_scores, ensure_ascii=False
+                            )
+                        except Exception as e_tf:
+                            logger.warning(
+                                "TF-IDF extraction failed for segment",
+                                seg_id=segment.seg_id,
+                                error=str(e_tf),
+                            )
+
+                    corpus_idx += 1
+            except Exception as e_enrich:
+                logger.warning(
+                    "KeyBERT/TF-IDF calculation failed in run_analysis",
+                    error=str(e_enrich),
+                )
 
         # Update File aggregate stats at the end
         if db_file:
@@ -1941,7 +2204,6 @@ class AnalysisTriggerService:
 
             from bb_paxdata.application.domain.services.linguistic_helpers import (
                 classify_speech_act,
-                get_frame_distribution,
                 get_vad_vector,
             )
 
@@ -1956,8 +2218,14 @@ class AnalysisTriggerService:
                     db_seg.diplo_compound or 0.0, db_seg.emotion_category
                 )
                 act = classify_speech_act(db_seg.text or "", db_seg.demand_count or 0)
-                frames_dist = get_frame_distribution(
-                    db_seg.text or "", db_seg.dominant_frame
+                frame_counts = Counter(
+                    s.dominant_frame for s in db_seg.sentences if s.dominant_frame
+                )
+                total = sum(frame_counts.values())
+                frames_dist = (
+                    {str(k): round(v / total, 3) for k, v in frame_counts.items()}
+                    if total
+                    else {}
                 )
 
                 event = SegmentAnalyzedEvent(
@@ -2028,12 +2296,50 @@ class AnalysisTriggerService:
         except Exception as meili_exc:
             logger.warning("meilisearch.indexing_failed", error=str(meili_exc))
 
+        try:
+            from sqlalchemy import text
+
+            await session.execute(
+                text(
+                    """
+                WITH panel_risks AS (
+                  SELECT f.file_id, AVG(s.risk_score) as avg_risk,
+                         ROW_NUMBER() OVER (ORDER BY f.first_processed_at) as rn
+                  FROM files f
+                  JOIN sentences s ON f.file_id = s.file_id
+                  GROUP BY f.file_id, f.first_processed_at
+                )
+                UPDATE panel_dynamics
+                SET risk_delta = COALESCE((
+                  SELECT curr.avg_risk - COALESCE(prev.avg_risk, curr.avg_risk)
+                  FROM panel_risks curr
+                  LEFT JOIN panel_risks prev ON prev.rn = curr.rn - 1
+                  WHERE curr.file_id = panel_dynamics.file_id
+                ), 0.0)
+            """
+                )
+            )
+        except Exception as exc:
+            logger.warning(
+                "build.panel_dynamics_risk_delta_update_failed", error=str(exc)
+            )
+
         await session.flush()
         return "processed"
 
 
 async def rebuild_network_for_file(session: Any, file_id: str) -> None:
     """Rebuilds bilateral sentiments, discourse network edges, and discourse flows for a single file/panel."""
+    from uuid import uuid4
+
+    from bb_paxdata.application.domain.utils.context import (
+        get_correlation_id,
+        set_correlation_id,
+    )
+
+    if not get_correlation_id():
+        set_correlation_id(str(uuid4()))
+
     from sqlalchemy import delete
 
     BilateralSentimentTable = _infra_import(

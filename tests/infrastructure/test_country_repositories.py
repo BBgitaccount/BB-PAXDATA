@@ -3,6 +3,8 @@ from collections.abc import AsyncIterator
 
 import pytest
 import pytest_asyncio
+from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_async_engine
+
 from bb_paxdata.application.domain.enums.country_enums import ReferenceContext
 from bb_paxdata.application.domain.models.bilateral_sentiment import BilateralSentiment
 from bb_paxdata.application.domain.models.country_reference import CountryReference
@@ -11,7 +13,6 @@ from bb_paxdata.infrastructure.db.repositories.country_repository import (
     BilateralSentimentRepository,
     CountryReferenceRepository,
 )
-from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_async_engine
 
 
 @pytest_asyncio.fixture

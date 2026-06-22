@@ -2,7 +2,6 @@
 
 # BB-PAXDATA
 
-
 <br/>
 
 [![Version](https://img.shields.io/badge/version-3.0.0-a78bfa?style=for-the-badge&logo=semantic-release&logoColor=white)](https://github.com/BBgitaccount/BB-PAXDATA)
@@ -14,7 +13,7 @@
 
 ---
 
-*Diplomatik transkriplerin yapısal çıkarımı, çok katmanlı anotasyonu ve kantitatif çerçeveleme analizi için geliştirilmiş **açık kaynaklı NLP motoru**.*
+_Diplomatik transkriplerin yapısal çıkarımı, çok katmanlı anotasyonu ve kantitatif çerçeveleme analizi için geliştirilmiş **açık kaynaklı NLP motoru**._
 
 > [!WARNING]
 > **Bu döküman v3.0.0'e özeldir.** Sistem geliştikçe API'ler, formüller ve mimariler önemli ölçüde değişebilir. Güncel bilgi için her zaman etiketli sürümün dökümantasyonuna başvurun.
@@ -25,20 +24,20 @@
 
 ## 📋 İçindekiler
 
-| #   | Bölüm                                                                                   |
-| --- | --------------------------------------------------------------------------------------- |
-| 1   | [Hızlı Başlangıç Kılavuzu](#1-hızlı-başlangıç-kılavuzu)                                 |
-| 2   | [Sistem Genel Bakış](#2-sistem-genel-bakış)                                             |
-| 3   | [Mimari](#3-mimari)                                                                     |
-| 4   | [Analitik Pipeline](#4-analitik-pipeline)                                               |
-| 5   | [Domain Servisleri — Teknik Detaylar](#5-domain-servisleri--teknik-detaylar)            |
-| 6   | [Analiz Çıktıları ve Metrik Hesaplamaları](#6-analiz-çıktıları-ve-metrik-hesaplamaları) |
+| #   | Bölüm                                                                                      |
+| --- | ------------------------------------------------------------------------------------------ |
+| 1   | [Hızlı Başlangıç Kılavuzu](#1-hızlı-başlangıç-kılavuzu)                                    |
+| 2   | [Sistem Genel Bakış](#2-sistem-genel-bakış)                                                |
+| 3   | [Mimari](#3-mimari)                                                                        |
+| 4   | [Analitik Pipeline](#4-analitik-pipeline)                                                  |
+| 5   | [Domain Servisleri — Teknik Detaylar](#5-domain-servisleri--teknik-detaylar)               |
+| 6   | [Analiz Çıktıları ve Metrik Hesaplamaları](#6-analiz-çıktıları-ve-metrik-hesaplamaları)    |
 | 7   | [Kalite Güvencesi, Formül Doğrulama ve HITL](#7-kalite-güvencesi-formül-doğrulama-ve-hitl) |
-| 8   | [Altyapı](#8-altyapı)                                                                   |
-| 9   | [Gözlemlenebilirlik](#9-gözlemlenebilirlik)                                             |
-| 10  | [CLI Referansı](#10-cli-referansı)                                                      |
-| 11  | [Bilimsel Metodoloji](#11-bilimsel-metodoloji)                                          |
-| 12  | [Akademik Kaynaklar](#12-akademik-kaynaklar)                                            |
+| 8   | [Altyapı](#8-altyapı)                                                                      |
+| 9   | [Gözlemlenebilirlik](#9-gözlemlenebilirlik)                                                |
+| 10  | [CLI Referansı](#10-cli-referansı)                                                         |
+| 11  | [Bilimsel Metodoloji](#11-bilimsel-metodoloji)                                             |
+| 12  | [Akademik Kaynaklar](#12-akademik-kaynaklar)                                               |
 
 ---
 
@@ -51,9 +50,9 @@
 
 | Gereksinim              | Versiyon    | Zorunlu?                   |
 | ----------------------- | ----------- | -------------------------- |
-| Python                  | $\geq$ 3.12 | ✅                          |
-| Poetry                  | $\geq$ 1.8  | ✅                          |
-| Node.js                 | $\geq$ 18   | ✅ (React Panel için)       |
+| Python                  | $\geq$ 3.12 | ✅                         |
+| Poetry                  | $\geq$ 1.8  | ✅                         |
+| Node.js                 | $\geq$ 18   | ✅ (React Panel için)      |
 | Docker + Docker Compose | Herhangi    | İzleme için (Opsiyonel)    |
 | Ollama                  | Herhangi    | Yerel LLM için (Opsiyonel) |
 
@@ -70,6 +69,7 @@ cp .env.example .env
 ```
 
 **.env Dosyası Yapılandırması (Örnek):**
+
 ```ini
 # AI Backend Anahtarları (en az biri gerekli)
 OLLAMA_BASE_URL=http://localhost:11434   # Yerel LLM için (ücretsiz)
@@ -116,6 +116,7 @@ poetry run bbpaxdata validate db --strict
 ```
 
 ### 1.4 HITL Arayüzü (React) Çalıştırma
+
 Yapay zeka analizlerinin ve matematiksel/mantıksal formül hatalarının insan denetçiler tarafından incelenebilmesi için geliştirilmiş olan React tabanlı denetçi paneli uygulamasını aşağıdaki komutlarla başlatabilirsiniz:
 
 ```bash
@@ -139,7 +140,7 @@ flowchart TB
     CORE --> INFRA["🏗️ INFRASTRUCTURE\nAI Backend'leri (Ollama/Claude)\n6-Seviyeli JSON Kurtarma (Recovery Engine)"]
     INFRA --> OBS["📊 OBSERVABILITY & HITL\nKalite Güvencesi, İnsan İncelemesi (HITL)\nPrometheus Metrikleri"]
     OBS --> INTERFACE["🖥️ INTERFACES\nTyper CLI & FastAPI REST\nRaporlama (JSON/HTML)"]
-    
+
     style A fill:#475569,stroke:#94a3b8,color:#f8fafc
     style INGEST fill:#1e1b4b,stroke:#a78bfa,color:#e2e8f0
     style CORE fill:#052e16,stroke:#34d399,color:#e2e8f0
@@ -397,7 +398,7 @@ flowchart LR
 | Lemmatization          | spaCy (`tr_core_news_trf`, `en_core_web_trf`)   | Morfolojik varyantları standartlaştırma |
 | POS Tagging            | spaCy dependency parser                         | Sözdizimsel özellik çıkarımı            |
 | NER                    | spaCy + özel GPE modeli                         | Jeopolitik varlık tespiti               |
-| Stopword Filtering     | Alan-farkında (negasyon *not*, *never* korunur) | Retorik açıdan yüklü token'ları koruma  |
+| Stopword Filtering     | Alan-farkında (negasyon _not_, _never_ korunur) | Retorik açıdan yüklü token'ları koruma  |
 
 ### 4.2 Özellik Çıkarımı
 
@@ -419,6 +420,7 @@ flowchart LR
 Sistem, diplomatik söylemler için özelleştirilmiş **DIPLO leksikonu** ile VADER'ı birleştirir.
 
 #### Temel Formül
+
 Saf DIPLO skoru şu şekilde hesaplanır:
 
 $$\text{diplo}_{\text{compound}} = \text{VADER}_{\text{compound}} + \left(\sum_{p \in \text{matched}_{\text{phrases}}} v_p\right) \times 0.05$$
@@ -426,12 +428,15 @@ $$\text{diplo}_{\text{compound}} = \text{VADER}_{\text{compound}} + \left(\sum_{
 Burada $v_p \in [-0.9, +0.7]$ aralığında diplomatik değerlik puanlarıdır. Sonuç $[-1, 1]$ aralığına sıkıştırılır.
 
 #### Negasyon-Farkında Skor
-Sol-pencere negasyon tespiti *(Jia & Liang, 2017)*:
 
-$$\text{score}_{\text{neg-aware}} = \begin{cases}
+Sol-pencere negasyon tespiti _(Jia & Liang, 2017)_:
+
+$$
+\text{score}_{\text{neg-aware}} = \begin{cases}
 -v_p \times 0.8 & \text{eğer } \exists \; n \in \text{NEGATION}_{\text{WORDS}} \; \text{window}[i-4:i] \\
 v_p & \text{aksi hâlde}
-\end{cases}$$
+\end{cases}
+$$
 
 Burada $0.8$ attenuation (zayıflatma) faktörüdür.
 
@@ -452,13 +457,13 @@ flowchart TD
 ```
 
 **Duygu Eşikleri:**
-| Skor Aralığı           | Kategori           |
+| Skor Aralığı | Kategori |
 | ---------------------- | ------------------ |
-| $s \leq -0.40$         | `CONFRONTATIONAL`  |
-| $-0.40 < s \leq -0.10$ | `CONCERNED`        |
-| $-0.10 < s < 0.10$     | `NEUTRAL_CAUTIOUS` |
-| $0.10 \leq s < 0.35$   | `CONSTRUCTIVE`     |
-| $s \geq 0.35$          | `COOPERATIVE`      |
+| $s \leq -0.40$ | `CONFRONTATIONAL` |
+| $-0.40 < s \leq -0.10$ | `CONCERNED` |
+| $-0.10 < s < 0.10$ | `NEUTRAL_CAUTIOUS` |
+| $0.10 \leq s < 0.35$ | `CONSTRUCTIVE` |
+| $s \geq 0.35$ | `COOPERATIVE` |
 
 ---
 
@@ -467,17 +472,21 @@ flowchart TD
 Sistem iki adet bileşik indeks hesaplar: **SBI** (Söylemsel Baskı İndeksi) ve **DKI** (Diplomatik Konum İndeksi).
 
 #### SBI — Söylemsel Baskı İndeksi
+
 $$\text{SBI} = \frac{P_{\text{level}} \times W_{\text{demand}}}{2} + R_{\text{score}}$$
 
 Burada:
+
 - $P_{\text{level}} \in [0, 10]$: Konuşmacının güç düzeyi
-- $W_{\text{demand}} \in [0, 1]$: Talebin ağırlığı (*suggest*=0.5, *should*=0.7, *must/demand*=0.9)
+- $W_{\text{demand}} \in [0, 1]$: Talebin ağırlığı (_suggest_=0.5, _should_=0.7, _must/demand_=0.9)
 - $R_{\text{score}} \in [0, 10]$: Baz risk skoru
 
 #### DKI — Diplomatik Konum İndeksi
+
 $$\text{DKI} = \Big(d_{\text{norm}} \cdot 0.4 + (1 - r_{\text{norm}}) \cdot 0.3 + d_{\text{req}} \cdot 0.2 + (1 - m_{\text{norm}}) \cdot 0.1\Big) \times 2 - 1$$
 
 Burada:
+
 - $d_{\text{norm}}$: Normalize diplomatik skor $\in [0, 1]$
 - $r_{\text{norm}}$: Normalize risk skoru $\in [0, 1]$
 - $d_{\text{req}}$: Normalize talep yoğunluğu $\in [0, 1]$
@@ -486,16 +495,17 @@ Burada:
 Sonuç: $\text{DKI} \in [-1, 1]$ (−1 = tam düşmanca, +1 = tam işbirlikçi).
 
 #### Bağlamsal Risk (NER Çarpanı)
+
 $$R_{\text{ctx}} = \min\!\left(10,\; R_{\text{base}} \times \mu\right)$$
 
 $$\mu = \begin{cases} 1.5 & \text{GPE veya ORG varlığı tespit edilirse} \\ 1.2 & \text{yalnızca PERSON varlığı tespit edilirse} \\ 1.0 & \text{varlık yok} \end{cases}$$
 
 **Risk Sinyal Ağırlıkları:**
-| Kategori | Örnekler                                                    | Puan |
+| Kategori | Örnekler | Puan |
 | -------- | ----------------------------------------------------------- | ---- |
-| CRITICAL | *red line*, *ultimatum*, *unacceptable*, *military option*  | 3    |
-| HIGH     | *escalate*, *retaliate*, *decisive actions*, *deep strikes* | 2    |
-| BASE     | Diğer tüm sinyal kelimeleri                                 | 1    |
+| CRITICAL | _red line_, _ultimatum_, _unacceptable_, _military option_ | 3 |
+| HIGH | _escalate_, _retaliate_, _decisive actions_, _deep strikes_ | 2 |
+| BASE | Diğer tüm sinyal kelimeleri | 1 |
 
 ---
 
@@ -520,6 +530,7 @@ graph LR
 ```
 
 #### Hedge Yoğunluk Formülü
+
 $$H_{\text{score}} = \frac{\sum_{c \in \text{categories}} w_c \cdot n_c}{\max(1, N_{\text{matches}})}$$
 
 ---
@@ -546,18 +557,18 @@ mindmap
 ```
 
 **Çerçeve Türleri (v1.1.0):**
-| Frame Türü           | Tanımı                         |
+| Frame Türü | Tanımı |
 | -------------------- | ------------------------------ |
-| `CONFLICT_FRAME`     | Savaş/çatışma odaklı çerçeve   |
-| `HUMANITARIAN_FRAME` | İnsani kriz odaklı çerçeve     |
-| `SOVEREIGNTY_FRAME`  | Egemenlik ve toprak bütünlüğü  |
-| `SECURITY_FRAME`     | Güvenlik tehdidi çerçeve       |
-| `LEGAL_FRAME`        | Uluslararası hukuk ve yaptırım |
-| `DETERRENCE_FRAME`   | Caydırıcılık stratejisi        |
-| `PEACE_FRAME`        | Diyalog ve uzlaşı              |
-| `THREAT_FRAME`       | Tehdit ve tehlike              |
-| `MULTILATERAL_FRAME` | Çok taraflı diplomatik eylem   |
-| `NEGOTIATION_FRAME`  | Reform / müzakere süreci       |
+| `CONFLICT_FRAME` | Savaş/çatışma odaklı çerçeve |
+| `HUMANITARIAN_FRAME` | İnsani kriz odaklı çerçeve |
+| `SOVEREIGNTY_FRAME` | Egemenlik ve toprak bütünlüğü |
+| `SECURITY_FRAME` | Güvenlik tehdidi çerçeve |
+| `LEGAL_FRAME` | Uluslararası hukuk ve yaptırım |
+| `DETERRENCE_FRAME` | Caydırıcılık stratejisi |
+| `PEACE_FRAME` | Diyalog ve uzlaşı |
+| `THREAT_FRAME` | Tehdit ve tehlike |
+| `MULTILATERAL_FRAME` | Çok taraflı diplomatik eylem |
+| `NEGOTIATION_FRAME` | Reform / müzakere süreci |
 
 ---
 
@@ -583,9 +594,11 @@ flowchart TD
 ```
 
 #### Tsytsarau Çelişki Formülü
+
 $$C = \frac{n \cdot M_2 - M_1^2}{\left(\vartheta \cdot n^2 + M_1^2\right) \cdot W}$$
 
 Burada:
+
 - $M_1 = \frac{1}{n}\sum p_i$ (ortalama polarite)
 - $M_2 = \frac{1}{n}\sum p_i^2$ (ikinci moment)
 - $\vartheta = 0.1$ (regularizasyon)
@@ -594,18 +607,18 @@ Burada:
 Negasyon düzeltmesinden sonra $C_{\text{adj}} > 0.1$ ise `SENTIMENT_RISK_DIVERGENCE` anomalisi tetiklenir.
 
 **Anomali Türleri (v1.1.0):**
-| Anomali                                  | Tetikleyici Koşul                                 | Kategori            |
+| Anomali | Tetikleyici Koşul | Kategori |
 | ---------------------------------------- | ------------------------------------------------- | ------------------- |
-| `RISK_HEDGING_CONFLICT`                  | Risk ≥ 7 AND Hedge ≥ 0.6                          | Deception Pattern   |
-| `NEGATIVE_CONFRONTATIONAL_AMPLIFICATION` | Duygu ≤ -0.5 AND Ton = confrontational            | Agresif Söylem      |
-| `VELVET_GLOVE_CONFRONTATION`             | Duygu ≥ 0.3 AND Ton = confrontational             | Örtülü Baskı        |
-| `HIGH_RISK_CONCILIATORY_MASK`            | Risk ≥ 7 AND Ton = cooperative                    | Deception Pattern   |
-| `DIRECT_MANIPULATION_LOW_HEDGE`          | Manip ≥ 0.7 AND Hedge ≤ 0.2                       | Manipulation        |
-| `DOMINANT_ACTOR_PRESSURE`                | Güç ≥ 8 AND SBI ≥ 7 AND Risk ≥ 6                  | Power Dynamics      |
-| `VAGUE_DEMAND_PLAUSIBLE_DENIABILITY`     | Hedge ≥ 0.6 AND Risk ≥ 4                          | Strategic Ambiguity |
-| `CONFLICT_FRAME_POSITIVE_WRAP`           | Frame=conflict AND Duygu ≥ 0.3                    | Framing Strategy    |
-| `INCONSISTENCY_PLUS_MANIPULATION`        | Manip ≥ 0.5 AND \|AI−Formül\| ≥ 0.5               | Deception Pattern   |
-| `NEGATIVE_APPRAISAL_PERSUASIVE_TONE`     | Appraisal=neg AND Duygu ≤ -0.5 AND Kibarlık ≥ 0.6 | Persuasion Strategy |
+| `RISK_HEDGING_CONFLICT` | Risk ≥ 7 AND Hedge ≥ 0.6 | Deception Pattern |
+| `NEGATIVE_CONFRONTATIONAL_AMPLIFICATION` | Duygu ≤ -0.5 AND Ton = confrontational | Agresif Söylem |
+| `VELVET_GLOVE_CONFRONTATION` | Duygu ≥ 0.3 AND Ton = confrontational | Örtülü Baskı |
+| `HIGH_RISK_CONCILIATORY_MASK` | Risk ≥ 7 AND Ton = cooperative | Deception Pattern |
+| `DIRECT_MANIPULATION_LOW_HEDGE` | Manip ≥ 0.7 AND Hedge ≤ 0.2 | Manipulation |
+| `DOMINANT_ACTOR_PRESSURE` | Güç ≥ 8 AND SBI ≥ 7 AND Risk ≥ 6 | Power Dynamics |
+| `VAGUE_DEMAND_PLAUSIBLE_DENIABILITY` | Hedge ≥ 0.6 AND Risk ≥ 4 | Strategic Ambiguity |
+| `CONFLICT_FRAME_POSITIVE_WRAP` | Frame=conflict AND Duygu ≥ 0.3 | Framing Strategy |
+| `INCONSISTENCY_PLUS_MANIPULATION` | Manip ≥ 0.5 AND \|AI−Formül\| ≥ 0.5 | Deception Pattern |
+| `NEGATIVE_APPRAISAL_PERSUASIVE_TONE` | Appraisal=neg AND Duygu ≤ -0.5 AND Kibarlık ≥ 0.6 | Persuasion Strategy |
 
 ---
 
@@ -646,13 +659,16 @@ flowchart LR
 ```
 
 #### CUSUM Duygu Drift Tespiti
+
 $$\text{CUSUM}^+_t = \max\!\left(0,\; \text{CUSUM}^+_{t-1} + z_t - k\right)$$
 $$\text{CUSUM}^-_t = \min\!\left(0,\; \text{CUSUM}^-_{t-1} + z_t + k\right)$$
 
 #### Jensen-Shannon Divergence (Konu Drift)
+
 $$\text{JSD}(P \| Q) = \frac{1}{2} D_{\text{KL}}(P \| M) + \frac{1}{2} D_{\text{KL}}(Q \| M)$$
 
 #### Ek İstatistiksel Metrikler (v1.1.0)
+
 | Metrik                   | Formül / Yöntem                                                         | Açıklama                          |
 | ------------------------ | ----------------------------------------------------------------------- | --------------------------------- |
 | **MTLD**                 | Type-Token Ratio stabilizasyon noktası                                  | Sözcük çeşitlilik zenginliği      |
@@ -698,7 +714,7 @@ flowchart LR
     VADER & NER --> SBI
     VADER & SBI & HEDGE & FRAME --> DKI
     VADER & SBI & HEDGE --> ANOMALY
-    
+
     DKI & ANOMALY --> GCI
     VADER & FRAME --> DRIFT
     ANOMALY --> CRED
@@ -735,7 +751,7 @@ Burada $p_c$ çıktının $c$ kategorisine ait olma olasılığıdır. Yüksek e
 
 ### 7.2 HITL (Human-in-the-Loop) İş Akışı
 
-Aşağıdaki şema, yapay zeka analizinin alan uzmanları tarafından nasıl denetlendiğini, bu denetimlerin sistemi nasıl kalibre ettiğini ve AI'ın *few-shot learning* ile kendi kendini nasıl eğittiğini göstermektedir:
+Aşağıdaki şema, yapay zeka analizinin alan uzmanları tarafından nasıl denetlendiğini, bu denetimlerin sistemi nasıl kalibre ettiğini ve AI'ın _few-shot learning_ ile kendi kendini nasıl eğittiğini göstermektedir:
 
 ```mermaid
 sequenceDiagram
@@ -747,25 +763,25 @@ sequenceDiagram
 
     AI->>SYSTEM: 1. İlk Analiz Çıktısı (Sentiment, Risk, Çerçeve)
     SYSTEM->>SYSTEM: 2. Entropi (U) Hesapla
-    
+
     alt U > Threshold (Yüksek Belirsizlik)
         SYSTEM->>EXPERT: 3. Review Kuyruğuna Gönder
         EXPERT-->>SYSTEM: 4. Uzman Düzeltmesi (Immutable HumanReview)
     else U <= Threshold
         SYSTEM->>SYSTEM: Otomatik Onay
     end
-    
+
     loop Haftalık
         SYSTEM->>CALIB: 5. Analiz Verilerini Besle
         CALIB->>CALIB: 6. Uyum Ölçümü (Kappa, F1, SBI MAE)
-        
+
         alt Düşük Uyum (MAE > 10 veya F1 < 0.70)
             CALIB-->>PROMPT: 7. Alert: Prompt veya Ağırlık Güncelle
         else Yüksek Uyum
             CALIB->>PROMPT: 8. Golden Dataset'e Ekle
         end
     end
-    
+
     PROMPT->>AI: 9. Yeni Analizlerde Few-Shot Olarak Enjekte Et
 ```
 
@@ -774,32 +790,39 @@ sequenceDiagram
 Sistemin en güncel aşamasında, yapay zeka tarafından üretilen metriklerin tutarlılığını sağlamak amacıyla gelişmiş bir **HITL Formül Doğrulama ve Denetçi Arayüzü** entegre edilmiştir. Bu sistem, AI çıktılarındaki mantıksal ve matematiksel hataları yakalamak ve denetçilerin müdahalesine sunmak için çalışır.
 
 #### 1. FormulaAuditor (Mantıksal ve Matematiksel Denetim)
-* **Veri Kalitesi Kapısı (Data Quality Gate):** Analiz edilmek üzere gelen cümle ve segmentlerde kritik veri eksikliklerini (`DATA_INCOMPLETE`, `MISSING_CONTEXT`) denetler. Kalite kriterini geçemeyen kayıtlar review kuyruğuna alınmaz.
-* **Deterministik Formül Kontrolleri:** VADER/DIPLO sentiment skoru, risk skoru (SBI/DKI), çit (hedge) yoğunluğu, konuşmacı gücü ve duygu kategorisi arasındaki mantıksal uyumu denetler.
-* **Otomatik Önceliklendirme (Auto-Triage):** Yakalanan formül hataları (`FAIL`), aşağıdaki kriterlere göre otomatik olarak önceliklendirilir:
-  * **CRITICAL:** Risk veya Duygu formülü hata vermiş ve AI Risk Skoru $\geq 7.0$ ise.
-  * **SOVEREIGN_PRIORITY:** Güç seviyesi $\geq 9$ olan Tier-1 konuşmacıların (örneğin devlet başkanları) ifadeleriyse.
-  * **HIGH_PRIORITY:** Aynı cümlede 3 veya daha fazla formül hatası (FAIL) birikmişse.
-  * **NORMAL:** Standart öncelik seviyesi.
+
+- **Veri Kalitesi Kapısı (Data Quality Gate):** Analiz edilmek üzere gelen cümle ve segmentlerde kritik veri eksikliklerini (`DATA_INCOMPLETE`, `MISSING_CONTEXT`) denetler. Kalite kriterini geçemeyen kayıtlar review kuyruğuna alınmaz.
+- **Deterministik Formül Kontrolleri:** VADER/DIPLO sentiment skoru, risk skoru (SBI/DKI), çit (hedge) yoğunluğu, konuşmacı gücü ve duygu kategorisi arasındaki mantıksal uyumu denetler.
+- **Otomatik Önceliklendirme (Auto-Triage):** Yakalanan formül hataları (`FAIL`), aşağıdaki kriterlere göre otomatik olarak önceliklendirilir:
+  - **CRITICAL:** Risk veya Duygu formülü hata vermiş ve AI Risk Skoru $\geq 7.0$ ise.
+  - **SOVEREIGN_PRIORITY:** Güç seviyesi $\geq 9$ olan Tier-1 konuşmacıların (örneğin devlet başkanları) ifadeleriyse.
+  - **HIGH_PRIORITY:** Aynı cümlede 3 veya daha fazla formül hatası (FAIL) birikmişse.
+  - **NORMAL:** Standart öncelik seviyesi.
 
 #### 2. Güvenlik ve RBAC (Rol Tabanlı Erişim Kontrolü)
+
 Sistem, denetçilerin yetki sınırlarını korumak için rol tabanlı erişim kontrolü (RBAC) ve JWT tabanlı kimlik doğrulama altyapısına sahiptir:
-* **Yetki Seviyeleri (Permission Levels):** `view` (görüntüleme), `verdict` (onaylama), `correct` (düzeltme), `escalate` (yöneticiye sevk) ve `admin` (yönetici).
-* **Denetçi Kapsamı (Reviewer Scope):** Denetçiler global düzeyde veya belirli bir formül (`formula`), konuşmacı (`speaker`), ülke (`country`) ya da panel (`panel`) bazında yetkilendirilebilir.
+
+- **Yetki Seviyeleri (Permission Levels):** `view` (görüntüleme), `verdict` (onaylama), `correct` (düzeltme), `escalate` (yöneticiye sevk) ve `admin` (yönetici).
+- **Denetçi Kapsamı (Reviewer Scope):** Denetçiler global düzeyde veya belirli bir formül (`formula`), konuşmacı (`speaker`), ülke (`country`) ya da panel (`panel`) bazında yetkilendirilebilir.
 
 #### 3. Salt-Okunur Denetim Geçmişi (WORM Audit Trail)
+
 Reviewer tarafından yapılan her işlem (`REVIEW_STARTED`, `VERDICT_SUBMITTED`, `CORRECTED`, `ROLLED_BACK`, `ESCALATED`) üzerinde hiçbir değişiklik yapılamayan (WORM - Write Once Read Many) `formula_validation_audit` tablosuna anlık olarak kaydedilir.
 
 #### 4. Sürüm Zinciri ve Düzeltmeler (Log Versioning)
+
 Bir formülün değeri denetçi tarafından düzeltildiğinde (`CORRECTED`), eski kayıt silinmez veya güncellenmez. Bunun yerine, eski kayıt `is_current=False` olarak işaretlenir ve `superseded_by` ilişkisiyle yeni oluşturulan güncel versiyona bağlanır. Bu sayede tam izlenebilirlik sağlanır.
 
 #### 5. React Review Arayüzü
+
 Denetçilerin kullanımına sunulan modern web arayüzüdür:
-* **KPI Şeridi:** Toplam log, toplam FAIL, bekleyen inceleme sayısı ve doğruluk/düzeltme oranlarını canlı gösterir.
-* **Formül Sağlık Analizi:** Her bir formülün false-positive ve düzeltme oranlarını tablo ve grafiklerle raporlar.
-* **Filtreleme Paneli:** Formül adı, öncelik derecesi, konuşmacı ve inceleme durumuna göre kuyruğu süzer.
-* **Üçlü Bağlam Kartı (Triplet Card):** İncelenen cümlenin kendisini, bir önceki ve bir sonraki cümlenin bağlamını konuşmacı detaylarıyla birlikte sunar.
-* **Karar Verme ve Düzeltme Arayüzü:** Denetçinin `CONFIRMED_FAIL`, `CONFIRMED_PASS` veya `CORRECTED` (düzeltilmiş değer girişi ile) kararlarını girmesini sağlar.
+
+- **KPI Şeridi:** Toplam log, toplam FAIL, bekleyen inceleme sayısı ve doğruluk/düzeltme oranlarını canlı gösterir.
+- **Formül Sağlık Analizi:** Her bir formülün false-positive ve düzeltme oranlarını tablo ve grafiklerle raporlar.
+- **Filtreleme Paneli:** Formül adı, öncelik derecesi, konuşmacı ve inceleme durumuna göre kuyruğu süzer.
+- **Üçlü Bağlam Kartı (Triplet Card):** İncelenen cümlenin kendisini, bir önceki ve bir sonraki cümlenin bağlamını konuşmacı detaylarıyla birlikte sunar.
+- **Karar Verme ve Düzeltme Arayüzü:** Denetçinin `CONFIRMED_FAIL`, `CONFIRMED_PASS` veya `CORRECTED` (düzeltilmiş değer girişi ile) kararlarını girmesini sağlar.
 
 ---
 
@@ -849,7 +872,7 @@ flowchart TD
 | Disk    | `diskcache` | 24 saat (varsayılan)      |
 | Redis   | `redis-py`  | LRU + açık geçersiz kılma |
 
-*Önbellek anahtarı: `SHA-256(prompt_text + model_version)` — prompt değişirse otomatik geçersiz.*
+_Önbellek anahtarı: `SHA-256(prompt_text + model_version)` — prompt değişirse otomatik geçersiz._
 
 ### 8.3 Veritabanı
 
@@ -906,114 +929,124 @@ poetry run bbpaxdata [KOMUT] [SEÇENEKLER]
 
 ### 10.1 Veritabanı ve Göç Komutları
 
-* **Legacy Göçü (`migrate`):**
+- **Legacy Göçü (`migrate`):**
   Eski monolitik SQLite veritabanından yeni modüler formata verileri taşır:
+
   ```bash
   poetry run bbpaxdata migrate run --legacy-db <eski_db_yolu> [--dry-run] [--batch-size <boyut>]
   ```
-  *Dosya:* [migrate.py](file:///c:/Users/THINKPAD/Desktop/BB-PAXDATA/src/bb_paxdata/interfaces/cli/commands/migrate.py)
 
-* **Veritabanı Doğrulama (`validate`):**
+  _Dosya:_ [migrate.py](file:///c:/Users/THINKPAD/Desktop/BB-PAXDATA/src/bb_paxdata/interfaces/cli/commands/migrate.py)
+
+- **Veritabanı Doğrulama (`validate`):**
   Veritabanının bütünlüğünü, yabancı anahtarları ve şema doğruluğunu kontrol eder:
+
   ```bash
   poetry run bbpaxdata validate db [--strict] [--json] [--output <dosya_yolu>]
   ```
-  *Dosya:* [validate.py](file:///c:/Users/THINKPAD/Desktop/BB-PAXDATA/src/bb_paxdata/interfaces/cli/commands/validate.py)
 
-* **Veri Yükleme, İzleme ve Yapılandırma (`build`):**
+  _Dosya:_ [validate.py](file:///c:/Users/THINKPAD/Desktop/BB-PAXDATA/src/bb_paxdata/interfaces/cli/commands/validate.py)
+
+- **Veri Yükleme, İzleme ve Yapılandırma (`build`):**
   Transkript dosyalarını okuyarak veritabanına yükler:
+
   ```bash
   poetry run bbpaxdata build <veri_dizini_yolu> [--force-rebuild] [--panel <panel_adı>] [--dry-run] [--logic-only] [--ai-limit <sayi>]
   ```
-  * Seçenekler:
-    * `--force-rebuild` / `-f`: Daha önce işlenmiş dosyaları zorla yeniden analiz eder.
-    * `--panel <panel_adı>` / `-p <panel_adı>`: Yalnızca dosya adında belirtilen metin geçen paneli işler.
-    * `--dry-run` / `-d`: Veritabanına yazmadan ve dosyaları diske kaydetmeden simülasyon yapar.
-    * `--logic-only` / `-L`: **AI-Free (Logic-only)** modunu çalıştırır. LLM/AI çağrısı yapmadan, tamamen deterministik kural tabanlı NLP algoritmasıyla duygu ve risk skorlarını hesaplar (sıfır maliyet ve yüksek hız).
-    * `--ai-limit <sayi>` / `-n <sayi>`: **Cümle Bazlı AI Limiti** uygular. İlk N cümle gerçek AI (LLM) ile analiz edilir, sınır aşıldığında sonraki tüm cümlelerin analizleri (ve frame, anomali vb. alt modülleri) otomatik olarak `LogicOnly` analistine düşer.
+  - Seçenekler:
+    - `--force-rebuild` / `-f`: Daha önce işlenmiş dosyaları zorla yeniden analiz eder.
+    - `--panel <panel_adı>` / `-p <panel_adı>`: Yalnızca dosya adında belirtilen metin geçen paneli işler.
+    - `--dry-run` / `-d`: Veritabanına yazmadan ve dosyaları diske kaydetmeden simülasyon yapar.
+    - `--logic-only` / `-L`: **AI-Free (Logic-only)** modunu çalıştırır. LLM/AI çağrısı yapmadan, tamamen deterministik kural tabanlı NLP algoritmasıyla duygu ve risk skorlarını hesaplar (sıfır maliyet ve yüksek hız).
+    - `--ai-limit <sayi>` / `-n <sayi>`: **Cümle Bazlı AI Limiti** uygular. İlk N cümle gerçek AI (LLM) ile analiz edilir, sınır aşıldığında sonraki tüm cümlelerin analizleri (ve frame, anomali vb. alt modülleri) otomatik olarak `LogicOnly` analistine düşer.
 
-  * **Klasör İzleme (`watch`):**
+  - **Klasör İzleme (`watch`):**
     Belirtilen klasörü sürekli izler. Yeni veya güncellenen dosyalar eklendiğinde **otomatik olarak dosyayı standardize eder** ve veritabanına aktarır:
+
     ```bash
     poetry run bbpaxdata build watch <veri_dizini_yolu> [--interval <saniye>] [--logic-only] [--ai-limit <sayi>]
     ```
-    * `--interval <saniye>` / `-i <saniye>`: Klasör tarama sıklığı (varsayılan: 5s).
+    - `--interval <saniye>` / `-i <saniye>`: Klasör tarama sıklığı (varsayılan: 5s).
 
-  * **Durum Kontrolü (`status`):**
+  - **Durum Kontrolü (`status`):**
     Dosya durumunu ve işlenme geçmişini kontrol eder:
+
     ```bash
     poetry run bbpaxdata build status <dosya_yolu>
     ```
 
-  * **Temizlik (`clean`):**
+  - **Temizlik (`clean`):**
     Panelleri veya eski dosyaları temizlemek için:
     ```bash
     poetry run bbpaxdata build clean [--panel <panel_id>] [--older-than <gun_sayisi>] [--force]
     ```
-  *Dosya:* [build.py](file:///c:/Users/THINKPAD/Desktop/BB-PAXDATA/src/bb_paxdata/application/commands/build.py)
+    _Dosya:_ [build.py](file:///c:/Users/THINKPAD/Desktop/BB-PAXDATA/src/bb_paxdata/application/commands/build.py)
 
 ### 10.2 Analiz Komutları (`analyze`)
 
 Diplomatik söylem analizlerini çalıştırmak için kullanılan komutlar:
-* **Bilateral Sentiment Analizi:**
+
+- **Bilateral Sentiment Analizi:**
   ```bash
   poetry run bbpaxdata analyze country-refs --panel-id <panel_id> [--verbose]
   ```
-* **Söylem Ağı Kurulumu:**
+- **Söylem Ağı Kurulumu:**
   ```bash
   poetry run bbpaxdata analyze network --panel-id <panel_id> [--threshold <deger>] [--centrality]
   ```
-* **Tam Analiz Pipeline'ı:**
+- **Tam Analiz Pipeline'ı:**
   Tüm pipeline adımlarını (Bilateral Sentiment, Söylem Ağı, Konu Matrisi) sırayla çalıştırır:
   ```bash
   poetry run bbpaxdata analyze full --panel-id <panel_id> [--threshold <deger>] [--centrality]
   ```
-  *Dosya:* [analyze.py](file:///c:/Users/THINKPAD/Desktop/BB-PAXDATA/src/bb_paxdata/interfaces/cli/commands/analyze.py)
+  _Dosya:_ [analyze.py](file:///c:/Users/THINKPAD/Desktop/BB-PAXDATA/src/bb_paxdata/interfaces/cli/commands/analyze.py)
 
 ### 10.3 Test ve Değerlendirme Komutları (`test`)
 
-* **Test Süitini Çalıştırma (`run`):**
+- **Test Süitini Çalıştırma (`run`):**
   Belirli kapsamdaki testleri pytest kullanarak çalıştırır:
+
   ```bash
   poetry run bbpaxdata test run --type [logic|ai|e2e|all] [--limit <sayi>] [--verbose]
   ```
-  * `--type logic`: **AI (LLM) katmanı olmadan**, sadece yerel NLP ve kural tabanlı mantıksal testleri çalıştırır. (Önerilen yerel analiz testi)
-  * `--type ai`: Sadece AI/LLM servislerini test eder.
-  * `--type e2e`: Uçtan uca tüm sistemi test eder.
-  * `--type all`: Tüm test süitini çalıştırır.
+  - `--type logic`: **AI (LLM) katmanı olmadan**, sadece yerel NLP ve kural tabanlı mantıksal testleri çalıştırır. (Önerilen yerel analiz testi)
+  - `--type ai`: Sadece AI/LLM servislerini test eder.
+  - `--type e2e`: Uçtan uca tüm sistemi test eder.
+  - `--type all`: Tüm test süitini çalıştırır.
 
-* **Tek Cümle Analizi (`eval-sentence`):**
+- **Tek Cümle Analizi (`eval-sentence`):**
   Tek bir cümleyi tüm pipeline üzerinden geçirip sonucunu terminalde görselleştirir:
+
   ```bash
   poetry run bbpaxdata test eval-sentence "<analiz_edilecek_cumle>" [--verbose] [--logic-only]
   ```
-  * `--logic-only` / `-L` bayrağı ile AI çağrısı yapmadan yerel motor üzerinden çalıştırılabilir.
+  - `--logic-only` / `-L` bayrağı ile AI çağrısı yapmadan yerel motor üzerinden çalıştırılabilir.
 
-* **Dataset Kalite Ölçümü (`eval-dataset`):**
+- **Dataset Kalite Ölçümü (`eval-dataset`):**
   Golden Dataset üzerinden DeepEval kalite değerlendirme pipeline'ını tetikler:
   ```bash
   poetry run bbpaxdata test eval-dataset [--limit <sayi>]
   ```
-  *Dosya:* [test.py](file:///c:/Users/THINKPAD/Desktop/BB-PAXDATA/src/bb_paxdata/interfaces/cli/commands/test.py)
+  _Dosya:_ [test.py](file:///c:/Users/THINKPAD/Desktop/BB-PAXDATA/src/bb_paxdata/interfaces/cli/commands/test.py)
 
 ### 10.4 İnsan İncelemesi ve Kalibrasyon (`review`)
 
-* **Uzman İncelemesi Ekleme (`submit`):**
+- **Uzman İncelemesi Ekleme (`submit`):**
   AI çıktısıyla uzman kararını karşılaştırıp kaydetmek için:
   ```bash
   poetry run bbpaxdata review submit --analysis-id <id> --reviewer-id <uzman_id> [--human-frame <frame>] [--human-risk <risk>] [--human-sbi <sbi>] [--human-sentiment <sentiment>] [--reason <neden>] [--duration <saniye>]
   ```
-* **Haftalık Kalibrasyon Raporu (`calibrate`):**
+- **Haftalık Kalibrasyon Raporu (`calibrate`):**
   Prompt sürümleri için Cohen's Kappa, Macro-F1 ve MAE istatistiklerini hesaplar:
   ```bash
   poetry run bbpaxdata review calibrate --prompt-version <surum> [--days-back <gun>]
   ```
-* **Anlaşmazlıkları Listeleme (`show-disagreements`):**
+- **Anlaşmazlıkları Listeleme (`show-disagreements`):**
   Uzman ve AI arasındaki kararsızlık/anlaşmazlık durumlarını listeler:
   ```bash
   poetry run bbpaxdata review show-disagreements --prompt-version <surum> [--limit <sayi>]
   ```
-  *Dosya:* [review_commands.py](file:///c:/Users/THINKPAD/Desktop/BB-PAXDATA/src/bb_paxdata/interfaces/cli/review_commands.py)
+  _Dosya:_ [review_commands.py](file:///c:/Users/THINKPAD/Desktop/BB-PAXDATA/src/bb_paxdata/interfaces/cli/review_commands.py)
 
 ---
 
@@ -1022,6 +1055,7 @@ Diplomatik söylem analizlerini çalıştırmak için kullanılan komutlar:
 Bu bölüm, BB-PAXDATA CLI'ını en verimli şekilde kullanabilmeniz için senaryolara dayalı adım adım komut kılavuzudur.
 
 ### Senaryo A: Tamamen AI-Free (Yapay Zekasız) ve Sıfır Maliyetli Hızlı Analiz
+
 LLM API anahtarınız yoksa veya bütçe harcamadan binlerce satırlık büyük transkript dosyalarını hızlıca yerel makinenizde analiz etmek istiyorsanız bu adımları izleyin.
 
 1. **Test Edin:** Yerel kuralların ve veri tabanının sorunsuz çalıştığını doğrulamak için sadece logic testlerini çalıştırın:
@@ -1044,17 +1078,19 @@ LLM API anahtarınız yoksa veya bütçe harcamadan binlerce satırlık büyük 
 ---
 
 ### Senaryo B: Bütçe/Token Kontrollü AI Analizi (AI-Limit)
+
 Tüm transkripti yapay zekaya gönderip yüksek faturalarla karşılaşmak yerine, her transkript dosyasının sadece ilk N cümlesini (örneğin ilk 50 cümle) yapay zekayla derinlemesine analiz edip, kalanını otomatik olarak logic-only modla tamamlayabilirsiniz.
 
 1. **Bütçe Sınırlı Build:** Her transkriptin ilk 50 cümlesini yapay zekaya gönderin, 51. cümleden itibaren tüm AI alt servislerini (sentiment, frame, anomali vb.) logic-only moduna düşürün:
    ```bash
    poetry run bbpaxdata build data/ --ai-limit 50 --force-rebuild
    ```
-   *Not:* İşlem tamamlandığında terminalde `📊 AI Kullanım Raporu` başlığı altında kaç cümle için AI çağrısı yapıldığı ve limitin aşıp aşmadığı detaylıca gösterilir.
+   _Not:_ İşlem tamamlandığında terminalde `📊 AI Kullanım Raporu` başlığı altında kaç cümle için AI çağrısı yapıldığı ve limitin aşıp aşmadığı detaylıca gösterilir.
 
 ---
 
 ### Senaryo C: Otomatik İzleme ve Canlı Standardizasyon (Folder Watcher)
+
 Ham transkript dosyalarını bir klasöre kaydettiğiniz anda sistemin bunu yakalamasını, otomatik olarak temizleyip standardize etmesini (konuşmacı adlarına ülke kodları ekleme, metadata başlıkları yerleştirme) ve veritabanına aktarmasını istiyorsanız:
 
 1. **Watcher'ı Başlatın (Logic-Only modda):**
@@ -1067,10 +1103,10 @@ Ham transkript dosyalarını bir klasöre kaydettiğiniz anda sistemin bunu yaka
    Sergei Lavrov: Katılıyorum.
    ```
 3. **Watcher Tarafından Yapılanlar:**
-   * Watcher 5 saniye içinde dosyayı algılar.
-   * `standardize_file_content()` çalışarak konuşmacıları `Recep Tayyip Erdoğan (TR)` ve `Sergei Lavrov (RU)` olarak günceller.
-   * Dosyanın en tepesine `TITLE: Recep Tayyip Erdoğan Address`, `DATE: April 2026`, `THEME: ...` gibi metadata bloklarını idempotent şekilde yazar.
-   * Dosyayı diske kaydedip ardından veritabanına (`bb-paxdata.db`) kaydeder.
+   - Watcher 5 saniye içinde dosyayı algılar.
+   - `standardize_file_content()` çalışarak konuşmacıları `Recep Tayyip Erdoğan (TR)` ve `Sergei Lavrov (RU)` olarak günceller.
+   - Dosyanın en tepesine `TITLE: Recep Tayyip Erdoğan Address`, `DATE: April 2026`, `THEME: ...` gibi metadata bloklarını idempotent şekilde yazar.
+   - Dosyayı diske kaydedip ardından veritabanına (`bb-paxdata.db`) kaydeder.
 
 ---
 
@@ -1086,7 +1122,6 @@ Ham transkript dosyalarını bir klasöre kaydettiğiniz anda sistemin bunu yaka
    ```
 
 ---
-
 
 ## 11. Bilimsel Metodoloji
 
@@ -1153,33 +1188,40 @@ flowchart TB
 > Aşağıdaki kaynaklar v1.1.0'de doğrudan uygulanan veya referans alınan çalışmalardır.
 
 ### Duygu Analizi
-- **Socher, R., Perelygin, A., Wu, J. et al. (2013).** *Recursive Deep Models for Semantic Compositionality Over a Sentiment Treebank.* EMNLP 2013.
-- **Jia, L., & Liang, J. (2017).** *Negation and Speculation Scope Detection.* Chinese National Conference on Computational Linguistics.
-- **Hutto, C.J., & Gilbert, E.E. (2014).** *VADER: A Parsimonious Rule-based Model for Sentiment Analysis of Social Media Text.* ICWSM.
+
+- **Socher, R., Perelygin, A., Wu, J. et al. (2013).** _Recursive Deep Models for Semantic Compositionality Over a Sentiment Treebank._ EMNLP 2013.
+- **Jia, L., & Liang, J. (2017).** _Negation and Speculation Scope Detection._ Chinese National Conference on Computational Linguistics.
+- **Hutto, C.J., & Gilbert, E.E. (2014).** _VADER: A Parsimonious Rule-based Model for Sentiment Analysis of Social Media Text._ ICWSM.
 
 ### Risk ve Diplomatik Güç
-- **Baldwin, D.A. (1985).** *Economic Statecraft.* Princeton University Press.
-- **Fearon, J.D. (1995).** *Rationalist Explanations for War.* International Organization, 49(3), 379–414.
-- **Trager, R.F. (2010).** *Diplomatic Calculus in Uncharted Territory.* American Political Science Review, 104(2), 347–371.
+
+- **Baldwin, D.A. (1985).** _Economic Statecraft._ Princeton University Press.
+- **Fearon, J.D. (1995).** _Rationalist Explanations for War._ International Organization, 49(3), 379–414.
+- **Trager, R.F. (2010).** _Diplomatic Calculus in Uncharted Territory._ American Political Science Review, 104(2), 347–371.
 
 ### Çit (Hedge) Dili
-- **Hyland, K. (1995).** *The Author in the Text: Hedging Scientific Writing.* Hong Kong Papers in Linguistics and Language Teaching, 18, 33–42.
-- **Hyland, K. (2005).** *Metadiscourse: Exploring Interaction in Writing.* Continuum.
+
+- **Hyland, K. (1995).** _The Author in the Text: Hedging Scientific Writing._ Hong Kong Papers in Linguistics and Language Teaching, 18, 33–42.
+- **Hyland, K. (2005).** _Metadiscourse: Exploring Interaction in Writing._ Continuum.
 
 ### Çerçeveleme Analizi
-- **Entman, R.M. (1993).** *Framing: Toward Clarification of a Fractured Paradigm.* Journal of Communication, 43(4), 51–58.
+
+- **Entman, R.M. (1993).** _Framing: Toward Clarification of a Fractured Paradigm._ Journal of Communication, 43(4), 51–58.
 
 ### Anomali Tespiti
-- **Tsytsarau, M., Palpanas, T., & Denecke, K. (2017).** *Identifying Sentiment-based Contradictions.* Data Science and Engineering, 2, 81–97.
+
+- **Tsytsarau, M., Palpanas, T., & Denecke, K. (2017).** _Identifying Sentiment-based Contradictions._ Data Science and Engineering, 2, 81–97.
 
 ### Zamansal Drift ve İstatistik
-- **Page, E.S. (1954).** *Continuous Inspection Schemes.* Biometrika, 41(1/2), 100–115.
-- **Lin, J. (1991).** *Divergence Measures Based on the Shannon Entropy.* IEEE Transactions on Information Theory, 37(1), 145–151.
-- **Covington, M.A., & McFall, J.D. (2010).** *Cutting the Gordian Knot: The Moving-Average Type–Token Ratio (MATTR).* Journal of Quantitative Linguistics, 17(2), 94–100.
-- **Bollerslev, T. (1986).** *Generalized Autoregressive Conditional Heteroskedasticity.* Journal of Econometrics, 31(3), 307–327.
+
+- **Page, E.S. (1954).** _Continuous Inspection Schemes._ Biometrika, 41(1/2), 100–115.
+- **Lin, J. (1991).** _Divergence Measures Based on the Shannon Entropy._ IEEE Transactions on Information Theory, 37(1), 145–151.
+- **Covington, M.A., & McFall, J.D. (2010).** _Cutting the Gordian Knot: The Moving-Average Type–Token Ratio (MATTR)._ Journal of Quantitative Linguistics, 17(2), 94–100.
+- **Bollerslev, T. (1986).** _Generalized Autoregressive Conditional Heteroskedasticity._ Journal of Econometrics, 31(3), 307–327.
 
 ### NLP Altyapı
-- **Volansky, V., Ordan, N., & Wintner, S. (2015).** *On the Features of Translationese.* Literary and Linguistic Computing, 30(1), 98–118.
-- **Grootendorst, M. (2022).** *BERTopic: Neural topic modeling with a class-based TF-IDF procedure.* arXiv:2203.05794.
-- **Lundberg, S.M., & Lee, S.I. (2017).** *A Unified Approach to Interpreting Model Predictions.* NeurIPS 2017.
-- **Ribeiro, M.T., Singh, S., & Guestrin, C. (2016).** *"Why Should I Trust You?": Explaining the Predictions of Any Classifier.* KDD 2016.
+
+- **Volansky, V., Ordan, N., & Wintner, S. (2015).** _On the Features of Translationese._ Literary and Linguistic Computing, 30(1), 98–118.
+- **Grootendorst, M. (2022).** _BERTopic: Neural topic modeling with a class-based TF-IDF procedure._ arXiv:2203.05794.
+- **Lundberg, S.M., & Lee, S.I. (2017).** _A Unified Approach to Interpreting Model Predictions._ NeurIPS 2017.
+- **Ribeiro, M.T., Singh, S., & Guestrin, C. (2016).** _"Why Should I Trust You?": Explaining the Predictions of Any Classifier._ KDD 2016.

@@ -38,11 +38,13 @@ export const Calibration = () => {
   const reportQuery = useQuery({
     queryKey: ['calibration-report'],
     queryFn: () => apiClient.get<CalibrationReport>('/api/v1/dashboard/calibration'),
+    staleTime: 1000 * 60 * 5, // 5 dk - calibration data changes infrequently
   });
 
   const performanceQuery = useQuery({
     queryKey: ['reviewer-performance'],
     queryFn: () => apiClient.get<ReviewerPerformance[]>('/api/v1/verdict/audit?group_by=reviewer'),
+    staleTime: 1000 * 60 * 5, // 5 dk - performance data changes infrequently
   });
 
   const trendQuery = useQuery({
@@ -51,12 +53,14 @@ export const Calibration = () => {
       apiClient.get<{ month: string; kappa: number; f1: number }[]>(
         '/api/v1/dashboard/calibration/trend?months=6',
       ),
+    staleTime: 1000 * 60 * 10, // 10 dk - historical trend data is stable
   });
 
   const formulaTrendQuery = useQuery({
     queryKey: ['formula-health-trend'],
     queryFn: () =>
       apiClient.get<FormulaTrendData[]>('/api/v1/dashboard/formulas/health/trend?days=30'),
+    staleTime: 1000 * 60 * 10, // 10 dk - historical trend data is stable
   });
 
   useEffect(() => {

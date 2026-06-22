@@ -3,6 +3,7 @@
 from unittest.mock import Mock
 
 import pytest
+
 from bb_paxdata.application.domain.enums import RiskLevel
 from bb_paxdata.application.domain.models.segment import Segment
 from bb_paxdata.application.domain.models.sentence import Sentence

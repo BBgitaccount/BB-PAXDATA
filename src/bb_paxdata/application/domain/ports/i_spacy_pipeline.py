@@ -4,8 +4,9 @@ from collections.abc import Iterable
 from typing import TYPE_CHECKING, Protocol, runtime_checkable
 
 if TYPE_CHECKING:
-    from bb_paxdata.application.domain.models.srl import SRLDocumentResult, SRLFrame
     from spacy.tokens import Doc
+
+    from bb_paxdata.application.domain.models.srl import SRLDocumentResult, SRLFrame
 
 
 @runtime_checkable

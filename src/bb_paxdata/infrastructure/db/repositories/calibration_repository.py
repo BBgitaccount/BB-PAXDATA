@@ -1,5 +1,4 @@
-"""CalibrationRepository — simple CRUD for CalibrationReport ORM.
-"""
+"""CalibrationRepository — simple CRUD for CalibrationReport ORM."""
 
 from __future__ import annotations
 

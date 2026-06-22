@@ -13,6 +13,7 @@ from dataclasses import dataclass
 from typing import TYPE_CHECKING
 
 import structlog
+
 from bb_paxdata.application.domain.models.discourse_network import DiscourseFlow
 from bb_paxdata.application.domain.ports.i_gat_embedding_repository import (
     IGATEmbeddingRepository,
@@ -73,11 +74,12 @@ class ComputeGATEmbeddingsUseCase:
 
         try:
             # 1. Extract actor and concept features
-            actor_features, concept_features = (
-                await self._feature_service.extract_all_features(
-                    actor_sentences=input_data.actor_sentences,
-                    concept_descriptions=input_data.concept_descriptions,
-                )
+            (
+                actor_features,
+                concept_features,
+            ) = await self._feature_service.extract_all_features(
+                actor_sentences=input_data.actor_sentences,
+                concept_descriptions=input_data.concept_descriptions,
             )
 
             # 2. Compute GAT embeddings

@@ -7,7 +7,7 @@ from collections.abc import Sequence
 from decimal import Decimal
 
 import structlog
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 
 from bb_paxdata.application.domain.models.discourse_flow import NetworkEdge
 from bb_paxdata.application.domain.models.discourse_network import DiscourseFlow
@@ -21,6 +21,7 @@ class ActorConceptProfile(BaseModel):
     actor_id: str
     concept_counts: dict[str, int]
     total_tokens: int
+    concept_segments: dict[str, str] = Field(default_factory=dict)
 
 
 class FischerDNAService:
@@ -68,6 +69,7 @@ class FischerDNAService:
                     tf_score=tf_val.quantize(Decimal("0.000001")),
                     idf_score=idf_val.quantize(Decimal("0.000001")),
                     weight=weight,
+                    segment_source_id=profile.concept_segments.get(concept),
                 )
                 flow = flow.add_edge(edge)
 

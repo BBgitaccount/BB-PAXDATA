@@ -7,8 +7,9 @@ from datetime import datetime, timedelta, timezone
 from typing import Any
 
 import jwt
-from bb_paxdata.config.settings import get_settings
 from fastapi import HTTPException, Request, Response, status
+
+from bb_paxdata.config.settings import get_settings
 
 # Default values for backward compatibility - should be injected via constructor
 _SECRET_KEY: str | None = None

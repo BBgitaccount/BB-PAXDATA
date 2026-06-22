@@ -3,8 +3,7 @@ from __future__ import annotations
 
 from uuid import UUID, uuid4
 
-from pydantic import ConfigDict as model_config
-from pydantic import Field
+from pydantic import ConfigDict as model_config, Field
 
 from .base import AggregateRoot
 

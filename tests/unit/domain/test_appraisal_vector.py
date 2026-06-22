@@ -1,4 +1,5 @@
 import pytest
+
 from bb_paxdata.application.domain.models.appraisal_vector import (
     AffectType,
     AppraisalDocumentResult,

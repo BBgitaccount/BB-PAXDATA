@@ -2,12 +2,16 @@
 """
 bbdbda analyze alt komutları.
 """
+
 from __future__ import annotations
 
 import asyncio
 import sys
 
 import typer
+from rich.console import Console
+from rich.table import Table
+
 from bb_paxdata.application.use_cases.aggregate_bilateral_sentiment import (
     AggregateBilateralSentimentInput,
 )
@@ -21,8 +25,6 @@ from bb_paxdata.interfaces.cli.dependencies import (
     make_aggregate_topics_use_case,
     make_build_network_use_case,
 )
-from rich.console import Console
-from rich.table import Table
 
 app = typer.Typer(name="analyze", help="Diplomatik söylem analiz komutları")
 console = Console()

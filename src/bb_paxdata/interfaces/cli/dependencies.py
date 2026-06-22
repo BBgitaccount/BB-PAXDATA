@@ -2,6 +2,7 @@
 """
 CLI komutları için bağımlılık (DI) wiring.
 """
+
 from __future__ import annotations
 
 from collections.abc import AsyncGenerator

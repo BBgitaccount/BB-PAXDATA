@@ -18,7 +18,7 @@ export const DiscourseNetwork = () => {
   const sessionsQuery = useQuery({
     queryKey: ['discourse-sessions'],
     queryFn: () => apiClient.get<string[]>('/api/v1/discourse/sessions'),
-    staleTime: 5 * 60 * 1000,
+    staleTime: 1000 * 60 * 5, // 5 dk - session list changes infrequently
   });
 
   // Automatically select the latest session once loaded

@@ -1,0 +1,888 @@
+{
+  "openapi": "3.0.0",
+  "info": {
+    "title": "BB-PAXDATA API",
+    "version": "1.0.0"
+  },
+  "paths": {
+    "/api/v1/dashboard/kpis": {
+      "get": {
+        "summary": "Get Kpi Stats",
+        "description": "Retrieve global KPIs: total logs, PASS/FAIL counts, corrected counts, and accuracy percentage.",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/KpiStatsResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/dashboard/formulas/health": {
+      "get": {
+        "summary": "Get Formula Health",
+        "description": "Retrieve FP rates and correction rate metrics for all analysis formulas.",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/FormulaHealthResponse"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/dashboard/trends": {
+      "get": {
+        "summary": "Get Daily Trends",
+        "description": "Retrieve the daily history of PASS and FAIL counts for the trend line chart.",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/DailyTrendResponse"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/dashboard/priorities": {
+      "get": {
+        "summary": "Get Priority Distribution",
+        "description": "Aggregate HITL queue items by priority level derived from risk score and triggers.",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/PriorityDistributionResponse"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/dashboard/triggers": {
+      "get": {
+        "summary": "Get Trigger Distribution",
+        "description": "Retrieve count of queue items grouped by trigger reasons (e.g., HIGH_RISK, MANUAL_FLAG).",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/TriggerDistributionResponse"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/dashboard/consensus": {
+      "get": {
+        "summary": "Get Consensus Distribution",
+        "description": "Retrieve anomaly classification statistics (CLEAN vs anomaly types).",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/ConsensusDistributionResponse"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/queue": {
+      "get": {
+        "summary": "Get Fail Queue",
+        "description": "Retrieve failed validation logs with sentence details and AI scores, ordered by priority score.",
+        "parameters": [
+          {
+            "name": "formula_name",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "status_filter",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "schema": {
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/FailQueueItemResponse"
+                  }
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/queue/context/{sent_id}": {
+      "get": {
+        "summary": "Get Triplet Context",
+        "description": "Retrieve the target sentence, its previous and next sentence, and speaker/panel metadata.",
+        "parameters": [
+          {
+            "name": "sent_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TripletContextResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/queue/similar/{sent_id}/{formula_name}": {
+      "get": {
+        "summary": "Get Similar Cases",
+        "description": "Retrieve similar historical failures for the same validation formula to guide the reviewer.",
+        "parameters": [
+          {
+            "name": "sent_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "formula_name",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "country",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/SimilarCaseResponse"
+                  }
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/verdict": {
+      "post": {
+        "summary": "Submit Verdict",
+        "description": "Submit a reviewer decision (CONFIRMED_PASS, CONFIRMED_FAIL, or CORRECTED value) atomically.",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/VerdictPayload"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/VerdictResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/discourse": {
+      "get": {
+        "summary": "Get Discourse Network",
+        "description": "Retrieve discourse network analysis actor-concept bipartite graph.",
+        "parameters": [
+          {
+            "name": "session_id",
+            "in": "query",
+            "description": "Filter edges by session/run ID",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "min_weight",
+            "in": "query",
+            "description": "Minimum edge weight threshold",
+            "schema": {
+              "type": "number"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DiscourseNetworkResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/database/stats": {
+      "get": {
+        "summary": "Get Db Stats",
+        "description": "Retrieve database mode, byte size, and row counts across all analytical tables.",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DatabaseStatsResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/health": {
+      "get": {
+        "summary": "Health Check",
+        "description": "Simple health check endpoint returning service status and version.",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/metrics": {
+      "get": {
+        "summary": "Metrics",
+        "description": "Prometheus scrape endpoint serving internal MetricsCollector registry.",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "ConsensusDistributionResponse": {
+        "type": "object",
+        "properties": {
+          "consensus": {
+            "type": "string"
+          },
+          "count": {
+            "type": "integer"
+          }
+        }
+      },
+      "DailyTrendResponse": {
+        "type": "object",
+        "properties": {
+          "date": {
+            "type": "string"
+          },
+          "pass_count": {
+            "type": "integer"
+          },
+          "fail_count": {
+            "type": "integer"
+          }
+        }
+      },
+      "DatabaseStatsResponse": {
+        "type": "object",
+        "properties": {
+          "database_mode": {
+            "type": "string"
+          },
+          "size_bytes": {
+            "type": "integer"
+          },
+          "status": {
+            "type": "string"
+          },
+          "row_counts": {
+            "type": "object",
+            "additionalProperties": {
+              "type": "integer"
+            }
+          }
+        }
+      },
+      "DiscourseEdge": {
+        "type": "object",
+        "properties": {
+          "source": {
+            "type": "string"
+          },
+          "target": {
+            "type": "string"
+          },
+          "weight": {
+            "type": "number"
+          },
+          "tf": {
+            "type": "number"
+          },
+          "idf": {
+            "type": "number"
+          }
+        }
+      },
+      "DiscourseNetworkResponse": {
+        "type": "object",
+        "properties": {
+          "nodes": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/DiscourseNode"
+            }
+          },
+          "edges": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/DiscourseEdge"
+            }
+          }
+        }
+      },
+      "DiscourseNode": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "label": {
+            "type": "string"
+          },
+          "type": {
+            "type": "string"
+          }
+        }
+      },
+      "FailQueueItemResponse": {
+        "type": "object",
+        "properties": {
+          "log_id": {
+            "type": "integer"
+          },
+          "run_id": {
+            "type": "string"
+          },
+          "formula_name": {
+            "type": "string"
+          },
+          "status": {
+            "type": "string"
+          },
+          "actual_value": {
+            "type": "number"
+          },
+          "expected_constraint": {
+            "type": "string"
+          },
+          "details": {
+            "type": "object",
+            "additionalProperties": true,
+            "nullable": true
+          },
+          "human_verdict": {
+            "type": "string",
+            "nullable": true
+          },
+          "human_note": {
+            "type": "string",
+            "nullable": true
+          },
+          "log_version": {
+            "type": "integer"
+          },
+          "reviewer_id": {
+            "type": "string",
+            "nullable": true
+          },
+          "sentence_text": {
+            "type": "string",
+            "nullable": true
+          },
+          "sent_id": {
+            "type": "string",
+            "nullable": true
+          },
+          "seg_id": {
+            "type": "string",
+            "nullable": true
+          },
+          "file_id": {
+            "type": "string",
+            "nullable": true
+          },
+          "speaker_name": {
+            "type": "string",
+            "nullable": true
+          },
+          "country": {
+            "type": "string",
+            "nullable": true
+          },
+          "power_level": {
+            "type": "number"
+          },
+          "ai_risk_score": {
+            "type": "number",
+            "nullable": true
+          },
+          "ai_emotion_category": {
+            "type": "string",
+            "nullable": true
+          },
+          "ai_diplomatic_tone": {
+            "type": "string",
+            "nullable": true
+          },
+          "review_id": {
+            "type": "integer",
+            "nullable": true
+          },
+          "review_status": {
+            "type": "string",
+            "nullable": true
+          },
+          "trigger_type": {
+            "type": "string",
+            "nullable": true
+          },
+          "priority_score": {
+            "type": "number"
+          },
+          "created_at": {
+            "type": "string",
+            "nullable": true
+          }
+        }
+      },
+      "FormulaHealthResponse": {
+        "type": "object",
+        "properties": {
+          "formula_name": {
+            "type": "string"
+          },
+          "total_fail": {
+            "type": "integer"
+          },
+          "false_positive_rate": {
+            "type": "number"
+          },
+          "correction_rate": {
+            "type": "number"
+          },
+          "confirmed_fail_count": {
+            "type": "integer"
+          },
+          "false_positive_count": {
+            "type": "integer"
+          },
+          "correction_count": {
+            "type": "integer"
+          }
+        }
+      },
+      "HTTPValidationError": {
+        "type": "object",
+        "properties": {
+          "detail": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ValidationError"
+            }
+          }
+        }
+      },
+      "KpiStatsResponse": {
+        "type": "object",
+        "properties": {
+          "total_logs": {
+            "type": "integer"
+          },
+          "total_pass": {
+            "type": "integer"
+          },
+          "total_fail": {
+            "type": "integer"
+          },
+          "pending_review": {
+            "type": "integer"
+          },
+          "confirmed_fail": {
+            "type": "integer"
+          },
+          "confirmed_pass": {
+            "type": "integer"
+          },
+          "corrected": {
+            "type": "integer"
+          },
+          "accuracy_percentage": {
+            "type": "number"
+          }
+        }
+      },
+      "PanelContext": {
+        "type": "object",
+        "properties": {
+          "file_id": {
+            "type": "string"
+          },
+          "panel_number": {
+            "type": "integer",
+            "nullable": true
+          },
+          "date": {
+            "type": "string",
+            "nullable": true
+          },
+          "theme": {
+            "type": "string",
+            "nullable": true
+          }
+        }
+      },
+      "PriorityDistributionResponse": {
+        "type": "object",
+        "properties": {
+          "priority": {
+            "type": "string"
+          },
+          "count": {
+            "type": "integer"
+          }
+        }
+      },
+      "SimilarCaseResponse": {
+        "type": "object",
+        "properties": {
+          "log_id": {
+            "type": "integer"
+          },
+          "entity_id": {
+            "type": "string"
+          },
+          "actual_value": {
+            "type": "number"
+          },
+          "human_verdict": {
+            "type": "string",
+            "nullable": true
+          },
+          "human_note": {
+            "type": "string",
+            "nullable": true
+          },
+          "sentence_text": {
+            "type": "string",
+            "nullable": true
+          },
+          "country": {
+            "type": "string",
+            "nullable": true
+          },
+          "speaker_name": {
+            "type": "string",
+            "nullable": true
+          }
+        }
+      },
+      "SpeakerContext": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string"
+          },
+          "country": {
+            "type": "string"
+          },
+          "role": {
+            "type": "string",
+            "nullable": true
+          },
+          "power_level": {
+            "type": "number"
+          },
+          "influence_tier": {
+            "type": "string",
+            "nullable": true
+          },
+          "bloc": {
+            "type": "string",
+            "nullable": true
+          }
+        }
+      },
+      "TriggerDistributionResponse": {
+        "type": "object",
+        "properties": {
+          "trigger": {
+            "type": "string"
+          },
+          "count": {
+            "type": "integer"
+          }
+        }
+      },
+      "TripletContextResponse": {
+        "type": "object",
+        "properties": {
+          "prev": {
+            "type": "string",
+            "nullable": true
+          },
+          "current": {
+            "type": "string",
+            "nullable": true
+          },
+          "next": {
+            "type": "string",
+            "nullable": true
+          },
+          "speaker": {
+            "$ref": "#/components/schemas/SpeakerContext",
+            "nullable": true
+          },
+          "panel": {
+            "$ref": "#/components/schemas/PanelContext",
+            "nullable": true
+          }
+        }
+      },
+      "ValidationError": {
+        "type": "object",
+        "properties": {
+          "loc": {
+            "type": "array",
+            "items": {
+              "oneOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "integer"
+                }
+              ]
+            }
+          },
+          "msg": {
+            "type": "string"
+          },
+          "type": {
+            "type": "string"
+          },
+          "input": {
+            "nullable": true
+          },
+          "ctx": {
+            "type": "object",
+            "additionalProperties": true
+          }
+        }
+      },
+      "VerdictPayload": {
+        "type": "object",
+        "required": ["log_id", "verdict", "reviewer_id"],
+        "properties": {
+          "log_id": {
+            "type": "integer"
+          },
+          "verdict": {
+            "type": "string"
+          },
+          "corrected_value": {
+            "type": "number",
+            "nullable": true
+          },
+          "note": {
+            "type": "string",
+            "nullable": true
+          },
+          "confidence": {
+            "type": "string",
+            "nullable": true,
+            "default": "MEDIUM"
+          },
+          "justification": {
+            "type": "string",
+            "nullable": true
+          },
+          "reviewer_id": {
+            "type": "string"
+          }
+        }
+      },
+      "VerdictResponse": {
+        "type": "object",
+        "properties": {
+          "new_log_id": {
+            "type": "integer"
+          },
+          "audit_id": {
+            "type": "integer"
+          },
+          "log_version": {
+            "type": "integer"
+          }
+        }
+      }
+    }
+  }
+}

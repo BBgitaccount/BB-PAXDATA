@@ -16,6 +16,7 @@ import {
   TrendingUp,
   Activity,
   Zap,
+  Users,
 } from 'lucide-react';
 import { useTranslation } from '@/hooks/useTranslation';
 import type { tr } from '@/i18n/tr';
@@ -38,6 +39,12 @@ const navSections: Array<{
         label: 'nav.dashboard',
         path: '/',
         icon: LayoutDashboard,
+      },
+      {
+        id: 'speakers',
+        label: 'nav.speakers',
+        path: '/speakers',
+        icon: Users,
       },
       {
         id: 'discourse',

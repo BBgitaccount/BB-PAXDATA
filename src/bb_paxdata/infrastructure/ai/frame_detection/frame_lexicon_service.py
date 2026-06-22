@@ -1,8 +1,8 @@
 # src/bb_paxdata/infrastructure/ai/frame_detection/frame_lexicon_service.py
 """El-Assady (2023) frame lexicon and cue detection service.
 
-[Academic Reference: El-Assady, M. et al. (2023). Towards a More In-Depth Detection 
-of Political Framing. ACL Anthology. Discourse connectives, modal particles, 
+[Academic Reference: El-Assady, M. et al. (2023). Towards a More In-Depth Detection
+of Political Framing. ACL Anthology. Discourse connectives, modal particles,
 POS/dependency feature set for fine-grained frame detection.]
 """
 
@@ -16,9 +16,10 @@ if TYPE_CHECKING:
 import asyncio
 
 import structlog
+from spacy.tokens import Doc, Token
+
 from bb_paxdata.application.domain.enums.frame_type import FrameType
 from bb_paxdata.application.domain.models.frame_annotation import CueMatch
-from spacy.tokens import Doc, Token
 
 logger = structlog.get_logger(__name__)
 

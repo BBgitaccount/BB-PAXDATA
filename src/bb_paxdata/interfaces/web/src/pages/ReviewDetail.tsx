@@ -49,6 +49,7 @@ export const ReviewDetail = () => {
       return apiClient.get<TripletContext>(`/api/v1/queue/context/by-log-id/${logId}`);
     },
     enabled: Boolean(logId),
+    staleTime: 1000 * 60 * 10, // 10 dk - context data for specific log is stable
   });
 
   const similarQuery = useQuery({
@@ -60,6 +61,7 @@ export const ReviewDetail = () => {
       return apiClient.get<SimilarCase[]>(`/api/v1/queue/similar/by-log-id/${logId}`);
     },
     enabled: Boolean(logId),
+    staleTime: 1000 * 60 * 10, // 10 dk - similar cases data is stable
   });
 
   const logItemQuery = useQuery({
@@ -78,6 +80,7 @@ export const ReviewDetail = () => {
       }
     },
     enabled: Boolean(logId),
+    staleTime: 1000 * 60 * 10, // 10 dk - log item data is stable
   });
 
   useEffect(() => {
@@ -120,6 +123,7 @@ export const ReviewDetail = () => {
   const queueListQuery = useQuery({
     queryKey: ['fail-queue-list-for-formulas'],
     queryFn: () => apiClient.get<FailQueueItem[]>('/api/v1/queue?status_filter=all&limit=100'),
+    staleTime: 1000 * 60 * 2, // 2 dk - queue list changes frequently
   });
 
   const sameSentenceFormulaLogs = (queueListQuery.data ?? []).filter(
@@ -144,14 +148,14 @@ export const ReviewDetail = () => {
           risk_threshold: 10.0,
           hedging_threshold: 0.05,
           include_narrative: false,
-          narrative_language: 'en',
         });
       } catch (err) {
-        console.error('Failed to fetch session comparison:', err);
+        console.error('Failed to fetch session comparison', err);
         return null;
       }
     },
-    enabled: Boolean(item?.file_id) && mode === 'ai',
+    enabled: !!item?.file_id,
+    staleTime: 1000 * 60 * 10, // 10 dk - comparison data is stable
   });
 
   const getComparisonRows = (itemVal: FailQueueItem | null, compData: any): ComparisonRow[] => {

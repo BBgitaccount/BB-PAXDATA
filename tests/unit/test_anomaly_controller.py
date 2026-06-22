@@ -1,6 +1,7 @@
 from unittest.mock import AsyncMock, MagicMock
 
 import pytest
+
 from bb_paxdata.application.domain.models.anomaly import AnomalyResult
 from bb_paxdata.infrastructure.ai.anomaly_controller import (
     AIAnomalyController,

@@ -1,9 +1,10 @@
 from unittest.mock import AsyncMock, MagicMock
 
 import pytest
+from httpx import Request, Response
+
 from bb_paxdata.infrastructure.ai.base import CompletionOptions
 from bb_paxdata.infrastructure.ai.deepseek import DeepSeekClient
-from httpx import Request, Response
 
 
 @pytest.mark.asyncio

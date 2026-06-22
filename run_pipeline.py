@@ -56,6 +56,50 @@ def run_command(args: list[str], step_name: str) -> tuple[bool, str, float]:
         return False, str(e), duration
 
 
+def print_summary_report(report_data: list, total_duration: float) -> None:
+    """Renders a beautiful summary table of all pipeline steps."""
+    console.print("\n")
+    table = Table(
+        title="[bold cyan]BB-PAXDATA PIPELINE RUN SUMMARY REPORT[/bold cyan]",
+        show_header=True,
+        header_style="bold magenta",
+        border_style="cyan",
+    )
+    table.add_column("Pipeline Step", style="white", min_width=30)
+    table.add_column("Status", justify="center", min_width=12)
+    table.add_column("Duration", justify="right", min_width=12)
+    table.add_column("Details", style="dim", min_width=30)
+
+    all_passed = True
+    for step, success, dur_str, details in report_data:
+        status_str = (
+            "[bold green]PASSED[/bold green]"
+            if success
+            else "[bold red]FAILED[/bold red]"
+        )
+        if not success:
+            all_passed = False
+        table.add_row(step, status_str, dur_str, details)
+
+    console.print(table)
+
+    overall_status = (
+        "[bold green]ALL STAGES PASSED SUCCESSFULLY![/bold green]"
+        if all_passed
+        else "[bold red]SOME PIPELINE STAGES FAILED![/bold red]"
+    )
+    console.print(
+        Panel(
+            f"  • Overall Status: {overall_status}\n"
+            f"  • Total Time:     [bold yellow]{total_duration:.2f} seconds[/bold yellow]",
+            border_style="green" if all_passed else "red",
+        )
+    )
+
+    if not all_passed:
+        sys.exit(1)
+
+
 def main() -> None:
     console.clear()
     console.print(
@@ -232,50 +276,6 @@ def main() -> None:
 
     # Print Final Summary Report
     print_summary_report(report_data, time.time() - pipeline_start_time)
-
-
-def print_summary_report(report_data: list, total_duration: float) -> None:
-    """Renders a beautiful summary table of all pipeline steps."""
-    console.print("\n")
-    table = Table(
-        title="[bold cyan]BB-PAXDATA PIPELINE RUN SUMMARY REPORT[/bold cyan]",
-        show_header=True,
-        header_style="bold magenta",
-        border_style="cyan",
-    )
-    table.add_column("Pipeline Step", style="white", min_width=30)
-    table.add_column("Status", justify="center", min_width=12)
-    table.add_column("Duration", justify="right", min_width=12)
-    table.add_column("Details", style="dim", min_width=30)
-
-    all_passed = True
-    for step, success, dur_str, details in report_data:
-        status_str = (
-            "[bold green]PASSED[/bold green]"
-            if success
-            else "[bold red]FAILED[/bold red]"
-        )
-        if not success:
-            all_passed = False
-        table.add_row(step, status_str, dur_str, details)
-
-    console.print(table)
-
-    overall_status = (
-        "[bold green]ALL STAGES PASSED SUCCESSFULLY![/bold green]"
-        if all_passed
-        else "[bold red]SOME PIPELINE STAGES FAILED![/bold red]"
-    )
-    console.print(
-        Panel(
-            f"  • Overall Status: {overall_status}\n"
-            f"  • Total Time:     [bold yellow]{total_duration:.2f} seconds[/bold yellow]",
-            border_style="green" if all_passed else "red",
-        )
-    )
-
-    if not all_passed:
-        sys.exit(1)
 
 
 if __name__ == "__main__":

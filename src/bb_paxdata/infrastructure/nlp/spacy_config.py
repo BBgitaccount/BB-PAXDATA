@@ -16,12 +16,26 @@ class PipelineConfig(TypedDict):
 SPACY_PIPELINES: dict[str, PipelineConfig] = {
     "tr": {
         "model": "tr_core_news_md",
-        "components": ["tok2vec", "tagger", "parser", "ner"],
-        "disabled": ["attribute_ruler", "lemmatizer"],
+        "components": [
+            "tok2vec",
+            "tagger",
+            "parser",
+            "ner",
+            "attribute_ruler",
+            "lemmatizer",
+        ],
+        "disabled": [],
     },
     "en": {
         "model": "en_core_web_sm",
-        "components": ["tok2vec", "tagger", "parser", "ner"],
-        "disabled": ["attribute_ruler", "lemmatizer"],
+        "components": [
+            "tok2vec",
+            "tagger",
+            "parser",
+            "ner",
+            "attribute_ruler",
+            "lemmatizer",
+        ],
+        "disabled": [],
     },
 }

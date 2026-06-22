@@ -22,6 +22,7 @@ import asyncio
 from pathlib import Path
 
 import typer
+
 from bb_paxdata.application.domain.services.colbert_embedding_service import (
     RAGatoulleColBERTService,
 )

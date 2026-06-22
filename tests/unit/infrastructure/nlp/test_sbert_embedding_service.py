@@ -3,9 +3,10 @@ from unittest.mock import AsyncMock, MagicMock
 
 import numpy as np
 import pytest
+from redis.asyncio import Redis
+
 from bb_paxdata.infrastructure.cache.redis_embedding_schema import EmbeddingSerializer
 from bb_paxdata.infrastructure.nlp.sbert_embedding_service import SBERTEmbeddingService
-from redis.asyncio import Redis
 
 
 @pytest.fixture

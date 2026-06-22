@@ -2,6 +2,8 @@ import json
 from unittest.mock import MagicMock, patch
 
 import pytest
+from pydantic import ValidationError
+
 from bb_paxdata.application.domain.models.srl import (
     SRLDocumentResult,
     SRLFrame,
@@ -16,7 +18,6 @@ from bb_paxdata.infrastructure.nlp.srl_pipeline import (
     LRUCacheWithTTL,
     SRLPipeline,
 )
-from pydantic import ValidationError
 
 # ============================================================
 # TEST GROUP 1: Domain Model Validation

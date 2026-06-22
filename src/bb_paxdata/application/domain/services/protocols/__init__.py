@@ -89,6 +89,7 @@ class AIAnalystProtocol(Protocol):
         prompt_id: str | None = None,
         forced_version: str | None = None,
         language: str | None = None,
+        file_id: str | None = None,
     ) -> AIAnalysisResult: ...
 
 

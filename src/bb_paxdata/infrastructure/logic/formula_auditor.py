@@ -128,8 +128,9 @@ class FormulaAuditor:
         actual_value: float,
         status: str,
         details: dict[str, Any],
+        sentence_code: str | None = None,
     ) -> dict[str, Any]:
-        return {
+        log_dict = {
             "run_id": run_id,
             "entity_type": entity_type,
             "entity_id": entity_id,
@@ -139,6 +140,9 @@ class FormulaAuditor:
             "status": status,
             "details": details,
         }
+        if sentence_code:
+            log_dict["sentence_code"] = sentence_code
+        return log_dict
 
     @staticmethod
     def calculate_triage_priority(
@@ -250,6 +254,7 @@ class FormulaAuditor:
             getattr(sentence, "sent_id", None)
             or getattr(sentence, "id", "unknown_sent")
         )
+        sentence_code = getattr(sentence, "sentence_code", None)
 
         # ── Data Quality Gate (v2) ───────────────────────────────────
         quality_flags = self._check_data_quality(
@@ -273,6 +278,7 @@ class FormulaAuditor:
             actual_value=vader_compound,
             status=status_vader,
             details={"msg": "VADER compound bounds check"},
+            sentence_code=sentence_code,
         )
         if quality_flags:
             log_vader["data_quality_flags"] = quality_flags
@@ -295,6 +301,7 @@ class FormulaAuditor:
                 actual_value=neg_diplo,
                 status=status_neg,
                 details={"msg": "Negation-aware Diplo bounds check"},
+                sentence_code=sentence_code,
             )
         )
 
@@ -335,6 +342,7 @@ class FormulaAuditor:
                         "actual_category": emotion_str,
                         "expected_category": expected_cat,
                     },
+                    sentence_code=sentence_code,
                 )
             )
 
@@ -378,6 +386,7 @@ class FormulaAuditor:
                     "actual_hedge": actual_hedge,
                     "detected_keyword_count": hedging_keywords_correct,
                 },
+                sentence_code=sentence_code,
             )
         )
 
@@ -427,6 +436,7 @@ class FormulaAuditor:
                     "actual_face_save": getattr(sentence, "face_save_count", 0),
                     "actual_face_threat": getattr(sentence, "face_threat_count", 0),
                 },
+                sentence_code=sentence_code,
             )
         )
 

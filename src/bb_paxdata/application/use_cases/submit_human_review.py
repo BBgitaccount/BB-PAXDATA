@@ -1,5 +1,4 @@
-"""SubmitHumanReviewUseCase — submits a reviewer's correction/confirmation of an AI analysis.
-"""
+"""SubmitHumanReviewUseCase — submits a reviewer's correction/confirmation of an AI analysis."""
 
 from __future__ import annotations
 
@@ -7,6 +6,7 @@ from dataclasses import dataclass
 from typing import Any
 
 import structlog
+
 from bb_paxdata.application.domain.models.human_review import (
     AgreementStatus,
     HumanReview,

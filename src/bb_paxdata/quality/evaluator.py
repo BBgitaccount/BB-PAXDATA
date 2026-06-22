@@ -236,10 +236,14 @@ class QualityEvaluator:
             )
 
             # Answer relevancy for focus
-            relevancy_metric = AnswerRelevancyMetric(threshold=0.7, model=self.model_name)  # type: ignore[name-defined]
+            relevancy_metric = AnswerRelevancyMetric(
+                threshold=0.7, model=self.model_name
+            )  # type: ignore[name-defined]
 
             # JSON correctness for parseability
-            json_metric = JsonCorrectnessMetric(expected_schema=cast(Any, AISentenceOutput))  # type: ignore[name-defined]
+            json_metric = JsonCorrectnessMetric(
+                expected_schema=cast(Any, AISentenceOutput)
+            )  # type: ignore[name-defined]
 
             return {
                 "diplomatic_analysis": cast(DeepEvalMetric, geval_metric),

@@ -3,6 +3,7 @@ Unit tests for presupposition domain models.
 """
 
 import pytest
+
 from bb_paxdata.application.domain.models.presupposition import (
     Presupposition,
     PresuppositionExtractionResult,
@@ -43,7 +44,7 @@ def test_presupposition_confidence_validation():
     )
 
     # Invalid confidence (too high)
-    with pytest.raises(ValueError, match="outside \\[0.0, 1.0\\]"):
+    with pytest.raises(ValueError, match=r"outside \[0.0, 1.0\]"):
         Presupposition(
             trigger_word="know",
             trigger_type=TriggerType.FACTIVE_VERB,
@@ -54,7 +55,7 @@ def test_presupposition_confidence_validation():
         )
 
     # Invalid confidence (negative)
-    with pytest.raises(ValueError, match="outside \\[0.0, 1.0\\]"):
+    with pytest.raises(ValueError, match=r"outside \[0.0, 1.0\]"):
         Presupposition(
             trigger_word="know",
             trigger_type=TriggerType.FACTIVE_VERB,
@@ -79,7 +80,7 @@ def test_presupposition_llm_confidence_validation():
     )
 
     # Invalid LLM confidence
-    with pytest.raises(ValueError, match="outside \\[0.0, 1.0\\]"):
+    with pytest.raises(ValueError, match=r"outside \[0.0, 1.0\]"):
         Presupposition(
             trigger_word="know",
             trigger_type=TriggerType.FACTIVE_VERB,

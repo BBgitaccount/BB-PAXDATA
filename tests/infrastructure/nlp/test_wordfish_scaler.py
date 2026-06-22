@@ -1,5 +1,6 @@
 import numpy as np
 import pytest
+
 from bb_paxdata.application.domain.models.sbi_models import WordfishParams
 from bb_paxdata.infrastructure.nlp.wordfish_scaler import WordfishScaler
 

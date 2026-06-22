@@ -395,3 +395,93 @@ export interface TemporalDriftData {
   drift_events: DriftEventItem[];
   speakers: string[];
 }
+
+export interface Speaker {
+  speaker_id: string;
+  canonical_name: string;
+  display_name: string | null;
+  country_code: string | null;
+  country_name: string | null;
+  bloc: string | null;
+  power_level: number | null;
+  role: string | null;
+  title: string | null;
+  organization: string | null;
+  is_active: boolean;
+  first_seen_at: string | null;
+  last_seen_at: string | null;
+  appearance_count: number;
+  data_source: string;
+  aliases: string[];
+  metadata: Record<string, any>;
+  created_at: string;
+  updated_at: string;
+
+  // Stats joined from SpeakerProfile
+  n_panels: number;
+  n_segments: number;
+  n_sentences: number;
+  total_words: number;
+  total_duration_sec: number;
+  avg_sentiment: number;
+  dominant_emotion: string | null;
+  dominant_topic: string | null;
+  cooperative_pct: number;
+  constructive_pct: number;
+  neutral_pct: number;
+  concerned_pct: number;
+  confrontational_pct: number;
+  risk_event_count: number;
+  top_topics: string | null;
+  avg_sentence_length: number;
+  lexical_diversity: number;
+  diplo_vocab_score: number;
+  demand_count: number;
+  pattern_diversity: number;
+  avg_hedging_score: number;
+  avg_politeness_ratio: number;
+  avg_dki_score: number;
+  dominant_frame: string | null;
+  dominant_audience: string | null;
+}
+
+export interface PaginatedSpeakers {
+  items: Speaker[];
+  total: number;
+  page: number;
+  limit: number;
+  pages: number;
+}
+
+export interface SpeakerStatsSummary {
+  total_speakers: number;
+  active_speakers: number;
+  represented_countries: number;
+  average_power_level: number;
+}
+
+export interface SpeakerCountryDistribution {
+  country_code: string | null;
+  country_name: string | null;
+  count: number;
+}
+
+export interface SpeakerBlocDistribution {
+  bloc: string | null;
+  count: number;
+}
+
+export interface SpeakerAppearance {
+  file_id: string;
+  title: string;
+  date_str: string | null;
+  sentence_count: number;
+}
+
+export interface SpeakerSentimentHistory {
+  file_id: string;
+  file_title: string;
+  date_str: string | null;
+  avg_sentiment: number;
+  sentence_count: number;
+}

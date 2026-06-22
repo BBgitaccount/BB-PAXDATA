@@ -5,6 +5,9 @@ from datetime import datetime, timezone
 from uuid import uuid4
 
 import strawberry
+from sqlalchemy import func, select
+from sqlalchemy.ext.asyncio import AsyncSession
+
 from bb_paxdata.infrastructure.db.human_review_queue import HumanReviewQueue
 from bb_paxdata.infrastructure.db.models import File, Segment, Sentence
 from bb_paxdata.interfaces.graphql.types import (
@@ -17,8 +20,6 @@ from bb_paxdata.interfaces.graphql.types import (
     decode_cursor,
     encode_cursor,
 )
-from sqlalchemy import func, select
-from sqlalchemy.ext.asyncio import AsyncSession
 
 
 async def resolve_analysis(

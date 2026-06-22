@@ -1,8 +1,8 @@
 # src/bb_paxdata/application/pipeline/frame/episodic_themetic_classifier.py
 """Iyengar (1991) Episodic vs Thematic framing classifier.
 
-[Academic Reference: Iyengar, S. (1991). Is Anyone Responsible? How Television Frames 
-Political Issues. Episodic (individual/event-focused) vs Thematic (structural/context-focused) 
+[Academic Reference: Iyengar, S. (1991). Is Anyone Responsible? How Television Frames
+Political Issues. Episodic (individual/event-focused) vs Thematic (structural/context-focused)
 frame distinction.]
 """
 
@@ -13,9 +13,10 @@ from dataclasses import dataclass
 from typing import TYPE_CHECKING, Final
 
 import structlog
+from spacy.tokens import Doc
+
 from bb_paxdata.application.domain.enums.frame_type import FrameType
 from bb_paxdata.application.domain.models.segment import Segment
-from spacy.tokens import Doc
 
 if TYPE_CHECKING:
     from spacy.language import Language

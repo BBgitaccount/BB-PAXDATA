@@ -3,9 +3,10 @@
 from typing import Any
 
 import structlog
-from bb_paxdata.config.settings import get_settings
 from meilisearch_python_sdk import AsyncClient
 from meilisearch_python_sdk.models.settings import MeilisearchSettings
+
+from bb_paxdata.config.settings import get_settings
 
 logger = structlog.get_logger(__name__)
 _settings = get_settings()

@@ -85,3 +85,17 @@ export const truncate = (s: string, len = 80): string =>
 
 export const cn = (...classes: (string | false | null | undefined)[]): string =>
   classes.filter(Boolean).join(' ');
+
+/**
+ * Data sampling utility for performance optimization.
+ * Reduces large datasets to a manageable size for charts.
+ * @param data - Array of data points to sample
+ * @param maxPoints - Maximum number of points to return (default: 100)
+ * @returns Sampled data array
+ */
+export const sampleData = <T>(data: T[], maxPoints = 100): T[] => {
+  if (data.length <= maxPoints) return data;
+
+  const step = Math.ceil(data.length / maxPoints);
+  return data.filter((_, index) => index % step === 0);
+};

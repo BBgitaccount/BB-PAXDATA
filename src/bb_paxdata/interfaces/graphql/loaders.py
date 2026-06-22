@@ -3,10 +3,11 @@ from __future__ import annotations
 
 import strawberry
 from aiodataloader import DataLoader
-from bb_paxdata.infrastructure.db.models import Segment, Sentence
-from bb_paxdata.interfaces.graphql.types import SegmentType, SentenceType
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.future import select
+
+from bb_paxdata.infrastructure.db.models import Segment, Sentence
+from bb_paxdata.interfaces.graphql.types import SegmentType, SentenceType
 
 
 class SegmentLoader(DataLoader):

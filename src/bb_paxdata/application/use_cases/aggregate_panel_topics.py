@@ -2,12 +2,14 @@
 """
 Use Case: Panel × ülke bazında konu skorlarını çaprazlar, TopicSynthesis üretir.
 """
+
 from __future__ import annotations
 
 from collections import defaultdict
 from dataclasses import dataclass, field
 
 import structlog
+
 from bb_paxdata.application.domain.models.topic_synthesis import TopicSynthesis
 from bb_paxdata.application.domain.services.country_repositories import (
     ICountryReferenceRepository,
@@ -59,8 +61,9 @@ class AggregatePanelTopicsUseCase:
 
         # Get session from ref_repo
         session = self._ref_repo.session
-        from bb_paxdata.infrastructure.db.models import Sentence as SentenceORM
         from sqlalchemy import select
+
+        from bb_paxdata.infrastructure.db.models import Sentence as SentenceORM
 
         # Retrieve all sentences for this panel to get their country & topic scores
         stmt = select(SentenceORM).where(SentenceORM.file_id == panel_id)

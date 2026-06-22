@@ -4,8 +4,7 @@ from __future__ import annotations
 from datetime import datetime, timezone
 from uuid import UUID, uuid4
 
-from pydantic import BaseModel, Field
-from pydantic import ConfigDict as model_config
+from pydantic import BaseModel, ConfigDict as model_config, Field
 
 from bb_paxdata.application.domain.enums.country_enums import ReferenceContext
 

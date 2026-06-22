@@ -1,5 +1,6 @@
 import numpy as np
 import pytest
+
 from bb_paxdata.infrastructure.nlp.wordscores_calibrator import WordscoresCalibrator
 
 

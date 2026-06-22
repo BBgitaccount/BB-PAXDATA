@@ -9,6 +9,8 @@ from collections.abc import Callable
 from typing import Any
 
 import structlog
+from pydantic import ValidationError
+
 from bb_paxdata.application.domain.services.prompt_registry import PromptRegistry
 from bb_paxdata.application.domain.services.protocols import AIAnalystProtocol
 from bb_paxdata.application.domain.services.protocols.judge_protocols import (
@@ -17,7 +19,6 @@ from bb_paxdata.application.domain.services.protocols.judge_protocols import (
     JudgeVerdict,
 )
 from bb_paxdata.infrastructure.db.model_evaluation import AuditEntry
-from pydantic import ValidationError
 
 logger = structlog.get_logger()
 

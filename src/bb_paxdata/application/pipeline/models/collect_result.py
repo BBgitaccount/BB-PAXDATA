@@ -3,10 +3,13 @@
 COLLECT aşamasından çıkan ara veri modeli.
 CountryReferenceCollector'ın ürettiği entity'leri taşır.
 """
+
 from __future__ import annotations
 
 from collections.abc import Sequence
 from typing import Any
+
+from pydantic import BaseModel, ConfigDict, Field
 
 from bb_paxdata.application.domain.models.ai_analysis import AIAnalysisResult
 from bb_paxdata.application.domain.models.appraisal_vector import (
@@ -27,7 +30,6 @@ from bb_paxdata.application.domain.models.negation_cue import NegationCue
 from bb_paxdata.application.domain.models.power_index import PowerIndex
 from bb_paxdata.application.domain.models.risk_signal import RiskSignal
 from bb_paxdata.application.domain.models.topic import TopicResult
-from pydantic import BaseModel, ConfigDict, Field
 
 
 class CountryCollectResult(BaseModel):
@@ -81,5 +83,8 @@ class CollectResult(BaseModel):
     # TASK-A03 Appraisal Theory Vector
     appraisal_vector: AppraisalVector | None = None
     appraisal_document: AppraisalDocumentResult | None = None
+
+    # Centralized Speaker ID
+    speaker_id: str | None = None
 
     errors: list[str] = Field(default_factory=list)
