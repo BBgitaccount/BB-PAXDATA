@@ -2526,22 +2526,19 @@ class ActorActionMatrixORM(Base):
     __tablename__ = "actor_action_matrix"
     __table_args__ = (
         Index("idx_matrix_panel", "file_id"),
-        Index("idx_matrix_from", "from_country"),
-        Index("idx_matrix_to", "to_country"),
+        Index("idx_matrix_actor", "actor_id"),
+        Index("idx_matrix_action", "action_type"),
     )
     matrix_id: Mapped[int] = mapped_column(
         Integer, primary_key=True, autoincrement=True
     )
-    file_id: Mapped[str] = mapped_column(String, nullable=False)
-    from_country: Mapped[str] = mapped_column(Text, nullable=False)
-    to_country: Mapped[str] = mapped_column(Text, nullable=False)
-    verb: Mapped[str] = mapped_column(Text, nullable=False)
+    file_id: Mapped[str] = mapped_column(String(255), nullable=False)
+    actor_id: Mapped[str] = mapped_column(String(100), nullable=False)
+    action_type: Mapped[str] = mapped_column(String(50), nullable=False)
     count: Mapped[int] = mapped_column(Integer, default=0)
-    avg_sentiment: Mapped[float] = mapped_column(Float, default=0)
-    is_passive_pct: Mapped[float] = mapped_column(Float, default=0)
-    is_negative_pct: Mapped[float] = mapped_column(Float, default=0)
+    weight: Mapped[float] = mapped_column(Float, default=0.0)
     last_updated: Mapped[datetime | None] = mapped_column(
-        DateTime, server_default=func.now(), nullable=True
+        DateTime, server_default=func.now(), onupdate=func.now(), nullable=True
     )
 
 
@@ -2770,6 +2767,7 @@ class SegmentAnalyzedEvent(Base):
         JSON, nullable=True
     )
     pipeline_run_id: Mapped[str] = mapped_column(String(36), nullable=False)
+    power_level: Mapped[int] = mapped_column(Integer, default=0, nullable=False)
 
 
 class ActorTopicProjection(Base):
@@ -2786,6 +2784,15 @@ class ActorTopicProjection(Base):
     sentiment_ci_upper: Mapped[float | None] = mapped_column(Float, nullable=True)
     sentiment_std: Mapped[float | None] = mapped_column(Float, nullable=True)
     risk_score: Mapped[float] = mapped_column(Float, nullable=False)
+    risk_score_raw: Mapped[float | None] = mapped_column(
+        Float, default=0.0, nullable=True
+    )
+    risk_score_weighted: Mapped[float | None] = mapped_column(
+        Float, default=0.0, nullable=True
+    )
+    risk_score_normalized: Mapped[float | None] = mapped_column(
+        Float, default=0.0, nullable=True
+    )
     risk_ci_lower: Mapped[float | None] = mapped_column(Float, nullable=True)
     risk_ci_upper: Mapped[float | None] = mapped_column(Float, nullable=True)
     composite_risk_index: Mapped[float | None] = mapped_column(Float, nullable=True)

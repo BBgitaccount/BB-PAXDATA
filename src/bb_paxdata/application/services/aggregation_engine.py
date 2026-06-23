@@ -202,7 +202,42 @@ class AggregationEngine:
                 topic: float(np.mean([ev.topic_scores.get(topic, 0.0) for ev in evs]))
                 for topic in all_topics
             }
-            diplomatic_tension_index = float(np.mean([ev.risk_score for ev in evs]))
+            # diplomatic_tension_index = risk_score * (1 - cooperation_frame_ratio) * power_weight
+            risk_score = float(np.mean([ev.risk_score for ev in evs])) if evs else 0.0
+            coop_sum = 0.0
+            total_sum = 0.0
+            coop_frames = {
+                "negotiation_frame",
+                "peace_frame",
+                "humanitarian_frame",
+                "multilateral_frame",
+            }
+            for ev in evs:
+                if ev.frame_distribution:
+                    for frame_name, val in ev.frame_distribution.items():
+                        try:
+                            val_f = float(val)
+                            total_sum += val_f
+                            if frame_name in coop_frames:
+                                coop_sum += val_f
+                        except (ValueError, TypeError):
+                            pass
+            cooperation_frame_ratio = coop_sum / total_sum if total_sum > 0 else 0.0
+            power_weight = (
+                float(
+                    np.mean(
+                        [
+                            ev.power_level if ev.power_level is not None else 0
+                            for ev in evs
+                        ]
+                    )
+                )
+                if evs
+                else 0.0
+            )
+            diplomatic_tension_index = (
+                risk_score * (1 - cooperation_frame_ratio) * power_weight
+            )
 
             c_vec = country_topic_vectors[country]
             if np.sum(c_vec) > 0:

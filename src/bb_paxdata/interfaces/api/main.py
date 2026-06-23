@@ -15,17 +15,22 @@ from bb_paxdata.infrastructure.cache.redis import RedisCacheBackend
 from bb_paxdata.infrastructure.observability.metrics import get_metrics
 from bb_paxdata.interfaces.api.dependencies import get_cache, get_db
 from bb_paxdata.interfaces.api.routers.v1 import (
+    audit_log,
     auth,
     compare,
+    corrections,
     dashboard,
     database,
     discourse,
     prompts,
+    provenance,
     queue,
+    retention,
     search,
     settings as settings_router,
     speakers,
     verdict,
+    weight_calibration as weight_calibration_router,
 )
 from bb_paxdata.interfaces.api.routers.ws import queue_ws
 from bb_paxdata.interfaces.graphql.router import get_graphql_router
@@ -225,6 +230,11 @@ app.include_router(search.router, prefix="/api/v1")
 app.include_router(compare.router, prefix="/api/v1")
 app.include_router(speakers.router, prefix="/api/v1")
 app.include_router(settings_router.router, prefix="/api/v1")
+app.include_router(provenance.router, prefix="/api/v1")
+app.include_router(audit_log.router, prefix="/api/v1")
+app.include_router(retention.router, prefix="/api/v1")
+app.include_router(corrections.router, prefix="/api/v1")
+app.include_router(weight_calibration_router.router, prefix="/api/v1")
 app.include_router(queue_ws.router, prefix="/api")
 app.include_router(get_graphql_router(), prefix="/graphql")
 

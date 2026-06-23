@@ -99,6 +99,7 @@ def test_aggregate_events_success():
             "humanitarian": 0.0,
         },
         pipeline_run_id="run_001",
+        power_level=5,
     )
 
     event_uk = SegmentAnalyzedEvent(
@@ -126,6 +127,7 @@ def test_aggregate_events_success():
             "humanitarian": 0.0,
         },
         pipeline_run_id="run_001",
+        power_level=4,
     )
 
     event_us = SegmentAnalyzedEvent(
@@ -153,6 +155,7 @@ def test_aggregate_events_success():
             "humanitarian": 0.0,
         },
         pipeline_run_id="run_001",
+        power_level=3,
     )
 
     events = [event_tr, event_uk, event_us]

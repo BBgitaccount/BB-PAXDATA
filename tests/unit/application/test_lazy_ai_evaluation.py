@@ -57,7 +57,7 @@ def _build_collect_stage(
         )
 
     async def _mock_analyze(
-        text, *, prompt_id=None, forced_version=None, language=None
+        text, *, prompt_id=None, forced_version=None, language=None, **kwargs
     ):
         if ai_call_track is not None:
             ai_call_track.append(1)

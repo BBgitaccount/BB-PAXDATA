@@ -36,14 +36,11 @@ class DependencyTriple(BaseModel):
 
 class ActorActionMatrix(BaseModel):
     """
-    Aggregate matrix of actor-to-actor actions within a panel.
+    Aggregate matrix of actor actions within a panel.
     """
 
     panel_id: str
-    from_country: str
-    to_country: str
-    verb: str
+    actor_id: str
+    action_type: str
     count: int = 0
-    avg_sentiment: float = 0.0
-    is_passive_pct: float = 0.0
-    is_negative_pct: float = 0.0
+    weight: float = 0.0

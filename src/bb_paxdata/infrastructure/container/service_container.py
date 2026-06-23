@@ -514,6 +514,9 @@ class ServiceContainer:
         from bb_paxdata.application.services.baseline_fetcher import (
             RollingWindowBaselineFetcher,
         )
+        from bb_paxdata.application.services.correction_event_publisher import (
+            CorrectionEventPublisher,
+        )
         from bb_paxdata.application.services.dki_evaluator import DKIEvaluator
         from bb_paxdata.application.services.model_evaluation_engine import (
             ModelEvaluationEngine,
@@ -566,6 +569,9 @@ class ServiceContainer:
 
         self.event_bus = SimpleEventBus()
         self.event_publisher = Phase5EventPublisher(event_bus=self.event_bus)
+        self.correction_event_publisher = CorrectionEventPublisher(
+            event_bus=self.event_bus
+        )
 
         # Feature-flagged dense retriever factory (TASK-E03)
         from bb_paxdata.application.domain.services.protocols.rag_protocols import (
@@ -764,6 +770,10 @@ class ServiceContainer:
     def dashboard_query_service(self, db: AsyncSession):
         """Factory method for DashboardQueryService."""
         return self._dashboard_query_service_class(db)
+
+    def correction_event_publisher(self):
+        """Factory method for CorrectionEventPublisher."""
+        return self.correction_event_publisher
 
     def formula_validation_repository(self, db: AsyncSession):
         """Factory method for FormulaValidationRepository."""

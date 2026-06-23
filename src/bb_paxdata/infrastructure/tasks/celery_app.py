@@ -32,6 +32,8 @@ def create_celery_app(settings: Settings | None = None) -> Celery:
             "bb_paxdata.infrastructure.webhooks.tasks",
             "bb_paxdata.infrastructure.export.tasks",
             "bb_paxdata.infrastructure.tasks.consensus_tasks",  # CORRECTED (E05-M-05)
+            "bb_paxdata.infrastructure.tasks.audit_tasks",
+            "bb_paxdata.infrastructure.tasks.pattern_tasks",
         ],
     )
 
@@ -86,6 +88,11 @@ def create_celery_app(settings: Settings | None = None) -> Celery:
         "process-outbox-events": {
             "task": "webhooks.process_outbox_queue",
             "schedule": 10.0,  # every 10 seconds
+        },
+        "hourly-pattern-analysis": {
+            "task": "bb_paxdata.infrastructure.tasks.pattern_tasks.run_pattern_analysis",
+            "schedule": 3600.0,  # every hour
+            "args": [1000],  # analyze last 1000 events
         },
     }
 

@@ -1,20 +1,21 @@
-import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
+import { ErrorBoundary } from '@/components/ErrorBoundary';
 import { Layout } from '@/components/Layout';
-import { Dashboard } from '@/pages/Dashboard';
-import { ReviewQueue } from '@/pages/ReviewQueue';
-import { ReviewDetail } from '@/pages/ReviewDetail';
+import { AIComparison } from '@/pages/AIComparison';
+import { AnomalyTimeline } from '@/pages/AnomalyTimeline';
 import { AuditTrail } from '@/pages/AuditTrail';
 import { Calibration } from '@/pages/Calibration';
-import { Settings } from '@/pages/Settings';
-import { AIComparison } from '@/pages/AIComparison';
-import { PromptRegistry } from '@/pages/PromptRegistry';
+import { Dashboard } from '@/pages/Dashboard';
 import { DiscourseNetwork } from '@/pages/DiscourseNetwork';
-import { AnomalyTimeline } from '@/pages/AnomalyTimeline';
-import { TemporalDrift } from '@/pages/TemporalDrift';
-import { SystemHealth } from '@/pages/SystemHealth';
 import { PipelineMonitor } from '@/pages/PipelineMonitor';
+import { PromptRegistry } from '@/pages/PromptRegistry';
+import { ProvenanceGraph } from '@/pages/ProvenanceGraph';
+import { ReviewDetail } from '@/pages/ReviewDetail';
+import { ReviewQueue } from '@/pages/ReviewQueue';
+import { Settings } from '@/pages/Settings';
 import { SpeakersPage } from '@/pages/SpeakersPage';
-import { ErrorBoundary } from '@/components/ErrorBoundary';
+import { SystemHealth } from '@/pages/SystemHealth';
+import { TemporalDrift } from '@/pages/TemporalDrift';
+import { BrowserRouter, Navigate, Route, Routes } from 'react-router-dom';
 
 export const App = () => {
   return (
@@ -70,6 +71,7 @@ export const App = () => {
           <Route path="/comparison" element={<Navigate to="/hitl-ai/comparison" replace />} />
           <Route path="/health" element={<SystemHealth />} />
           <Route path="/monitor" element={<PipelineMonitor />} />
+          <Route path="/provenance" element={<ProvenanceGraph />} />
           <Route path="/settings" element={<Settings />} />
           <Route path="*" element={<Navigate to="/" replace />} />
         </Route>

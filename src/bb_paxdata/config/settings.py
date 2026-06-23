@@ -62,6 +62,107 @@ class PresuppositionConfig(BaseModel):
     )
 
 
+class RetentionPolicyConfig(BaseModel):
+    """
+    Configuration for data retention policies (TASK-1.3.1).
+    """
+
+    raw_transcript_retention_years: int = Field(
+        default=2,
+        ge=1,
+        le=10,
+        description="Retention period for raw transcripts in years",
+    )
+    ai_analysis_retention_years: int = Field(
+        default=5,
+        ge=1,
+        le=20,
+        description="Retention period for AI analysis results in years",
+    )
+    anonymized_statistics_permanent: bool = Field(
+        default=True,
+        description="Whether anonymized statistics are kept permanently",
+    )
+    hitl_corrections_permanent: bool = Field(
+        default=True,
+        description="Whether HITL corrections are kept permanently as training data",
+    )
+    archive_after_retention: bool = Field(
+        default=True,
+        description="Whether to archive data before deletion after retention period",
+    )
+    archive_cleanup_enabled: bool = Field(
+        default=True,
+        description="Enable automatic cleanup of archived data after retention period",
+    )
+
+
+class ArchiveConfig(BaseModel):
+    """
+    Configuration for data archiving pipeline (TASK-1.3.2).
+    """
+
+    s3_endpoint_url: str = Field(
+        default="http://localhost:9000",
+        description="S3/MinIO endpoint URL",
+    )
+    s3_access_key: str = Field(default="", description="S3/MinIO access key")
+    s3_secret_key: SecretStr = Field(
+        default=SecretStr(""), description="S3/MinIO secret key"
+    )
+    s3_bucket_name: str = Field(
+        default="paxdata-archives",
+        description="S3/MinIO bucket name for archives",
+    )
+    s3_region: str = Field(
+        default="us-east-1",
+        description="S3/MinIO region",
+    )
+    archive_compression: bool = Field(
+        default=True,
+        description="Whether to compress archives with gzip",
+    )
+    archive_encryption_enabled: bool = Field(
+        default=True,
+        description="Whether to encrypt archives with AES-256",
+    )
+    archive_encryption_key: SecretStr = Field(
+        default=SecretStr(""),
+        description="Encryption key for archives (if enabled)",
+    )
+
+
+class PIIAnonymizationConfig(BaseModel):
+    """
+    Configuration for PII detection and anonymization (TASK-1.3.3).
+    """
+
+    speaker_name_encoding_prefix: str = Field(
+        default="P",
+        description="Prefix for encoded speaker names (e.g., P-001, P-002)",
+    )
+    location_generalization_enabled: bool = Field(
+        default=True,
+        description="Whether to generalize location information",
+    )
+    location_generalization_level: Literal["country", "region", "city"] = Field(
+        default="country",
+        description="Level of location generalization",
+    )
+    gdpr_right_to_be_forgotten_enabled: bool = Field(
+        default=True,
+        description="Enable GDPR Right to be Forgotten automation",
+    )
+    pii_detection_model: str = Field(
+        default="en_core_web_sm",
+        description="spaCy model for PII detection",
+    )
+    custom_pii_patterns: dict[str, str] = Field(
+        default_factory=dict,
+        description="Custom regex patterns for PII detection",
+    )
+
+
 class Settings(BaseSettings):
     """
     Uygulama çapındaki yapılandırma.
@@ -186,6 +287,24 @@ class Settings(BaseSettings):
     presupposition: PresuppositionConfig = Field(
         default_factory=PresuppositionConfig,
         description="Presupposition extraction configuration",
+    )
+
+    # ── Data Retention Policy (TASK-1.3.1) ────────────────────────────────
+    retention_policy: RetentionPolicyConfig = Field(
+        default_factory=RetentionPolicyConfig,
+        description="Data retention policy configuration",
+    )
+
+    # ── Archive Configuration (TASK-1.3.2) ────────────────────────────────
+    archive: ArchiveConfig = Field(
+        default_factory=ArchiveConfig,
+        description="Archive pipeline configuration",
+    )
+
+    # ── PII Anonymization (TASK-1.3.3) ─────────────────────────────────────
+    pii_anonymization: PIIAnonymizationConfig = Field(
+        default_factory=PIIAnonymizationConfig,
+        description="PII detection and anonymization configuration",
     )
 
     # ── Comparison Engine (TASK-E01) ────────────────────────────────────────

@@ -50,28 +50,22 @@ class DependencyRepository:
         # Check if exists
         stmt = select(ActorActionMatrixORM).where(
             ActorActionMatrixORM.file_id == matrix.panel_id,
-            ActorActionMatrixORM.from_country == matrix.from_country,
-            ActorActionMatrixORM.to_country == matrix.to_country,
-            ActorActionMatrixORM.verb == matrix.verb,
+            ActorActionMatrixORM.actor_id == matrix.actor_id,
+            ActorActionMatrixORM.action_type == matrix.action_type,
         )
         res = await self.session.execute(stmt)
         existing = res.scalar_one_or_none()
 
         if existing:
             existing.count = matrix.count
-            existing.avg_sentiment = matrix.avg_sentiment
-            existing.is_passive_pct = matrix.is_passive_pct
-            existing.is_negative_pct = matrix.is_negative_pct
+            existing.weight = matrix.weight
         else:
             orm_matrix = ActorActionMatrixORM(
                 file_id=matrix.panel_id,
-                from_country=matrix.from_country,
-                to_country=matrix.to_country,
-                verb=matrix.verb,
+                actor_id=matrix.actor_id,
+                action_type=matrix.action_type,
                 count=matrix.count,
-                avg_sentiment=matrix.avg_sentiment,
-                is_passive_pct=matrix.is_passive_pct,
-                is_negative_pct=matrix.is_negative_pct,
+                weight=matrix.weight,
             )
             self.session.add(orm_matrix)
         await self.session.flush()

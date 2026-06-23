@@ -156,6 +156,7 @@ def get_db_session() -> Generator[Session, None, None]:
 
 async def init_db() -> None:
     from bb_paxdata.infrastructure.db import (
+        archive_table,  # noqa: F401
         country_models,  # noqa: F401
         dki_table,  # noqa: F401
         drift_events,  # noqa: F401

@@ -10,6 +10,7 @@ export const tr = {
   'nav.drift': 'Zamansal Kayma',
   'nav.health': 'Sistem Sağlığı',
   'nav.monitor': 'Pipeline Monitör',
+  'nav.provenance': 'Provenance Graph',
   'nav.logic_queue': 'Formula Kuyruğu',
   'nav.logic_audit': 'Denetim İzi',
   'nav.logic_calib': 'Kalibrasyon',

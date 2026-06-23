@@ -2256,6 +2256,7 @@ class AnalysisTriggerService:
                     topic_model_version="bertopic_v1",
                     frame_distribution=frames_dist,
                     pipeline_run_id=run_id_event,
+                    power_level=getattr(db_seg, "power_level", 0) or 0,
                 )
                 session.add(event)
 
@@ -2658,15 +2659,6 @@ async def rebuild_network_for_file(session: Any, file_id: str) -> None:
         dep_service = container.dependency_service
         dep_repo = DependencyRepository(session)
 
-        matrix_counts: dict[tuple[str, str, str], dict[str, Any]] = defaultdict(
-            lambda: {
-                "count": 0,
-                "sentiment_sum": 0.0,
-                "passive_cnt": 0,
-                "neg_cnt": 0,
-            }
-        )
-
         for s in db_sents:
             if not s.text:
                 continue
@@ -2697,31 +2689,6 @@ async def rebuild_network_for_file(session: Any, file_id: str) -> None:
 
                 await dep_repo.insert_triple(t)
 
-                if subj_res and obj_res:
-                    key = (subj_res, obj_res, t.verb_lemma)
-                    matrix_counts[key]["count"] += 1
-                    matrix_counts[key]["sentiment_sum"] += s.sentiment_score or 0.0
-                    matrix_counts[key]["passive_cnt"] += 1 if t.is_passive else 0
-                    matrix_counts[key]["neg_cnt"] += 1 if t.is_negative else 0
-
-        for (from_c, to_c, verb), stats in matrix_counts.items():
-            cnt = stats["count"]
-            avg_sent = stats["sentiment_sum"] / cnt if cnt > 0 else 0.0
-            passive_pct = stats["passive_cnt"] / cnt if cnt > 0 else 0.0
-            neg_pct = stats["neg_cnt"] / cnt if cnt > 0 else 0.0
-
-            matrix_entry = ActorActionMatrix(
-                panel_id=file_id,
-                from_country=from_c,
-                to_country=to_c,
-                verb=verb,
-                count=cnt,
-                avg_sentiment=avg_sent,
-                is_passive_pct=passive_pct,
-                is_negative_pct=neg_pct,
-            )
-            await dep_repo.upsert_actor_action_matrix(matrix_entry)
-
         logger.info(
             "Dependency parsing completed successfully",
             file_id=file_id,
@@ -2729,6 +2696,153 @@ async def rebuild_network_for_file(session: Any, file_id: str) -> None:
     except Exception as exc:
         logger.error(
             "Dependency parsing failed",
+            file_id=file_id,
+            error=str(exc),
+        )
+
+    # ── 5. Rebuild Actor Action Matrix (from frames/demands) ──
+    try:
+        import json
+        from collections import defaultdict
+
+        from sqlalchemy import text
+
+        from bb_paxdata.application.domain.enums.action_type import (
+            map_frame_to_actions,
+        )
+        from bb_paxdata.application.domain.models.dependency import ActorActionMatrix
+
+        res_sents = await session.execute(
+            text(
+                """
+                SELECT s.sent_id, s.speaker_id, s.dominant_frame, s.demand_type, a.speech_act_json
+                FROM sentences s
+                LEFT JOIN ai_sentence_analysis a ON s.sent_id = a.sent_id
+                WHERE s.file_id = :file_id
+            """
+            ),
+            {"file_id": file_id},
+        )
+
+        matrix_counts = defaultdict(lambda: {"count": 0, "conf_sum": 0.0})
+
+        for row in res_sents:
+            _s_id, speaker_id, frame, demand, sa_json = row
+            actor = speaker_id or "unknown"
+
+            # Get confidence
+            conf = 1.0
+            if sa_json:
+                try:
+                    if isinstance(sa_json, str):
+                        parsed = json.loads(sa_json)
+                    else:
+                        parsed = sa_json
+                    if parsed and isinstance(parsed, dict):
+                        conf = float(parsed.get("confidence", 1.0))
+                except Exception:
+                    pass
+
+            actions = map_frame_to_actions(frame, demand)
+            for act in actions:
+                key = (actor, act.value)
+                matrix_counts[key]["count"] += 1
+                matrix_counts[key]["conf_sum"] += conf
+
+        for (actor, action), stats in matrix_counts.items():
+            cnt = stats["count"]
+            avg_conf = stats["conf_sum"] / cnt if cnt > 0 else 1.0
+            weight = cnt * avg_conf
+
+            matrix_entry = ActorActionMatrix(
+                panel_id=file_id,
+                actor_id=actor,
+                action_type=action,
+                count=cnt,
+                weight=weight,
+            )
+            await dep_repo.upsert_actor_action_matrix(matrix_entry)
+
+        logger.info(
+            "Actor action matrix rebuild completed successfully",
+            file_id=file_id,
+        )
+    except Exception as exc:
+        logger.error(
+            "Actor action matrix rebuild failed",
+            file_id=file_id,
+            error=str(exc),
+        )
+
+    # ── 6. Populate network_edges JSON in ActorTopicDocument ──
+    try:
+        from collections import defaultdict
+
+        from sqlalchemy import select
+
+        ActorTopicDocument = _infra_import(
+            "bb_paxdata.infrastructure.db.models", "ActorTopicDocument"
+        )
+        DiscourseFlowTable = _infra_import(
+            "bb_paxdata.infrastructure.db.country_models", "DiscourseFlowTable"
+        )
+
+        # Query discourse flows for this file
+        stmt_flows = select(DiscourseFlowTable).where(
+            DiscourseFlowTable.file_id == file_id
+        )
+        res_flows = await session.execute(stmt_flows)
+        flows_list = res_flows.scalars().all()
+
+        flows_by_country = defaultdict(list)
+        for f in flows_list:
+            flows_by_country[f.from_country].append(
+                {
+                    "to_country": f.to_country,
+                    "edge_type": f.edge_type,
+                    "weight": float(f.weight) if f.weight is not None else 1.0,
+                    "sentiment_toward": (
+                        float(f.sentiment_toward)
+                        if f.sentiment_toward is not None
+                        else 0.0
+                    ),
+                    "confrontational_count": (
+                        int(f.confrontational_count)
+                        if f.confrontational_count is not None
+                        else 0
+                    ),
+                    "cooperative_count": (
+                        int(f.cooperative_count)
+                        if f.cooperative_count is not None
+                        else 0
+                    ),
+                    "narrative_layer": f.narrative_layer,
+                    "narrative_target_actor": f.narrative_target_actor,
+                    "narrative_salience": (
+                        float(f.narrative_salience)
+                        if f.narrative_salience is not None
+                        else 0.0
+                    ),
+                }
+            )
+
+        for country, edges_array in flows_by_country.items():
+            doc_stmt = select(ActorTopicDocument).where(
+                ActorTopicDocument.file_id == file_id,
+                ActorTopicDocument.country == country,
+            )
+            doc_res = await session.execute(doc_stmt)
+            doc_obj = doc_res.scalars().all()
+            for dobj in doc_obj:
+                dobj.network_edges = edges_array
+
+        logger.info(
+            "ActorTopicDocument network_edges population completed successfully",
+            file_id=file_id,
+        )
+    except Exception as exc:
+        logger.error(
+            "ActorTopicDocument network_edges population failed",
             file_id=file_id,
             error=str(exc),
         )

@@ -27,6 +27,12 @@ from .gat_models import ANOMALY_SENTINEL, EMBEDDING_DIM, GATEmbedding
 from .human_review import AgreementStatus, HumanReview, RiskLevel
 from .metadata import Metadata
 from .power_index import PowerIndex
+from .provenance import (
+    OperationType,
+    ProvenanceEdge,
+    ProvenanceGraph,
+    ProvenanceNode,
+)
 from .relationship import Relationship
 from .rhetorical_element import RhetoricalElement
 from .risk_signal import RiskSignal
@@ -75,7 +81,11 @@ __all__ = [
     "Metadata",
     "MetricDelta",
     "NarrativeLayerDelta",
+    "OperationType",
     "PowerIndex",
+    "ProvenanceEdge",
+    "ProvenanceGraph",
+    "ProvenanceNode",
     "Relationship",
     "RhetoricalElement",
     "RiskAssessment",
