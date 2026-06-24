@@ -24,6 +24,7 @@ from bb_paxdata.interfaces.api.routers.v1 import (
     discourse,
     exports,
     monitoring,
+    notifications,
     prompts,
     provenance,
     queue,
@@ -245,6 +246,7 @@ app.include_router(stream.router, prefix="/api/v1")
 app.include_router(exports.router, prefix="/api/v1/exports")
 app.include_router(templates.router, prefix="/api/v1/templates")
 app.include_router(scheduled_reports.router, prefix="/api/v1/scheduled-reports")
+app.include_router(notifications.router, prefix="/api/v1/notifications")
 app.include_router(queue_ws.router, prefix="/api")
 app.include_router(get_graphql_router(), prefix="/graphql")
 
@@ -299,6 +301,110 @@ async def health_check(
             "redis": "healthy" if cache_healthy else "unhealthy",
         },
     }
+
+
+@app.get("/ready")
+@limiter.limit("60/minute")
+async def readiness_check(
+    request: Request,
+    response: Response,
+    db: AsyncSession = Depends(get_db),
+    cache: RedisCacheBackend = Depends(get_cache),
+):
+    """Readiness probe - checks if all dependencies are ready to accept traffic."""
+    checks = {}
+
+    # Database check
+    db_healthy = False
+    try:
+        from sqlalchemy import text
+
+        await db.execute(text("SELECT 1"))
+        db_healthy = True
+    except Exception as e:
+        db_healthy = False
+        checks["database"] = {"status": "unhealthy", "error": str(e)}
+
+    # Redis/Cache check
+    cache_healthy = False
+    if hasattr(cache, "health_check") and callable(cache.health_check):
+        cache_healthy = await cache.health_check()
+    else:
+        cache_healthy = True
+
+    if not cache_healthy:
+        checks["redis"] = {"status": "unhealthy", "error": "Redis connection failed"}
+
+    # Meilisearch check (if configured)
+    meilisearch_healthy = False
+    if settings.meilisearch_url:
+        try:
+            import httpx
+
+            async with httpx.AsyncClient(timeout=5.0) as client:
+                resp = await client.get(f"{settings.meilisearch_url}/health")
+                meilisearch_healthy = resp.status_code == 200
+        except Exception as e:
+            checks["meilisearch"] = {"status": "unhealthy", "error": str(e)}
+
+    # Build response
+    dependencies = {
+        "database": "healthy" if db_healthy else "unhealthy",
+        "redis": "healthy" if cache_healthy else "unhealthy",
+        "meilisearch": "healthy" if meilisearch_healthy else "unhealthy",
+    }
+
+    all_healthy = all(
+        dep == "healthy" for dep in dependencies.values() if dep != "unavailable"
+    )
+
+    if not all_healthy:
+        response.status_code = status.HTTP_503_SERVICE_UNAVAILABLE
+
+    return {
+        "status": "ready" if all_healthy else "not_ready",
+        "app_name": settings.app_name,
+        "version": settings.version,
+        "environment": settings.environment,
+        "dependencies": dependencies,
+        "checks": checks,
+    }
+
+
+@app.get("/live")
+@limiter.limit("60/minute")
+async def liveness_check(request: Request, response: Response):
+    """Liveness probe - checks if the process is running and responding."""
+    return {
+        "status": "alive",
+        "app_name": settings.app_name,
+        "version": settings.version,
+        "environment": settings.environment,
+        "timestamp": __import__("time").time(),
+    }
+
+
+@app.get("/health/circuit-breakers")
+@limiter.limit("30/minute")
+async def circuit_breaker_status(request: Request):
+    """Get circuit breaker status for all AI services."""
+    try:
+        from bb_paxdata.infrastructure.ai.circuit_breaker import (
+            get_all_circuit_breaker_stats,
+        )
+
+        stats = get_all_circuit_breaker_stats()
+        return {
+            "circuit_breakers": stats,
+            "total_services": len(stats),
+        }
+    except Exception as e:
+        import structlog
+
+        structlog.get_logger(__name__).error(
+            "Failed to get circuit breaker stats", error=str(e)
+        )
+        return {"circuit_breakers": {}, "total_services": 0, "error": str(e)}
 
 
 @app.get("/metrics")

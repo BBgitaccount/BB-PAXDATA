@@ -8,6 +8,9 @@ from __future__ import annotations
 
 import logging
 import sys
+import time
+from collections.abc import Generator
+from contextlib import contextmanager
 from pathlib import Path
 from typing import Any
 
@@ -37,6 +40,20 @@ def add_otel_trace_info(
     return event_dict
 
 
+def add_performance_markers(
+    logger: Any, method_name: str, event_dict: dict[str, Any]
+) -> dict[str, Any]:
+    """Add performance markers for timing analysis."""
+    if "duration_ms" not in event_dict and "performance" in event_dict:
+        # Auto-calculate duration if start_time was set
+        perf_data = event_dict["performance"]
+        if isinstance(perf_data, dict) and "start_time" in perf_data:
+            duration_ms = (time.time() - perf_data["start_time"]) * 1000
+            event_dict["duration_ms"] = round(duration_ms, 2)
+            event_dict["performance_stage"] = perf_data.get("stage", "unknown")
+    return event_dict
+
+
 def setup_logging(
     level: str = "INFO",  # "DEBUG" | "INFO" | "WARNING" | "ERROR"
     pretty: bool = True,  # True = renkli konsol, False = JSON satırı
@@ -56,6 +73,7 @@ def setup_logging(
     shared_processors: list[Processor] = [
         structlog.contextvars.merge_contextvars,  # contextvars entegrasyonu
         add_otel_trace_info,  # OpenTelemetry tracing context
+        add_performance_markers,  # Performance timing markers
         structlog.stdlib.add_log_level,
         structlog.stdlib.add_logger_name,
         structlog.processors.TimeStamper(fmt="iso"),
@@ -138,3 +156,26 @@ def reset_configuration() -> None:
     """Test için yapılandırmayı sıfırla."""
     global _configured
     _configured = False
+
+
+@contextmanager
+def performance_logger(logger: Any, stage: str) -> Generator[None, None, None]:
+    """Context manager for tracking performance of code blocks.
+
+    Usage:
+        with performance_logger(logger, "ai_completion"):
+            result = await ai_service.complete(...)
+    """
+    start_time = time.time()
+    logger.info(
+        "performance.start", performance={"stage": stage, "start_time": start_time}
+    )
+    try:
+        yield
+    finally:
+        duration_ms = (time.time() - start_time) * 1000
+        logger.info(
+            "performance.end",
+            performance={"stage": stage, "start_time": start_time},
+            duration_ms=round(duration_ms, 2),
+        )

@@ -32,6 +32,8 @@ class ConnectionManager:
         self.active_connections: list[WebSocket] = []
         # Session-specific connections for analysis streaming
         self.session_connections: dict[str, list[WebSocket]] = {}
+        # User-specific connections for notifications
+        self.user_connections: dict[str, list[WebSocket]] = {}
 
     async def connect(self, websocket: WebSocket) -> None:
         await websocket.accept()
@@ -53,6 +55,19 @@ class ConnectionManager:
             f"Total active: {len(self.active_connections)}"
         )
 
+    async def connect_user(self, websocket: WebSocket, user_id: str) -> None:
+        """Connect a WebSocket to a specific user for notifications."""
+        await websocket.accept()
+        if user_id not in self.user_connections:
+            self.user_connections[user_id] = []
+        self.user_connections[user_id].append(websocket)
+        self.active_connections.append(websocket)
+        logger.info(
+            f"WebSocket client connected for user {user_id}. "
+            f"User connections: {len(self.user_connections[user_id])}, "
+            f"Total active: {len(self.active_connections)}"
+        )
+
     def disconnect(self, websocket: WebSocket) -> None:
         if websocket in self.active_connections:
             self.active_connections.remove(websocket)
@@ -62,6 +77,12 @@ class ConnectionManager:
                 connections.remove(websocket)
                 if not connections:
                     del self.session_connections[session_id]
+        # Remove from user connections
+        for user_id, connections in list(self.user_connections.items()):
+            if websocket in connections:
+                connections.remove(websocket)
+                if not connections:
+                    del self.user_connections[user_id]
         logger.info(
             f"WebSocket client disconnected. Active connections: {len(self.active_connections)}"
         )
@@ -90,6 +111,20 @@ class ConnectionManager:
             except Exception as e:
                 logger.warning(
                     f"Failed to send WS message to session {session_id}, disconnecting: {e}"
+                )
+                self.disconnect(connection)
+
+    async def send_to_user(self, user_id: str, message: dict[str, object]) -> None:
+        """Send JSON payload to all connections for a specific user."""
+        if user_id not in self.user_connections:
+            return
+
+        for connection in list(self.user_connections[user_id]):
+            try:
+                await connection.send_json(message)
+            except Exception as e:
+                logger.warning(
+                    f"Failed to send WS message to user {user_id}, disconnecting: {e}"
                 )
                 self.disconnect(connection)
 
@@ -290,6 +325,47 @@ async def websocket_notifications_endpoint(websocket: WebSocket) -> None:
         logger.info("Notification WebSocket disconnected")
     except Exception as e:
         logger.error(f"Notification WebSocket error: {e}")
+    finally:
+        manager.disconnect(websocket)
+
+
+@router.websocket("/notifications/{user_id}")
+async def websocket_user_notifications_endpoint(
+    websocket: WebSocket, user_id: str
+) -> None:
+    """WebSocket endpoint for user-specific notification streaming.
+
+    Provides real-time notifications for a specific user including:
+    - Export job completions
+    - Analysis completions
+    - Personal alerts
+    """
+    await manager.connect_user(websocket, user_id)
+
+    try:
+        # Send initial connection confirmation
+        await websocket.send_json(
+            {
+                "type": "connected",
+                "message": f"User notification stream connected for {user_id}",
+                "user_id": user_id,
+            }
+        )
+
+        while True:
+            # Receive client messages (heartbeat)
+            raw = await websocket.receive_text()
+            try:
+                payload = json.loads(raw)
+                if payload.get("type") == "ping":
+                    await websocket.send_json({"type": "pong"})
+            except json.JSONDecodeError:
+                pass  # Non-JSON keep-alive bytes are fine
+
+    except WebSocketDisconnect:
+        logger.info(f"User notification WebSocket disconnected for {user_id}")
+    except Exception as e:
+        logger.error(f"User notification WebSocket error for {user_id}: {e}")
     finally:
         manager.disconnect(websocket)
 

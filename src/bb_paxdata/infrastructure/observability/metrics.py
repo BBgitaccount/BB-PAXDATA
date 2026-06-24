@@ -203,6 +203,58 @@ class MetricsCollector:
             registry=self._registry,
         )
 
+        # TASK-9.3.2 Custom Metrics for Pipeline, AI Latency, Cache Ratios
+        self._pipeline_stage_duration_seconds = Histogram(
+            "pipeline_stage_duration_seconds",
+            "Pipeline aşamalarının çalışma süreleri (saniye)",
+            ["stage_name", "status"],
+            buckets=[0.1, 0.5, 1.0, 2.0, 5.0, 10.0, 30.0, 60.0, 120.0, 300.0],
+            registry=self._registry,
+        )
+
+        self._ai_model_latency_seconds = Histogram(
+            "ai_model_latency_seconds",
+            "AI model response latency in seconds",
+            ["backend", "model", "operation"],
+            buckets=[0.1, 0.5, 1.0, 2.0, 5.0, 10.0, 30.0, 60.0, 120.0],
+            registry=self._registry,
+        )
+
+        self._cache_hit_ratio = Gauge(
+            "cache_hit_ratio",
+            "Cache hit ratio (0.0 to 1.0)",
+            ["cache_type"],
+            registry=self._registry,
+        )
+
+        self._cache_hit_total = Counter(
+            "cache_hit_total",
+            "Total cache hits",
+            ["cache_type"],
+            registry=self._registry,
+        )
+
+        self._cache_miss_total = Counter(
+            "cache_miss_total",
+            "Total cache misses",
+            ["cache_type"],
+            registry=self._registry,
+        )
+
+        self._slow_query_total = Counter(
+            "slow_query_total",
+            "Total slow database queries (>1s)",
+            ["query_type"],
+            registry=self._registry,
+        )
+
+        self._circuit_breaker_state = Gauge(
+            "circuit_breaker_state",
+            "Circuit breaker state (0=closed, 1=open, 2=half_open)",
+            ["service_name"],
+            registry=self._registry,
+        )
+
     def record_ai_request(
         self,
         backend: str,
@@ -358,6 +410,54 @@ class MetricsCollector:
         """Record number of significant changes detected."""
         with self._lock:
             self._comparison_significant_changes_detected_total.inc(count)
+
+    # TASK-9.3.2 Custom Metrics Recording Methods
+    def record_pipeline_stage_duration(
+        self, stage_name: str, duration_seconds: float, status: str
+    ) -> None:
+        """Record pipeline stage duration with custom buckets."""
+        with self._lock:
+            self._pipeline_stage_duration_seconds.labels(
+                stage_name=stage_name, status=status
+            ).observe(duration_seconds)
+
+    def record_ai_model_latency(
+        self, backend: str, model: str, operation: str, latency_seconds: float
+    ) -> None:
+        """Record AI model latency with custom buckets."""
+        with self._lock:
+            self._ai_model_latency_seconds.labels(
+                backend=backend, model=model, operation=operation
+            ).observe(latency_seconds)
+
+    def record_cache_hit(self, cache_type: str) -> None:
+        """Record a cache hit."""
+        with self._lock:
+            self._cache_hit_total.labels(cache_type=cache_type).inc()
+
+    def record_cache_miss(self, cache_type: str) -> None:
+        """Record a cache miss."""
+        with self._lock:
+            self._cache_miss_total.labels(cache_type=cache_type).inc()
+
+    def update_cache_hit_ratio(self, cache_type: str, ratio: float) -> None:
+        """Update cache hit ratio gauge."""
+        with self._lock:
+            self._cache_hit_ratio.labels(cache_type=cache_type).set(ratio)
+
+    def record_slow_query(self, query_type: str) -> None:
+        """Record a slow database query."""
+        with self._lock:
+            self._slow_query_total.labels(query_type=query_type).inc()
+
+    def set_circuit_breaker_state(self, service_name: str, state: str) -> None:
+        """Set circuit breaker state (0=closed, 1=open, 2=half_open)."""
+        state_map = {"closed": 0, "open": 1, "half_open": 2}
+        state_value = state_map.get(state.lower(), 0)
+        with self._lock:
+            self._circuit_breaker_state.labels(service_name=service_name).set(
+                state_value
+            )
 
     def start_http_server(self, port: int = 8000) -> None:
         """Prometheus scrape endpoint'ini başlat (opsiyonel, sadece local dev)."""

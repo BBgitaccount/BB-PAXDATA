@@ -240,6 +240,32 @@ class Settings(BaseSettings):
         default=1.0, description="Sentry traces sample rate"
     )
 
+    # ── APM Integration ───────────────────────────────────────────────────
+    apm_provider: str = Field(
+        default="none", description="APM provider: none, newrelic, datadog"
+    )
+    newrelic_license_key: str = Field(default="", description="New Relic license key")
+    newrelic_app_name: str = Field(
+        default="bb-paxdata", description="New Relic app name"
+    )
+    newrelic_enabled: bool = Field(default=False, description="Enable New Relic APM")
+    datadog_api_key: str = Field(default="", description="Datadog API key")
+    datadog_service_name: str = Field(
+        default="bb-paxdata", description="Datadog service name"
+    )
+    datadog_enabled: bool = Field(default=False, description="Enable Datadog APM")
+    datadog_host: str = Field(default="localhost", description="Datadog agent host")
+    datadog_port: int = Field(default=8126, description="Datadog agent port")
+
+    # ── Log Shipping ─────────────────────────────────────────────────────
+    loki_url: str = Field(default="", description="Grafana Loki URL")
+    loki_enabled: bool = Field(default=False, description="Enable Loki log shipping")
+    elk_url: str = Field(default="", description="Elasticsearch URL")
+    elk_enabled: bool = Field(default=False, description="Enable ELK log shipping")
+    elk_index: str = Field(
+        default="bb-paxdata-logs", description="Elasticsearch index name"
+    )
+
     # ── AI / LLM ─────────────────────────────────────────────────────────
 
     ai_provider: AIProvider = Field(default=AIProvider.OLLAMA)
