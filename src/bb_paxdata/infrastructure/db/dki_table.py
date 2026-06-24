@@ -1,4 +1,4 @@
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 
 from sqlalchemy import Boolean, DateTime, Float, String
 from sqlalchemy.orm import Mapped, mapped_column
@@ -31,7 +31,7 @@ class DKIResultModel(Base):
     # Metadata
     calculation_method: Mapped[str] = mapped_column(String(100), default="dki_v1.0")
     created_at: Mapped[datetime] = mapped_column(
-        DateTime(timezone=True), default=lambda: datetime.now(timezone.utc)
+        DateTime(timezone=True), default=lambda: datetime.now(UTC)
     )
 
     def __repr__(self) -> str:

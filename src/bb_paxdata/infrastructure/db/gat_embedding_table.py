@@ -8,7 +8,7 @@ WORM semantics: records are immutable once written (no UPDATE/DELETE).
 
 from __future__ import annotations
 
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 
 from sqlalchemy import (
     DateTime,
@@ -59,7 +59,7 @@ class GATEmbeddingTable(Base):
     computed_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True),
         nullable=False,
-        default=lambda: datetime.now(timezone.utc),
+        default=lambda: datetime.now(UTC),
         server_default=func.now(),
     )
 

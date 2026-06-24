@@ -46,8 +46,8 @@ class CorrectionEvent:
         For numeric values, returns the difference.
         For categorical values, returns a tuple (original, corrected).
         """
-        if isinstance(self.original_value, (int, float)) and isinstance(
-            self.corrected_value, (int, float)
+        if isinstance(self.original_value, int | float) and isinstance(
+            self.corrected_value, int | float
         ):
             return self.corrected_value - self.original_value
         return (self.original_value, self.corrected_value)

@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 import random
+from datetime import UTC
 
 import httpx
 from celery import Task
@@ -241,7 +242,7 @@ def _acquire_lease(event_id: str) -> bool:
     Acquire a short-lived lock (lease) on the event to prevent concurrent processing.
     Returns True if lease acquired successfully, False if already processed or leased.
     """
-    from datetime import datetime, timezone
+    from datetime import datetime
 
     from bb_paxdata.infrastructure.db.models import OutboxEventORM
     from bb_paxdata.infrastructure.db.session import get_db_session
@@ -260,11 +261,11 @@ def _acquire_lease(event_id: str) -> bool:
         if event.processed:
             return False
 
-        now = datetime.now(timezone.utc)
+        now = datetime.now(UTC)
         if event.last_attempt_at is not None:
             last_attempt = event.last_attempt_at
             if last_attempt.tzinfo is None:
-                last_attempt = last_attempt.replace(tzinfo=timezone.utc)
+                last_attempt = last_attempt.replace(tzinfo=UTC)
             time_since_attempt = (now - last_attempt).total_seconds()
             if time_since_attempt < LEASE_DURATION_SECONDS:
                 # Still leased by another worker
@@ -282,7 +283,7 @@ def _release_lease_for_retry(event_id: str, countdown: float) -> None:
     Clear the lease so that a scheduled retry task can run without waiting
     for the lease duration to expire.
     """
-    from datetime import datetime, timedelta, timezone
+    from datetime import datetime, timedelta
 
     from bb_paxdata.infrastructure.db.models import OutboxEventORM
     from bb_paxdata.infrastructure.db.session import get_db_session
@@ -297,15 +298,13 @@ def _release_lease_for_retry(event_id: str, countdown: float) -> None:
         if event:
             event.last_attempt_at = None
             if countdown > 0:
-                event.next_attempt_at = datetime.now(timezone.utc) + timedelta(
-                    seconds=countdown
-                )
+                event.next_attempt_at = datetime.now(UTC) + timedelta(seconds=countdown)
             session.commit()
 
 
 def _mark_event_processed(event_id: str) -> None:
     """OutboxEvent'i processed=True olarak günceller."""
-    from datetime import datetime, timezone
+    from datetime import datetime
 
     from bb_paxdata.infrastructure.db.models import OutboxEventORM
     from bb_paxdata.infrastructure.db.session import get_db_session
@@ -319,7 +318,7 @@ def _mark_event_processed(event_id: str) -> None:
         )
         if event:
             event.processed = True
-            event.last_attempt_at = datetime.now(timezone.utc)
+            event.last_attempt_at = datetime.now(UTC)
             session.commit()
 
 
@@ -356,12 +355,12 @@ def process_outbox_queue() -> dict:
     """
     Polls the database for unprocessed OutboxEventORM records and dispatches them via Celery.
     """
-    from datetime import datetime, timedelta, timezone
+    from datetime import datetime, timedelta
 
     from bb_paxdata.infrastructure.db.models import OutboxEventORM
     from bb_paxdata.infrastructure.db.session import get_db_session
 
-    now = datetime.now(timezone.utc)
+    now = datetime.now(UTC)
 
     with get_db_session() as session:
         # Query pending events that are ready to run

@@ -1,6 +1,7 @@
 """Temporal analyzer for speaker language drift detection."""
 
 import re
+from datetime import UTC
 from typing import Any, Literal, get_args
 
 import numpy as np
@@ -644,12 +645,12 @@ class TemporalAnalyzer:
             if match:
                 if multiplier is None:
                     # ISO date format - parse and convert to timestamp
-                    from datetime import datetime, timezone
+                    from datetime import datetime
 
                     try:
                         date_str = match.group(1)
                         date_obj = datetime.strptime(date_str, "%Y-%m-%d").replace(
-                            tzinfo=timezone.utc
+                            tzinfo=UTC
                         )
                         return date_obj.timestamp()
                     except ValueError:

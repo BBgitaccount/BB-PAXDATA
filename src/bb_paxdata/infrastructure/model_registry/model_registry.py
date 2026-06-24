@@ -4,7 +4,7 @@ Handles registration, promotion, and deprecation of model versions.
 """
 
 import uuid
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from typing import Any
 
 import structlog
@@ -61,7 +61,7 @@ class ModelRegistry:
                 version_tag=version_tag,
                 artifacts_path=artifacts_path,
                 status="shadow",
-                deployed_at=datetime.now(timezone.utc),
+                deployed_at=datetime.now(UTC),
                 metrics=metrics,
             )
 

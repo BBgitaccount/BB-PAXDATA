@@ -3,7 +3,7 @@ import importlib
 import importlib.util
 import inspect
 import sys
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
 
@@ -25,7 +25,7 @@ class RuleRegistry:
         self._rules: list[AnomalyRule] = []
         self._failed_rules: list[tuple[str, str]] = []  # (rule_file, error_message)
         self._lock = asyncio.Lock()
-        self._last_reload: str = datetime.now(timezone.utc).isoformat()
+        self._last_reload: str = datetime.now(UTC).isoformat()
 
     @property
     def rules(self) -> list[AnomalyRule]:
@@ -42,7 +42,7 @@ class RuleRegistry:
     async def load_from_directory(self, directory: str | Path) -> None:
         async with self._lock:
             await self._load_all(Path(directory))
-            self._last_reload = datetime.now(timezone.utc).isoformat()
+            self._last_reload = datetime.now(UTC).isoformat()
 
     async def reload(self) -> None:
         if not self.rules_dir:

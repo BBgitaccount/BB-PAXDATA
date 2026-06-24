@@ -8,9 +8,9 @@ def validate_json_safe(v: Any) -> None:
     """
     if v is None:
         return
-    if isinstance(v, (str, int, float, bool)):
+    if isinstance(v, str | int | float | bool):
         return
-    if isinstance(v, (list, tuple)):
+    if isinstance(v, list | tuple):
         for val in v:
             validate_json_safe(val)
         return

@@ -7,7 +7,7 @@ from __future__ import annotations
 import gzip
 import hashlib
 import json
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from typing import Any
 
 import boto3
@@ -186,7 +186,7 @@ class ArchiveService:
         checksum = self._compute_checksum(processed_data)
 
         # Generate S3 key
-        timestamp = datetime.now(timezone.utc).strftime("%Y%m%d_%H%M%S")
+        timestamp = datetime.now(UTC).strftime("%Y%m%d_%H%M%S")
         s3_key = f"{data_type.value}/{timestamp}_{archive_id}.archive"
 
         # Upload to S3
@@ -207,7 +207,7 @@ class ArchiveService:
                 archive_id=archive_id,
                 data_type=data_type,
                 original_record_ids=[],
-                archived_at=datetime.now(timezone.utc),
+                archived_at=datetime.now(UTC),
                 archived_by="system",
                 file_path=s3_key,
                 file_size_bytes=0,
@@ -221,7 +221,7 @@ class ArchiveService:
             archive_id=archive_id,
             data_type=data_type,
             original_record_ids=[],
-            archived_at=datetime.now(timezone.utc),
+            archived_at=datetime.now(UTC),
             archived_by="system",
             file_path=s3_key,
             file_size_bytes=len(processed_data),

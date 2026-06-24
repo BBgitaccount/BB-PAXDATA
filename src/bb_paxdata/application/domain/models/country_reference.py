@@ -1,7 +1,7 @@
 # src/bb_paxdata/domain/models/country_reference.py
 from __future__ import annotations
 
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from uuid import UUID, uuid4
 
 from pydantic import BaseModel, ConfigDict as model_config, Field
@@ -40,7 +40,7 @@ class CountryReference(BaseModel):
         le=1.0,
         description="Konuşmacının panel içindeki güç/otorite ağırlığı (SBI'dan türetilir)",
     )
-    created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+    created_at: datetime = Field(default_factory=lambda: datetime.now(UTC))
 
     @property
     def is_hostile(self) -> bool:

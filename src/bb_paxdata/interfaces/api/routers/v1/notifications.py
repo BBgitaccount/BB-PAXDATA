@@ -2,7 +2,7 @@
 from __future__ import annotations
 
 import uuid
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 
 from fastapi import APIRouter, Depends, HTTPException, Request, status
 from pydantic import BaseModel, Field
@@ -91,7 +91,7 @@ async def create_notification(
         priority=notification_req.priority,
         is_read=False,
         action_url=notification_req.action_url,
-        metadata=notification_req.metadata,
+        extra_metadata=notification_req.metadata,
         expires_at=(
             datetime.fromisoformat(notification_req.expires_at).replace(tzinfo=None)
             if notification_req.expires_at
@@ -114,7 +114,7 @@ async def create_notification(
         is_read=notification.is_read,
         read_at=notification.read_at.isoformat() if notification.read_at else None,
         action_url=notification.action_url,
-        metadata=notification.metadata,
+        metadata=notification.extra_metadata,
         created_at=(
             notification.created_at.isoformat() if notification.created_at else ""
         ),
@@ -170,7 +170,7 @@ async def list_notifications(
                 is_read=notif.is_read,
                 read_at=notif.read_at.isoformat() if notif.read_at else None,
                 action_url=notif.action_url,
-                metadata=notif.metadata,
+                metadata=notif.extra_metadata,
                 created_at=notif.created_at.isoformat() if notif.created_at else "",
                 expires_at=notif.expires_at.isoformat() if notif.expires_at else None,
             )
@@ -206,7 +206,7 @@ async def get_notification(
         is_read=notification.is_read,
         read_at=notification.read_at.isoformat() if notification.read_at else None,
         action_url=notification.action_url,
-        metadata=notification.metadata,
+        metadata=notification.extra_metadata,
         created_at=(
             notification.created_at.isoformat() if notification.created_at else ""
         ),
@@ -229,7 +229,7 @@ async def mark_notifications_read(
             .where(not Notification.is_read)
             .values(
                 is_read=True,
-                read_at=datetime.now(timezone.utc).replace(tzinfo=None),
+                read_at=datetime.now(UTC).replace(tzinfo=None),
             )
         )
         if user_id:
@@ -240,7 +240,7 @@ async def mark_notifications_read(
             .where(Notification.id.in_(mark_req.notification_ids))
             .values(
                 is_read=True,
-                read_at=datetime.now(timezone.utc).replace(tzinfo=None),
+                read_at=datetime.now(UTC).replace(tzinfo=None),
             )
         )
 

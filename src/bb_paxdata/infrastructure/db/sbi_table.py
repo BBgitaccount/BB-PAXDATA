@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 
 from sqlalchemy import DateTime, Float, Index, String
 from sqlalchemy.orm import Mapped, mapped_column
@@ -45,7 +45,7 @@ class SpeakerPositionTable(Base):
     gat_anomaly_score: Mapped[float | None] = mapped_column(Float, nullable=True)
 
     computed_at: Mapped[datetime] = mapped_column(
-        DateTime, default=lambda: datetime.now(timezone.utc).replace(tzinfo=None)
+        DateTime, default=lambda: datetime.now(UTC).replace(tzinfo=None)
     )
 
     __table_args__ = (
@@ -69,7 +69,7 @@ class SpeakerPositionTable(Base):
             delta=self.delta,
             gat_anomaly_score=self.gat_anomaly_score,
             computed_at=(
-                self.computed_at.replace(tzinfo=timezone.utc)
+                self.computed_at.replace(tzinfo=UTC)
                 if self.computed_at.tzinfo is None
                 else self.computed_at
             ),

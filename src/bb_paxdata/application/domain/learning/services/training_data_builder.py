@@ -6,7 +6,7 @@ Builds training datasets from approved correction events with outlier removal.
 import asyncio
 import uuid
 from collections import Counter
-from datetime import datetime, timedelta, timezone
+from datetime import UTC, datetime, timedelta
 from typing import Any
 
 import numpy as np
@@ -125,7 +125,7 @@ class TrainingDataBuilder:
                 )
 
                 # Query with filters
-                cutoff_date = datetime.now(timezone.utc) - timedelta(days=90)
+                cutoff_date = datetime.now(UTC) - timedelta(days=90)
                 fields = [
                     "sentiment_score",
                     "risk_score",
@@ -208,7 +208,7 @@ class TrainingDataBuilder:
         Returns:
             Delta value
         """
-        if isinstance(original, (int, float)) and isinstance(corrected, (int, float)):
+        if isinstance(original, int | float) and isinstance(corrected, int | float):
             return float(corrected - original)
         return 0.0
 

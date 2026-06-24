@@ -3,7 +3,7 @@ from __future__ import annotations
 import asyncio
 import time
 from dataclasses import dataclass
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from typing import TYPE_CHECKING, Any
 
 import structlog
@@ -207,7 +207,7 @@ class CompareSessionsUseCase:
                 else ""
             ),
             narrative_summary_timestamp=(
-                datetime.now(timezone.utc) if narrative_summary else None
+                datetime.now(UTC) if narrative_summary else None
             ),
             key_insights=self._extract_key_insights(delta),
             risk_assessment=self._assess_risk(delta),

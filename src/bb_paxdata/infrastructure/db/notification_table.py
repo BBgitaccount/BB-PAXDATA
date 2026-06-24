@@ -2,7 +2,7 @@
 from __future__ import annotations
 
 import uuid
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from enum import Enum
 from typing import TYPE_CHECKING
 
@@ -55,11 +55,11 @@ class Notification(Base):
     )
     read_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
     action_url: Mapped[str | None] = mapped_column(String, nullable=True)
-    metadata: Mapped[dict | None] = mapped_column(Text, nullable=True)
+    extra_metadata: Mapped[dict | None] = mapped_column("metadata", Text, nullable=True)
     expires_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
     created_at: Mapped[datetime] = mapped_column(
         DateTime,
-        default=lambda: datetime.now(timezone.utc).replace(tzinfo=None),
+        default=lambda: datetime.now(UTC).replace(tzinfo=None),
         server_default="now()",
         index=True,
     )

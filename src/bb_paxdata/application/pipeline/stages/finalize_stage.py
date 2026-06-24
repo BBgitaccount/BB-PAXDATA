@@ -7,6 +7,7 @@ Persistence işlemlerini koordine eder ve nihai PipelineResult üretir.
 from __future__ import annotations
 
 from collections.abc import Sequence
+from datetime import UTC
 from typing import TYPE_CHECKING, Any
 
 import structlog
@@ -59,7 +60,7 @@ class FinalizeStage(BaseFinalizeStage):
                     session.info["seen_speakers"] = set()
                 if collect_result.speaker_id not in session.info["seen_speakers"]:
                     session.info["seen_speakers"].add(collect_result.speaker_id)
-                    from datetime import datetime, timezone
+                    from datetime import datetime
 
                     from bb_paxdata.infrastructure.db.repositories.speaker_repository import (
                         SpeakerRepository,
@@ -76,7 +77,7 @@ class FinalizeStage(BaseFinalizeStage):
                             collect_result.speaker_id
                         )
                         if speaker:
-                            speaker.last_seen_at = datetime.now(timezone.utc).replace(
+                            speaker.last_seen_at = datetime.now(UTC).replace(
                                 tzinfo=None
                             )
                             speaker.appearance_count += 1

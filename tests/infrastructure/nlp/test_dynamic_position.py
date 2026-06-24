@@ -1,4 +1,4 @@
-from datetime import datetime, timedelta, timezone
+from datetime import UTC, datetime, timedelta
 
 import pytest
 
@@ -10,7 +10,7 @@ from bb_paxdata.infrastructure.nlp.dynamic_position import PooleRosenthalPositio
 async def test_dynamic_position_velocity():
     tracker = PooleRosenthalPositionTracker()
 
-    now = datetime.now(timezone.utc)
+    now = datetime.now(UTC)
     trajectory = SpeakerTrajectory(
         speaker_id="speaker1",
         positions=[
@@ -32,7 +32,7 @@ async def test_dynamic_position_velocity():
 async def test_dynamic_position_acceleration():
     tracker = PooleRosenthalPositionTracker()
 
-    now = datetime.now(timezone.utc)
+    now = datetime.now(UTC)
     # Trajectory: [0.2, 0.25, 0.5, 0.48]
     trajectory = SpeakerTrajectory(
         speaker_id="speaker1",

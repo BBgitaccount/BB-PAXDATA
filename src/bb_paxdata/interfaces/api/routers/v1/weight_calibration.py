@@ -103,7 +103,7 @@ class RollbackRequest(BaseModel):
 
 @router.get("/parameters", response_model=list[CalibratableParameterSchema])
 async def list_parameters(
-    parameter_type: Annotated[str | None, Query(None)] = None,
+    parameter_type: Annotated[str | None, Query()] = None,
     workflow=Depends(get_calibration_workflow),
 ):
     """List all calibratable parameters."""
@@ -113,10 +113,10 @@ async def list_parameters(
 
 @router.get("/proposals", response_model=list[WeightUpdateProposalSchema])
 async def list_proposals(
-    status: Annotated[str | None, Query(None)] = None,
-    parameter_id: Annotated[str | None, Query(None)] = None,
-    limit: Annotated[int, Query(100, ge=1, le=1000)] = 100,
-    offset: Annotated[int, Query(0, ge=0)] = 0,
+    status: Annotated[str | None, Query()] = None,
+    parameter_id: Annotated[str | None, Query()] = None,
+    limit: Annotated[int, Query(ge=1, le=1000)] = 100,
+    offset: Annotated[int, Query(ge=0)] = 0,
     repo=Depends(get_calibration_repository),
 ):
     """List weight update proposals with optional filters."""
@@ -132,7 +132,7 @@ async def list_proposals(
 
 @router.get("/proposals/pending", response_model=list[WeightUpdateProposalSchema])
 async def get_pending_proposals(
-    limit: Annotated[int, Query(100, ge=1, le=1000)] = 100,
+    limit: Annotated[int, Query(ge=1, le=1000)] = 100,
     workflow=Depends(get_calibration_workflow),
 ):
     """Get all pending proposals awaiting review."""

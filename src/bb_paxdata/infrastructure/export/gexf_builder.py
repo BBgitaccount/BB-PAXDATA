@@ -2,7 +2,7 @@
 from __future__ import annotations
 
 import xml.etree.ElementTree as ET
-from datetime import datetime
+from datetime import UTC, datetime
 from xml.dom import minidom
 
 
@@ -17,13 +17,11 @@ class GEXFBuilder:
             "gexf", {"xmlns": "http://www.gexf.net/1.2draft", "version": "1.2"}
         )
 
-        from datetime import timezone
-
         # Add metadata
         self.meta = ET.SubElement(
             self.root,
             "meta",
-            {"lastmodifieddate": datetime.now(timezone.utc).strftime("%Y-%m-%d")},
+            {"lastmodifieddate": datetime.now(UTC).strftime("%Y-%m-%d")},
         )
         creator = ET.SubElement(self.meta, "creator")
         creator.text = "BB-PAXDATA Export Engine"

@@ -6,7 +6,7 @@ from __future__ import annotations
 
 import re
 from collections import defaultdict
-from datetime import datetime, timedelta, timezone
+from datetime import UTC, datetime, timedelta
 from typing import Any
 
 import spacy
@@ -188,7 +188,7 @@ class PIIAnonymizationService:
             detected_entities=detected_entities,
             speaker_mapping=speaker_mapping,
             location_mapping=location_mapping,
-            timestamp=datetime.now(timezone.utc),
+            timestamp=datetime.now(UTC),
         )
 
     def anonymize_transcript(
@@ -284,16 +284,16 @@ class GDPRRightToBeForgottenService:
         if not self._config.gdpr_right_to_be_forgotten_enabled:
             raise RuntimeError("GDPR Right to be Forgotten is not enabled")
 
-        request_id = request_id or f"gdr-{datetime.now(timezone.utc).timestamp()}"
+        request_id = request_id or f"gdr-{datetime.now(UTC).timestamp()}"
 
         return {
             "request_id": request_id,
             "user_id": user_id,
             "status": "pending",
             "reason": reason,
-            "created_at": datetime.now(timezone.utc).isoformat(),
+            "created_at": datetime.now(UTC).isoformat(),
             "estimated_completion": (
-                datetime.now(timezone.utc) + timedelta(days=30)
+                datetime.now(UTC) + timedelta(days=30)
             ).isoformat(),
         }
 
@@ -340,7 +340,7 @@ class GDPRRightToBeForgottenService:
         return {
             "request_id": request_id,
             "status": "completed",
-            "verified_at": datetime.now(timezone.utc).isoformat(),
+            "verified_at": datetime.now(UTC).isoformat(),
             "records_deleted": 0,
             "archives_cleaned": 0,
         }

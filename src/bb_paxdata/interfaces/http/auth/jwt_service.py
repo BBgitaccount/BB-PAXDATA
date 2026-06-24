@@ -3,7 +3,7 @@ from __future__ import annotations
 
 import uuid
 from collections.abc import Callable
-from datetime import datetime, timedelta, timezone
+from datetime import UTC, datetime, timedelta
 from typing import Any
 
 import jwt
@@ -46,7 +46,7 @@ class JWTService:
         """
         Generates access token, refresh token, and a CSRF token.
         """
-        now = datetime.now(timezone.utc)
+        now = datetime.now(UTC)
         secret_key = _get_secret_key()
 
         # 1. Access Token (Short-lived)

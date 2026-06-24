@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 import hashlib
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from pathlib import Path
 from typing import TYPE_CHECKING, Any
 
@@ -159,9 +159,7 @@ class DuplicateProtectionService:
 
             if existing:
                 # Update existing record
-                existing.last_processed_at = datetime.now(timezone.utc).replace(
-                    tzinfo=None
-                )
+                existing.last_processed_at = datetime.now(UTC).replace(tzinfo=None)
                 existing.reprocess_count += 1
                 self.db_session.commit()
 
@@ -182,8 +180,8 @@ class DuplicateProtectionService:
                 idempotency_key=idempotency_key,
                 parser_version=parser_version,
                 speaker_map_version=speaker_map_version,
-                first_processed_at=datetime.now(timezone.utc).replace(tzinfo=None),
-                last_processed_at=datetime.now(timezone.utc).replace(tzinfo=None),
+                first_processed_at=datetime.now(UTC).replace(tzinfo=None),
+                last_processed_at=datetime.now(UTC).replace(tzinfo=None),
                 reprocess_count=0,
                 force_rebuild=0,
             )

@@ -119,13 +119,13 @@ async def create_correction(
 
 @router.get("", response_model=list[CorrectionEventResponseSchema])
 async def list_corrections(
-    field_corrected: Annotated[str | None, Query(None)] = None,
-    prompt_version: Annotated[str | None, Query(None)] = None,
-    corrector_id: Annotated[str | None, Query(None)] = None,
-    start_date: Annotated[datetime | None, Query(None)] = None,
-    end_date: Annotated[datetime | None, Query(None)] = None,
-    limit: Annotated[int, Query(100, ge=1, le=1000)] = 100,
-    offset: Annotated[int, Query(0, ge=0)] = 0,
+    field_corrected: Annotated[str | None, Query()] = None,
+    prompt_version: Annotated[str | None, Query()] = None,
+    corrector_id: Annotated[str | None, Query()] = None,
+    start_date: Annotated[datetime | None, Query()] = None,
+    end_date: Annotated[datetime | None, Query()] = None,
+    limit: Annotated[int, Query(ge=1, le=1000)] = 100,
+    offset: Annotated[int, Query(ge=0)] = 0,
     repo=Depends(get_correction_repository),
 ):
     """
@@ -183,8 +183,8 @@ async def get_corrections_by_sentence(
 
 @router.get("/stats/summary", response_model=CorrectionStatsResponseSchema)
 async def get_correction_stats(
-    start_date: Annotated[datetime | None, Query(None)] = None,
-    end_date: Annotated[datetime | None, Query(None)] = None,
+    start_date: Annotated[datetime | None, Query()] = None,
+    end_date: Annotated[datetime | None, Query()] = None,
     repo=Depends(get_correction_repository),
 ):
     """
@@ -209,8 +209,8 @@ async def get_correction_stats(
 @router.get("/stats/field/{field}")
 async def get_field_distribution(
     field: str,
-    start_date: Annotated[datetime | None, Query(None)] = None,
-    end_date: Annotated[datetime | None, Query(None)] = None,
+    start_date: Annotated[datetime | None, Query()] = None,
+    end_date: Annotated[datetime | None, Query()] = None,
     repo=Depends(get_correction_repository),
 ):
     """

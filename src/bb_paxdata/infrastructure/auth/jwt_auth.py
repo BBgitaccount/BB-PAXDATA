@@ -13,7 +13,7 @@ This module will be removed in a future version.
 from __future__ import annotations
 
 import warnings
-from datetime import datetime, timedelta, timezone
+from datetime import UTC, datetime, timedelta
 from typing import Any
 
 try:
@@ -58,8 +58,8 @@ def create_jwt(
         "sub": reviewer_id,
         "roles": roles or ["verdict"],
         "type": "access",
-        "iat": datetime.now(timezone.utc),
-        "exp": datetime.now(timezone.utc) + timedelta(hours=expires_hours),
+        "iat": datetime.now(UTC),
+        "exp": datetime.now(UTC) + timedelta(hours=expires_hours),
     }
     token = jwt.encode(payload, _SECRET_KEY, algorithm=_ALGORITHM)
     if isinstance(token, bytes):

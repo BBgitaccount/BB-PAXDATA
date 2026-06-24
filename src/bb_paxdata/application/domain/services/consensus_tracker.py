@@ -6,7 +6,7 @@ CORRECTED (E05-C-01, E05-M-04, E05-m-01, E05-m-02): Corpus-adaptive DBSCAN, EWMA
 from __future__ import annotations
 
 from dataclasses import dataclass
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from typing import Literal
 
 import numpy as np
@@ -188,7 +188,7 @@ class ConsensusTrackerService(IConsensusTrackerService):
             clusters[label]["members"].append(speaker_id)
             clusters[label]["thetas"].append(positions[speaker_id])
 
-        now = datetime.now(timezone.utc)
+        now = datetime.now(UTC)
         return [
             CoalitionCluster(
                 cluster_id=f"C{label}",

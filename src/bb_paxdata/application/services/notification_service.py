@@ -2,7 +2,7 @@
 from __future__ import annotations
 
 import json
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from typing import TYPE_CHECKING
 
 import structlog
@@ -74,7 +74,7 @@ class NotificationService:
             .where(Notification.id == notification_id)
             .values(
                 is_read=True,
-                read_at=datetime.now(timezone.utc).replace(tzinfo=None),
+                read_at=datetime.now(UTC).replace(tzinfo=None),
             )
         )
         await self.db.execute(stmt)
@@ -89,7 +89,7 @@ class NotificationService:
             .where(not Notification.is_read)
             .values(
                 is_read=True,
-                read_at=datetime.now(timezone.utc).replace(tzinfo=None),
+                read_at=datetime.now(UTC).replace(tzinfo=None),
             )
         )
         if user_id:
@@ -177,7 +177,7 @@ class NotificationService:
     async def cleanup_expired_notifications(self) -> int:
         """Delete expired notifications."""
         stmt = select(Notification).where(
-            Notification.expires_at < datetime.now(timezone.utc).replace(tzinfo=None)
+            Notification.expires_at < datetime.now(UTC).replace(tzinfo=None)
         )
 
         notifications = await self.db.scalars(stmt)

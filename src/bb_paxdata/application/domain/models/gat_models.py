@@ -10,7 +10,7 @@ Note: -1.0 is used as a sentinel value when the normal prototype is unavailable
 
 from __future__ import annotations
 
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from typing import Annotated, Any
 
 import numpy as np
@@ -78,7 +78,7 @@ class GATEmbedding(BaseModel):
     )
 
     computed_at: datetime = Field(
-        default_factory=lambda: datetime.now(timezone.utc),
+        default_factory=lambda: datetime.now(UTC),
     )
 
     # ── Validators ──────────────────────────────────────────────────────────
@@ -94,7 +94,7 @@ class GATEmbedding(BaseModel):
         """
         if v == ANOMALY_SENTINEL:
             return v
-        if not isinstance(v, (int, float)):
+        if not isinstance(v, int | float):
             raise TypeError(f"anomaly_score must be numeric, got {type(v).__name__}")
         fv = float(v)
         if not 0.0 <= fv <= 1.0:

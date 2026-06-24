@@ -51,9 +51,7 @@ class DashboardQueryService:
         Only considers rows where status='FAIL'; treats human_verdict='CONFIRMED_PASS'
         as a false positive.
         """
-        since = datetime.datetime.now(datetime.timezone.utc) - datetime.timedelta(
-            days=days
-        )
+        since = datetime.datetime.now(datetime.UTC) - datetime.timedelta(days=days)
 
         stmt = (
             select(

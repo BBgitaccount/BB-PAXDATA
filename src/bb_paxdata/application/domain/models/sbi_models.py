@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from collections.abc import Sequence
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 
 from pydantic import BaseModel, ConfigDict, Field
 
@@ -86,7 +86,7 @@ class SpeakerPosition(BaseModel):
         default=None, ge=0.0, le=1.0, description="GAT anomaly score for this speaker"
     )
 
-    computed_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+    computed_at: datetime = Field(default_factory=lambda: datetime.now(UTC))
 
     # (M-03) Relaxed epsilon for float64 weight sum validation
     _WEIGHT_SUM_EPSILON: float = 1e-6

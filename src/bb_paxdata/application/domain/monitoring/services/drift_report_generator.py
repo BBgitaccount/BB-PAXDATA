@@ -4,7 +4,7 @@ Scheduled via APScheduler: every Monday at 00:00 UTC.
 Produces and persists weekly drift reports to drift_reports table.
 """
 
-from datetime import datetime, timedelta, timezone
+from datetime import UTC, datetime, timedelta
 from typing import Any
 
 import structlog
@@ -44,7 +44,7 @@ class DriftReportGenerator:
         """
         try:
             # Calculate report period (ISO week)
-            now = datetime.now(timezone.utc)
+            now = datetime.now(UTC)
             report_period = now.strftime("%Y-W%W")
 
             logger.info("generating_weekly_drift_report", report_period=report_period)

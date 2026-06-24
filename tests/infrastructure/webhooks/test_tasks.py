@@ -1,7 +1,7 @@
 # tests/infrastructure/webhooks/test_tasks.py
 from __future__ import annotations
 
-from datetime import datetime, timedelta, timezone
+from datetime import UTC, datetime, timedelta
 from unittest.mock import MagicMock, patch
 
 import pytest
@@ -66,7 +66,7 @@ def test_acquire_lease_already_leased(sync_db):
         aggregate_id="agg-123",
         payload={"foo": "bar"},
         processed=False,
-        last_attempt_at=datetime.now(timezone.utc),
+        last_attempt_at=datetime.now(UTC),
         attempts=1,
     )
     session.add(event)
@@ -79,7 +79,7 @@ def test_acquire_lease_already_leased(sync_db):
 
 def test_acquire_lease_expired(sync_db):
     session = sync_db()
-    expired_time = datetime.now(timezone.utc) - timedelta(seconds=70)
+    expired_time = datetime.now(UTC) - timedelta(seconds=70)
     event = OutboxEventORM(
         id="evt-123",
         event_type="test_event",
@@ -122,7 +122,7 @@ def test_release_lease_for_retry(sync_db):
         aggregate_id="agg-123",
         payload={"foo": "bar"},
         processed=False,
-        last_attempt_at=datetime.now(timezone.utc),
+        last_attempt_at=datetime.now(UTC),
         attempts=1,
     )
     session.add(event)
@@ -187,7 +187,7 @@ def test_dispatch_webhook_skipped_concurrent(mock_client, sync_db):
         aggregate_id="agg-123",
         payload={"foo": "bar"},
         processed=False,
-        last_attempt_at=datetime.now(timezone.utc),
+        last_attempt_at=datetime.now(UTC),
         attempts=1,
     )
     session.add(event)

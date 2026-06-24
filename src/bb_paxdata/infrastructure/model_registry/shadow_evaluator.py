@@ -12,7 +12,7 @@ All four gates must pass for promotion.
 """
 
 import uuid
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from typing import Any
 
 import structlog
@@ -86,7 +86,7 @@ class ShadowEvaluator:
                 "shadow_version_id": shadow_version_id,
                 "all_gates_passed": all_passed,
                 "gate_results": gate_results,
-                "evaluated_at": datetime.now(timezone.utc),
+                "evaluated_at": datetime.now(UTC),
             }
 
             logger.info(
@@ -204,7 +204,7 @@ class ShadowEvaluator:
             analysis_count = await self._get_shadow_analysis_count(shadow_version_id)
 
             # Check time threshold (7 days)
-            days_deployed = (datetime.now(timezone.utc) - deployed_at).days
+            days_deployed = (datetime.now(UTC) - deployed_at).days
             time_passed = days_deployed >= 7
 
             # Check count threshold (500)

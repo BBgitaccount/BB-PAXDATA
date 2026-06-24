@@ -4,7 +4,7 @@ from __future__ import annotations
 import hashlib
 import hmac
 import json
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 
 
 def generate_webhook_signature(payload: dict, secret: str) -> tuple[str, str]:
@@ -12,7 +12,7 @@ def generate_webhook_signature(payload: dict, secret: str) -> tuple[str, str]:
     Returns: (signature_header, timestamp_str)
     Header format: t=<ts>,v1=<hex_signature>
     """
-    ts = str(int(datetime.now(timezone.utc).timestamp()))
+    ts = str(int(datetime.now(UTC).timestamp()))
     serialized_body = json.dumps(payload, sort_keys=True, ensure_ascii=False)
     # Timestamp + payload birlikte imzalanır
     signed_payload = f"{ts}.{serialized_body}"
@@ -54,7 +54,7 @@ def verify_webhook_signature(
             return False
 
         ts = int(ts_str)
-        now = int(datetime.now(timezone.utc).timestamp())
+        now = int(datetime.now(UTC).timestamp())
 
         # Replay attack: timestamp 5 dakikadan eski veya gelecekten geliyorsa reddet
         if abs(now - ts) > tolerance_seconds:

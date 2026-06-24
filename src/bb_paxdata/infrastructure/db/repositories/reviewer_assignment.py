@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from typing import Any
 
 import structlog
@@ -109,7 +109,7 @@ class ReviewerAssignmentRepository(BaseRepository[ReviewerAssignment]):
 
     async def reset_daily_counts(self) -> int:
         """Reset all daily counts to 0. Run once per day (midnight cron)."""
-        now = datetime.now(timezone.utc).replace(tzinfo=None)
+        now = datetime.now(UTC).replace(tzinfo=None)
         stmt = (
             update(ReviewerAssignment)
             .where(ReviewerAssignment.is_active == True)  # noqa: E712

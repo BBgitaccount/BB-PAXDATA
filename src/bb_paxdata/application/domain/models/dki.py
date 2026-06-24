@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from collections.abc import Sequence
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from typing import Annotated, Any
 
 from pydantic import BaseModel, ConfigDict, Field
@@ -15,7 +15,7 @@ class SegmentWindow(BaseModel):
     segment_ids: list[str]
     texts: list[str]
     speaker_id: str | None = None
-    timestamp: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+    timestamp: datetime = Field(default_factory=lambda: datetime.now(UTC))
 
 
 class SemanticShiftResult(BaseModel):
@@ -68,9 +68,7 @@ class DKIResult(BaseModel):
     dki_score: float
     components: DKIComponents
     anomaly_flag: bool = False
-    calculation_timestamp: datetime = Field(
-        default_factory=lambda: datetime.now(timezone.utc)
-    )
+    calculation_timestamp: datetime = Field(default_factory=lambda: datetime.now(UTC))
 
 
 class LLMPositionEstimate(BaseModel):

@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from typing import TYPE_CHECKING, Protocol
 from uuid import UUID
 
@@ -53,7 +53,7 @@ class HumanReviewRequest(BaseModel):
     academic_justification: str | None = Field(
         None, description="Grimmer & Stewart ilkesine referans"
     )
-    submitted_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+    submitted_at: datetime = Field(default_factory=lambda: datetime.now(UTC))
     submitted_by: str = Field(..., description="Sistem veya kullanıcı kimliği")
 
 
@@ -68,7 +68,7 @@ class HumanReviewResult(BaseModel):
     status: ReviewStatus
     metric_overrides: dict[MetricType, MetricOverride]
     reviewer_notes: str | None = None
-    reviewed_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+    reviewed_at: datetime = Field(default_factory=lambda: datetime.now(UTC))
     audit_hash: str = Field(..., description="SHA256 hash of the review record")
 
 

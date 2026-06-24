@@ -6,7 +6,7 @@ from __future__ import annotations
 
 import subprocess
 import uuid
-from datetime import datetime, timedelta, timezone
+from datetime import UTC, datetime, timedelta
 from typing import Any
 
 from celery import shared_task
@@ -50,7 +50,7 @@ def archive_expired_data_task(self, data_type: str) -> dict[str, Any]:
     sample_data = {
         "archive_id": archive_id,
         "data_type": data_type,
-        "timestamp": datetime.now(timezone.utc).isoformat(),
+        "timestamp": datetime.now(UTC).isoformat(),
         "record_count": 0,
     }
 
@@ -102,7 +102,7 @@ def delete_expired_data_task(self, data_type: str, archive_id: str) -> dict[str,
         "data_type": data_type,
         "archive_id": archive_id,
         "records_deleted": 0,
-        "deleted_at": datetime.now(timezone.utc).isoformat(),
+        "deleted_at": datetime.now(UTC).isoformat(),
     }
 
 
@@ -288,7 +288,7 @@ def restore_from_archive_task(
                     "status": "success",
                     "archive_id": archive_id,
                     "target_table": target_table,
-                    "restored_at": datetime.now(timezone.utc).isoformat(),
+                    "restored_at": datetime.now(UTC).isoformat(),
                 }
             except subprocess.CalledProcessError as e:
                 return {
@@ -300,7 +300,7 @@ def restore_from_archive_task(
         return {
             "status": "success",
             "archive_id": archive_id,
-            "restored_at": datetime.now(timezone.utc).isoformat(),
+            "restored_at": datetime.now(UTC).isoformat(),
             "data_type": type(data).__name__,
         }
 
@@ -326,7 +326,7 @@ def cleanup_old_archives_task(retention_days: int = 90) -> dict[str, Any]:
     archive_service = ArchiveService()
     RetentionService()
 
-    cutoff_date = datetime.now(timezone.utc) - timedelta(days=retention_days)
+    cutoff_date = datetime.now(UTC) - timedelta(days=retention_days)
 
     # List all archives
     archives = archive_service.list_archives()

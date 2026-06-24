@@ -15,7 +15,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from enum import Enum
 from typing import Any
 
@@ -72,9 +72,7 @@ class AnalysisDelta(BaseModel):
 
     session_a_id: str = Field(...)
     session_b_id: str = Field(...)
-    comparison_timestamp: datetime = Field(
-        default_factory=lambda: datetime.now(timezone.utc)
-    )
+    comparison_timestamp: datetime = Field(default_factory=lambda: datetime.now(UTC))
 
     delta_sbi: dict[str, float] = Field(default_factory=dict)
     delta_sbi_normalized: dict[str, float] = Field(default_factory=dict)

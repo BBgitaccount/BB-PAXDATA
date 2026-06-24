@@ -4,7 +4,7 @@ Database table for archive metadata (TASK-1.3.2)
 
 from __future__ import annotations
 
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from typing import TYPE_CHECKING
 
 from sqlalchemy import DateTime, Index, String, Text
@@ -30,7 +30,7 @@ class ArchiveMetadataORM(Base):
     original_record_ids: Mapped[str] = mapped_column(Text, nullable=False)
     archived_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True),
-        default=lambda: datetime.now(timezone.utc),
+        default=lambda: datetime.now(UTC),
         nullable=False,
     )
     archived_by: Mapped[str] = mapped_column(String(100), nullable=False)

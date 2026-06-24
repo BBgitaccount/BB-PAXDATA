@@ -1,7 +1,7 @@
 # src/bb_paxdata/domain/models/bilateral_sentiment.py
 from __future__ import annotations
 
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from uuid import UUID, uuid4
 
 from pydantic import ConfigDict as model_config, Field, computed_field
@@ -146,7 +146,7 @@ class BilateralSentiment(AggregateRoot):
     )
     power_weighted_score: float = Field(default=0.0)  # Legacy compatibility
     diplomatic_distance: float = Field(default=0.0, ge=0.0)
-    last_updated: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+    last_updated: datetime = Field(default_factory=lambda: datetime.now(UTC))
 
     # Faz 4 Extensions
     dyadic_metrics: DyadicMetrics | None = Field(default=None)
@@ -207,6 +207,6 @@ class BilateralSentiment(AggregateRoot):
                 "power_weighted_score": round(
                     power_level * self.demand_weight * self.risk_severity, 6
                 ),
-                "last_updated": datetime.now(timezone.utc),
+                "last_updated": datetime.now(UTC),
             }
         )

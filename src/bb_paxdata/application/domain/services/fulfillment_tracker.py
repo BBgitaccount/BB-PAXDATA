@@ -1,6 +1,6 @@
 """Fulfillment tracking service for demand analysis."""
 
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from typing import Protocol
 
 from ..models.demand import Demand
@@ -92,7 +92,7 @@ class FulfillmentTracker:
             return None
 
         # Return first response timestamp
-        return datetime.fromtimestamp(responses[0][1], timezone.utc)
+        return datetime.fromtimestamp(responses[0][1], UTC)
 
     def get_compliance_status(self, demand: Demand) -> str:
         """Get compliance status of demand.
@@ -105,7 +105,7 @@ class FulfillmentTracker:
         """
         if demand.is_fulfilled:
             if demand.deadline and demand.fulfillment_timestamp:
-                deadline_ts = datetime.fromtimestamp(demand.deadline, timezone.utc)
+                deadline_ts = datetime.fromtimestamp(demand.deadline, UTC)
                 if demand.fulfillment_timestamp <= deadline_ts:
                     return "accepted_on_time"
                 else:
@@ -113,7 +113,7 @@ class FulfillmentTracker:
             return "accepted"
         elif demand.deadline and demand.timestamp:
             # Check if deadline passed
-            current_time = datetime.now(timezone.utc).timestamp()
+            current_time = datetime.now(UTC).timestamp()
             if current_time > demand.deadline:
                 return "rejected_expired"
             return "pending"

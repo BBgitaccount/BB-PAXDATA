@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 
 from sqlalchemy import JSON, Boolean, DateTime, Float, Index, Integer, String, Text
 from sqlalchemy.orm import Mapped, mapped_column
@@ -41,7 +41,7 @@ class HumanReviewORM(Base):
     review_duration_seconds: Mapped[int | None] = mapped_column(Integer, nullable=True)
     created_at: Mapped[datetime] = mapped_column(
         DateTime,
-        default=lambda: datetime.now(timezone.utc).replace(tzinfo=None),
+        default=lambda: datetime.now(UTC).replace(tzinfo=None),
         nullable=False,
     )
 
@@ -75,5 +75,5 @@ class CalibrationReportORM(Base):
     requires_weight_update: Mapped[bool] = mapped_column(Boolean, default=False)
     alert_message: Mapped[str | None] = mapped_column(Text, nullable=True)
     created_at: Mapped[datetime] = mapped_column(
-        DateTime, default=lambda: datetime.now(timezone.utc).replace(tzinfo=None)
+        DateTime, default=lambda: datetime.now(UTC).replace(tzinfo=None)
     )

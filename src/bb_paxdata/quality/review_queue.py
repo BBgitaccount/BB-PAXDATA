@@ -1,7 +1,7 @@
 """Human review queue management for HIGH/CRITICAL risk sentences."""
 
 import json
-from datetime import datetime, timedelta, timezone
+from datetime import UTC, datetime, timedelta
 from typing import Any, Literal, cast
 
 import structlog
@@ -341,12 +341,12 @@ class ReviewQueueManager:
                     review.flagged_at.replace("Z", "+00:00")
                 )
                 review_duration = int(
-                    (datetime.now(timezone.utc) - flagged_time).total_seconds()
+                    (datetime.now(UTC) - flagged_time).total_seconds()
                 )
                 review.review_duration_sec = review_duration
 
             review.status = action
-            review.reviewed_at = datetime.now(timezone.utc).isoformat()
+            review.reviewed_at = datetime.now(UTC).isoformat()
             review.reviewer_notes = reviewer_notes
 
             if action == "MODIFIED" and corrected_json:
@@ -476,7 +476,7 @@ class ReviewQueueManager:
                 stats["avg_review_duration_sec"] = 0
 
             # Escalated reviews (older than 72 hours)
-            cutoff_time = datetime.now(timezone.utc) - timedelta(hours=72)
+            cutoff_time = datetime.now(UTC) - timedelta(hours=72)
             escalated_count = (
                 self.db_session.query(HumanReviewQueue)
                 .filter(
@@ -497,7 +497,7 @@ class ReviewQueueManager:
     def escalate_stale_reviews(self) -> int:
         """Escalate reviews older than 72 hours."""
         try:
-            cutoff_time = datetime.now(timezone.utc) - timedelta(hours=72)
+            cutoff_time = datetime.now(UTC) - timedelta(hours=72)
 
             stale_reviews = (
                 self.db_session.query(HumanReviewQueue)

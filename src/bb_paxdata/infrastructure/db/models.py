@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import json
 import uuid
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from enum import Enum
 from typing import TYPE_CHECKING, Any, TypeVar
 
@@ -71,7 +71,7 @@ def _parse_dt(value: datetime | str | None) -> datetime | None:
         ):
             try:
                 return datetime.strptime(value.replace("Z", ""), fmt).replace(
-                    tzinfo=timezone.utc
+                    tzinfo=UTC
                 )
             except ValueError:
                 continue
@@ -155,14 +155,14 @@ class Speaker(Base):
 
     created_at: Mapped[datetime] = mapped_column(
         DateTime,
-        default=lambda: datetime.now(timezone.utc).replace(tzinfo=None),
+        default=lambda: datetime.now(UTC).replace(tzinfo=None),
         server_default=func.now(),
     )
     updated_at: Mapped[datetime] = mapped_column(
         DateTime,
-        default=lambda: datetime.now(timezone.utc).replace(tzinfo=None),
+        default=lambda: datetime.now(UTC).replace(tzinfo=None),
         server_default=func.now(),
-        onupdate=lambda: datetime.now(timezone.utc).replace(tzinfo=None),
+        onupdate=lambda: datetime.now(UTC).replace(tzinfo=None),
     )
 
     profile: Mapped[SpeakerProfile | None] = relationship(
@@ -1742,7 +1742,7 @@ class AISentenceAnalysis(Base):
             coherence_score=None,
             manipulation_score=self.manipulation_score,
             analysis_version="1.0",
-            analysis_timestamp=datetime.now(timezone.utc),
+            analysis_timestamp=datetime.now(UTC),
             analyzer_id=None,
             sumcomplexity_score=None,
             detailed_findings=None,
@@ -2677,7 +2677,7 @@ class FormulaValidationAudit(Base):
     new_value: Mapped[float | None] = mapped_column(Float, nullable=True)
     performed_by: Mapped[str] = mapped_column(String(100), nullable=False)
     performed_at: Mapped[datetime] = mapped_column(
-        DateTime, default=lambda: datetime.now(timezone.utc).replace(tzinfo=None)
+        DateTime, default=lambda: datetime.now(UTC).replace(tzinfo=None)
     )
     ip_address: Mapped[str | None] = mapped_column(String(45), nullable=True)
     justification: Mapped[str | None] = mapped_column(Text, nullable=True)
@@ -2736,11 +2736,11 @@ class ReviewerAssignment(Base):
     max_daily_reviews: Mapped[int] = mapped_column(Integer, default=50)
     current_daily_count: Mapped[int] = mapped_column(Integer, default=0)
     last_reset_at: Mapped[datetime] = mapped_column(
-        DateTime, default=lambda: datetime.now(timezone.utc).replace(tzinfo=None)
+        DateTime, default=lambda: datetime.now(UTC).replace(tzinfo=None)
     )
     is_active: Mapped[bool] = mapped_column(Boolean, default=True)
     created_at: Mapped[datetime] = mapped_column(
-        DateTime, default=lambda: datetime.now(timezone.utc).replace(tzinfo=None)
+        DateTime, default=lambda: datetime.now(UTC).replace(tzinfo=None)
     )
 
 
@@ -2890,7 +2890,7 @@ class OutboxEventORM(Base):
     aggregate_id: Mapped[str] = mapped_column(String(36), nullable=False, index=True)
     payload: Mapped[dict[str, Any]] = mapped_column(JSON, nullable=False)
     created_at: Mapped[datetime] = mapped_column(
-        DateTime(timezone=True), default=lambda: datetime.now(timezone.utc)
+        DateTime(timezone=True), default=lambda: datetime.now(UTC)
     )
     processed: Mapped[bool] = mapped_column(Boolean, default=False, index=True)
     attempts: Mapped[int] = mapped_column(Integer, default=0)
@@ -2918,7 +2918,7 @@ class DeadLetterEventORM(Base):
     payload: Mapped[dict[str, Any]] = mapped_column(JSON, nullable=False)
     failure_reason: Mapped[str] = mapped_column(Text, nullable=False)
     moved_at: Mapped[datetime] = mapped_column(
-        DateTime(timezone=True), default=lambda: datetime.now(timezone.utc)
+        DateTime(timezone=True), default=lambda: datetime.now(UTC)
     )
     resolved: Mapped[bool] = mapped_column(Boolean, default=False)
 
@@ -2933,7 +2933,7 @@ class WebhookSubscriptionORM(Base):
     event_types: Mapped[list[str]] = mapped_column(JSON, nullable=False)
     is_active: Mapped[bool] = mapped_column(Boolean, default=True, index=True)
     created_at: Mapped[datetime] = mapped_column(
-        DateTime(timezone=True), default=lambda: datetime.now(timezone.utc)
+        DateTime(timezone=True), default=lambda: datetime.now(UTC)
     )
 
 
@@ -3008,7 +3008,7 @@ def extract_and_persist_domain_events(session, flush_context, instances):
             payload=e["payload"],
             actor_id=e.get("actor_id"),
             correlation_id=e.get("correlation_id"),
-            occurred_at=datetime.now(timezone.utc).replace(tzinfo=None),
+            occurred_at=datetime.now(UTC).replace(tzinfo=None),
         )
         session.add(event_orm)
 
@@ -3078,7 +3078,7 @@ class ArgumentGraphNode(Base):
     is_negated: Mapped[bool] = mapped_column(Boolean, default=False)
     metadata_json: Mapped[dict | list | None] = mapped_column(JSON, nullable=True)
     created_at: Mapped[datetime] = mapped_column(
-        DateTime, default=lambda: datetime.now(timezone.utc).replace(tzinfo=None)
+        DateTime, default=lambda: datetime.now(UTC).replace(tzinfo=None)
     )
 
 
@@ -3100,7 +3100,7 @@ class ArgumentGraphEdge(Base):
     is_cross_speaker: Mapped[bool] = mapped_column(Boolean, default=False)
     evidence_snippet: Mapped[str | None] = mapped_column(Text, nullable=True)
     created_at: Mapped[datetime] = mapped_column(
-        DateTime, default=lambda: datetime.now(timezone.utc).replace(tzinfo=None)
+        DateTime, default=lambda: datetime.now(UTC).replace(tzinfo=None)
     )
 
 
@@ -3122,12 +3122,12 @@ class ArgumentGraphMetadata(Base):
     processing_time_ms: Mapped[float] = mapped_column(Float, default=0.0)
     graph_snapshot_json: Mapped[dict | list | None] = mapped_column(JSON, nullable=True)
     created_at: Mapped[datetime] = mapped_column(
-        DateTime, default=lambda: datetime.now(timezone.utc).replace(tzinfo=None)
+        DateTime, default=lambda: datetime.now(UTC).replace(tzinfo=None)
     )
     updated_at: Mapped[datetime] = mapped_column(
         DateTime,
-        default=lambda: datetime.now(timezone.utc).replace(tzinfo=None),
-        onupdate=lambda: datetime.now(timezone.utc).replace(tzinfo=None),
+        default=lambda: datetime.now(UTC).replace(tzinfo=None),
+        onupdate=lambda: datetime.now(UTC).replace(tzinfo=None),
     )
 
     def to_domain(self) -> ArgumentGraph:

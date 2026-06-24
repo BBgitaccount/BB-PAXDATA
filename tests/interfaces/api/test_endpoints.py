@@ -1,3 +1,5 @@
+from datetime import UTC
+
 import pytest
 from fastapi.testclient import TestClient
 from sqlalchemy import select
@@ -292,7 +294,7 @@ async def test_get_dashboard_anomalies(test_db_session, seed_data, auth_headers)
         country="Turkiye",
         original_sentence="Mevcut cümle.",
         discrepancy_score=0.85,
-        processed_at=datetime.datetime.now(datetime.timezone.utc),
+        processed_at=datetime.datetime.now(datetime.UTC),
     )
     test_db_session.add(fail)
     await test_db_session.commit()
@@ -381,11 +383,11 @@ async def test_get_calibration_report_and_trend(
     test_db_session, seed_data, auth_headers
 ):
     """Verify retrieving calibration report and trend metrics."""
-    from datetime import datetime, timedelta, timezone
+    from datetime import datetime, timedelta
 
     from bb_paxdata.infrastructure.db.human_review_table import CalibrationReportORM
 
-    now = datetime.now(timezone.utc)
+    now = datetime.now(UTC)
     # Seed 6 reports for trend and latest report retrieval
     reports = []
     for i in range(6):

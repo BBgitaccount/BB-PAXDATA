@@ -1,8 +1,8 @@
 """Audit Log API endpoints with hash chain verification."""
 
 import io
-from datetime import datetime
-from typing import Annotated
+from datetime import UTC, datetime
+from typing import Annotated, Any
 
 from fastapi import APIRouter, Depends, HTTPException, Query
 from fastapi.responses import StreamingResponse
@@ -61,8 +61,8 @@ class AuditLogVerificationSchema(BaseModel):
 
 @router.get("/verify")
 async def verify_audit_chain(
-    start_date: Annotated[datetime | None, Query(None)] = None,
-    end_date: Annotated[datetime | None, Query(None)] = None,
+    start_date: Annotated[datetime | None, Query()] = None,
+    end_date: Annotated[datetime | None, Query()] = None,
     repo=Depends(get_audit_log_repository),
 ):
     """
@@ -88,14 +88,14 @@ async def verify_audit_chain(
 
 @router.get("/search")
 async def search_audit_log(
-    actor_id: Annotated[str | None, Query(None)] = None,
-    action: Annotated[str | None, Query(None)] = None,
-    resource_type: Annotated[str | None, Query(None)] = None,
-    resource_id: Annotated[str | None, Query(None)] = None,
-    start_date: Annotated[datetime | None, Query(None)] = None,
-    end_date: Annotated[datetime | None, Query(None)] = None,
-    limit: Annotated[int, Query(100, ge=1, le=1000)] = 100,
-    offset: Annotated[int, Query(0, ge=0)] = 0,
+    actor_id: Annotated[str | None, Query()] = None,
+    action: Annotated[str | None, Query()] = None,
+    resource_type: Annotated[str | None, Query()] = None,
+    resource_id: Annotated[str | None, Query()] = None,
+    start_date: Annotated[datetime | None, Query()] = None,
+    end_date: Annotated[datetime | None, Query()] = None,
+    limit: Annotated[int, Query(ge=1, le=1000)] = 100,
+    offset: Annotated[int, Query(ge=0)] = 0,
     repo=Depends(get_audit_log_repository),
 ):
     """
@@ -153,12 +153,12 @@ async def get_audit_entry(
 
 @router.get("/export/csv")
 async def export_audit_csv(
-    actor_id: Annotated[str | None, Query(None)] = None,
-    action: Annotated[str | None, Query(None)] = None,
-    resource_type: Annotated[str | None, Query(None)] = None,
-    resource_id: Annotated[str | None, Query(None)] = None,
-    start_date: Annotated[datetime | None, Query(None)] = None,
-    end_date: Annotated[datetime | None, Query(None)] = None,
+    actor_id: Annotated[str | None, Query()] = None,
+    action: Annotated[str | None, Query()] = None,
+    resource_type: Annotated[str | None, Query()] = None,
+    resource_id: Annotated[str | None, Query()] = None,
+    start_date: Annotated[datetime | None, Query()] = None,
+    end_date: Annotated[datetime | None, Query()] = None,
     repo=Depends(get_audit_log_repository),
 ):
     """Export audit log entries as CSV file."""
@@ -223,12 +223,12 @@ async def export_audit_csv(
 
 @router.get("/export/json")
 async def export_audit_json(
-    actor_id: Annotated[str | None, Query(None)] = None,
-    action: Annotated[str | None, Query(None)] = None,
-    resource_type: Annotated[str | None, Query(None)] = None,
-    resource_id: Annotated[str | None, Query(None)] = None,
-    start_date: Annotated[datetime | None, Query(None)] = None,
-    end_date: Annotated[datetime | None, Query(None)] = None,
+    actor_id: Annotated[str | None, Query()] = None,
+    action: Annotated[str | None, Query()] = None,
+    resource_type: Annotated[str | None, Query()] = None,
+    resource_id: Annotated[str | None, Query()] = None,
+    start_date: Annotated[datetime | None, Query()] = None,
+    end_date: Annotated[datetime | None, Query()] = None,
     repo=Depends(get_audit_log_repository),
 ):
     """Export audit log entries as JSON file."""
@@ -257,12 +257,12 @@ async def export_audit_json(
 
 @router.get("/export/pdf")
 async def export_audit_pdf(
-    actor_id: Annotated[str | None, Query(None)] = None,
-    action: Annotated[str | None, Query(None)] = None,
-    resource_type: Annotated[str | None, Query(None)] = None,
-    resource_id: Annotated[str | None, Query(None)] = None,
-    start_date: Annotated[datetime | None, Query(None)] = None,
-    end_date: Annotated[datetime | None, Query(None)] = None,
+    actor_id: Annotated[str | None, Query()] = None,
+    action: Annotated[str | None, Query()] = None,
+    resource_type: Annotated[str | None, Query()] = None,
+    resource_id: Annotated[str | None, Query()] = None,
+    start_date: Annotated[datetime | None, Query()] = None,
+    end_date: Annotated[datetime | None, Query()] = None,
     repo=Depends(get_audit_log_repository),
 ):
     """Export audit log entries as PDF file."""
@@ -286,7 +286,7 @@ async def export_audit_pdf(
         buffer = io.BytesIO()
         doc = SimpleDocTemplate(buffer, pagesize=letter)
 
-        elements = []
+        elements: list[Any] = []
 
         # Title
         styles = getSampleStyleSheet()
@@ -364,8 +364,8 @@ async def export_audit_pdf(
 
 @router.get("/compliance/gdpr-article-30")
 async def gdpr_article_30_report(
-    start_date: Annotated[datetime | None, Query(None)] = None,
-    end_date: Annotated[datetime | None, Query(None)] = None,
+    start_date: Annotated[datetime | None, Query()] = None,
+    end_date: Annotated[datetime | None, Query()] = None,
     repo=Depends(get_audit_log_repository),
 ):
     """
@@ -391,7 +391,7 @@ async def gdpr_article_30_report(
 
     report = GDPRComplianceService.generate_article_30_report(
         entries=entries,
-        report_date=datetime.utcnow(),
+        report_date=datetime.now(UTC),
     )
 
     return report

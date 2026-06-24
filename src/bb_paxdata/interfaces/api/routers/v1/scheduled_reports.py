@@ -3,7 +3,7 @@ from __future__ import annotations
 
 import json
 import uuid
-from datetime import datetime, timezone
+from datetime import UTC, datetime, timezone
 
 from fastapi import APIRouter, Depends, HTTPException, Request, Response, status
 from pydantic import BaseModel, Field
@@ -315,7 +315,7 @@ async def create_embed_token(
         name=token_req.name,
         allowed_origins=json.dumps(token_req.allowed_origins),
         expires_at=(
-            datetime.now(timezone.utc).replace(tzinfo=None)
+            datetime.now(UTC).replace(tzinfo=None)
             + timezone.timedelta(days=token_req.expires_in_days)
             if token_req.expires_in_days
             else None

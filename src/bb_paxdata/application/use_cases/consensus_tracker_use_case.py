@@ -6,7 +6,7 @@ CORRECTED (E05-M-01): Separate use case, not extension of aggregate_bilateral_se
 from __future__ import annotations
 
 from dataclasses import dataclass
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 
 from bb_paxdata.application.domain.models.consensus_moment import (
     CoalitionCluster,
@@ -68,5 +68,5 @@ class ConsensusTrackerUseCase:
         return ConsensusTrackerOutput(
             moments=[],
             clusters=[],
-            computed_at=datetime.now(timezone.utc),
+            computed_at=datetime.now(UTC),
         )

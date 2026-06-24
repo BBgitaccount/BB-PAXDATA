@@ -2,7 +2,7 @@
 from __future__ import annotations
 
 import pathlib
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 
 import nbformat as nbf
 import structlog
@@ -43,7 +43,7 @@ async def update_job_status(
         if error_message is not None:
             values["error_message"] = error_message
         if status == ExportStatus.COMPLETED:
-            values["completed_at"] = datetime.now(timezone.utc).replace(tzinfo=None)
+            values["completed_at"] = datetime.now(UTC).replace(tzinfo=None)
 
         await session.execute(
             update(ExportJob).where(ExportJob.id == job_id).values(**(values))

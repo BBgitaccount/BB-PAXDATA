@@ -145,8 +145,9 @@ class MetricsCollector:
 
         self._pipeline_stage_duration_seconds = Histogram(
             "pipeline_stage_duration_seconds",
-            "Pipeline a\u015famalar\u0131n\u0131n \u00e7al\u0131\u015fma s\u00fcreleri (saniye)",
+            "Pipeline aşamalarının çalışma süreleri (saniye)",
             ["stage_name", "status"],
+            buckets=[0.1, 0.5, 1.0, 2.0, 5.0, 10.0, 30.0, 60.0, 120.0, 300.0],
             registry=self._registry,
         )
 
@@ -204,13 +205,6 @@ class MetricsCollector:
         )
 
         # TASK-9.3.2 Custom Metrics for Pipeline, AI Latency, Cache Ratios
-        self._pipeline_stage_duration_seconds = Histogram(
-            "pipeline_stage_duration_seconds",
-            "Pipeline aşamalarının çalışma süreleri (saniye)",
-            ["stage_name", "status"],
-            buckets=[0.1, 0.5, 1.0, 2.0, 5.0, 10.0, 30.0, 60.0, 120.0, 300.0],
-            registry=self._registry,
-        )
 
         self._ai_model_latency_seconds = Histogram(
             "ai_model_latency_seconds",

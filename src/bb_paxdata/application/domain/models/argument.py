@@ -9,7 +9,7 @@ from __future__ import annotations
 import hashlib
 import uuid
 from collections import defaultdict
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from enum import Enum
 from typing import Literal
 
@@ -402,7 +402,7 @@ class ArgumentGraph(BaseModel):
 
     # === Metadata ===
     created_at: str = Field(
-        default_factory=lambda: datetime.now(timezone.utc).isoformat(),
+        default_factory=lambda: datetime.now(UTC).isoformat(),
         description="ISO 8601 creation timestamp (UTC, timezone-aware)",
     )
     model_version: str = Field(

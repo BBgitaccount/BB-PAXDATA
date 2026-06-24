@@ -85,7 +85,7 @@ class WeightCalibrator:
         # Compute mean delta (correction signal)
         numeric_deltas = []
         for delta in deltas:
-            if isinstance(delta, (int, float)):
+            if isinstance(delta, int | float):
                 numeric_deltas.append(delta)
             elif isinstance(delta, tuple) and len(delta) == 2:
                 # For categorical corrections, use -1 or +1 based on direction

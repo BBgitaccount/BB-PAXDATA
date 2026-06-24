@@ -7,7 +7,7 @@ Implements three trigger types:
 """
 
 import uuid
-from datetime import datetime, timedelta, timezone
+from datetime import UTC, datetime, timedelta
 from typing import Any
 
 import structlog
@@ -91,7 +91,7 @@ class RetrainingScheduler:
         try:
             async with self.session_factory():
                 # Query for untriggered critical drift alerts
-                datetime.now(timezone.utc) - timedelta(hours=48)
+                datetime.now(UTC) - timedelta(hours=48)
 
                 # Placeholder - would query drift_alerts table
                 # For now, return None
@@ -119,7 +119,7 @@ class RetrainingScheduler:
                 trigger_reason=reason,
                 fields=fields,
                 status="pending",
-                created_at=datetime.now(timezone.utc),
+                created_at=datetime.now(UTC),
                 metadata={},
             )
 
@@ -148,7 +148,7 @@ class RetrainingScheduler:
         """
         try:
             # Check if completed job exists in last 7 days
-            datetime.now(timezone.utc) - timedelta(days=7)
+            datetime.now(UTC) - timedelta(days=7)
 
             async with self.session_factory():
                 # Query for completed jobs in last 7 days
@@ -165,7 +165,7 @@ class RetrainingScheduler:
                     trigger_reason="scheduled",
                     fields=["sentiment_score", "risk_score", "discourse_act", "frame"],
                     status="pending",
-                    created_at=datetime.now(timezone.utc),
+                    created_at=datetime.now(UTC),
                     metadata={},
                 )
 

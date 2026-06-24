@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import uuid
 from collections.abc import Sequence
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from typing import Any
 
 import structlog
@@ -80,7 +80,7 @@ class AnalysisAssembler:
             id=metadata.get("id", f"anal-{uuid.uuid4().hex}"),
             source_text=source_text,
             language=language,
-            timestamp=metadata.get("timestamp", datetime.now(timezone.utc).isoformat()),
+            timestamp=metadata.get("timestamp", datetime.now(UTC).isoformat()),
             # ── NLP Alanları ──
             entities=ner_result.get("entities", []),
             tokens=tokenizer_result.get("tokens", []),

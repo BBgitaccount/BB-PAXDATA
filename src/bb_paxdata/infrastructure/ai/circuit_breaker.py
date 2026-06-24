@@ -209,7 +209,7 @@ async def with_circuit_breaker(
         )
         await cb.record_success()
         return result
-    except asyncio.TimeoutError:
+    except TimeoutError:
         await cb.record_failure()
         logger.error(
             "circuit_breaker.timeout",

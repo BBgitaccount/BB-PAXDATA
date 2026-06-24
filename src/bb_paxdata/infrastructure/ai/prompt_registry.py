@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 import hashlib
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from typing import TYPE_CHECKING, Protocol
 from uuid import UUID
 
@@ -33,7 +33,7 @@ class PromptVersion(BaseModel):
         default=None,
         description="ACADEMIC_FOUNDATIONS.md citation key. Örn: 'Entman1993'",
     )
-    created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+    created_at: datetime = Field(default_factory=lambda: datetime.now(UTC))
 
     @classmethod
     def compute_hash(cls, content: str) -> str:

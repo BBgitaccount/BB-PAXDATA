@@ -1,3 +1,5 @@
+from datetime import UTC
+
 import structlog
 
 from bb_paxdata.application.domain.models.analysis import Analysis
@@ -88,11 +90,11 @@ class DKIAssembler:
             # Assuming Analysis has a timestamp we can parse or use
             # Analysis.timestamp is ISO string
             try:
-                from datetime import datetime, timezone
+                from datetime import datetime
 
                 ts = datetime.fromisoformat(h.timestamp)
             except Exception:
-                ts = datetime.now(timezone.utc)
+                ts = datetime.now(UTC)
 
             trajectory_points.append({"theta": theta, "timestamp": ts})
 

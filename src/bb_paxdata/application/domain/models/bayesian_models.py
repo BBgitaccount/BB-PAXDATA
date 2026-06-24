@@ -124,7 +124,7 @@ class EmpiricalDistribution(BaseModel, Distribution):
     @field_validator("particles", "weights", mode="before")
     @classmethod
     def validate_arrays(cls, v: Any) -> list[float]:
-        if not isinstance(v, (list, np.ndarray)):
+        if not isinstance(v, list | np.ndarray):
             raise ValueError(f"Must be list or array, got {type(v)}")
         if isinstance(v, np.ndarray):
             return v.tolist()

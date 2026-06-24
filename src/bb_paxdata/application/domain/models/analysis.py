@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import uuid
 from collections.abc import Sequence
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from typing import Any
 
 from pydantic import BaseModel, Field, computed_field, model_validator
@@ -55,7 +55,7 @@ class Analysis(AggregateRoot):
         default="unknown", description="Tespit edilen dil (tr/en/mixed)"
     )
     timestamp: str = Field(
-        default_factory=lambda: datetime.now(timezone.utc).isoformat(),
+        default_factory=lambda: datetime.now(UTC).isoformat(),
         description="UTC analiz zaman damgası (ISO 8601)",
     )
 
@@ -225,7 +225,7 @@ class Analysis(AggregateRoot):
         default="1.0", description="Version of analysis methodology"
     )
     analysis_timestamp: datetime = Field(
-        default_factory=lambda: datetime.now(timezone.utc),
+        default_factory=lambda: datetime.now(UTC),
         description="When analysis was performed",
     )
     analyzer_id: str | None = Field(

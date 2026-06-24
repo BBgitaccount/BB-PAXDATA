@@ -1,3 +1,5 @@
+from datetime import UTC
+
 import pydantic
 from fastapi import APIRouter, Depends, Query
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -215,7 +217,7 @@ async def get_calibration_report(
     db: AsyncSession = Depends(get_db),
 ) -> CalibrationReportResponse:
     """Retrieve the latest calibration report metrics."""
-    from datetime import datetime, timezone
+    from datetime import datetime
 
     from sqlalchemy import select
 
@@ -230,7 +232,7 @@ async def get_calibration_report(
     row = result.scalar_one_or_none()
 
     if not row:
-        now_str = datetime.now(timezone.utc).isoformat()
+        now_str = datetime.now(UTC).isoformat()
         return CalibrationReportResponse(
             prompt_version="N/A",
             evaluation_period_start=now_str,

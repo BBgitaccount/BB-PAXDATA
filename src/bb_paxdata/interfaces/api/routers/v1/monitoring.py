@@ -3,7 +3,7 @@
 Provides endpoints for drift detection monitoring, alerts, and reports.
 """
 
-from datetime import datetime, timedelta, timezone
+from datetime import UTC, datetime, timedelta
 from typing import Any
 
 from fastapi import APIRouter, Depends, HTTPException, Query, status
@@ -87,7 +87,7 @@ async def get_drift_timeseries(
     try:
         # Query drift_measurements table for given field and metric
         # For now, return placeholder data
-        end_date = datetime.now(timezone.utc)
+        end_date = datetime.now(UTC)
         end_date - timedelta(days=days)
 
         # Placeholder - would query actual database
@@ -146,9 +146,9 @@ async def resolve_drift_alert(
             alert_type="prediction_drift",
             field="risk_score",
             severity="warning",
-            detected_at=datetime.now(timezone.utc),
+            detected_at=datetime.now(UTC),
             resolved=True,
-            resolved_at=datetime.now(timezone.utc),
+            resolved_at=datetime.now(UTC),
             metadata={},
         )
     except Exception as e:
@@ -172,7 +172,7 @@ async def get_weekly_drift_report(
         # For now, return placeholder data
         return WeeklyDriftReport(
             report_period="2025-W22",
-            generated_at=datetime.now(timezone.utc),
+            generated_at=datetime.now(UTC),
             summary={
                 "total_alerts": 3,
                 "critical": 1,

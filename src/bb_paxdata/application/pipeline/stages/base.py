@@ -29,7 +29,7 @@ def compute_hash(obj: Any) -> str:
             serialized = json.dumps(obj.model_dump(), sort_keys=True, default=str)
         elif hasattr(obj, "dict"):
             serialized = json.dumps(obj.dict(), sort_keys=True, default=str)
-        elif isinstance(obj, (dict, list, str, int, float, bool)):
+        elif isinstance(obj, dict | list | str | int | float | bool):
             serialized = json.dumps(obj, sort_keys=True, default=str)
         else:
             serialized = str(obj)

@@ -1,7 +1,7 @@
 """Violation logging and reporting for data contract violations."""
 
 import json
-from datetime import datetime, timedelta, timezone
+from datetime import UTC, datetime, timedelta
 from pathlib import Path
 from typing import Any
 
@@ -37,7 +37,7 @@ class ViolationLogger:
             file_path: Related file path if applicable
         """
         violation_record = {
-            "timestamp": datetime.now(timezone.utc).isoformat(),
+            "timestamp": datetime.now(UTC).isoformat(),
             "violation_type": violation_type,
             "severity": severity,
             "message": message,
@@ -50,8 +50,7 @@ class ViolationLogger:
 
         # Write to violation log file
         log_file = (
-            self.log_dir
-            / f"violations_{datetime.now(timezone.utc).strftime('%Y%m%d')}.jsonl"
+            self.log_dir / f"violations_{datetime.now(UTC).strftime('%Y%m%d')}.jsonl"
         )
 
         try:
@@ -114,7 +113,7 @@ class ViolationLogger:
             "recent_violations": [],
         }
 
-        cutoff_date = datetime.now(timezone.utc).date() - timedelta(days=days)
+        cutoff_date = datetime.now(UTC).date() - timedelta(days=days)
 
         try:
             for log_file in self.log_dir.glob("violations_*.jsonl"):

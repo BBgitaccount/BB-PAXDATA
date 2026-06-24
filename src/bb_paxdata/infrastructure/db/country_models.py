@@ -13,7 +13,7 @@ Kurallar:
 from __future__ import annotations
 
 import uuid
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from decimal import Decimal
 from typing import TYPE_CHECKING, Any
 
@@ -128,7 +128,7 @@ class CountryReferenceTable(Base):
     created_at: Mapped[datetime] = mapped_column(
         DateTime,
         nullable=False,
-        default=lambda: datetime.now(timezone.utc).replace(tzinfo=None),
+        default=lambda: datetime.now(UTC).replace(tzinfo=None),
     )
 
     def to_domain(self) -> CountryReference:
@@ -214,7 +214,7 @@ class BilateralSentimentTable(Base):
     last_updated: Mapped[datetime] = mapped_column(
         DateTime,
         nullable=False,
-        default=lambda: datetime.now(timezone.utc).replace(tzinfo=None),
+        default=lambda: datetime.now(UTC).replace(tzinfo=None),
     )
 
     def to_domain(self) -> BilateralSentiment:
@@ -296,7 +296,7 @@ class BilateralSentimentTable(Base):
             last_updated=(
                 entity.last_updated.replace(tzinfo=None)
                 if entity.last_updated
-                else datetime.now(timezone.utc).replace(tzinfo=None)
+                else datetime.now(UTC).replace(tzinfo=None)
             ),
         )
 

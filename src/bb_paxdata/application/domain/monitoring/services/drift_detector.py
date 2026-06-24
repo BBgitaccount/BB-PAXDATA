@@ -5,7 +5,7 @@ Execution interval: every 6 hours.
 """
 
 import asyncio
-from datetime import datetime, timedelta, timezone
+from datetime import UTC, datetime, timedelta
 from typing import Any
 
 import numpy as np
@@ -137,7 +137,7 @@ class DriftDetectorService:
         try:
             async with self.session_factory() as session:
                 # Query baseline embeddings (last 30 days)
-                baseline_end = datetime.now(timezone.utc)
+                baseline_end = datetime.now(UTC)
                 baseline_start = baseline_end - timedelta(
                     days=self.config.baseline_window_days
                 )
@@ -231,7 +231,7 @@ class DriftDetectorService:
                 if drift_detected:
                     alert = DataDriftAlert(
                         field="embedding_vector",
-                        detected_at=datetime.now(timezone.utc),
+                        detected_at=datetime.now(UTC),
                         baseline_window_start=baseline_start,
                         baseline_window_end=baseline_end,
                         current_window_start=current_start,
@@ -278,7 +278,7 @@ class DriftDetectorService:
                     "hedging_level",
                 ]
 
-                current_end = datetime.now(timezone.utc)
+                current_end = datetime.now(UTC)
                 current_start = current_end - timedelta(
                     days=self.config.concept_drift_window_days
                 )
@@ -317,7 +317,7 @@ class DriftDetectorService:
                     if psi_score.value > self.config.psi_critical_threshold:
                         alert = ConceptDriftAlert(
                             field=field,
-                            detected_at=datetime.now(timezone.utc),
+                            detected_at=datetime.now(UTC),
                             correction_rate_current=correction_rate_current,
                             correction_rate_baseline=correction_rate_baseline,
                             psi_score=psi_score.value,
@@ -353,7 +353,7 @@ class DriftDetectorService:
             async with self.session_factory() as session:
                 fields = ["sentiment_score", "risk_score", "ai_confidence"]
 
-                baseline_end = datetime.now(timezone.utc)
+                baseline_end = datetime.now(UTC)
                 baseline_start = baseline_end - timedelta(
                     days=self.config.baseline_window_days
                 )
@@ -445,7 +445,7 @@ class DriftDetectorService:
                     if warning_count >= 2:
                         alert = PredictionDriftAlert(
                             field=field,
-                            detected_at=datetime.now(timezone.utc),
+                            detected_at=datetime.now(UTC),
                             metrics=[psi, kl, ks, wasserstein],
                             warning_count=warning_count,
                             critical_count=critical_count,

@@ -2,7 +2,7 @@
 
 import hashlib
 import re
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
 
@@ -668,7 +668,7 @@ def get_parser_version() -> str:
 
 def utc_now() -> datetime:
     """Get current UTC datetime as timezone-naive (required for TIMESTAMP WITHOUT TIME ZONE columns)."""
-    return datetime.now(timezone.utc).replace(tzinfo=None)
+    return datetime.now(UTC).replace(tzinfo=None)
 
 
 def get_speaker_map_version() -> str:

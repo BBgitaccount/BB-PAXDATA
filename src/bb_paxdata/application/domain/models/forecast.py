@@ -46,7 +46,7 @@ class ForecastResult(BaseModel):
         cls, v: tuple[float, float] | list[float] | str
     ) -> tuple[float, float]:
         """Parse credible interval from JSON or tuple format."""
-        if isinstance(v, (list, tuple)) and len(v) == 2:
+        if isinstance(v, list | tuple) and len(v) == 2:
             return (v[0], v[1])
         if isinstance(v, str):
             import json as _json

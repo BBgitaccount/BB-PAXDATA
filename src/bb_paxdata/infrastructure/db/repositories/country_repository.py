@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from collections.abc import Sequence
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from decimal import Decimal
 
 from sqlalchemy import and_, func, or_, select
@@ -289,7 +289,7 @@ class BilateralSentimentRepository:
             row.last_updated = (
                 sentiment.last_updated.replace(tzinfo=None)
                 if sentiment.last_updated
-                else datetime.now(timezone.utc).replace(tzinfo=None)
+                else datetime.now(UTC).replace(tzinfo=None)
             )
             # Phase 4 columns
             row.vote_affinity = (
@@ -327,7 +327,7 @@ class BilateralSentimentRepository:
                 last_updated=(
                     sentiment.last_updated.replace(tzinfo=None)
                     if sentiment.last_updated
-                    else datetime.now(timezone.utc).replace(tzinfo=None)
+                    else datetime.now(UTC).replace(tzinfo=None)
                 ),
             )
             self._session.add(row)

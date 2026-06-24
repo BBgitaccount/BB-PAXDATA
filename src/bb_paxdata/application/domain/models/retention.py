@@ -5,7 +5,7 @@ Data Retention and Archiving Domain Models (TASK-1.3)
 from __future__ import annotations
 
 from dataclasses import dataclass
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from enum import Enum
 from typing import Any
 
@@ -50,7 +50,7 @@ class RetentionPolicy:
             return False
 
         expiry_date = created_at.replace(year=created_at.year + self.retention_years)
-        return datetime.now(timezone.utc) > expiry_date
+        return datetime.now(UTC) > expiry_date
 
 
 @dataclass

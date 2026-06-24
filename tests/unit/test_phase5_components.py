@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 from collections.abc import AsyncGenerator
+from datetime import UTC
 from unittest.mock import AsyncMock, MagicMock
 
 import numpy as np
@@ -81,13 +82,13 @@ def mock_embedding_service() -> MagicMock:
 
 @pytest.mark.asyncio
 async def test_risk_forecaster_logic():
-    from datetime import datetime, timezone
+    from datetime import datetime
 
     forecaster = RiskForecaster(monte_carlo_sims=100)
     historical = [
         TimeSlice(
             panel_id=f"p{i}",
-            timestamp=datetime.now(timezone.utc),
+            timestamp=datetime.now(UTC),
             computed_risk=float(i) * 0.5,
             sentiment_delta=0.1,
             sentiment_volatility=0.2,

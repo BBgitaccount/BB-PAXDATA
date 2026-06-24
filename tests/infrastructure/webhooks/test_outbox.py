@@ -1,7 +1,7 @@
 # tests/infrastructure/webhooks/test_outbox.py
 from __future__ import annotations
 
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from unittest.mock import MagicMock, patch
 
 import pytest
@@ -200,7 +200,7 @@ def test_process_outbox_queue_dispatches_pending_events(mock_dispatch, sync_db):
         secret="mysecret",
         endpoint_id="sub-1",
         processed=False,
-        next_attempt_at=datetime(2099, 1, 1, tzinfo=timezone.utc),
+        next_attempt_at=datetime(2099, 1, 1, tzinfo=UTC),
     )
     session.add_all([event_pending, event_processed, event_future])
     session.commit()
@@ -228,7 +228,7 @@ def test_process_outbox_queue_dispatches_pending_events(mock_dispatch, sync_db):
         if updated.next_attempt_at.tzinfo
         else updated.next_attempt_at
     )
-    now_naive = datetime.now(timezone.utc).replace(tzinfo=None)
+    now_naive = datetime.now(UTC).replace(tzinfo=None)
     assert (next_att - now_naive).total_seconds() > 0
     session.close()
 

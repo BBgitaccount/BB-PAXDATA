@@ -2,7 +2,7 @@
 from __future__ import annotations
 
 import secrets
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 
 from sqlalchemy import select
 
@@ -79,7 +79,7 @@ class ConsentManager:
             if dist.consent_given_at:
                 return True  # Already confirmed
 
-            dist.consent_given_at = datetime.now(timezone.utc).replace(tzinfo=None)
+            dist.consent_given_at = datetime.now(UTC).replace(tzinfo=None)
             await session.commit()
 
             return True
@@ -103,7 +103,7 @@ class ConsentManager:
             if not dist:
                 return False
 
-            dist.unsubscribed_at = datetime.now(timezone.utc).replace(tzinfo=None)
+            dist.unsubscribed_at = datetime.now(UTC).replace(tzinfo=None)
             await session.commit()
 
             return True

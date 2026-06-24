@@ -1,7 +1,7 @@
 # src/bb_paxdata/infrastructure/templates_engine/context_builder.py
 from __future__ import annotations
 
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from typing import Any
 
 from sqlalchemy import select
@@ -140,7 +140,7 @@ class TemplateContextBuilder:
                 },
                 "risks": risks_data[:20],  # Limit to top 20
                 "report": {
-                    "generated_at": datetime.now(timezone.utc).isoformat(),
+                    "generated_at": datetime.now(UTC).isoformat(),
                     "generated_by": "system",
                     "version": "1.0",
                 },

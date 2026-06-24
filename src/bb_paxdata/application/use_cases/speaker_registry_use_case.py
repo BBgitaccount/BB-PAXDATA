@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 import logging
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from typing import TYPE_CHECKING, Any
 
 from bb_paxdata.infrastructure.db.models import Speaker
@@ -120,8 +120,8 @@ class SpeakerRegistryUseCase:
                 title=ctx.get("title"),
                 organization=ctx.get("organization"),
                 is_active=ctx.get("is_active", True),
-                first_seen_at=datetime.now(timezone.utc).replace(tzinfo=None),
-                last_seen_at=datetime.now(timezone.utc).replace(tzinfo=None),
+                first_seen_at=datetime.now(UTC).replace(tzinfo=None),
+                last_seen_at=datetime.now(UTC).replace(tzinfo=None),
                 appearance_count=0,
                 data_source=ctx.get("data_source", "pipeline_auto"),
                 aliases=aliases,

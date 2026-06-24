@@ -1,6 +1,6 @@
 # src/bb_paxdata/application/services/aggregation_engine.py
 import uuid
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 
 import numpy as np
 
@@ -194,7 +194,7 @@ class AggregationEngine:
                     last_event_id=evs[-1].event_id,
                     segment_count=len(set(ev.segment_id for ev in evs)),
                     total_word_count=total_word_count,
-                    updated_at=datetime.now(timezone.utc).replace(tzinfo=None),
+                    updated_at=datetime.now(UTC).replace(tzinfo=None),
                 )
                 projections.append(proj)
 
@@ -253,8 +253,8 @@ class AggregationEngine:
                 network_edges={},
                 diplomatic_tension_index=diplomatic_tension_index,
                 agenda_diversity_index=agenda_diversity_index,
-                created_at=datetime.now(timezone.utc).replace(tzinfo=None),
-                updated_at=datetime.now(timezone.utc).replace(tzinfo=None),
+                created_at=datetime.now(UTC).replace(tzinfo=None),
+                updated_at=datetime.now(UTC).replace(tzinfo=None),
             )
             documents.append(doc)
 

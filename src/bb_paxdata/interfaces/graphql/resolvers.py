@@ -1,7 +1,7 @@
 # src/bb_paxdata/interfaces/graphql/resolvers.py
 from __future__ import annotations
 
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from uuid import uuid4
 
 import strawberry
@@ -34,7 +34,7 @@ async def resolve_analysis(
     return AnalysisType(
         id=strawberry.ID(file.file_id),
         title=file.title or file.file_name,
-        created_at=file.first_processed_at or datetime.now(timezone.utc),
+        created_at=file.first_processed_at or datetime.now(UTC),
         status="COMPLETE",
         source_language=file.file_format or "tr",
     )
@@ -74,7 +74,7 @@ async def resolve_analyses_connection(
                 node=AnalysisType(
                     id=strawberry.ID(f.file_id),
                     title=f.title or f.file_name,
-                    created_at=f.first_processed_at or datetime.now(timezone.utc),
+                    created_at=f.first_processed_at or datetime.now(UTC),
                     status="COMPLETE",
                     source_language=f.file_format or "tr",
                 ),
@@ -108,7 +108,7 @@ async def resolve_create_analysis(
     input.validate()
     session: AsyncSession = info.context["db"]
     file_id = f"file-{uuid4().hex[:8]}"
-    created_time = datetime.now(timezone.utc)
+    created_time = datetime.now(UTC)
 
     db_file = File(
         file_id=file_id,
