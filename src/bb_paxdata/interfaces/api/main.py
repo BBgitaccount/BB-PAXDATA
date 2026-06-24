@@ -29,6 +29,7 @@ from bb_paxdata.interfaces.api.routers.v1 import (
     search,
     settings as settings_router,
     speakers,
+    stream,
     verdict,
     weight_calibration as weight_calibration_router,
 )
@@ -235,6 +236,7 @@ app.include_router(audit_log.router, prefix="/api/v1")
 app.include_router(retention.router, prefix="/api/v1")
 app.include_router(corrections.router, prefix="/api/v1")
 app.include_router(weight_calibration_router.router, prefix="/api/v1")
+app.include_router(stream.router, prefix="/api/v1")
 app.include_router(queue_ws.router, prefix="/api")
 app.include_router(get_graphql_router(), prefix="/graphql")
 

@@ -1,4 +1,4 @@
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { speakerService } from '../services/speakerService';
 import { Speaker } from '../types';
 import { useToast } from './useToast';
@@ -73,7 +73,7 @@ export const useCreateSpeaker = () => {
       queryClient.invalidateQueries({ queryKey: ['speakers'] });
       toast.success('Konuşmacı başarıyla oluşturuldu.');
     },
-    onError: (err: any) => {
+    onError: (err: Error) => {
       toast.error(`Konuşmacı oluşturulamadı: ${err.message || err}`);
     },
   });
@@ -91,7 +91,7 @@ export const useUpdateSpeaker = () => {
       queryClient.invalidateQueries({ queryKey: ['speaker', data.speaker_id] });
       toast.success('Konuşmacı başarıyla güncellendi.');
     },
-    onError: (err: any) => {
+    onError: (err: Error) => {
       toast.error(`Konuşmacı güncellenemedi: ${err.message || err}`);
     },
   });

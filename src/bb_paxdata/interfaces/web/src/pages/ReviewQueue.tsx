@@ -1,18 +1,17 @@
-import { useEffect, useState } from 'react';
-import { useQuery } from '@tanstack/react-query';
-import { useNavigate } from 'react-router-dom';
-import { apiClient, ApiError } from '@/services/apiClient';
 import { DataTable } from '@/components/DataTable';
 import { PriorityBadge } from '@/components/PriorityBadge';
 import { StatusBadge } from '@/components/StatusBadge';
-import { useToast } from '@/hooks/useToast';
-import { formatDate, truncate } from '@/utils/helpers';
-import type { FailQueueItem, FormulaName, TriagePriority } from '@/types';
-import { Filter, Search, Eye, ShieldOff } from 'lucide-react';
-import { cn } from '@/utils/helpers';
-import { useReviewQueueStore } from '@/store/reviewQueueStore';
 import { UncertaintyBadge } from '@/components/UncertaintyBadge';
+import { useToast } from '@/hooks/useToast';
 import { useTranslation } from '@/hooks/useTranslation';
+import { apiClient, ApiError } from '@/services/apiClient';
+import { useReviewQueueStore } from '@/store/reviewQueueStore';
+import type { FailQueueItem, FormulaName, TriagePriority } from '@/types';
+import { cn, formatDate, truncate } from '@/utils/helpers';
+import { useQuery } from '@tanstack/react-query';
+import { Eye, Filter, Search, ShieldOff } from 'lucide-react';
+import { useEffect, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 
 const formulas: FormulaName[] = [
   'vader_compound',
@@ -191,8 +190,8 @@ export const ReviewQueue = ({ mode = 'logic' }: { mode?: 'logic' | 'ai' }) => {
             width: '130px',
             render: (r: FailQueueItem) => (
               <UncertaintyBadge
-                score={(r as any).ai_confidence}
-                status={(r as any).uncertainty_status}
+                score={(r as { ai_confidence?: number }).ai_confidence}
+                status={(r as { uncertainty_status?: string }).uncertainty_status}
               />
             ),
           },

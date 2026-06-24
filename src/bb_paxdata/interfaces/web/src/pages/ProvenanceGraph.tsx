@@ -1,29 +1,29 @@
-import { useState, useCallback, useMemo } from 'react';
-import { useQuery } from '@tanstack/react-query';
 import {
-  ReactFlow,
-  Node,
-  Edge,
+  ProvenanceGraph as ProvenanceGraphType,
+  provenanceService,
+} from '@/services/provenanceService';
+import { useQuery } from '@tanstack/react-query';
+import { AlertCircle, Clock, GitBranch, Hash } from 'lucide-react';
+import { useCallback, useMemo, useState } from 'react';
+import {
   Background,
   Controls,
-  MiniMap,
-  useNodesState,
-  useEdgesState,
+  Edge,
   MarkerType,
+  MiniMap,
+  Node,
+  ReactFlow,
+  useEdgesState,
+  useNodesState,
 } from 'reactflow';
 import 'reactflow/dist/style.css';
-import {
-  provenanceService,
-  ProvenanceGraph as ProvenanceGraphType,
-} from '@/services/provenanceService';
-import { Clock, Hash, GitBranch, AlertCircle } from 'lucide-react';
 
 interface ProvenanceGraphProps {
   resultId?: string;
 }
 
 const nodeTypes = {
-  default: ({ data }: { data: any }) => (
+  default: ({ data }: { data: Record<string, unknown> }) => (
     <div
       className="px-4 py-2 rounded-lg border-2 bg-white shadow-md hover:shadow-lg transition-shadow min-w-[200px]"
       style={{
@@ -99,8 +99,8 @@ export const ProvenanceGraph = ({ resultId: propResultId }: ProvenanceGraphProps
     }));
   }, [graph]);
 
-  const [nodes, setNodes, onNodesChange] = useNodesState(initialNodes);
-  const [edges, setEdges, onEdgesChange] = useEdgesState(initialEdges);
+  const [nodes, , onNodesChange] = useNodesState(initialNodes);
+  const [edges, , onEdgesChange] = useEdgesState(initialEdges);
 
   const onNodeClick = useCallback(
     (event: React.MouseEvent, node: Node) => {
@@ -168,6 +168,7 @@ export const ProvenanceGraph = ({ resultId: propResultId }: ProvenanceGraphProps
             <ReactFlow
               nodes={nodes}
               edges={edges}
+              nodeTypes={nodeTypes}
               onNodesChange={onNodesChange}
               onEdgesChange={onEdgesChange}
               onNodeClick={onNodeClick}

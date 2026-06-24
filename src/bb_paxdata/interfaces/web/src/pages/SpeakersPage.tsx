@@ -1,57 +1,57 @@
-import { useState, useMemo } from 'react';
 import {
-  useSpeakers,
-  useSpeakerStatsSummary,
-  useSpeakerStatsByCountry,
-  useSpeakerStatsByBloc,
-  useSpeakerAppearances,
-  useSpeakerSentimentHistory,
   useCreateSpeaker,
-  useUpdateSpeaker,
   useSpeaker,
+  useSpeakerAppearances,
+  useSpeakers,
+  useSpeakerSentimentHistory,
+  useSpeakerStatsByBloc,
+  useSpeakerStatsByCountry,
+  useSpeakerStatsSummary,
+  useUpdateSpeaker,
 } from '@/hooks/useSpeakers';
+import { Speaker } from '@/types';
+import { cn } from '@/utils/helpers';
 import {
-  Users,
-  Plus,
-  Search,
-  Filter,
-  Award,
-  Globe,
-  RefreshCw,
-  X,
-  Check,
-  TrendingUp,
-  Sliders,
-  ChevronLeft,
-  ChevronRight,
-  Briefcase,
-  Calendar,
-  Layers,
-  MapPin,
-  Building,
-} from 'lucide-react';
-import {
-  useReactTable,
-  getCoreRowModel,
-  flexRender,
   createColumnHelper,
+  flexRender,
+  getCoreRowModel,
+  useReactTable,
 } from '@tanstack/react-table';
 import {
-  BarChart,
+  Award,
+  Briefcase,
+  Building,
+  Calendar,
+  Check,
+  ChevronLeft,
+  ChevronRight,
+  Filter,
+  Globe,
+  Layers,
+  MapPin,
+  Plus,
+  RefreshCw,
+  Search,
+  Sliders,
+  TrendingUp,
+  Users,
+  X,
+} from 'lucide-react';
+import { useCallback, useMemo, useState } from 'react';
+import {
+  Area,
+  AreaChart,
   Bar,
+  BarChart,
+  CartesianGrid,
+  Cell,
+  Pie,
+  PieChart,
+  ResponsiveContainer,
+  Tooltip,
   XAxis,
   YAxis,
-  CartesianGrid,
-  Tooltip,
-  ResponsiveContainer,
-  PieChart,
-  Pie,
-  Cell,
-  AreaChart,
-  Area,
 } from 'recharts';
-import { cn } from '@/utils/helpers';
-import { Speaker } from '@/types';
 
 const CHART_COLORS = ['#f4f4f5', '#e4e4e7', '#d4d4d8', '#a1a1aa', '#71717a', '#52525b', '#3f3f46'];
 
@@ -131,15 +131,18 @@ export const SpeakersPage = () => {
     void refetchList();
   };
 
-  const handleSort = (field: string) => {
-    if (sortBy === field) {
-      setSortOrder(sortOrder === 'asc' ? 'desc' : 'asc');
-    } else {
-      setSortBy(field);
-      setSortOrder('asc');
-    }
-    setPage(1);
-  };
+  const handleSort = useCallback(
+    (field: string) => {
+      if (sortBy === field) {
+        setSortOrder(sortOrder === 'asc' ? 'desc' : 'asc');
+      } else {
+        setSortBy(field);
+        setSortOrder('asc');
+      }
+      setPage(1);
+    },
+    [sortBy, sortOrder],
+  );
 
   // Add Speaker Form Submit
   const handleAddSubmit = async (e: React.FormEvent) => {
@@ -183,7 +186,7 @@ export const SpeakersPage = () => {
   const [editFields, setEditFields] = useState<Partial<Speaker>>({});
   const [newAlias, setNewAlias] = useState('');
 
-  const openSpeakerDrawer = (speaker: Speaker) => {
+  const openSpeakerDrawer = useCallback((speaker: Speaker) => {
     setSelectedSpeakerId(speaker.speaker_id);
     setEditFields({
       display_name: speaker.display_name,
@@ -194,7 +197,7 @@ export const SpeakersPage = () => {
       aliases: speaker.aliases || [],
     });
     setIsDrawerOpen(true);
-  };
+  }, []);
 
   const handleSaveDrawer = async () => {
     if (!selectedSpeakerId) return;
@@ -363,7 +366,7 @@ export const SpeakersPage = () => {
         ),
       }),
     ],
-    [sortBy, sortOrder],
+    [columnHelper, sortBy, sortOrder, handleSort, openSpeakerDrawer],
   );
 
   const table = useReactTable({

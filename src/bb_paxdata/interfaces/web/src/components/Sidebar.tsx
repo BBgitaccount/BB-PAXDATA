@@ -28,7 +28,7 @@ const navSections: Array<{
     id: string;
     label: keyof typeof tr;
     path: string;
-    icon: any;
+    icon: LucideIcon;
   }>;
 }> = [
   {

@@ -1,7 +1,7 @@
-import { useState, useEffect, useRef, useMemo } from 'react';
-import type { DiscourseNode, DiscourseEdge } from '@/types';
+import type { DiscourseEdge, DiscourseNode } from '@/types';
 import { cn } from '@/utils/helpers';
-import { User, BookOpen, HelpCircle, Info } from 'lucide-react';
+import { BookOpen, HelpCircle, Info, User } from 'lucide-react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 
 interface DiscourseNetworkExplorerProps {
   nodes: DiscourseNode[];
@@ -88,7 +88,7 @@ export const DiscourseNetworkExplorer = ({
   }, [activeNodes, activeEdges]);
 
   // Update Y coordinate of each node relative to the main container
-  const updatePositions = () => {
+  const updatePositions = useCallback(() => {
     if (!containerRef.current) return;
     const containerRect = containerRef.current.getBoundingClientRect();
     const positions: Record<string, number> = {};
@@ -103,7 +103,7 @@ export const DiscourseNetworkExplorer = ({
     });
 
     setNodePositions(positions);
-  };
+  }, [activeNodes]);
 
   // Run on mount, resize, scroll or data changes
   useEffect(() => {
@@ -124,12 +124,12 @@ export const DiscourseNetworkExplorer = ({
       if (leftCol) leftCol.removeEventListener('scroll', updatePositions);
       if (rightCol) rightCol.removeEventListener('scroll', updatePositions);
     };
-  }, [activeNodes, activeEdges]);
+  }, [activeNodes, activeEdges, updatePositions]);
 
   // Force re-measure when hover/select changes in case of DOM reflows
   useEffect(() => {
     updatePositions();
-  }, [hoveredNodeId, selectedNodeId]);
+  }, [hoveredNodeId, selectedNodeId, updatePositions]);
 
   // Find relationships for the selected node
   const selectedNodeDetails = useMemo(() => {

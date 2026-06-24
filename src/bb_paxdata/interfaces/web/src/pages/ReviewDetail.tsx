@@ -1,28 +1,27 @@
-import { useEffect } from 'react';
-import { useQuery } from '@tanstack/react-query';
-import { useParams, useNavigate, useLocation } from 'react-router-dom';
-import { apiClient } from '@/services/apiClient';
-import { TripletView } from '@/components/TripletView';
-import { VerdictForm } from '@/components/VerdictForm';
 import { DataTable } from '@/components/DataTable';
-import { UncertaintyBadge } from '@/components/UncertaintyBadge';
-import { useToast } from '@/hooks/useToast';
-import { truncate } from '@/utils/helpers';
-import type { TripletContext, SimilarCase, FailQueueItem, ComparisonRow } from '@/types';
-import {
-  ArrowLeft,
-  AlertCircle,
-  FileText,
-  CheckCircle,
-  XCircle,
-  GitCompare,
-  Cpu,
-  TrendingUp,
-  TableProperties,
-} from 'lucide-react';
-import { cn } from '@/utils/helpers';
 import { StatusBadge } from '@/components/StatusBadge';
+import { TripletView } from '@/components/TripletView';
+import { UncertaintyBadge } from '@/components/UncertaintyBadge';
+import { VerdictForm } from '@/components/VerdictForm';
 import { GOLD_STANDARDS } from '@/constants/goldStandards';
+import { useToast } from '@/hooks/useToast';
+import { apiClient } from '@/services/apiClient';
+import type { ComparisonRow, FailQueueItem, SimilarCase, TripletContext } from '@/types';
+import { cn, truncate } from '@/utils/helpers';
+import { useQuery } from '@tanstack/react-query';
+import {
+  AlertCircle,
+  ArrowLeft,
+  CheckCircle,
+  Cpu,
+  FileText,
+  GitCompare,
+  TableProperties,
+  TrendingUp,
+  XCircle,
+} from 'lucide-react';
+import { useEffect } from 'react';
+import { useLocation, useNavigate, useParams } from 'react-router-dom';
 
 export const ReviewDetail = () => {
   const { logId } = useParams<{ logId: string }>();
@@ -140,7 +139,7 @@ export const ReviewDetail = () => {
         );
         const otherSession = session_ids.find((id) => id !== item.file_id) || item.file_id;
 
-        return await apiClient.post<any>('/api/v1/compare/sessions', {
+        return await apiClient.post<Record<string, unknown>>('/api/v1/compare/sessions', {
           session_a_id: otherSession,
           session_b_id: item.file_id,
           sbi_threshold: 5.0,
@@ -158,7 +157,10 @@ export const ReviewDetail = () => {
     staleTime: 1000 * 60 * 10, // 10 dk - comparison data is stable
   });
 
-  const getComparisonRows = (itemVal: FailQueueItem | null, compData: any): ComparisonRow[] => {
+  const getComparisonRows = (
+    itemVal: FailQueueItem | null,
+    compData: Record<string, unknown> | null,
+  ): ComparisonRow[] => {
     if (!itemVal) return [];
 
     const rows: ComparisonRow[] = [];
@@ -356,8 +358,8 @@ export const ReviewDetail = () => {
         <span className="text-micro font-mono text-carbon-400">LOG-ID: {logId}</span>
         {mode === 'ai' && triplet && (
           <UncertaintyBadge
-            score={(triplet as any).ai_confidence}
-            status={(triplet as any).uncertainty_status}
+            score={(triplet as { ai_confidence?: number }).ai_confidence}
+            status={(triplet as { uncertainty_status?: string }).uncertainty_status}
           />
         )}
       </div>
@@ -585,7 +587,7 @@ export const ReviewDetail = () => {
                               ? log.actual_value.toFixed(3)
                               : String(log.actual_value)}
                           </span>
-                          <StatusBadge status={displayStatus as any} />
+                          <StatusBadge status={displayStatus as HumanVerdict} />
                         </div>
                       </div>
                     );
@@ -633,7 +635,7 @@ export const ReviewDetail = () => {
                               ? log.actual_value.toFixed(3)
                               : String(log.actual_value)}
                           </span>
-                          <StatusBadge status={displayStatus as any} />
+                          <StatusBadge status={displayStatus as HumanVerdict} />
                         </div>
                       </div>
                     );

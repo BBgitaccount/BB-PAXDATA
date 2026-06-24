@@ -1,9 +1,9 @@
 import type {
-  HumanReviewEntry,
+  AgreementStatus,
   FailQueueItem,
   FrameType,
+  HumanReviewEntry,
   RiskLevel,
-  AgreementStatus,
 } from '@/types';
 import { apiClient } from './apiClient';
 
@@ -19,7 +19,7 @@ export const mockApi = {
       '/api/v1/queue?status_filter=reviewed&limit=50',
     );
     return data.map((item) => {
-      const details = (item.details || {}) as Record<string, any>;
+      const details = (item.details || {}) as Record<string, unknown>;
       return {
         id: item.log_id,
         sentence_text: item.sentence_text || '',

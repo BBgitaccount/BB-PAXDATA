@@ -1,10 +1,10 @@
 /* eslint-disable react-refresh/only-export-components */
-import React from 'react';
-import ReactDOM from 'react-dom/client';
-import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import { App } from './App';
 import { useOfflineVerdictQueueSync } from '@/hooks/useOfflineVerdictQueueSync';
 import { useQueueWebSocket } from '@/hooks/useQueueWebSocket';
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import React from 'react';
+import ReactDOM from 'react-dom/client';
+import { App } from './App';
 import './index.css';
 
 const queryClient = new QueryClient({
@@ -13,7 +13,8 @@ const queryClient = new QueryClient({
       staleTime: 1000 * 60 * 2, // 2 dk - stale-while-revalidate pattern
       gcTime: 1000 * 60 * 10, // 10 dk bellekte tut (eski adıyla cacheTime)
       retry: (failureCount, error) => {
-        if ((error as any).status >= 500) return failureCount < 3;
+        if ((error as { status?: number }).status && (error as { status?: number }).status! >= 500)
+          return failureCount < 3;
         return false;
       },
       refetchOnWindowFocus: false,
