@@ -22,6 +22,7 @@ from bb_paxdata.interfaces.api.routers.v1 import (
     dashboard,
     database,
     discourse,
+    monitoring,
     prompts,
     provenance,
     queue,
@@ -236,6 +237,7 @@ app.include_router(audit_log.router, prefix="/api/v1")
 app.include_router(retention.router, prefix="/api/v1")
 app.include_router(corrections.router, prefix="/api/v1")
 app.include_router(weight_calibration_router.router, prefix="/api/v1")
+app.include_router(monitoring.router, prefix="/api/v1")
 app.include_router(stream.router, prefix="/api/v1")
 app.include_router(queue_ws.router, prefix="/api")
 app.include_router(get_graphql_router(), prefix="/graphql")
