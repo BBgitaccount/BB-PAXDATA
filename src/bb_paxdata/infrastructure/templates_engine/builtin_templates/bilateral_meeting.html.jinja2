@@ -1,0 +1,140 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Bilateral Meeting Analysis</title>
+    <style>
+        body { font-family: 'Times New Roman', serif; margin: 40px; line-height: 1.6; }
+        .header { text-align: center; border-bottom: 2px solid #1F3864; padding-bottom: 20px; margin-bottom: 30px; }
+        .section { margin-bottom: 30px; }
+        .section h2 { color: #1F3864; border-bottom: 1px solid #ccc; padding-bottom: 10px; }
+        .balance-bar { height: 30px; background: #ddd; margin: 10px 0; border-radius: 5px; overflow: hidden; }
+        .balance-fill { height: 100%; background: #1F3864; transition: width 0.3s; }
+        .agreement { color: #228B22; font-weight: bold; }
+        .conflict { color: #8B0000; font-weight: bold; }
+        .neutral { color: #666; }
+        table { width: 100%; border-collapse: collapse; margin: 15px 0; }
+        th, td { border: 1px solid #ddd; padding: 8px; text-align: left; }
+        th { background-color: #1F3864; color: white; }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>Bilateral Meeting Analysis Report</h1>
+        <p><strong>Session:</strong> {{ session.title }}</p>
+        <p><strong>Date:</strong> {{ session.date | format_date }}</p>
+        <p><strong>Duration:</strong> {{ session.duration_minutes }} minutes</p>
+    </div>
+
+    {% if speakers | length == 2 %}
+    <div class="section">
+        <h2>Participants</h2>
+        <table>
+            <tr>
+                <th>Speaker</th>
+                <th>Country</th>
+                <th>Statements</th>
+                <th>Avg Risk Score</th>
+            </tr>
+            {% for speaker in speakers %}
+            <tr>
+                <td>{{ speaker.name }}</td>
+                <td>{{ speaker.country }}</td>
+                <td>{{ speaker.statement_count }}</td>
+                <td>{{ speaker.avg_risk_score | round2 }}</td>
+            </tr>
+            {% endfor %}
+        </table>
+    </div>
+
+    <div class="section">
+        <h2>Speaking Balance</h2>
+        {% set total_statements = speakers | map(attribute='statement_count') | sum %}
+        {% for speaker in speakers %}
+        <p><strong>{{ speaker.name }}:</strong> {{ (speaker.statement_count / total_statements * 100) | round2 }}%</p>
+        <div class="balance-bar">
+            <div class="balance-fill" style="width: {{ speaker.statement_count / total_statements * 100 }}%"></div>
+        </div>
+        {% endfor %}
+    </div>
+
+    <div class="section">
+        <h2>Position Analysis</h2>
+        {% for theme in analysis.top_themes %}
+        <h3>{{ theme }}</h3>
+        <table>
+            <tr>
+                <th>Speaker</th>
+                <th>Position</th>
+                <th>Risk Level</th>
+            </tr>
+            {% for speaker in speakers %}
+            <tr>
+                <td>{{ speaker.name }}</td>
+                <td class="neutral">Analyzing position data...</td>
+                <td>{{ speaker.avg_risk_score | risk_badge }}</td>
+            </tr>
+            {% endfor %}
+        </table>
+        {% endfor %}
+    </div>
+
+    <div class="section">
+        <h2>Areas of Agreement & Conflict</h2>
+        <h3 class="agreement">Areas of Agreement</h3>
+        <ul>
+            <li>Common ground identified in diplomatic language patterns</li>
+            <li>Shared interests in {{ analysis.top_themes[0] if analysis.top_themes else 'discussed topics' }}</li>
+        </ul>
+        
+        <h3 class="conflict">Areas of Conflict</h3>
+        <ul>
+            {% for risk in risks if risk.level == 'HIGH' %}
+            <li>{{ risk.description | truncate(100) }}</li>
+            {% endfor %}
+        </ul>
+    </div>
+
+    <div class="section">
+        <h2>Diplomatic Language Analysis</h2>
+        <table>
+            <tr>
+                <th>Speaker</th>
+                <th>Hedging Score</th>
+                <th>Politeness Ratio</th>
+                <th>Language Style</th>
+            </tr>
+            {% for speaker in speakers %}
+            <tr>
+                <td>{{ speaker.name }}</td>
+                <td>Calculating...</td>
+                <td>Calculating...</td>
+                <td>{% if speaker.avg_risk_score < 4 %}Diplomatic/Soft{% elif speaker.avg_risk_score < 7 %}Balanced{% else %}Assertive/Hard{% endif %}</td>
+            </tr>
+            {% endfor %}
+        </table>
+    </div>
+
+    <div class="section">
+        <h2>Next Steps & Commitments</h2>
+        <ul>
+            <li>Follow-up meeting recommended within 30 days</li>
+            <li>Joint working group on {{ analysis.top_themes[0] if analysis.top_themes else 'key issues' }}</li>
+            <li>Exchange of diplomatic notes requested</li>
+        </ul>
+    </div>
+    {% else %}
+    <div class="section">
+        <h2 style="color: #8B0000;">Warning: Not a Bilateral Meeting</h2>
+        <p>This template is designed for bilateral meetings (2 speakers). Current session has {{ speakers | length }} speakers.</p>
+    </div>
+    {% endif %}
+
+    <div class="section">
+        <h2>Report Metadata</h2>
+        <p><strong>Generated:</strong> {{ report.generated_at | format_date }}</p>
+        <p><strong>Generated By:</strong> {{ report.generated_by }}</p>
+    </div>
+</body>
+</html>

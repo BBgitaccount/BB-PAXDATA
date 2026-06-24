@@ -22,15 +22,18 @@ from bb_paxdata.interfaces.api.routers.v1 import (
     dashboard,
     database,
     discourse,
+    exports,
     monitoring,
     prompts,
     provenance,
     queue,
     retention,
+    scheduled_reports,
     search,
     settings as settings_router,
     speakers,
     stream,
+    templates,
     verdict,
     weight_calibration as weight_calibration_router,
 )
@@ -239,6 +242,9 @@ app.include_router(corrections.router, prefix="/api/v1")
 app.include_router(weight_calibration_router.router, prefix="/api/v1")
 app.include_router(monitoring.router, prefix="/api/v1")
 app.include_router(stream.router, prefix="/api/v1")
+app.include_router(exports.router, prefix="/api/v1/exports")
+app.include_router(templates.router, prefix="/api/v1/templates")
+app.include_router(scheduled_reports.router, prefix="/api/v1/scheduled-reports")
 app.include_router(queue_ws.router, prefix="/api")
 app.include_router(get_graphql_router(), prefix="/graphql")
 

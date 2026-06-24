@@ -1,0 +1,171 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Periodic Trend Analysis</title>
+    <style>
+        body { font-family: 'Times New Roman', serif; margin: 40px; line-height: 1.6; }
+        .header { text-align: center; border-bottom: 2px solid #1F3864; padding-bottom: 20px; margin-bottom: 30px; }
+        .section { margin-bottom: 30px; }
+        .section h2 { color: #1F3864; border-bottom: 1px solid #ccc; padding-bottom: 10px; }
+        .trend-up { color: #228B22; font-weight: bold; }
+        .trend-down { color: #8B0000; font-weight: bold; }
+        .trend-stable { color: #666; }
+        .session-card { border: 1px solid #ddd; padding: 15px; margin: 10px 0; background: #f9f9f9; }
+        table { width: 100%; border-collapse: collapse; margin: 15px 0; }
+        th, td { border: 1px solid #ddd; padding: 8px; text-align: left; }
+        th { background-color: #1F3864; color: white; }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>Periodic Trend Analysis Report</h1>
+        <p><strong>Report Period:</strong> Multi-Session Analysis</p>
+        <p><strong>Generated:</strong> {{ report.generated_at | format_date }}</p>
+    </div>
+
+    <div class="section">
+        <h2>Executive Summary</h2>
+        <p>This report analyzes trends across multiple sessions, tracking changes in risk levels, speaker activity, and thematic evolution over time.</p>
+    </div>
+
+    <div class="section">
+        <h2>Risk Score Trends</h2>
+        <table>
+            <tr>
+                <th>Session</th>
+                <th>Date</th>
+                <th>Avg Risk Score</th>
+                <th>Trend</th>
+                <th>High Risk Count</th>
+            </tr>
+            {% for session in sessions | sort(attribute='date') %}
+            <tr>
+                <td>{{ session.title }}</td>
+                <td>{{ session.date | format_date }}</td>
+                <td>{{ session.avg_risk | round2 }}</td>
+                <td class="{% if loop.first %}trend-stable{% else %}{% if session.avg_risk > sessions[loop.index0 - 1].avg_risk %}trend-up{% elif session.avg_risk < sessions[loop.index0 - 1].avg_risk %}trend-down{% else %}trend-stable{% endif %}{% endif %}">
+                    {% if loop.first %}-{% elif session.avg_risk > sessions[loop.index0 - 1].avg_risk %}↑{% elif session.avg_risk < sessions[loop.index0 - 1].avg_risk %}↓{% else %}→{% endif %}
+                </td>
+                <td>{{ session.high_risk_count }}</td>
+            </tr>
+            {% endfor %}
+        </table>
+    </div>
+
+    <div class="section">
+        <h2>Speaker Activity Changes</h2>
+        <table>
+            <tr>
+                <th>Speaker</th>
+                <th>First Session</th>
+                <th>Last Session</th>
+                <th>Statement Change</th>
+                <th>Risk Change</th>
+            </tr>
+            {% for speaker_data in speaker_trends %}
+            <tr>
+                <td>{{ speaker_data.name }}</td>
+                <td>{{ speaker_data.first_statements }}</td>
+                <td>{{ speaker_data.last_statements }}</td>
+                <td class="{% if speaker_data.statement_change > 0 %}trend-up{% elif speaker_data.statement_change < 0 %}trend-down{% else %}trend-stable{% endif %}">
+                    {{ speaker_data.statement_change }}
+                </td>
+                <td class="{% if speaker_data.risk_change > 0 %}trend-up{% elif speaker_data.risk_change < 0 %}trend-down{% else %}trend-stable{% endif %}">
+                    {{ speaker_data.risk_change | round2 }}
+                </td>
+            </tr>
+            {% endfor %}
+        </table>
+    </div>
+
+    <div class="section">
+        <h2>Thematic Evolution</h2>
+        <h3>Rising Themes</h3>
+        <ul class="trend-up">
+            {% for theme in rising_themes %}
+            <li>{{ theme.name }} (+{{ theme.change }}%)</li>
+            {% endfor %}
+        </ul>
+        
+        <h3>Declining Themes</h3>
+        <ul class="trend-down">
+            {% for theme in declining_themes %}
+            <li>{{ theme.name }} ({{ theme.change }}%)</li>
+            {% endfor %}
+        </ul>
+        
+        <h3>Stable Themes</h3>
+        <ul class="trend-stable">
+            {% for theme in stable_themes %}
+            <li>{{ theme.name }}</li>
+            {% endfor %}
+        </ul>
+    </div>
+
+    <div class="section">
+        <h2>Anomaly Detection</h2>
+        {% for anomaly in anomalies %}
+        <div class="session-card" style="border-left: 4px solid #8B0000;">
+            <h3>{{ anomaly.session }}</h3>
+            <p><strong>Anomaly Type:</strong> {{ anomaly.type }}</p>
+            <p><strong>Description:</strong> {{ anomaly.description }}</p>
+            <p><strong>Severity:</strong> {{ anomaly.severity }}</p>
+        </div>
+        {% endfor %}
+    </div>
+
+    <div class="section">
+        <h2>Period-over-Period Comparison</h2>
+        <table>
+            <tr>
+                <th>Metric</th>
+                <th>Previous Period</th>
+                <th>Current Period</th>
+                <th>Change</th>
+            </tr>
+            <tr>
+                <td>Total Sessions</td>
+                <td>{{ metrics.previous_sessions }}</td>
+                <td>{{ metrics.current_sessions }}</td>
+                <td class="{% if metrics.session_change > 0 %}trend-up{% elif metrics.session_change < 0 %}trend-down{% else %}trend-stable{% endif %}">
+                    {{ metrics.session_change }}
+                </td>
+            </tr>
+            <tr>
+                <td>Avg Risk Score</td>
+                <td>{{ metrics.previous_avg_risk | round2 }}</td>
+                <td>{{ metrics.current_avg_risk | round2 }}</td>
+                <td class="{% if metrics.risk_change > 0 %}trend-up{% elif metrics.risk_change < 0 %}trend-down{% else %}trend-stable{% endif %}">
+                    {{ metrics.risk_change | round2 }}
+                </td>
+            </tr>
+            <tr>
+                <td>Total Statements</td>
+                <td>{{ metrics.previous_statements }}</td>
+                <td>{{ metrics.current_statements }}</td>
+                <td class="{% if metrics.statement_change > 0 %}trend-up{% elif metrics.statement_change < 0 %}trend-down{% else %}trend-stable{% endif %}">
+                    {{ metrics.statement_change }}
+                </td>
+            </tr>
+        </table>
+    </div>
+
+    <div class="section">
+        <h2>Recommendations</h2>
+        <ul>
+            {% for rec in recommendations %}
+            <li>{{ rec }}</li>
+            {% endfor %}
+        </ul>
+    </div>
+
+    <div class="section">
+        <h2>Report Metadata</h2>
+        <p><strong>Generated:</strong> {{ report.generated_at | format_date }}</p>
+        <p><strong>Generated By:</strong> {{ report.generated_by }}</p>
+        <p><strong>Version:</strong> {{ report.version }}</p>
+    </div>
+</body>
+</html>
