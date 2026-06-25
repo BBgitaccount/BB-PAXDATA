@@ -157,7 +157,7 @@ async def get_stats_by_country(db: AsyncSession = Depends(get_db)):
             Speaker.country_name,
             func.count(Speaker.speaker_id).label("count"),
         )
-        .where(Speaker.country_code is not None)
+        .where(Speaker.country_code.isnot(None))
         .group_by(Speaker.country_code, Speaker.country_name)
     )
 
@@ -173,7 +173,7 @@ async def get_stats_by_bloc(db: AsyncSession = Depends(get_db)):
     """Retrieve speaker distribution by diplomatic bloc."""
     stmt = (
         select(Speaker.bloc, func.count(Speaker.speaker_id).label("count"))
-        .where(Speaker.bloc is not None)
+        .where(Speaker.bloc.isnot(None))
         .group_by(Speaker.bloc)
     )
 

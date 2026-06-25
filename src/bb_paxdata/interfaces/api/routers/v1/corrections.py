@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 import uuid
-from datetime import datetime
+from datetime import UTC, datetime
 from typing import Annotated, Any
 
 from fastapi import APIRouter, Depends, HTTPException, Query
@@ -105,7 +105,7 @@ async def create_correction(
         prompt_version=correction.prompt_version,
         ai_confidence=correction.ai_confidence,
         corrector_id=correction.corrector_id,
-        timestamp=datetime.utcnow(),
+        timestamp=datetime.now(UTC),
         context_snapshot=correction.context_snapshot,
     )
 

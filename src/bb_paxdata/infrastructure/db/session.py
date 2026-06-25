@@ -88,6 +88,8 @@ SessionLocal = async_sessionmaker(
     sync_session_class=RoutingSession,
 )
 
+async_session_maker = SessionLocal
+
 SessionLocalCLI = async_sessionmaker(
     autocommit=False,
     autoflush=False,

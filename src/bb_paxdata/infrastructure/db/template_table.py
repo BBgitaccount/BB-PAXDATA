@@ -42,7 +42,7 @@ class ReportTemplate(Base):
     category: Mapped[str] = mapped_column(String, nullable=False)
     content: Mapped[str] = mapped_column(Text, nullable=False)
     output_format: Mapped[str] = mapped_column(String, nullable=False)
-    variables_used: Mapped[dict | None] = mapped_column(Text, nullable=True)
+    variables_used: Mapped[str | None] = mapped_column(Text, nullable=True)
     is_published: Mapped[bool] = mapped_column(String, default=False)
     is_system: Mapped[bool] = mapped_column(String, default=False)
     created_by: Mapped[str | None] = mapped_column(String, nullable=True)

@@ -152,7 +152,7 @@ async def list_notifications(
     notifications = result.all()
 
     # Count unread
-    unread_stmt = select(Notification).where(not Notification.is_read)
+    unread_stmt = select(Notification).where(Notification.is_read.is_(False))
     if user_id:
         unread_stmt = unread_stmt.where(Notification.user_id == user_id)
     unread_result = await db.scalars(unread_stmt)
@@ -226,7 +226,7 @@ async def mark_notifications_read(
     if mark_req.mark_all:
         stmt = (
             update(Notification)
-            .where(not Notification.is_read)
+            .where(Notification.is_read.is_(False))
             .values(
                 is_read=True,
                 read_at=datetime.now(UTC).replace(tzinfo=None),
@@ -312,7 +312,7 @@ async def get_notification_stats(
     total_count = len(total_result.all())
 
     # Unread count
-    unread_stmt = select(Notification).where(not Notification.is_read)
+    unread_stmt = select(Notification).where(Notification.is_read.is_(False))
     if user_id:
         unread_stmt = unread_stmt.where(Notification.user_id == user_id)
     unread_result = await db.scalars(unread_stmt)

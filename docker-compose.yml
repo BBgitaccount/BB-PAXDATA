@@ -10,6 +10,12 @@ services:
     command:
       - "--config.file=/etc/prometheus/prometheus.yml"
       - "--storage.tsdb.retention.time=15d"
+      - "--storage.tsdb.retention.size=5GB"
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
     restart: unless-stopped
     networks:
       - paxdata-net
@@ -29,6 +35,11 @@ services:
       - ./src/bb_paxdata/infrastructure/observability/grafana/dashboards:/var/lib/grafana/dashboards:ro
     ports:
       - "3000:3000"
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
     depends_on:
       - prometheus
     restart: unless-stopped
@@ -46,6 +57,19 @@ services:
       - "5432:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+    deploy:
+      resources:
+        limits:
+          cpus: '2.0'
+          memory: 2G
+        reservations:
+          cpus: '0.5'
+          memory: 512M
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U paxdata_user -d paxdata_db"]
       interval: 5s
@@ -61,6 +85,11 @@ services:
     container_name: paxdata-redis
     ports:
       - "6379:6379"
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
     healthcheck:
       test: ["CMD", "redis-cli", "ping"]
       interval: 5s
@@ -81,6 +110,19 @@ services:
       - meilisearch_data:/meili_data
     ports:
       - "7700:7700"
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+    deploy:
+      resources:
+        limits:
+          cpus: '2.0'
+          memory: 2G
+        reservations:
+          cpus: '0.5'
+          memory: 512M
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:7700/health"]
       interval: 5s
@@ -103,6 +145,11 @@ services:
     ports:
       - "9000:9000"
       - "9001:9001"
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:9000/minio/health/live"]
       interval: 5s
@@ -132,6 +179,19 @@ services:
 
     ports:
       - "8000:8000"
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+    deploy:
+      resources:
+        limits:
+          cpus: '4.0'
+          memory: 4G
+        reservations:
+          cpus: '1.0'
+          memory: 1G
     depends_on:
       postgres:
         condition: service_healthy
@@ -168,6 +228,11 @@ services:
       - ./src/bb_paxdata/interfaces/web/tailwind.config.js:/app/tailwind.config.js
       - ./src/bb_paxdata/interfaces/web/postcss.config.js:/app/postcss.config.js
       - web_node_modules:/app/node_modules
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
     depends_on:
       api:
         condition: service_healthy
@@ -188,6 +253,11 @@ services:
       - PAXDATA_OTEL_ENABLED=true
       - PAXDATA_OTEL_EXPORTER_OTLP_ENDPOINT=http://jaeger:4317
 
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
     depends_on:
       postgres:
         condition: service_healthy
@@ -213,6 +283,11 @@ services:
       - PAXDATA_OTEL_ENABLED=true
       - PAXDATA_OTEL_EXPORTER_OTLP_ENDPOINT=http://jaeger:4317
 
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
     depends_on:
       postgres:
         condition: service_healthy
@@ -239,6 +314,11 @@ services:
       - PAXDATA_OTEL_ENABLED=true
       - PAXDATA_OTEL_EXPORTER_OTLP_ENDPOINT=http://jaeger:4317
 
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
     depends_on:
       postgres:
         condition: service_healthy
@@ -256,6 +336,11 @@ services:
     command: celery --broker=redis://redis:6379/0 flower --port=5555
     ports:
       - "5555:5555"
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
     depends_on:
       redis:
         condition: service_healthy
@@ -272,6 +357,11 @@ services:
       - CE_LISTEN_ADDRESS=0.0.0.0:8888
     ports:
       - "8888:8888"
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
     depends_on:
       - redis
     restart: unless-stopped
@@ -285,6 +375,11 @@ services:
       - REDIS_ADDR=redis://redis:6379
     ports:
       - "9121:9121"
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
     depends_on:
       redis:
         condition: service_healthy
@@ -301,6 +396,11 @@ services:
       - ./src/bb_paxdata/infrastructure/observability/postgres_exporter.yml:/etc/postgres_exporter.yml:ro
     ports:
       - "9187:9187"
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
     depends_on:
       postgres:
         condition: service_healthy
@@ -321,6 +421,11 @@ services:
       - "--collector.filesystem.ignored-mount-points=^/(sys|proc|dev|host|etc)($$|/)"
     ports:
       - "9100:9100"
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
     restart: unless-stopped
     networks:
       - paxdata-net
@@ -332,6 +437,11 @@ services:
       - "16686:16686" # Jaeger UI
       - "4317:4317" # OTLP gRPC receiver
       - "4318:4318" # OTLP HTTP receiver
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
     restart: unless-stopped
     networks:
       - paxdata-net
