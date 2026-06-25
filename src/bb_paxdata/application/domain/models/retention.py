@@ -6,11 +6,11 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 from datetime import UTC, datetime
-from enum import Enum
+from enum import StrEnum
 from typing import Any
 
 
-class DataType(str, Enum):
+class DataType(StrEnum):
     """Types of data subject to retention policies."""
 
     RAW_TRANSCRIPT = "raw_transcript"
@@ -20,7 +20,7 @@ class DataType(str, Enum):
     AUDIT_LOG = "audit_log"
 
 
-class ArchiveStatus(str, Enum):
+class ArchiveStatus(StrEnum):
     """Status of archive operations."""
 
     PENDING = "pending"

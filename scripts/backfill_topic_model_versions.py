@@ -2,7 +2,7 @@
 
 import json
 import sys
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from pathlib import Path
 
 # Add src to python path
@@ -41,7 +41,7 @@ def main():
 
         topic_version = TopicModelVersion(
             version_id=version_id,
-            trained_at=datetime.now(timezone.utc).replace(tzinfo=None),
+            trained_at=datetime.now(UTC).replace(tzinfo=None),
             hyperparameters=hyperparameters,
             corpus_checksum=corpus_checksum,
         )

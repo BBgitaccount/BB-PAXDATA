@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from collections.abc import Sequence
-from typing import Any, Generic, TypeVar
+from typing import Any, TypeVar
 
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -11,7 +11,7 @@ from bb_paxdata.infrastructure.db.base import Base
 ModelT = TypeVar("ModelT", bound=Base)
 
 
-class BaseRepository(Generic[ModelT]):
+class BaseRepository[ModelT: Base]:
     """Generic async base repository for ORM models."""
 
     model_class: type[ModelT]

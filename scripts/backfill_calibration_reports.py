@@ -3,7 +3,7 @@
 import random
 import sys
 import uuid
-from datetime import datetime, timedelta, timezone
+from datetime import UTC, datetime, timedelta
 from pathlib import Path
 
 # Add src to python path
@@ -58,7 +58,7 @@ def main():
                 )
 
             # Evaluation period (last 30 days)
-            end_date = datetime.now(timezone.utc).replace(tzinfo=None)
+            end_date = datetime.now(UTC).replace(tzinfo=None)
             start_date = end_date - timedelta(days=30)
 
             report = CalibrationReportORM(

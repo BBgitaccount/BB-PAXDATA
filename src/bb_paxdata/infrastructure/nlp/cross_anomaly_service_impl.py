@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass, field
-from enum import Enum
+from enum import StrEnum
 from typing import Literal
 
 import structlog
@@ -29,7 +29,7 @@ from bb_paxdata.application.domain.services.cross_anomaly_service import (
 logger = structlog.get_logger(__name__)
 
 
-class ContradictionPattern(str, Enum):
+class ContradictionPattern(StrEnum):
     """Taxonomy of detectable contradiction patterns."""
 
     EXACT_NEGATION_MISMATCH = "exact_negation_mismatch"

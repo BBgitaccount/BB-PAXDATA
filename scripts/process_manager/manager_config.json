@@ -1,0 +1,255 @@
+{
+  "version": "1.0.0",
+  "description": "Process Manager Configuration for BB-PAXDATA",
+  
+  "global_settings": {
+    "log_directory": "logs",
+    "log_max_size_mb": 100,
+    "log_max_age_days": 30,
+    "health_check_interval_seconds": 10,
+    "startup_timeout_multiplier": 1.0,
+    "restart_delay_seconds": 5,
+    "max_restarts_per_service": 3
+  },
+  
+  "services": {
+    "postgres": {
+      "enabled": true,
+      "type": "system",
+      "command": "pg_ctl start -D <data_dir>",
+      "working_dir": ".",
+      "port": 5432,
+      "health_check_url": null,
+      "health_check_interval": 5,
+      "startup_timeout": 30,
+      "dependencies": [],
+      "env_vars": {},
+      "log_file": "logs/postgres.log",
+      "auto_restart": true,
+      "data_directory": "./data/postgres"
+    },
+    
+    "redis": {
+      "enabled": true,
+      "type": "process",
+      "command": "redis-server",
+      "working_dir": ".",
+      "port": 6379,
+      "health_check_url": null,
+      "health_check_interval": 5,
+      "startup_timeout": 10,
+      "dependencies": [],
+      "env_vars": {},
+      "log_file": "logs/redis.log",
+      "auto_restart": true
+    },
+    
+    "meilisearch": {
+      "enabled": true,
+      "type": "process",
+      "command": "meilisearch --master-key=paxdata-meilisearch-key --http-addr=127.0.0.1:7700",
+      "working_dir": ".",
+      "port": 7700,
+      "health_check_url": "http://localhost:7700/health",
+      "health_check_interval": 5,
+      "startup_timeout": 15,
+      "dependencies": [],
+      "env_vars": {},
+      "log_file": "logs/meilisearch.log",
+      "auto_restart": true
+    },
+    
+    "minio": {
+      "enabled": true,
+      "type": "process",
+      "command": "minio server ./data/minio --console-address :9001",
+      "working_dir": ".",
+      "port": 9000,
+      "health_check_url": "http://localhost:9000/minio/health/live",
+      "health_check_interval": 10,
+      "startup_timeout": 20,
+      "dependencies": [],
+      "env_vars": {
+        "MINIO_ROOT_USER": "paxdata_access_key",
+        "MINIO_ROOT_PASSWORD": "paxdata_secret_key"
+      },
+      "log_file": "logs/minio.log",
+      "auto_restart": true
+    },
+    
+    "api": {
+      "enabled": true,
+      "type": "python",
+      "command": "uvicorn bb_paxdata.interfaces.api.main:app --host 0.0.0.0 --port 8000 --reload",
+      "working_dir": ".",
+      "port": 8000,
+      "health_check_url": "http://localhost:8000/health",
+      "health_check_interval": 10,
+      "startup_timeout": 180,
+      "dependencies": ["postgres", "redis", "meilisearch"],
+      "env_vars": {
+        "PAXDATA_DATABASE_MODE": "postgresql",
+        "PAXDATA_DATABASE_URL": "postgresql+asyncpg://paxdata_user:paxdata_password@localhost:5432/paxdata_db",
+        "PAXDATA_REDIS_URL": "redis://localhost:6379/0",
+        "PAXDATA_MEILISEARCH_URL": "http://localhost:7700",
+        "PAXDATA_ENVIRONMENT": "development",
+        "PAXDATA_DEBUG": "true"
+      },
+      "log_file": "logs/api.log",
+      "auto_restart": true
+    },
+    
+    "web": {
+      "enabled": true,
+      "type": "node",
+      "command": "npm run dev -- --host",
+      "working_dir": "src/bb_paxdata/interfaces/web",
+      "port": 5173,
+      "health_check_url": "http://localhost:5173",
+      "health_check_interval": 10,
+      "startup_timeout": 30,
+      "dependencies": ["api"],
+      "env_vars": {
+        "VITE_API_URL": "http://localhost:8000"
+      },
+      "log_file": "logs/web.log",
+      "auto_restart": true
+    },
+    
+    "celery-worker-cpu": {
+      "enabled": true,
+      "type": "python",
+      "command": "celery -A bb_paxdata.infrastructure.tasks.celery_app worker -Q ai_cpu --loglevel=info --concurrency=2",
+      "working_dir": ".",
+      "port": null,
+      "health_check_url": null,
+      "health_check_interval": 15,
+      "startup_timeout": 30,
+      "dependencies": ["postgres", "redis", "api"],
+      "env_vars": {
+        "PAXDATA_DATABASE_MODE": "postgresql",
+        "PAXDATA_DATABASE_URL": "postgresql+asyncpg://paxdata_user:paxdata_password@localhost:5432/paxdata_db",
+        "PAXDATA_REDIS_URL": "redis://localhost:6379/0"
+      },
+      "log_file": "logs/celery-cpu.log",
+      "auto_restart": true
+    },
+    
+    "celery-worker-io": {
+      "enabled": true,
+      "type": "python",
+      "command": "celery -A bb_paxdata.infrastructure.tasks.celery_app worker -Q graph_io --loglevel=info --concurrency=4",
+      "working_dir": ".",
+      "port": null,
+      "health_check_url": null,
+      "health_check_interval": 15,
+      "startup_timeout": 30,
+      "dependencies": ["postgres", "redis", "meilisearch", "api"],
+      "env_vars": {
+        "PAXDATA_DATABASE_MODE": "postgresql",
+        "PAXDATA_DATABASE_URL": "postgresql+asyncpg://paxdata_user:paxdata_password@localhost:5432/paxdata_db",
+        "PAXDATA_REDIS_URL": "redis://localhost:6379/0",
+        "PAXDATA_MEILISEARCH_URL": "http://localhost:7700"
+      },
+      "log_file": "logs/celery-io.log",
+      "auto_restart": true
+    },
+    
+    "celery-beat": {
+      "enabled": true,
+      "type": "python",
+      "command": "celery -A bb_paxdata.infrastructure.tasks.celery_app beat --loglevel=info",
+      "working_dir": ".",
+      "port": null,
+      "health_check_url": null,
+      "health_check_interval": 15,
+      "startup_timeout": 30,
+      "dependencies": ["postgres", "redis", "api"],
+      "env_vars": {
+        "PAXDATA_DATABASE_MODE": "postgresql",
+        "PAXDATA_DATABASE_URL": "postgresql+asyncpg://paxdata_user:paxdata_password@localhost:5432/paxdata_db",
+        "PAXDATA_REDIS_URL": "redis://localhost:6379/0"
+      },
+      "log_file": "logs/celery-beat.log",
+      "auto_restart": true
+    },
+    
+    "flower": {
+      "enabled": true,
+      "type": "python",
+      "command": "celery --broker=redis://localhost:6379/0 flower --port=5555",
+      "working_dir": ".",
+      "port": 5555,
+      "health_check_url": "http://localhost:5555",
+      "health_check_interval": 10,
+      "startup_timeout": 15,
+      "dependencies": ["redis"],
+      "env_vars": {},
+      "log_file": "logs/flower.log",
+      "auto_restart": true
+    },
+    
+    "prometheus": {
+      "enabled": true,
+      "type": "process",
+      "command": "prometheus --config.file=src/bb_paxdata/infrastructure/observability/prometheus.yml --storage.tsdb.retention.time=15d",
+      "working_dir": ".",
+      "port": 9090,
+      "health_check_url": "http://localhost:9090/-/healthy",
+      "health_check_interval": 10,
+      "startup_timeout": 20,
+      "dependencies": [],
+      "env_vars": {},
+      "log_file": "logs/prometheus.log",
+      "auto_restart": true
+    },
+    
+    "grafana": {
+      "enabled": true,
+      "type": "process",
+      "command": "grafana-server --config=src/bb_paxdata/infrastructure/observability/grafana/grafana.ini",
+      "working_dir": ".",
+      "port": 3000,
+      "health_check_url": "http://localhost:3000/api/health",
+      "health_check_interval": 10,
+      "startup_timeout": 30,
+      "dependencies": ["prometheus"],
+      "env_vars": {
+        "GF_SECURITY_ADMIN_USER": "admin",
+        "GF_SECURITY_ADMIN_PASSWORD": "admin"
+      },
+      "log_file": "logs/grafana.log",
+      "auto_restart": true
+    },
+    
+    "jaeger": {
+      "enabled": true,
+      "type": "process",
+      "command": "jaeger-all-in-one --collector.otlp.grpc.host-port=:4317",
+      "working_dir": ".",
+      "port": 16686,
+      "health_check_url": null,
+      "health_check_interval": 10,
+      "startup_timeout": 20,
+      "dependencies": [],
+      "env_vars": {},
+      "log_file": "logs/jaeger.log",
+      "auto_restart": true
+    }
+  },
+  
+  "profiles": {
+    "minimal": {
+      "description": "Core services only (API + Web + essential infrastructure)",
+      "services": ["postgres", "redis", "api", "web"]
+    },
+    "full": {
+      "description": "All services including monitoring and observability",
+      "services": ["postgres", "redis", "meilisearch", "minio", "api", "web", "celery-worker-cpu", "celery-worker-io", "celery-beat", "flower", "prometheus", "grafana", "jaeger"]
+    },
+    "development": {
+      "description": "Development setup with all services",
+      "services": ["postgres", "redis", "meilisearch", "api", "web", "celery-worker-cpu", "celery-worker-io", "flower"]
+    }
+  }
+}

@@ -3,7 +3,7 @@ from __future__ import annotations
 
 import uuid
 from datetime import UTC, datetime
-from enum import Enum
+from enum import StrEnum
 from typing import TYPE_CHECKING
 
 from sqlalchemy import DateTime, ForeignKey, Integer, String, Text
@@ -15,7 +15,7 @@ if TYPE_CHECKING:
     pass
 
 
-class TemplateCategory(str, Enum):
+class TemplateCategory(StrEnum):
     CUSTOM = "custom"
     UN_SECURITY_COUNCIL = "un_security_council"
     BILATERAL = "bilateral"
@@ -23,7 +23,7 @@ class TemplateCategory(str, Enum):
     COMPARATIVE = "comparative"
 
 
-class OutputFormat(str, Enum):
+class OutputFormat(StrEnum):
     PDF_LATEX = "pdf_latex"
     HTML = "html"
     MARKDOWN = "markdown"

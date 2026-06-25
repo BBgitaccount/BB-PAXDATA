@@ -1,4 +1,4 @@
-from enum import Enum
+from enum import StrEnum
 
 
 # TODO(DEAD-10): AnomalySeverity uses UPPERCASE string values ("LOW", "HIGH", etc.)
@@ -7,7 +7,7 @@ from enum import Enum
 # run an Alembic migration:
 #   op.execute("UPDATE drift_events SET severity = LOWER(severity)")
 # Then replace this entire file with: AnomalySeverity = SeverityLevel
-class AnomalySeverity(str, Enum):
+class AnomalySeverity(StrEnum):
     LOW = "LOW"
     MEDIUM = "MEDIUM"
     HIGH = "HIGH"

@@ -1,5 +1,5 @@
 # src/bb_paxdata/domain/enums/country_enums.py
-from enum import Enum, StrEnum
+from enum import StrEnum
 
 
 class RelationshipType(StrEnum):
@@ -32,7 +32,7 @@ class EdgeType(StrEnum):
     TRANSACTIONAL = "transactional"
 
 
-class NarrativeLayer(str, Enum):
+class NarrativeLayer(StrEnum):
     """Miskimmon et al. (2013) narrative layers."""
 
     SYSTEM = "system"

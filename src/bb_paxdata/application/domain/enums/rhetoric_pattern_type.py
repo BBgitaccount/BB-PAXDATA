@@ -1,7 +1,7 @@
-from enum import Enum
+from enum import StrEnum
 
 
-class RhetoricPatternType(str, Enum):
+class RhetoricPatternType(StrEnum):
     ANAPHORA = "anaphora"
     TRICOLON = "tricolon"
     ANTITHESIS = "antithesis"

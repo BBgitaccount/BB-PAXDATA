@@ -1,7 +1,7 @@
-from enum import Enum
+from enum import StrEnum
 
 
-class FailCategory(str, Enum):
+class FailCategory(StrEnum):
     NEGASYON_TUZAGI = "negasyon_tuzagi"
     BAGLAMSAL_KAYMA = "baglamsal_kayma"
     SOZCUK_CIFT_ANLAMLILIGI = "sozcuk_cift_anlamliligi"

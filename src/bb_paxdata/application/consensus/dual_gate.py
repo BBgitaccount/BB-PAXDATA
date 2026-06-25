@@ -9,7 +9,7 @@ from __future__ import annotations
 
 import asyncio
 from dataclasses import dataclass
-from enum import Enum
+from enum import StrEnum
 
 import structlog
 
@@ -22,7 +22,7 @@ from bb_paxdata.application.domain.models.anomaly import (
 logger = structlog.get_logger(__name__)
 
 
-class ConsensusLevel(str, Enum):
+class ConsensusLevel(StrEnum):
     CLEAN = "CLEAN"  # Anomali yok
     SOFT_ANOMALY = "SOFT_ANOMALY"  # Zayıf/şüpheli anomali, log tutulur
     HARD_ANOMALY = "HARD_ANOMALY"  # Kesin anomali, HITL kuyruğuna

@@ -3,7 +3,7 @@
 import random
 import sys
 import uuid
-from datetime import datetime, timedelta, timezone
+from datetime import UTC, datetime, timedelta
 from pathlib import Path
 
 # Add src to python path
@@ -46,7 +46,7 @@ def main():
                 weight_contribution = random.uniform(0.01, 0.3)
 
                 # Random timestamp within last 30 days
-                contribution_timestamp = datetime.now(timezone.utc).replace(
+                contribution_timestamp = datetime.now(UTC).replace(
                     tzinfo=None
                 ) - timedelta(
                     days=random.randint(0, 30),

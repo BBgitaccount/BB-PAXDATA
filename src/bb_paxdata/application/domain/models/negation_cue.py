@@ -1,12 +1,12 @@
 from collections.abc import Sequence
-from enum import Enum
+from enum import StrEnum
 
 from pydantic import BaseModel, ConfigDict, Field
 
 from bb_paxdata.application.domain.enums.negation_type import NegationType
 
 
-class LanguageCode(str, Enum):
+class LanguageCode(StrEnum):
     EN = "en"
     TR = "tr"
 

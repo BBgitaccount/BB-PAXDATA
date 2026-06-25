@@ -5,12 +5,12 @@ PropBank-compliant predicate-argument structures with enterprise-grade validatio
 
 from __future__ import annotations
 
-from enum import Enum
+from enum import StrEnum
 
 from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
 
 
-class ArgumentType(str, Enum):
+class ArgumentType(StrEnum):
     """PropBank argument type taxonomy."""
 
     ARG0 = "ARG0"  # Agent/Proto-Agent
@@ -248,7 +248,7 @@ class SRLDocumentResult(BaseModel):
         return [f for f in self.frames if f.verb == verb_lower]
 
 
-class ExtractionStatus(str, Enum):
+class ExtractionStatus(StrEnum):
     """SRL extraction lifecycle states."""
 
     PENDING = "pending"

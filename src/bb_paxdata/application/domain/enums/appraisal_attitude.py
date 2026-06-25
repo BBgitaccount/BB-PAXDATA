@@ -1,7 +1,7 @@
-from enum import Enum
+from enum import StrEnum
 
 
-class AppraisalAttitude(str, Enum):
+class AppraisalAttitude(StrEnum):
     JUDGEMENT_NEGATIVE = "judgement_negative"
     JUDGEMENT_POSITIVE = "judgement_positive"
     AFFECT_NEGATIVE = "affect_negative"

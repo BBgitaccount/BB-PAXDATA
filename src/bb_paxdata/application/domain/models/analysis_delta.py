@@ -16,13 +16,13 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 from datetime import UTC, datetime
-from enum import Enum
+from enum import StrEnum
 from typing import Any
 
 from pydantic import BaseModel, ConfigDict, Field, PrivateAttr
 
 
-class RiskAssessmentLevel(str, Enum):
+class RiskAssessmentLevel(StrEnum):
     HIGH_RISK_ESCALATION = "HIGH_RISK_ESCALATION"
     RISK_DEESCALATION = "RISK_DEESCALATION"
     MODERATE_CONCERN = "MODERATE_CONCERN"

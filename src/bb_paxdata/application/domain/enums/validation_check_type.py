@@ -1,7 +1,7 @@
-from enum import Enum
+from enum import StrEnum
 
 
-class ValidationCheckType(str, Enum):
+class ValidationCheckType(StrEnum):
     SENTIMENT = "sentiment"
     EMOTION = "emotion"
     RISK = "risk"

@@ -1,7 +1,7 @@
-from enum import Enum
+from enum import StrEnum
 
 
-class BackendType(str, Enum):
+class BackendType(StrEnum):
     LOCAL = "local"
     API = "api"
     GEMINI = "gemini"

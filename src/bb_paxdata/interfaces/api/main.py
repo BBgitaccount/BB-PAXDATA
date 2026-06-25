@@ -37,6 +37,7 @@ from bb_paxdata.interfaces.api.routers.v1 import (
     templates,
     verdict,
     weight_calibration as weight_calibration_router,
+    worldmap,
 )
 from bb_paxdata.interfaces.api.routers.ws import queue_ws
 from bb_paxdata.interfaces.graphql.router import get_graphql_router
@@ -247,6 +248,7 @@ app.include_router(exports.router, prefix="/api/v1/exports")
 app.include_router(templates.router, prefix="/api/v1/templates")
 app.include_router(scheduled_reports.router, prefix="/api/v1/scheduled-reports")
 app.include_router(notifications.router, prefix="/api/v1/notifications")
+app.include_router(worldmap.router, prefix="/api/v1")
 app.include_router(queue_ws.router, prefix="/api")
 app.include_router(get_graphql_router(), prefix="/graphql")
 

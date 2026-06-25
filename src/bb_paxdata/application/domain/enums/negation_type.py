@@ -1,7 +1,7 @@
-from enum import Enum
+from enum import StrEnum
 
 
-class NegationType(str, Enum):
+class NegationType(StrEnum):
     """Morante & Blanco (2012) SemEval-2012 Task 7 negasyon taksonomisi."""
 
     SURFACE = "surface"  # Açık yazılışsal negasyon (not, never, no)

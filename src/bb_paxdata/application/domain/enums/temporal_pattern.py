@@ -1,7 +1,7 @@
-from enum import Enum
+from enum import StrEnum
 
 
-class TemporalPattern(str, Enum):
+class TemporalPattern(StrEnum):
     SHARP_ESCALATION = "SHARP_ESCALATION"
     EMOTIONAL_SPIKE = "EMOTIONAL_SPIKE"
     TOPIC_PIVOT = "TOPIC_PIVOT"

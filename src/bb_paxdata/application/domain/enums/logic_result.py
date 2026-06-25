@@ -1,6 +1,6 @@
-from enum import Enum
+from enum import StrEnum
 
 
-class LogicResult(str, Enum):
+class LogicResult(StrEnum):
     PASS = "PASS"
     FAIL = "FAIL"

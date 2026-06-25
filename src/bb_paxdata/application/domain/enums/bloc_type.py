@@ -1,7 +1,7 @@
-from enum import Enum
+from enum import StrEnum
 
 
-class BlocType(str, Enum):
+class BlocType(StrEnum):
     WESTERN_ALLIANCE = "Western Alliance"
     EASTERN_BLOC = "Eastern Bloc / Russian Sphere"
     CHINA_LED = "China-led Bloc"

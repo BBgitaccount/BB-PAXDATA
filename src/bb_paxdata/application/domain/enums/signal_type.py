@@ -1,7 +1,7 @@
-from enum import Enum
+from enum import StrEnum
 
 
-class SignalType(str, Enum):
+class SignalType(StrEnum):
     """Trager (2010) sinyal türleri + Zagare (2004) tırmanış seviyeleri."""
 
     CHEAP_TALK = "cheap_talk"  # Düşük maliyetli, düşük güvenilirlik

@@ -1,7 +1,7 @@
-from enum import Enum
+from enum import StrEnum
 
 
-class TopicCategory(str, Enum):
+class TopicCategory(StrEnum):
     BM_REFORUMU = "BM_Reformu"
     GUVENLIK_CATISMA = "Güvenlik_Çatışma"
     EKONOMI_TICARET_ENERJI = "Ekonomi_Ticaret_Enerji"

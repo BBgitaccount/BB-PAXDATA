@@ -100,6 +100,33 @@ class TripletContextResponse(BaseModel):
     panel: PanelContext | None = None
 
 
+class CountryNode(BaseModel):
+    country_code: str
+    country_name: str
+    latitude: float
+    longitude: float
+    total_mentions: int
+    avg_sentiment: float
+
+
+class CountryConnection(BaseModel):
+    from_country: str
+    to_country: str
+    from_lat: float
+    from_lon: float
+    to_lat: float
+    to_lon: float
+    avg_sentiment: float
+    interaction_count: int
+    relationship_type: str
+    affinity_score: float
+
+
+class WorldMapResponse(BaseModel):
+    nodes: list[CountryNode]
+    connections: list[CountryConnection]
+
+
 class VerdictPayload(BaseModel):
     log_id: int = Field(..., gt=0)
     verdict: str = Field(..., pattern="^(CONFIRMED_PASS|CONFIRMED_FAIL|CORRECTED)$")

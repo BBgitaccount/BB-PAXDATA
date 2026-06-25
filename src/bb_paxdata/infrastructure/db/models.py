@@ -78,7 +78,7 @@ def _parse_dt(value: datetime | str | None) -> datetime | None:
     return None
 
 
-def _try_enum(enum_cls: type[E], raw: str | None) -> E | None:
+def _try_enum[E: Enum](enum_cls: type[E], raw: str | None) -> E | None:
     if raw is None or raw == "":
         return None
     try:

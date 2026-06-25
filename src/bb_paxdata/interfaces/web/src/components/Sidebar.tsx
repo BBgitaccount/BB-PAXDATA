@@ -5,6 +5,7 @@ import { useUIStore } from '@/store/uiStore';
 import { cn } from '@/utils/helpers';
 import {
   Activity,
+  ArrowRightLeft,
   BarChart3,
   BookOpen,
   ChevronLeft,
@@ -14,12 +15,14 @@ import {
   FileText,
   GitBranch,
   GitCompare,
+  Globe,
   LayoutDashboard,
   Network,
   Settings,
   TrendingUp,
   Users,
   Zap,
+  type LucideIcon,
 } from 'lucide-react';
 import { useLocation, useNavigate } from 'react-router-dom';
 const navSections: Array<{
@@ -45,6 +48,18 @@ const navSections: Array<{
         label: 'nav.speakers',
         path: '/speakers',
         icon: Users,
+      },
+      {
+        id: 'bilateral',
+        label: 'nav.bilateral',
+        path: '/bilateral',
+        icon: ArrowRightLeft,
+      },
+      {
+        id: 'worldmap',
+        label: 'nav.worldmap',
+        path: '/worldmap',
+        icon: Globe,
       },
       {
         id: 'discourse',

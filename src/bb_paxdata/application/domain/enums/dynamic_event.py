@@ -1,7 +1,7 @@
-from enum import Enum
+from enum import StrEnum
 
 
-class DynamicEvent(str, Enum):
+class DynamicEvent(StrEnum):
     ESCALATION_SPIKE = "ESCALATION_SPIKE"
     DE_ESCALATION = "DE_ESCALATION"
     TOPIC_SHIFT = "TOPIC_SHIFT"

@@ -1,14 +1,14 @@
 from __future__ import annotations
 
 from collections.abc import Sequence
-from enum import Enum
+from enum import StrEnum
 from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
     from bb_paxdata.application.domain.models.risk_signal import RiskSignal
 
 
-class RiskFormula(str, Enum):
+class RiskFormula(StrEnum):
     MAX = "max"
     WEIGHTED_AVG = "weighted_avg"
     SUM = "sum"

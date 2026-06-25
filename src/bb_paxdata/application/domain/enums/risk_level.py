@@ -1,7 +1,7 @@
-from enum import Enum
+from enum import StrEnum
 
 
-class RiskLevel(str, Enum):
+class RiskLevel(StrEnum):
     NONE = "none"
     LOW = "low"
     MEDIUM = "medium"

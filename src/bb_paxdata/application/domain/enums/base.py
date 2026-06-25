@@ -3,7 +3,7 @@ from __future__ import annotations
 import enum
 
 
-class LogLevel(str, enum.Enum):
+class LogLevel(enum.StrEnum):
     DEBUG = "DEBUG"
     INFO = "INFO"
     WARNING = "WARNING"
@@ -11,12 +11,12 @@ class LogLevel(str, enum.Enum):
     CRITICAL = "CRITICAL"
 
 
-class DatabaseMode(str, enum.Enum):
+class DatabaseMode(enum.StrEnum):
     SQLITE = "sqlite"
     POSTGRESQL = "postgresql"
 
 
-class AIProvider(str, enum.Enum):
+class AIProvider(enum.StrEnum):
     ANTHROPIC = "anthropic"
     GEMINI = "gemini"
     GROQ = "groq"

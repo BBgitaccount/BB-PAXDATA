@@ -1,7 +1,7 @@
-from enum import Enum
+from enum import StrEnum
 
 
-class DemandCategory(str, Enum):
+class DemandCategory(StrEnum):
     INSTITUTIONAL_REFORM = "institutional_reform"
     SECURITY_ACTION = "security_action"
     ECONOMIC_COOPERATION = "economic_cooperation"

@@ -1,27 +1,27 @@
-from enum import Enum
+from enum import StrEnum
 from functools import cached_property
 
 from pydantic import BaseModel, ConfigDict, Field
 
 
-class AffectType(str, Enum):
+class AffectType(StrEnum):
     HAPPINESS = "happiness"
     SECURITY = "security"
     SATISFACTION = "satisfaction"
 
 
-class JudgmentType(str, Enum):
+class JudgmentType(StrEnum):
     ESTEEM = "esteem"
     SANCTION = "sanction"
 
 
-class AppreciationType(str, Enum):
+class AppreciationType(StrEnum):
     REACTION = "reaction"
     COMPOSITION = "composition"
     VALUE = "value"
 
 
-class EngagementType(str, Enum):
+class EngagementType(StrEnum):
     MONOGLOSS = "monogloss"
     HETEROGLOSS = "heterogloss"
 

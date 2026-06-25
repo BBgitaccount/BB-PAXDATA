@@ -12,7 +12,7 @@ from pathlib import Path
 # Add src to python path
 sys.path.insert(0, str(Path(__file__).parent.parent / "src"))
 
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from decimal import Decimal
 
 from sqlalchemy import func, or_, select
@@ -215,7 +215,7 @@ async def main():
             )
             r.maoz_diplomatic_distance = None
             r.maoz_affinity_score = None
-            r.last_updated = datetime.now(timezone.utc).replace(tzinfo=None)
+            r.last_updated = datetime.now(UTC).replace(tzinfo=None)
 
             updated_count += 1
             if updated_count % 50 == 0:

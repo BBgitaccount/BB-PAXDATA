@@ -3,7 +3,7 @@
 import random
 import sys
 import uuid
-from datetime import datetime, timedelta, timezone
+from datetime import UTC, datetime, timedelta
 from pathlib import Path
 
 # Add src to python path
@@ -52,7 +52,7 @@ def main():
             entity_type = random.choice(entity_types)
 
             # Generate random timestamp within last 7 days
-            timestamp = datetime.now(timezone.utc).replace(tzinfo=None) - timedelta(
+            timestamp = datetime.now(UTC).replace(tzinfo=None) - timedelta(
                 days=random.randint(0, 7),
                 hours=random.randint(0, 23),
                 minutes=random.randint(0, 59),

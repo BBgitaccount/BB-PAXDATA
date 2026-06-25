@@ -1,7 +1,7 @@
-from enum import Enum
+from enum import StrEnum
 
 
-class TensionLevel(str, Enum):
+class TensionLevel(StrEnum):
     EXTREME_TENSION = "EXTREME_TENSION"
     HIGH_TENSION = "HIGH_TENSION"
     MODERATE_TENSION = "MODERATE_TENSION"

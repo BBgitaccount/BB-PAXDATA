@@ -8,11 +8,11 @@ from __future__ import annotations
 
 from dataclasses import dataclass, field
 from datetime import datetime
-from enum import Enum
+from enum import StrEnum
 from typing import Any
 
 
-class ExampleQuality(str, Enum):
+class ExampleQuality(StrEnum):
     """Quality rating for few-shot examples."""
 
     HIGH = "high"
@@ -20,7 +20,7 @@ class ExampleQuality(str, Enum):
     LOW = "low"
 
 
-class PromptVersionStatus(str, Enum):
+class PromptVersionStatus(StrEnum):
     """Status of prompt versions."""
 
     DRAFT = "draft"
@@ -29,7 +29,7 @@ class PromptVersionStatus(str, Enum):
     TESTING = "testing"
 
 
-class ABTestStatus(str, Enum):
+class ABTestStatus(StrEnum):
     """Status of A/B tests."""
 
     RUNNING = "running"

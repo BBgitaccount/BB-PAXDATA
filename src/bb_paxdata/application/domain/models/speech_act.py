@@ -1,4 +1,4 @@
-from enum import Enum
+from enum import StrEnum
 from typing import ClassVar, Final
 
 from pydantic import BaseModel, Field
@@ -9,7 +9,7 @@ SPEECH_ACT_MODIFIER: Final[str] = "speech_act_modifier"
 SPEECH_ACT_CONFIDENCE: Final[str] = "speech_act_confidence"
 
 
-class SpeechActType(str, Enum):
+class SpeechActType(StrEnum):
     ASSERTIVE = "ASSERTIVE"
     DIRECTIVE = "DIRECTIVE"
     COMMISSIVE = "COMMISSIVE"

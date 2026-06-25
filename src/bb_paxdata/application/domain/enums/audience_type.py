@@ -1,7 +1,7 @@
-from enum import Enum
+from enum import StrEnum
 
 
-class AudienceType(str, Enum):
+class AudienceType(StrEnum):
     INTERNATIONAL = "international"
     GLOBAL_AUDIENCE = "global_audience"
     REGIONAL_AUDIENCE = "regional_audience"

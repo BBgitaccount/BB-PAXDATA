@@ -1,7 +1,7 @@
-from enum import Enum
+from enum import StrEnum
 
 
-class PolitenessAct(str, Enum):
+class PolitenessAct(StrEnum):
     DIRECT_CRITICISM = "direct_criticism"
     DIRECT_DEMAND = "direct_demand"
     BLAME = "blame"

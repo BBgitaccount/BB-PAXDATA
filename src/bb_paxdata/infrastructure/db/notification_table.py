@@ -3,7 +3,7 @@ from __future__ import annotations
 
 import uuid
 from datetime import UTC, datetime
-from enum import Enum
+from enum import StrEnum
 from typing import TYPE_CHECKING
 
 from sqlalchemy import Boolean, DateTime, String, Text
@@ -15,7 +15,7 @@ if TYPE_CHECKING:
     pass
 
 
-class NotificationType(str, Enum):
+class NotificationType(StrEnum):
     INFO = "info"
     SUCCESS = "success"
     WARNING = "warning"
@@ -26,7 +26,7 @@ class NotificationType(str, Enum):
     SYSTEM = "system"
 
 
-class NotificationPriority(str, Enum):
+class NotificationPriority(StrEnum):
     LOW = "low"
     MEDIUM = "medium"
     HIGH = "high"

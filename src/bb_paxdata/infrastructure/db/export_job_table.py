@@ -3,7 +3,7 @@ from __future__ import annotations
 
 import uuid
 from datetime import UTC, datetime
-from enum import Enum
+from enum import StrEnum
 from typing import TYPE_CHECKING
 
 from sqlalchemy import DateTime, ForeignKey, Integer, String, Text
@@ -15,13 +15,13 @@ if TYPE_CHECKING:
     pass
 
 
-class ExportType(str, Enum):
+class ExportType(StrEnum):
     PDF = "pdf"
     EXCEL = "excel"
     GEXF = "gexf"
 
 
-class ExportStatus(str, Enum):
+class ExportStatus(StrEnum):
     QUEUED = "queued"
     PROCESSING = "processing"
     COMPLETED = "completed"

@@ -1,7 +1,7 @@
-from enum import Enum
+from enum import StrEnum
 
 
-class RiskTrajectory(str, Enum):
+class RiskTrajectory(StrEnum):
     ESCALATING = "escalating"
     DE_ESCALATING = "de-escalating"
     STABLE = "stable"

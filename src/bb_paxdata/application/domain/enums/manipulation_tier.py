@@ -1,7 +1,7 @@
-from enum import Enum
+from enum import StrEnum
 
 
-class ManipulationTier(str, Enum):
+class ManipulationTier(StrEnum):
     HIGH_MANIPULATION_SIGNAL = "HIGH_MANIPULATION_SIGNAL"
     MODERATE_SIGNAL = "MODERATE_SIGNAL"
     LOW_SIGNAL = "LOW_SIGNAL"

@@ -1,7 +1,7 @@
-from enum import Enum
+from enum import StrEnum
 
 
-class InfluenceTier(str, Enum):
+class InfluenceTier(StrEnum):
     TIER1_SOVEREIGN = "TIER1_SOVEREIGN"
     TIER2_MINISTER = "TIER2_MINISTER"
     TIER3_OFFICIAL = "TIER3_OFFICIAL"

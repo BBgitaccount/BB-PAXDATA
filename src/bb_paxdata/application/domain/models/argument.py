@@ -10,7 +10,7 @@ import hashlib
 import uuid
 from collections import defaultdict
 from datetime import UTC, datetime
-from enum import Enum
+from enum import StrEnum
 from typing import Literal
 
 from pydantic import (
@@ -23,7 +23,7 @@ from pydantic import (
 )
 
 
-class NodeType(str, Enum):
+class NodeType(StrEnum):
     """
     Argument node taxonomy based on Peldszus & Stede (2013).
 
@@ -44,7 +44,7 @@ class NodeType(str, Enum):
     EVIDENCE = "EVIDENCE"  # Concrete data point (optional extension)
 
 
-class RelationType(str, Enum):
+class RelationType(StrEnum):
     """
     Directed edge types between argument nodes.
 
@@ -64,7 +64,7 @@ class RelationType(str, Enum):
     NEUTRAL = "NEUTRAL"
 
 
-class ArgumentStance(str, Enum):
+class ArgumentStance(StrEnum):
     """Overall stance polarity of a node toward the root claim."""
 
     PRO = "PRO"  # Supports root claim

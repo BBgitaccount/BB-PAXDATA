@@ -1,7 +1,7 @@
-from enum import Enum
+from enum import StrEnum
 
 
-class DiplomaticTone(str, Enum):
+class DiplomaticTone(StrEnum):
     ASSERTIVE = "assertive"
     CONCILIATORY = "conciliatory"
     EVASIVE = "evasive"

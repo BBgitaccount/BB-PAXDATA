@@ -10,7 +10,7 @@ from __future__ import annotations
 import json
 import re
 from dataclasses import dataclass
-from enum import Enum
+from enum import StrEnum
 from typing import Any, cast
 
 import structlog
@@ -37,7 +37,7 @@ class RecoveryFailureError(Exception):
         super().__init__(self.message)
 
 
-class RecoveryLevel(str, Enum):
+class RecoveryLevel(StrEnum):
     """JSON kurtarma seviyeleri."""
 
     DIRECT = "direct"  # Seviye 1

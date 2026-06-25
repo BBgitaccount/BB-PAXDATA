@@ -8,11 +8,11 @@ from __future__ import annotations
 
 from dataclasses import dataclass, field
 from datetime import datetime
-from enum import Enum
+from enum import StrEnum
 from typing import Any
 
 
-class ParameterType(str, Enum):
+class ParameterType(StrEnum):
     """Types of calibratable parameters."""
 
     SENTIMENT_WEIGHT = "sentiment_weight"
@@ -21,7 +21,7 @@ class ParameterType(str, Enum):
     WORDFISH_SMOOTHING = "wordfish_smoothing"
 
 
-class ProposalStatus(str, Enum):
+class ProposalStatus(StrEnum):
     """Status of weight update proposals."""
 
     PENDING = "pending"

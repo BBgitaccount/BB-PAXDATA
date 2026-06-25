@@ -1,7 +1,7 @@
-from enum import Enum
+from enum import StrEnum
 
 
-class SentimentCategory(str, Enum):
+class SentimentCategory(StrEnum):
     COOPERATIVE = "cooperative"
     CONSTRUCTIVE = "constructive"
     NEUTRAL_CAUTIOUS = "neutral_cautious"

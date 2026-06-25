@@ -1,7 +1,7 @@
-from enum import Enum
+from enum import StrEnum
 
 
-class SpeakerRole(str, Enum):
+class SpeakerRole(StrEnum):
     HEAD_OF_STATE = "head_of_state"
     HEAD_OF_GOVERNMENT = "head_of_government"
     VICE_PRESIDENT = "vice_president"

@@ -1,7 +1,7 @@
-from enum import Enum
+from enum import StrEnum
 
 
-class RhetoricalStrategy(str, Enum):
+class RhetoricalStrategy(StrEnum):
     APPEAL_TO_AUTHORITY = "appeal_to_authority"
     FALSE_EQUIVALENCE = "false_equivalence"
     EMOTIONAL_APPEAL = "emotional_appeal"

@@ -5,14 +5,14 @@ Lewis (1979) Common Ground Theory; Beaver & Geurts (2014) Presupposition Trigger
 
 from __future__ import annotations
 
-from enum import Enum
+from enum import StrEnum
 
 from pydantic import BaseModel, ConfigDict, Field, field_validator
 
 from bb_paxdata.application.domain.models.srl import SRLSpan
 
 
-class TriggerType(str, Enum):
+class TriggerType(StrEnum):
     """Presupposition trigger type taxonomy."""
 
     FACTIVE_VERB = "FACTIVE_VERB"
@@ -24,7 +24,7 @@ class TriggerType(str, Enum):
     CLEFT_CONSTRUCTION = "CLEFT_CONSTRUCTION"
 
 
-class VerificationMethod(str, Enum):
+class VerificationMethod(StrEnum):
     """Method used to verify a presupposition candidate."""
 
     RULE = "rule"

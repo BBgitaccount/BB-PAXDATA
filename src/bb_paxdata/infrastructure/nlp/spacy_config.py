@@ -27,7 +27,7 @@ SPACY_PIPELINES: dict[str, PipelineConfig] = {
         "disabled": [],
     },
     "en": {
-        "model": "en_core_web_sm",
+        "model": "en_core_web_lg",
         "components": [
             "tok2vec",
             "tagger",

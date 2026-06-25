@@ -1,7 +1,7 @@
-from enum import Enum
+from enum import StrEnum
 
 
-class PressureTier(str, Enum):
+class PressureTier(StrEnum):
     CRITICAL = "CRITICAL"
     HIGH = "HIGH"
     MEDIUM = "MEDIUM"

@@ -1,4 +1,4 @@
-from enum import Enum
+from enum import StrEnum
 from typing import Literal
 
 from pydantic import BaseModel, ConfigDict, Field
@@ -78,7 +78,7 @@ class PerspectiveCluster(BaseModel):
     embedding_centroid: list[float] | None = None
 
 
-class BiasSeverity(str, Enum):
+class BiasSeverity(StrEnum):
     LOW = "low"
     MEDIUM = "medium"
     HIGH = "high"

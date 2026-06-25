@@ -1,7 +1,7 @@
-from enum import Enum
+from enum import StrEnum
 
 
-class DkiStance(str, Enum):
+class DkiStance(StrEnum):
     CONSTRUCTIVE = "CONSTRUCTIVE"
     CRITICAL = "CRITICAL"
     BALANCED = "BALANCED"

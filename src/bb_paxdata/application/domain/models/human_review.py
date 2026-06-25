@@ -8,7 +8,7 @@ AI çıktıları burada referans olarak tutulur, değiştirilmez.
 from __future__ import annotations
 
 from datetime import UTC, datetime
-from enum import Enum
+from enum import StrEnum
 from uuid import uuid4
 
 from pydantic import ConfigDict, Field
@@ -16,14 +16,14 @@ from pydantic import ConfigDict, Field
 from .base import AggregateRoot
 
 
-class RiskLevel(str, Enum):
+class RiskLevel(StrEnum):
     LOW = "LOW"
     MED = "MED"
     HIGH = "HIGH"
     CRITICAL = "CRITICAL"
 
 
-class AgreementStatus(str, Enum):
+class AgreementStatus(StrEnum):
     AGREED = "AGREED"  # Uzman AI ile tamamen uyuştu
     PARTIAL = "PARTIAL"  # Kısmi uyuşma (bazı alanlar farklı)
     DISAGREED = "DISAGREED"  # Tam anlaşmazlık
