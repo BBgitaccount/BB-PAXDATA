@@ -58,7 +58,7 @@ class LanguageRouter:
             stopwords="STOPWORDS_TR",
         ),
         "en": LanguageConfig(
-            spacy_model="en_core_web_sm",
+            spacy_model="en_core_web_lg",
             sentiment_lexicon="DIPLO_LEXICON_EN",
             negation_words="NEGATION_WORDS_EN",
             stopwords="STOPWORDS_EN",

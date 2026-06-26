@@ -154,7 +154,7 @@ class PIIAnonymizationConfig(BaseModel):
         description="Enable GDPR Right to be Forgotten automation",
     )
     pii_detection_model: str = Field(
-        default="en_core_web_sm",
+        default="en_core_web_lg",
         description="spaCy model for PII detection",
     )
     custom_pii_patterns: dict[str, str] = Field(

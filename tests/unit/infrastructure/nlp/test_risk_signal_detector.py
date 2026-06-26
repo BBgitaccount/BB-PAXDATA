@@ -8,10 +8,10 @@ from bb_paxdata.infrastructure.nlp.risk_signal_detector import RiskSignalDetecto
 @pytest.fixture
 def detector():
     try:
-        nlp = spacy.load("en_core_web_sm")
+        nlp = spacy.load("en_core_web_lg")
     except OSError:
         # Fallback if model is not installed
-        pytest.skip("spacy model en_core_web_sm not found")
+        pytest.skip("spacy model en_core_web_lg not found")
     return RiskSignalDetector(nlp)
 
 

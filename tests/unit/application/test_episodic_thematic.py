@@ -11,7 +11,7 @@ from bb_paxdata.application.pipeline.frame.episodic_themetic_classifier import (
 
 @pytest.fixture
 def nlp():
-    return spacy.load("en_core_web_sm")
+    return spacy.load("en_core_web_lg")
 
 
 @pytest.fixture

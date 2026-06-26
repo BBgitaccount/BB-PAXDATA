@@ -1,3 +1,4 @@
+# syntax=docker/dockerfile:1
 FROM python:3.12-slim
 
 WORKDIR /app
@@ -12,32 +13,45 @@ RUN apt-get update && apt-get install -y \
     curl \
     && rm -rf /var/lib/apt/lists/*
 
-# Install poetry
-RUN pip install --no-cache-dir poetry
+# Install poetry using pip cache mount
+RUN --mount=type=cache,target=/root/.cache/pip \
+    pip install poetry
 
 # Copy project specifications
 COPY pyproject.toml poetry.lock /app/
 
-# Set Poetry network timeout via environment variable (works in all versions)
-ENV POETRY_HTTP_TIMEOUT=600
+# Set Poetry and pip network timeout to prevent timeouts
+ENV POETRY_HTTP_TIMEOUT=1200
+ENV PIP_DEFAULT_TIMEOUT=1200
 
-# Disable poetry virtualenvs creation & install dependencies
-RUN poetry config virtualenvs.create false \
+# Disable poetry virtualenvs creation, disable parallel installs to prevent network choking & install dependencies using cache mount
+RUN --mount=type=cache,target=/root/.cache/pypoetry \
+    poetry config virtualenvs.create false \
+    && poetry config installer.parallel false \
+    && poetry config request-timeout 1200 \
     && poetry install --no-interaction --no-ansi --no-root
 
-# Install spaCy models from pre-downloaded local .whl files (no internet needed at build time)
-# Files must exist in docker/models/ — run `scripts/download_models.ps1` if missing.
-COPY docker/models/ /tmp/spacy-models/
-RUN pip install --no-cache-dir \
-    /tmp/spacy-models/en_core_web_sm-3.8.0-py3-none-any.whl \
-    /tmp/spacy-models/tr_core_news_md-1.0-py3-none-any.whl \
-    && rm -rf /tmp/spacy-models
+# Copy local models directory if present in build context to make offline spaCy model wheels available
+COPY docker /app/docker
+
+# Install spaCy models, using local wheels if available, otherwise downloading with pip caching
+RUN --mount=type=cache,target=/root/.cache/pip \
+    if [ -f /app/docker/models/en_core_web_lg-3.8.0-py3-none-any.whl ] && [ -f /app/docker/models/tr_core_news_md-1.0-py3-none-any.whl ]; then \
+        echo "Installing spaCy models from local wheels..."; \
+        pip install /app/docker/models/en_core_web_lg-3.8.0-py3-none-any.whl /app/docker/models/tr_core_news_md-1.0-py3-none-any.whl; \
+    else \
+        echo "Local wheels not found. Downloading spaCy models from remote URLs..."; \
+        pip install \
+            https://github.com/explosion/spacy-models/releases/download/en_core_web_lg-3.8.0/en_core_web_lg-3.8.0-py3-none-any.whl \
+            https://huggingface.co/turkish-nlp-suite/tr_core_news_md/resolve/main/tr_core_news_md-1.0-py3-none-any.whl; \
+    fi
 
 # Copy full application code
 COPY . /app
 
-# Install project root
-RUN poetry install --no-interaction --no-ansi
+# Install project root using cache mount
+RUN --mount=type=cache,target=/root/.cache/pypoetry \
+    poetry install --no-interaction --no-ansi
 
 EXPOSE 8000
 

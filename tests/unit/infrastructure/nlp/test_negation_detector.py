@@ -8,10 +8,10 @@ from bb_paxdata.infrastructure.nlp.negation_detector import SpacyNegationDetecto
 @pytest.fixture
 def detector():
     try:
-        nlp = spacy.load("en_core_web_sm")
+        nlp = spacy.load("en_core_web_lg")
     except OSError:
-        spacy.cli.download("en_core_web_sm")
-        nlp = spacy.load("en_core_web_sm")
+        spacy.cli.download("en_core_web_lg")
+        nlp = spacy.load("en_core_web_lg")
     return SpacyNegationDetector(nlp)
 
 

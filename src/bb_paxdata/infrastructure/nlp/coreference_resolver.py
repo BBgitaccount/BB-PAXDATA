@@ -49,7 +49,7 @@ class CoreferenceResolver:
             # Load English model
             import spacy
 
-            nlp = spacy.load("en_core_web_sm")
+            nlp = spacy.load("en_core_web_lg")
             nlp.add_pipe("coreferee", config={"overwrite": True})
             return nlp
         except Exception as e:

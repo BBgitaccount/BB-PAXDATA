@@ -13,9 +13,9 @@ New-Item -ItemType Directory -Force -Path $modelsDir | Out-Null
 
 $models = @(
     @{
-        Name = "en_core_web_sm"
-        Url  = "https://github.com/explosion/spacy-models/releases/download/en_core_web_sm-3.8.0/en_core_web_sm-3.8.0-py3-none-any.whl"
-        File = "en_core_web_sm-3.8.0-py3-none-any.whl"
+        Name = "en_core_web_lg"
+        Url  = "https://github.com/explosion/spacy-models/releases/download/en_core_web_lg-3.8.0/en_core_web_lg-3.8.0-py3-none-any.whl"
+        File = "en_core_web_lg-3.8.0-py3-none-any.whl"
     },
     @{
         Name = "tr_core_news_md"

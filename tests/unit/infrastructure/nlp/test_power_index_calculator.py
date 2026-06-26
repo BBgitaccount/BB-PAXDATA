@@ -7,9 +7,9 @@ from bb_paxdata.infrastructure.nlp.power_index_calculator import PowerIndexCalcu
 @pytest.fixture
 def calculator():
     try:
-        nlp = spacy.load("en_core_web_sm")
+        nlp = spacy.load("en_core_web_lg")
     except OSError:
-        pytest.skip("spacy model en_core_web_sm not found")
+        pytest.skip("spacy model en_core_web_lg not found")
     return PowerIndexCalculator(nlp)
 
 

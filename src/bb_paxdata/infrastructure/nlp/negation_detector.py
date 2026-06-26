@@ -152,13 +152,16 @@ class SpacyNegationDetector:
             else:
                 logger.info("Loading English spaCy model...")
                 try:
-                    self._models[lang] = spacy.load("en_core_web_md")
+                    self._models[lang] = spacy.load("en_core_web_lg")
                 except OSError:
                     try:
-                        self._models[lang] = spacy.load("en_core_web_sm")
-                    except OSError:
-                        spacy.cli.download("en_core_web_sm")
-                        self._models[lang] = spacy.load("en_core_web_sm")
+                        spacy.cli.download("en_core_web_lg")
+                        self._models[lang] = spacy.load("en_core_web_lg")
+                    except Exception:
+                        try:
+                            self._models[lang] = spacy.load("en_core_web_sm")
+                        except OSError:
+                            self._models[lang] = spacy.load("en_core_web_md")
         return self._models[lang]
 
     async def _spacy_parse_async(self, nlp: Language, text: str) -> Any:

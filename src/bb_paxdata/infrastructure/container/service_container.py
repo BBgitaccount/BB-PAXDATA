@@ -212,9 +212,9 @@ class ServiceContainer:
         if common_nlp is None:
             raise RuntimeError(
                 "SpaCy NLP modeli yüklenemedi. "
-                "'en_core_web_sm' veya 'tr_core_news_md' modellerinden en az biri "
+                "'en_core_web_lg' veya 'tr_core_news_md' modellerinden en az biri "
                 "kurulu ve erişilebilir olmalıdır. "
-                "Kurulum için: python -m spacy download en_core_web_sm"
+                "Kurulum için: python -m spacy download en_core_web_lg"
             )
 
         self.negation_detector = SpacyNegationDetector(

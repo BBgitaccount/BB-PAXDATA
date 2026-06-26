@@ -66,13 +66,13 @@ class TestLanguageRouter:
 
     def test_get_config_english(self) -> None:
         config = LanguageRouter.get_config("en")
-        assert config.spacy_model == "en_core_web_sm"
+        assert config.spacy_model == "en_core_web_lg"
         assert config.sentiment_lexicon == "DIPLO_LEXICON_EN"
 
     def test_get_config_unsupported_falls_back_to_english(self) -> None:
         config = LanguageRouter.get_config("ar")
         # Should return English config by default
-        assert config.spacy_model == "en_core_web_sm"
+        assert config.spacy_model == "en_core_web_lg"
 
     def test_supported_languages_list(self) -> None:
         langs = LanguageRouter.supported_languages()
