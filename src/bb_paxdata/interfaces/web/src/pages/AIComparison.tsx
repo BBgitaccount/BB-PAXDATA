@@ -1,12 +1,12 @@
+import { ArrowRight, BookOpen, GitCompare, Save } from 'lucide-react';
 import { useEffect, useState } from 'react';
-import { mockApi } from '@/services/mockApi';
+import { DataTable } from '@/components/DataTable';
+import { FrameSelector } from '@/components/FrameSelector';
+import { GOLD_STANDARDS } from '@/constants/goldStandards';
 import { useToast } from '@/hooks/useToast';
 import { useTranslation } from '@/hooks/useTranslation';
-import { FrameSelector } from '@/components/FrameSelector';
-import { DataTable } from '@/components/DataTable';
-import { GOLD_STANDARDS } from '@/constants/goldStandards';
-import type { HumanReviewEntry, AgreementStatus } from '@/types';
-import { GitCompare, BookOpen, Save, ArrowRight } from 'lucide-react';
+import { mockApi } from '@/services/mockApi';
+import type { AgreementStatus, HumanReviewEntry } from '@/types';
 import { cn } from '@/utils/helpers';
 
 export const AIComparison = () => {

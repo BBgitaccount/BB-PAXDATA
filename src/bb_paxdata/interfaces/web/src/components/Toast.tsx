@@ -1,4 +1,4 @@
-import { CheckCircle, AlertCircle, AlertTriangle, Info } from 'lucide-react';
+import { AlertCircle, AlertTriangle, CheckCircle, Info } from 'lucide-react';
 import type { ToastMessage } from '@/types';
 import { cn } from '@/utils/helpers';
 

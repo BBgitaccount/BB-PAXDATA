@@ -2,8 +2,8 @@ import { useEffect } from 'react';
 import { Outlet } from 'react-router-dom';
 import { useUIStore } from '@/store/uiStore';
 import { Sidebar } from './Sidebar';
-import { TopBar } from './TopBar';
 import { Toast } from './Toast';
+import { TopBar } from './TopBar';
 
 export const Layout = () => {
   const sidebarCollapsed = useUIStore((s) => s.sidebarCollapsed);

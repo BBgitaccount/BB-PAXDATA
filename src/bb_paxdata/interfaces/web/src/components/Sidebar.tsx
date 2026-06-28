@@ -1,8 +1,3 @@
-import { useAuth } from '@/hooks/useAuth';
-import { useTranslation } from '@/hooks/useTranslation';
-import type { tr } from '@/i18n/tr';
-import { useUIStore } from '@/store/uiStore';
-import { cn } from '@/utils/helpers';
 import {
   Activity,
   ArrowRightLeft,
@@ -17,14 +12,20 @@ import {
   GitCompare,
   Globe,
   LayoutDashboard,
+  type LucideIcon,
   Network,
   Settings,
   TrendingUp,
   Users,
   Zap,
-  type LucideIcon,
 } from 'lucide-react';
 import { useLocation, useNavigate } from 'react-router-dom';
+import { useAuth } from '@/hooks/useAuth';
+import { useTranslation } from '@/hooks/useTranslation';
+import type { tr } from '@/i18n/tr';
+import { useUIStore } from '@/store/uiStore';
+import { cn } from '@/utils/helpers';
+
 const navSections: Array<{
   group: keyof typeof tr;
   items: Array<{
@@ -76,7 +77,12 @@ const navSections: Array<{
       { id: 'drift', label: 'nav.drift', path: '/drift', icon: TrendingUp },
       { id: 'health', label: 'nav.health', path: '/health', icon: Activity },
       { id: 'monitor', label: 'nav.monitor', path: '/monitor', icon: Zap },
-      { id: 'provenance', label: 'nav.provenance', path: '/provenance', icon: GitBranch },
+      {
+        id: 'provenance',
+        label: 'nav.provenance',
+        path: '/provenance',
+        icon: GitBranch,
+      },
     ],
   },
   {

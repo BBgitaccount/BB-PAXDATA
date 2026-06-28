@@ -1,5 +1,5 @@
-import { cn } from '@/utils/helpers';
 import type { ConfidenceLevel } from '@/types';
+import { cn } from '@/utils/helpers';
 
 interface ConfidenceSelectorProps {
   value: ConfidenceLevel | null;

@@ -1,6 +1,6 @@
 import { useState } from 'react';
-import { cn } from '@/utils/helpers';
 import type { FrameType } from '@/types';
+import { cn } from '@/utils/helpers';
 
 const frames: FrameType[] = [
   'problem_definition',

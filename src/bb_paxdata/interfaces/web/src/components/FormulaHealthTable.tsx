@@ -1,9 +1,9 @@
-import { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
-import { apiClient } from '@/services/apiClient';
+import { AlertTriangle, ChevronDown, ChevronUp, TableProperties } from 'lucide-react';
+import { useState } from 'react';
 import { DataTable } from '@/components/DataTable';
+import { apiClient } from '@/services/apiClient';
 import type { FormulaHealth } from '@/types';
-import { AlertTriangle, TableProperties, ChevronDown, ChevronUp } from 'lucide-react';
 import { cn } from '@/utils/helpers';
 
 interface FormulaHealthTableProps {

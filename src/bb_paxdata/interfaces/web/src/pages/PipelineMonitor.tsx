@@ -1,11 +1,33 @@
+import { ExternalLink, Play, RefreshCw, Server, Zap } from 'lucide-react';
+import { useState } from 'react';
 import { BuildTUIMonitor } from '@/components/BuildTUIMonitor';
-import { ExternalLink, RefreshCw, Zap, Server } from 'lucide-react';
 import { useToast } from '@/hooks/useToast';
 import { useTranslation } from '@/hooks/useTranslation';
 
 export const PipelineMonitor = () => {
   const toast = useToast();
   const { t } = useTranslation();
+  const [isStarting, setIsStarting] = useState(false);
+
+  const handleStartPipeline = async () => {
+    try {
+      setIsStarting(true);
+      const res = await fetch(
+        `${import.meta.env.VITE_API_URL || 'http://localhost:8000'}/api/v1/pipeline/start`,
+        {
+          method: 'POST',
+        },
+      );
+      if (!res.ok) throw new Error('Pipeline başlatılamadı');
+      toast.success(
+        'Pipeline Docker üzerinde başlatıldı. İlerlemeyi terminalden takip edebilirsiniz.',
+      );
+    } catch (error) {
+      toast.error('Pipeline başlatılırken bir hata oluştu');
+    } finally {
+      setIsStarting(false);
+    }
+  };
 
   const handleRefresh = () => {
     toast.info('Giriş veri akış bağlantısı yenileniyor...');
@@ -21,14 +43,25 @@ export const PipelineMonitor = () => {
           </h1>
           <p className="text-sm text-carbon-400 mt-1">{t('monitor.desc')}</p>
         </div>
-        <button
-          type="button"
-          onClick={handleRefresh}
-          className="btn-secondary flex items-center gap-2 px-3 py-1.5 text-xs border-carbon-600 hover:bg-carbon-800"
-        >
-          <RefreshCw className="w-3.5 h-3.5" />
-          Yenile
-        </button>
+        <div className="flex items-center gap-3">
+          <button
+            type="button"
+            onClick={handleStartPipeline}
+            disabled={isStarting}
+            className="btn-primary flex items-center gap-2 px-4 py-1.5 text-xs disabled:opacity-50"
+          >
+            <Play className="w-3.5 h-3.5" />
+            {isStarting ? 'BAŞLATILIYOR...' : "PİPELINE'I BAŞLAT"}
+          </button>
+          <button
+            type="button"
+            onClick={handleRefresh}
+            className="btn-secondary flex items-center gap-2 px-3 py-1.5 text-xs border-carbon-600 hover:bg-carbon-800"
+          >
+            <RefreshCw className="w-3.5 h-3.5" />
+            Yenile
+          </button>
+        </div>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">

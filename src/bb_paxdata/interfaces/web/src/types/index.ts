@@ -304,6 +304,7 @@ export interface PanelTimelineEntry {
   panel_number: number | null;
   date_str: string;
   title: string;
+  speaker_count?: number;
 }
 
 export interface DiscourseNode {
@@ -484,4 +485,96 @@ export interface SpeakerSentimentHistory {
   date_str: string | null;
   avg_sentiment: number;
   sentence_count: number;
+}
+
+export interface EventCorrelation {
+  event_id: string;
+  event_type: 'MILITARY' | 'ECONOMIC' | 'TREATY' | 'CRISIS';
+  affected_countries: string[];
+  sentiment_impact_score: number;
+}
+
+export interface AsymmetricRelation {
+  source_country: string;
+  target_country: string;
+  rhetoric_sentiment: number;
+  action_sentiment: number;
+}
+
+export interface EconomicIndicators {
+  country_a: string;
+  country_b: string;
+  bilateral_trade_volume: number;
+  sanctions_active: boolean;
+}
+
+export interface SpeechActDelta {
+  speaker_id: string;
+  distribution_a: Record<string, number>;
+  distribution_b: Record<string, number>;
+  delta_distribution: Record<string, number>;
+  most_changed_type: string | null;
+  change_magnitude: number;
+}
+
+export interface NarrativeLayerDelta {
+  speaker_id: string;
+  layer_weights_a: Record<string, number>;
+  layer_weights_b: Record<string, number>;
+  delta_weights: Record<string, number>;
+  dominant_layer_change: [string, number] | null;
+}
+
+export interface SignificantChange {
+  speaker_id: string;
+  metric: string;
+  change_type: string;
+  value_a: number | string;
+  value_b: number | string;
+  delta: number;
+  is_significant: boolean;
+}
+
+export interface AnalysisDelta {
+  session_a_id: string;
+  session_b_id: string;
+  comparison_timestamp: string;
+
+  delta_sbi?: Record<string, number>;
+  delta_sbi_normalized?: Record<string, number>;
+  delta_sbi_significant?: Record<string, boolean>;
+
+  delta_dki?: Record<string, number>;
+  delta_dki_normalized?: Record<string, number>;
+  delta_dki_significant?: Record<string, boolean>;
+
+  delta_risk: number | null;
+  delta_risk_normalized?: number | null;
+  delta_risk_significant: boolean;
+
+  delta_hedging?: Record<string, number>;
+  delta_hedging_normalized?: Record<string, number>;
+  delta_hedging_significant?: Record<string, boolean>;
+
+  delta_speech_act?: Record<string, SpeechActDelta>;
+  delta_narrative?: Record<string, NarrativeLayerDelta>;
+
+  significant_changes?: SignificantChange[];
+
+  speakers_in_a?: string[];
+  speakers_in_b?: string[];
+  common_speakers?: string[];
+  speakers_only_in_a?: string[];
+  speakers_only_in_b?: string[];
+
+  most_drifted_speaker?: string | null;
+  most_drifted_dimension?: string;
+  total_significant_changes?: number;
+}
+
+export interface CompareSessionsResponse {
+  success: boolean;
+  contrast_report: unknown | null;
+  analysis_delta: AnalysisDelta | null;
+  errors: string[];
 }

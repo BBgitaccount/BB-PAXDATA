@@ -1,12 +1,12 @@
+import { CheckCircle, FileSearch } from 'lucide-react';
 import { useEffect, useState } from 'react';
-import { apiClient } from '@/services/apiClient';
 import { AuditTrailTable } from '@/components/AuditTrailTable';
 import { StatusBadge } from '@/components/StatusBadge';
-import { useToast } from '@/hooks/useToast';
 import { useAuth } from '@/hooks/useAuth';
+import { useToast } from '@/hooks/useToast';
 import { useTranslation } from '@/hooks/useTranslation';
+import { apiClient } from '@/services/apiClient';
 import type { AuditEntry } from '@/types';
-import { FileSearch, CheckCircle } from 'lucide-react';
 
 export const AuditTrail = () => {
   const [data, setData] = useState<AuditEntry[]>([]);

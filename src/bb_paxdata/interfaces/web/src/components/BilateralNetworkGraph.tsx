@@ -10,66 +10,54 @@
  * - Auto-play animation
  * - Detailed tooltips with relationship metrics
  */
-import { useMemo, useState, useCallback, useEffect, useRef } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import ReactFlow, {
-  Node,
-  Edge,
   Background,
-  Controls,
-  MiniMap,
-  useNodesState,
-  useEdgesState,
   BackgroundVariant,
+  Controls,
+  type Edge,
+  MiniMap,
+  type Node,
   Panel,
-  Position,
+  useEdgesState,
+  useNodesState,
 } from 'reactflow';
 import 'reactflow/dist/style.css';
-import {
-  Play,
-  Pause,
-  SkipBack,
-  SkipForward,
-  Globe,
-  ZoomIn,
-  ZoomOut,
-  Maximize2,
-} from 'lucide-react';
-import type { BilateralSentimentData, PanelTimelineEntry } from '@/types';
+import { Globe, Pause, Play, SkipBack, SkipForward } from 'lucide-react';
 import { useUIStore } from '@/store/uiStore';
+import type { BilateralSentimentData, PanelTimelineEntry } from '@/types';
 
 // ─── Custom Node Component ─────────────────────────────────────────────────────
 
-const CountryNode = ({ data }: { data: any }) => {
-  const theme = useUIStore((s) => s.theme);
-  const isDark = theme === 'dark';
+interface CountryNodeData {
+  label: string;
+  connectionCount?: number;
+}
 
+const CountryNode = ({ data }: { data: CountryNodeData }) => {
   return (
     <div
       style={{
         padding: '8px 12px',
-        borderRadius: '8px',
-        background: isDark ? 'rgba(30, 30, 40, 0.95)' : 'rgba(255, 255, 255, 0.95)',
-        border: isDark ? '2px solid #4f46e5' : '2px solid #4f46e5',
-        color: isDark ? '#f0f0f0' : '#1a1a1a',
+        borderRadius: '0px',
+        background: 'var(--bg-tertiary)',
+        border: '0.5px solid var(--border-hair)',
+        color: 'var(--text-primary)',
         fontSize: '12px',
         fontWeight: 600,
         minWidth: '100px',
         textAlign: 'center',
-        boxShadow: isDark ? '0 4px 20px rgba(0,0,0,0.4)' : '0 4px 20px rgba(0,0,0,0.15)',
+        boxShadow: '0 0 0 1px rgba(255, 255, 255, 0.02)',
         cursor: 'grab',
-        transition: 'transform 0.2s, box-shadow 0.2s',
+        transition: 'all 150ms ease',
       }}
       onMouseEnter={(e) => {
-        e.currentTarget.style.transform = 'scale(1.05)';
-        e.currentTarget.style.boxShadow = isDark
-          ? '0 6px 25px rgba(79, 70, 229, 0.3)'
-          : '0 6px 25px rgba(79, 70, 229, 0.2)';
+        e.currentTarget.style.borderColor = 'var(--text-tertiary)';
+        e.currentTarget.style.boxShadow = '0 0 0 1px rgba(255, 255, 255, 0.04)';
       }}
       onMouseLeave={(e) => {
-        e.currentTarget.style.transform = 'scale(1)';
-        e.currentTarget.style.boxShadow = isDark
-          ? '0 4px 20px rgba(0,0,0,0.4)'
-          : '0 4px 20px rgba(0,0,0,0.15)';
+        e.currentTarget.style.borderColor = 'var(--border-hair)';
+        e.currentTarget.style.boxShadow = '0 0 0 1px rgba(255, 255, 255, 0.02)';
       }}
     >
       <div>{data.label}</div>
@@ -77,7 +65,7 @@ const CountryNode = ({ data }: { data: any }) => {
         <div
           style={{
             fontSize: '10px',
-            color: isDark ? '#9ca3af' : '#6b7280',
+            color: 'var(--text-secondary)',
             marginTop: '2px',
           }}
         >
@@ -142,15 +130,15 @@ const SliderControls = ({
   return (
     <div
       style={{
-        background: isDark ? 'rgba(20, 20, 30, 0.95)' : 'rgba(255, 255, 255, 0.95)',
-        border: isDark ? '1px solid #2a2a3a' : '1px solid #dee2e6',
-        borderRadius: '12px',
+        background: 'var(--bg-secondary)',
+        border: '0.5px solid var(--border-hair)',
+        borderRadius: '0px',
         padding: '12px 16px',
         display: 'flex',
         flexDirection: 'column',
         gap: '12px',
         backdropFilter: 'blur(10px)',
-        boxShadow: isDark ? '0 8px 32px rgba(0,0,0,0.4)' : '0 8px 32px rgba(0,0,0,0.1)',
+        boxShadow: '0 0 0 1px rgba(255, 255, 255, 0.02)',
       }}
     >
       {/* Label row */}
@@ -165,7 +153,7 @@ const SliderControls = ({
           <Globe size={16} color="#6366f1" />
           <span
             style={{
-              color: isDark ? '#e0e0f0' : '#1a1a1a',
+              color: 'var(--text-primary)',
               fontSize: '13px',
               fontWeight: 600,
             }}
@@ -175,11 +163,12 @@ const SliderControls = ({
           {current?.date_str && (
             <span
               style={{
-                background: isDark ? '#1e1b4b' : '#e0e7ff',
-                color: isDark ? '#a5b4fc' : '#4f46e5',
+                background: 'var(--bg-tertiary)',
+                color: 'var(--text-secondary)',
+                border: '0.5px solid var(--border-hair)',
                 fontSize: '11px',
                 padding: '2px 8px',
-                borderRadius: '99',
+                borderRadius: '0px',
                 fontFamily: 'monospace',
               }}
             >
@@ -199,10 +188,10 @@ const SliderControls = ({
           disabled={currentIdx === 0}
           style={{
             background: 'transparent',
-            border: isDark ? '1px solid #3a3a4a' : '1px solid #ced4da',
-            borderRadius: '8px',
+            border: '0.5px solid var(--border-hair)',
+            borderRadius: '0px',
             padding: '6px 10px',
-            color: currentIdx === 0 ? (isDark ? '#444' : '#ccc') : isDark ? '#a1a1aa' : '#495057',
+            color: currentIdx === 0 ? 'var(--text-quaternary)' : 'var(--text-secondary)',
             cursor: currentIdx === 0 ? 'not-allowed' : 'pointer',
             display: 'flex',
             alignItems: 'center',
@@ -215,15 +204,11 @@ const SliderControls = ({
         <button
           onClick={onTogglePlay}
           style={{
-            background: isPlaying
-              ? '#4f46e5'
-              : isDark
-                ? 'rgba(79,70,229,0.15)'
-                : 'rgba(79,70,229,0.08)',
-            border: '1px solid #4f46e5',
-            borderRadius: '8px',
+            background: isPlaying ? 'var(--text-primary)' : 'transparent',
+            border: '0.5px solid var(--border-hair)',
+            borderRadius: '0px',
             padding: '6px 14px',
-            color: isPlaying ? '#ffffff' : '#4f46e5',
+            color: isPlaying ? 'var(--bg-primary)' : 'var(--text-primary)',
             cursor: 'pointer',
             display: 'flex',
             alignItems: 'center',
@@ -242,17 +227,11 @@ const SliderControls = ({
           disabled={currentIdx === steps.length - 1}
           style={{
             background: 'transparent',
-            border: isDark ? '1px solid #3a3a4a' : '1px solid #ced4da',
-            borderRadius: '8px',
+            border: '0.5px solid var(--border-hair)',
+            borderRadius: '0px',
             padding: '6px 10px',
             color:
-              currentIdx === steps.length - 1
-                ? isDark
-                  ? '#444'
-                  : '#ccc'
-                : isDark
-                  ? '#a1a1aa'
-                  : '#495057',
+              currentIdx === steps.length - 1 ? 'var(--text-quaternary)' : 'var(--text-secondary)',
             cursor: currentIdx === steps.length - 1 ? 'not-allowed' : 'pointer',
             display: 'flex',
             alignItems: 'center',
@@ -269,7 +248,12 @@ const SliderControls = ({
           max={steps.length - 1}
           value={currentIdx}
           onChange={(e) => onSeek(Number(e.target.value))}
-          style={{ flex: 1, accentColor: '#6366f1', cursor: 'pointer', height: '4px' }}
+          style={{
+            flex: 1,
+            accentColor: '#6366f1',
+            cursor: 'pointer',
+            height: '4px',
+          }}
         />
       </div>
 
@@ -283,16 +267,12 @@ const SliderControls = ({
             style={{
               width: '8px',
               height: '8px',
-              borderRadius: '50%',
-              background: i === currentIdx ? '#6366f1' : isDark ? '#2a2a3a' : '#e2e2e9',
+              borderRadius: '0px',
+              background: i === currentIdx ? 'var(--text-primary)' : 'var(--border-hair)',
               border:
                 i === currentIdx
-                  ? isDark
-                    ? '2px solid #a5b4fc'
-                    : '2px solid #4f46e5'
-                  : isDark
-                    ? '1px solid #3a3a4a'
-                    : '1px solid #ced4da',
+                  ? '1px solid var(--text-primary)'
+                  : '1px solid var(--border-subtle)',
               cursor: 'pointer',
               padding: 0,
               transition: 'all 0.15s',
@@ -305,6 +285,13 @@ const SliderControls = ({
 };
 
 // ─── Main Component ───────────────────────────────────────────────────────────
+
+interface BilateralEdgeData {
+  affinity_score: number;
+  avg_sentiment: number;
+  interaction_count: number;
+  relationship_type: string;
+}
 
 interface BilateralNetworkGraphProps {
   data: BilateralSentimentData[];
@@ -426,11 +413,11 @@ export const BilateralNetworkGraph = ({
         textShadow: isDark ? '0 1px 3px rgba(0,0,0,0.8)' : '0 1px 3px rgba(0,0,0,0.3)',
       },
       labelBgStyle: {
-        fill: isDark ? 'rgba(20, 20, 30, 0.9)' : 'rgba(255, 255, 255, 0.9)',
-        stroke: isDark ? '#2a2a3a' : '#dee2e6',
-        strokeWidth: 1,
-        rx: 4,
-        ry: 4,
+        fill: 'var(--bg-tertiary)',
+        stroke: 'var(--border-hair)',
+        strokeWidth: 0.5,
+        rx: 0,
+        ry: 0,
       },
       animated: Math.abs(d.affinity_score) > 0.5, // Animate strong relationships
       data: {
@@ -455,7 +442,7 @@ export const BilateralNetworkGraph = ({
 
   // ── Custom edge tooltip ─────────────────────────────────────────────────────
   const onEdgeMouseEnter = useCallback((_: React.MouseEvent, edge: Edge) => {
-    const edgeData = edge.data as any;
+    const edgeData = edge.data as BilateralEdgeData;
     if (!edgeData) return;
 
     // You could add custom tooltip logic here
@@ -470,9 +457,9 @@ export const BilateralNetworkGraph = ({
           alignItems: 'center',
           justifyContent: 'center',
           height: '400px',
-          border: isDark ? '1px dashed #2a2a3a' : '1px dashed #ced4da',
-          borderRadius: '8px',
-          color: isDark ? '#4b5563' : '#868e96',
+          border: '1.5px dashed var(--border-hair)',
+          borderRadius: '0px',
+          color: 'var(--text-secondary)',
           fontSize: '13px',
         }}
       >
@@ -485,7 +472,14 @@ export const BilateralNetworkGraph = ({
     <div style={{ width: '100%', height: '600px', position: 'relative' }}>
       {/* Time Slider */}
       {hasTimeline && (
-        <div style={{ position: 'absolute', top: '16px', left: '16px', zIndex: 10 }}>
+        <div
+          style={{
+            position: 'absolute',
+            top: '16px',
+            left: '16px',
+            zIndex: 10,
+          }}
+        >
           <SliderControls
             steps={timeline!}
             currentIdx={sliderIdx}
@@ -522,16 +516,16 @@ export const BilateralNetworkGraph = ({
         />
         <Controls
           style={{
-            background: isDark ? 'rgba(20, 20, 30, 0.95)' : 'rgba(255, 255, 255, 0.95)',
-            border: isDark ? '1px solid #2a2a3a' : '1px solid #dee2e6',
-            borderRadius: '8px',
+            background: 'var(--bg-tertiary)',
+            border: '0.5px solid var(--border-hair)',
+            borderRadius: '0px',
           }}
         />
         <MiniMap
           style={{
-            background: isDark ? 'rgba(20, 20, 30, 0.95)' : 'rgba(255, 255, 255, 0.95)',
-            border: isDark ? '1px solid #2a2a3a' : '1px solid #dee2e6',
-            borderRadius: '8px',
+            background: 'var(--bg-tertiary)',
+            border: '0.5px solid var(--border-hair)',
+            borderRadius: '0px',
           }}
           nodeColor="#4f46e5"
           maskColor={isDark ? 'rgba(0, 0, 0, 0.6)' : 'rgba(255, 255, 255, 0.6)'}
@@ -539,12 +533,12 @@ export const BilateralNetworkGraph = ({
         <Panel position="top-right">
           <div
             style={{
-              background: isDark ? 'rgba(20, 20, 30, 0.95)' : 'rgba(255, 255, 255, 0.95)',
-              border: isDark ? '1px solid #2a2a3a' : '1px solid #dee2e6',
-              borderRadius: '8px',
+              background: 'var(--bg-tertiary)',
+              border: '0.5px solid var(--border-hair)',
+              borderRadius: '0px',
               padding: '8px 12px',
               fontSize: '11px',
-              color: isDark ? '#9ca3af' : '#6b7280',
+              color: 'var(--text-secondary)',
               backdropFilter: 'blur(10px)',
             }}
           >

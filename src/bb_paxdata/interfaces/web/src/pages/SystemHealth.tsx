@@ -1,19 +1,19 @@
-import { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
-import { apiClient } from '@/services/apiClient';
-import { useToast } from '@/hooks/useToast';
-import { useAuth } from '@/hooks/useAuth';
-import { useTranslation } from '@/hooks/useTranslation';
 import {
   Activity,
   Database,
   ExternalLink,
+  Heart,
+  Layers,
+  LayoutGrid,
   RefreshCw,
   Server,
-  Layers,
-  Heart,
-  LayoutGrid,
 } from 'lucide-react';
+import { useState } from 'react';
+import { useAuth } from '@/hooks/useAuth';
+import { useToast } from '@/hooks/useToast';
+import { useTranslation } from '@/hooks/useTranslation';
+import { apiClient } from '@/services/apiClient';
 import { cn } from '@/utils/helpers';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
@@ -77,7 +77,7 @@ const formatBytes = (bytes: number, decimals = 2) => {
   const dm = decimals < 0 ? 0 : decimals;
   const sizes = ['Bytes', 'KB', 'MB', 'GB', 'TB'];
   const i = Math.floor(Math.log(bytes) / Math.log(k));
-  return parseFloat((bytes / Math.pow(k, i)).toFixed(dm)) + ' ' + sizes[i];
+  return parseFloat((bytes / k ** i).toFixed(dm)) + ' ' + sizes[i];
 };
 
 export const SystemHealth = () => {

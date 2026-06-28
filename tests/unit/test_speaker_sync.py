@@ -53,3 +53,27 @@ async def test_speaker_registry_syncs_to_entries(test_session_factory):
         entries = res.scalars().all()
         entry_names = [e.person for e in entries]
         assert "İSMAIL" in entry_names
+
+
+@pytest.mark.asyncio
+async def test_speaker_registry_unknown_country_normalization(test_session_factory):
+    uow = SqlAlchemyUnitOfWork(test_session_factory)
+    use_case = SpeakerRegistryUseCase(uow)
+
+    async with uow:
+        # Add a speaker with 'Unknown' country code context
+        speaker = await use_case.detect_or_create_speaker(
+            raw_name="Mülakatçı",
+            context={
+                "country_code": "Unknown",
+                "country_name": "Unknown",
+                "bloc": "unknown",
+                "role": "MODERATOR",
+                "is_active": True,
+            },
+        )
+
+        assert speaker.canonical_name == "MÜLAKATÇI"
+        assert speaker.country_code == "UNK"
+        assert speaker.country_name == "Unknown"
+        assert speaker.bloc == "unknown"

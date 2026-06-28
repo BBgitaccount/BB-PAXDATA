@@ -215,7 +215,7 @@ services:
       dockerfile: Dockerfile
     container_name: paxdata-web
     environment:
-      - VITE_API_URL=http://api:8000
+      - VITE_API_URL=http://localhost:8000
     ports:
       - "5173:5173"
     volumes:

@@ -1,53 +1,53 @@
-import { useEffect, useState, useCallback } from 'react';
 import { useQuery } from '@tanstack/react-query';
-import { apiClient } from '@/services/apiClient';
-import { KpiCard } from '@/components/KpiCard';
-import { FormulaHealthChart } from '@/components/FormulaHealthChart';
-import { FormulaHealthTable } from '@/components/FormulaHealthTable';
-import { BilateralHeatmap } from '@/components/BilateralHeatmap';
-import { useToast } from '@/hooks/useToast';
-import { useUIStore } from '@/store/uiStore';
-import { useTranslation } from '@/hooks/useTranslation';
-import type {
-  KpiStats,
-  FormulaHealth,
-  DailyTrend,
-  PriorityDistribution,
-  TriggerDistribution,
-  ConsensusDistribution,
-  BilateralSentimentData,
-  PanelTimelineEntry,
-} from '@/types';
 import {
   Activity,
-  CheckCircle,
-  XCircle,
-  Clock,
   AlertTriangle,
-  ShieldCheck,
-  Edit3,
-  TrendingUp,
   BarChart3,
-  PieChart,
-  Zap,
+  CheckCircle,
+  Clock,
+  Edit3,
   Globe,
+  PieChart,
+  ShieldCheck,
+  TrendingUp,
+  XCircle,
+  Zap,
 } from 'lucide-react';
+import { useCallback, useEffect, useState } from 'react';
 import {
-  LineChart,
+  Bar,
+  BarChart,
+  CartesianGrid,
+  Cell,
   Line,
+  LineChart,
+  Pie,
+  PieChart as RePieChart,
+  ResponsiveContainer,
+  Tooltip,
   XAxis,
   YAxis,
-  CartesianGrid,
-  Tooltip,
-  ResponsiveContainer,
-  PieChart as RePieChart,
-  Pie,
-  Cell,
-  BarChart,
-  Bar,
 } from 'recharts';
-import { isOfflineCapableError } from '@/services/offlineVerdictQueue';
+import { BilateralHeatmap } from '@/components/BilateralHeatmap';
+import { FormulaHealthChart } from '@/components/FormulaHealthChart';
+import { FormulaHealthTable } from '@/components/FormulaHealthTable';
+import { KpiCard } from '@/components/KpiCard';
+import { useToast } from '@/hooks/useToast';
+import { useTranslation } from '@/hooks/useTranslation';
+import { apiClient } from '@/services/apiClient';
 import { readDashboardSnapshot, saveDashboardSnapshot } from '@/services/offlineDashboardCache';
+import { isOfflineCapableError } from '@/services/offlineVerdictQueue';
+import { useUIStore } from '@/store/uiStore';
+import type {
+  BilateralSentimentData,
+  ConsensusDistribution,
+  DailyTrend,
+  FormulaHealth,
+  KpiStats,
+  PanelTimelineEntry,
+  PriorityDistribution,
+  TriggerDistribution,
+} from '@/types';
 
 export const Dashboard = () => {
   const toast = useToast();
@@ -529,7 +529,9 @@ export const Dashboard = () => {
                     fontSize: 10,
                     fontFamily: 'JetBrains Mono',
                   }}
-                  axisLine={{ stroke: theme === 'dark' ? '#2A2A2A' : '#E9ECEF' }}
+                  axisLine={{
+                    stroke: theme === 'dark' ? '#2A2A2A' : '#E9ECEF',
+                  }}
                   tickLine={false}
                 />
                 <YAxis

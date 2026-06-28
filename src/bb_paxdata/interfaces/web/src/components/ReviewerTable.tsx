@@ -1,7 +1,7 @@
-import { DataTable } from './DataTable';
-import { formatDate } from '@/utils/helpers';
+import { Pencil, ToggleLeft, ToggleRight } from 'lucide-react';
 import type { Reviewer } from '@/types';
-import { ToggleLeft, ToggleRight, Pencil } from 'lucide-react';
+import { formatDate } from '@/utils/helpers';
+import { DataTable } from './DataTable';
 
 interface ReviewerTableProps {
   data: Reviewer[];

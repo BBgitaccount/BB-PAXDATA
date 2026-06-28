@@ -1,13 +1,13 @@
-import { apiClient } from './apiClient';
-import {
+import type {
   PaginatedSpeakers,
   Speaker,
-  SpeakerStatsSummary,
-  SpeakerCountryDistribution,
-  SpeakerBlocDistribution,
   SpeakerAppearance,
+  SpeakerBlocDistribution,
+  SpeakerCountryDistribution,
   SpeakerSentimentHistory,
+  SpeakerStatsSummary,
 } from '../types';
+import { apiClient } from './apiClient';
 
 export const speakerService = {
   getSpeakers: async (params: {

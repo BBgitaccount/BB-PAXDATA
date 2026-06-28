@@ -1,13 +1,3 @@
-import { DataTable } from '@/components/DataTable';
-import { StatusBadge } from '@/components/StatusBadge';
-import { TripletView } from '@/components/TripletView';
-import { UncertaintyBadge } from '@/components/UncertaintyBadge';
-import { VerdictForm } from '@/components/VerdictForm';
-import { GOLD_STANDARDS } from '@/constants/goldStandards';
-import { useToast } from '@/hooks/useToast';
-import { apiClient } from '@/services/apiClient';
-import type { ComparisonRow, FailQueueItem, SimilarCase, TripletContext } from '@/types';
-import { cn, truncate } from '@/utils/helpers';
 import { useQuery } from '@tanstack/react-query';
 import {
   AlertCircle,
@@ -22,6 +12,23 @@ import {
 } from 'lucide-react';
 import { useEffect } from 'react';
 import { useLocation, useNavigate, useParams } from 'react-router-dom';
+import { DataTable } from '@/components/DataTable';
+import { StatusBadge } from '@/components/StatusBadge';
+import { TripletView } from '@/components/TripletView';
+import { UncertaintyBadge } from '@/components/UncertaintyBadge';
+import { VerdictForm } from '@/components/VerdictForm';
+import { GOLD_STANDARDS } from '@/constants/goldStandards';
+import { useToast } from '@/hooks/useToast';
+import { apiClient } from '@/services/apiClient';
+import type {
+  CompareSessionsResponse,
+  ComparisonRow,
+  FailQueueItem,
+  HumanVerdict,
+  SimilarCase,
+  TripletContext,
+} from '@/types';
+import { cn, truncate } from '@/utils/helpers';
 
 export const ReviewDetail = () => {
   const { logId } = useParams<{ logId: string }>();
@@ -139,7 +146,7 @@ export const ReviewDetail = () => {
         );
         const otherSession = session_ids.find((id) => id !== item.file_id) || item.file_id;
 
-        return await apiClient.post<Record<string, unknown>>('/api/v1/compare/sessions', {
+        return await apiClient.post<CompareSessionsResponse>('/api/v1/compare/sessions', {
           session_a_id: otherSession,
           session_b_id: item.file_id,
           sbi_threshold: 5.0,
@@ -159,7 +166,7 @@ export const ReviewDetail = () => {
 
   const getComparisonRows = (
     itemVal: FailQueueItem | null,
-    compData: Record<string, unknown> | null,
+    compData: CompareSessionsResponse | null,
   ): ComparisonRow[] => {
     if (!itemVal) return [];
 
@@ -312,7 +319,7 @@ export const ReviewDetail = () => {
     return rows;
   };
 
-  const comparison = getComparisonRows(item, comparisonQuery.data);
+  const comparison = getComparisonRows(item, comparisonQuery.data ?? null);
 
   if (
     tripletQuery.isPending ||

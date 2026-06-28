@@ -22,6 +22,7 @@ REDIS_SUBSCRIBER_CHANNELS = [
     "judge_events",  # Judge verdict renderings
     "analysis_events",  # Analysis streaming results
     "notification_events",  # Global notifications
+    "build_events",  # Ingestion build progress events
 ]
 
 
@@ -471,6 +472,11 @@ async def listen_to_redis_events() -> None:
                         # Handle notification_events channel
                         elif channel == "notification_events":
                             msg = {"event": "notification", "data": payload}
+                            await manager.broadcast(msg)
+                        # Handle build_events channel
+                        elif channel == "build_events":
+                            # The frontend expects: { "type": event_type (IngestionProgress), "data": data }
+                            msg = {"type": event_type, "data": data}
                             await manager.broadcast(msg)
                     except Exception as parse_ex:
                         logger.error(

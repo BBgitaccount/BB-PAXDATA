@@ -1,7 +1,7 @@
+import { Bell, LogOut, Moon, Sun, User } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
-import { useUIStore } from '@/store/uiStore';
 import { useTranslation } from '@/hooks/useTranslation';
-import { Bell, LogOut, User, Sun, Moon } from 'lucide-react';
+import { useUIStore } from '@/store/uiStore';
 
 export const TopBar = () => {
   const { user, logout } = useAuth();

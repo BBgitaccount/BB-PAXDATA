@@ -1,13 +1,13 @@
-import { useState } from 'react';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
-import { cn } from '@/utils/helpers';
+import { RotateCcw, Send } from 'lucide-react';
+import { useState } from 'react';
 import { useToast } from '@/hooks/useToast';
-import { ConfidenceSelector } from './ConfidenceSelector';
 import { apiClient } from '@/services/apiClient';
-import type { HumanVerdict, ConfidenceLevel, VerdictPayload, VerdictResponse } from '@/types';
-import { Send, RotateCcw } from 'lucide-react';
-import { useReviewQueueStore } from '@/store/reviewQueueStore';
 import { enqueueVerdict, isOfflineCapableError } from '@/services/offlineVerdictQueue';
+import { useReviewQueueStore } from '@/store/reviewQueueStore';
+import type { ConfidenceLevel, HumanVerdict, VerdictPayload, VerdictResponse } from '@/types';
+import { cn } from '@/utils/helpers';
+import { ConfidenceSelector } from './ConfidenceSelector';
 
 interface VerdictFormProps {
   logId: number;

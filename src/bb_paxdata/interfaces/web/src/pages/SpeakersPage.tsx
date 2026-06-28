@@ -1,17 +1,4 @@
 import {
-  useCreateSpeaker,
-  useSpeaker,
-  useSpeakerAppearances,
-  useSpeakers,
-  useSpeakerSentimentHistory,
-  useSpeakerStatsByBloc,
-  useSpeakerStatsByCountry,
-  useSpeakerStatsSummary,
-  useUpdateSpeaker,
-} from '@/hooks/useSpeakers';
-import { Speaker } from '@/types';
-import { cn } from '@/utils/helpers';
-import {
   createColumnHelper,
   flexRender,
   getCoreRowModel,
@@ -52,6 +39,19 @@ import {
   XAxis,
   YAxis,
 } from 'recharts';
+import {
+  useCreateSpeaker,
+  useSpeaker,
+  useSpeakerAppearances,
+  useSpeakerSentimentHistory,
+  useSpeakerStatsByBloc,
+  useSpeakerStatsByCountry,
+  useSpeakerStatsSummary,
+  useSpeakers,
+  useUpdateSpeaker,
+} from '@/hooks/useSpeakers';
+import type { Speaker } from '@/types';
+import { cn } from '@/utils/helpers';
 
 const CHART_COLORS = ['#f4f4f5', '#e4e4e7', '#d4d4d8', '#a1a1aa', '#71717a', '#52525b', '#3f3f46'];
 
@@ -466,7 +466,10 @@ export const SpeakersPage = () => {
                   <XAxis dataKey="country_code" stroke="#737373" fontSize={10} />
                   <YAxis stroke="#737373" fontSize={10} />
                   <Tooltip
-                    contentStyle={{ backgroundColor: '#171717', border: '1px solid #404040' }}
+                    contentStyle={{
+                      backgroundColor: '#171717',
+                      border: '1px solid #404040',
+                    }}
                     labelStyle={{ color: '#E5E5E5' }}
                   />
                   <Bar dataKey="count" fill="#a1a1aa" radius={[2, 2, 0, 0]} />
@@ -514,7 +517,9 @@ export const SpeakersPage = () => {
                       <div className="flex items-center gap-2">
                         <span
                           className="h-2 w-2 rounded-full"
-                          style={{ backgroundColor: CHART_COLORS[idx % CHART_COLORS.length] }}
+                          style={{
+                            backgroundColor: CHART_COLORS[idx % CHART_COLORS.length],
+                          }}
                         />
                         <span className="text-carbon-350 capitalize">{b.bloc || 'Diğer'}</span>
                       </div>
@@ -696,7 +701,10 @@ export const SpeakersPage = () => {
                     placeholder="LAVROV, Sergei"
                     value={newSpeaker.canonical_name}
                     onChange={(e) =>
-                      setNewSpeaker({ ...newSpeaker, canonical_name: e.target.value })
+                      setNewSpeaker({
+                        ...newSpeaker,
+                        canonical_name: e.target.value,
+                      })
                     }
                     className="w-full bg-carbon-950 text-carbon-100 px-3 py-2 border border-carbon-700 focus:outline-none focus:border-carbon-500"
                   />
@@ -710,7 +718,12 @@ export const SpeakersPage = () => {
                     type="text"
                     placeholder="Sergei Lavrov"
                     value={newSpeaker.display_name}
-                    onChange={(e) => setNewSpeaker({ ...newSpeaker, display_name: e.target.value })}
+                    onChange={(e) =>
+                      setNewSpeaker({
+                        ...newSpeaker,
+                        display_name: e.target.value,
+                      })
+                    }
                     className="w-full bg-carbon-950 text-carbon-100 px-3 py-2 border border-carbon-700 focus:outline-none focus:border-carbon-500"
                   />
                 </div>
@@ -725,7 +738,10 @@ export const SpeakersPage = () => {
                     placeholder="RUS"
                     value={newSpeaker.country_code}
                     onChange={(e) =>
-                      setNewSpeaker({ ...newSpeaker, country_code: e.target.value.toUpperCase() })
+                      setNewSpeaker({
+                        ...newSpeaker,
+                        country_code: e.target.value.toUpperCase(),
+                      })
                     }
                     className="w-full bg-carbon-950 text-carbon-100 px-3 py-2 border border-carbon-700 focus:outline-none focus:border-carbon-500 font-mono"
                   />
@@ -739,7 +755,12 @@ export const SpeakersPage = () => {
                     type="text"
                     placeholder="Russia"
                     value={newSpeaker.country_name}
-                    onChange={(e) => setNewSpeaker({ ...newSpeaker, country_name: e.target.value })}
+                    onChange={(e) =>
+                      setNewSpeaker({
+                        ...newSpeaker,
+                        country_name: e.target.value,
+                      })
+                    }
                     className="w-full bg-carbon-950 text-carbon-100 px-3 py-2 border border-carbon-700 focus:outline-none focus:border-carbon-500"
                   />
                 </div>
@@ -781,7 +802,10 @@ export const SpeakersPage = () => {
                     step="0.05"
                     value={newSpeaker.power_level}
                     onChange={(e) =>
-                      setNewSpeaker({ ...newSpeaker, power_level: parseFloat(e.target.value) })
+                      setNewSpeaker({
+                        ...newSpeaker,
+                        power_level: parseFloat(e.target.value),
+                      })
                     }
                     className="flex-1 accent-carbon-100"
                   />
@@ -797,7 +821,12 @@ export const SpeakersPage = () => {
                     type="checkbox"
                     id="isActive"
                     checked={newSpeaker.is_active}
-                    onChange={(e) => setNewSpeaker({ ...newSpeaker, is_active: e.target.checked })}
+                    onChange={(e) =>
+                      setNewSpeaker({
+                        ...newSpeaker,
+                        is_active: e.target.checked,
+                      })
+                    }
                     className="h-3.5 w-3.5 accent-carbon-100 cursor-pointer"
                   />
                   <label
@@ -983,7 +1012,10 @@ export const SpeakersPage = () => {
                       <XAxis dataKey="date_str" stroke="#737373" fontSize={9} />
                       <YAxis stroke="#737373" domain={[-1, 1]} fontSize={9} />
                       <Tooltip
-                        contentStyle={{ backgroundColor: '#171717', border: '1px solid #404040' }}
+                        contentStyle={{
+                          backgroundColor: '#171717',
+                          border: '1px solid #404040',
+                        }}
                         labelStyle={{ color: '#E5E5E5' }}
                       />
                       <Area
@@ -1017,7 +1049,12 @@ export const SpeakersPage = () => {
                   <input
                     type="text"
                     value={editFields.display_name || ''}
-                    onChange={(e) => setEditFields({ ...editFields, display_name: e.target.value })}
+                    onChange={(e) =>
+                      setEditFields({
+                        ...editFields,
+                        display_name: e.target.value,
+                      })
+                    }
                     className="w-full bg-carbon-950 text-carbon-100 px-3 py-1.5 border border-carbon-700 focus:outline-none focus:border-carbon-500"
                   />
                 </div>
@@ -1042,7 +1079,10 @@ export const SpeakersPage = () => {
                       type="text"
                       value={editFields.organization || ''}
                       onChange={(e) =>
-                        setEditFields({ ...editFields, organization: e.target.value })
+                        setEditFields({
+                          ...editFields,
+                          organization: e.target.value,
+                        })
                       }
                       className="w-full bg-carbon-950 text-carbon-100 px-3 py-1.5 border border-carbon-700 focus:outline-none focus:border-carbon-500"
                     />
@@ -1061,7 +1101,10 @@ export const SpeakersPage = () => {
                       step="0.05"
                       value={editFields.power_level ?? 0.5}
                       onChange={(e) =>
-                        setEditFields({ ...editFields, power_level: parseFloat(e.target.value) })
+                        setEditFields({
+                          ...editFields,
+                          power_level: parseFloat(e.target.value),
+                        })
                       }
                       className="flex-1 accent-carbon-100"
                     />
@@ -1116,7 +1159,12 @@ export const SpeakersPage = () => {
                     type="checkbox"
                     id="editIsActive"
                     checked={editFields.is_active ?? true}
-                    onChange={(e) => setEditFields({ ...editFields, is_active: e.target.checked })}
+                    onChange={(e) =>
+                      setEditFields({
+                        ...editFields,
+                        is_active: e.target.checked,
+                      })
+                    }
                     className="h-3.5 w-3.5 accent-carbon-100 cursor-pointer"
                   />
                   <label

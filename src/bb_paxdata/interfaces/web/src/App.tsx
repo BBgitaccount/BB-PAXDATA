@@ -1,3 +1,4 @@
+import { BrowserRouter, Navigate, Route, Routes } from 'react-router-dom';
 import { ErrorBoundary } from '@/components/ErrorBoundary';
 import { Layout } from '@/components/Layout';
 import { AIComparison } from '@/pages/AIComparison';
@@ -17,7 +18,6 @@ import { SpeakersPage } from '@/pages/SpeakersPage';
 import { SystemHealth } from '@/pages/SystemHealth';
 import { TemporalDrift } from '@/pages/TemporalDrift';
 import { WorldMap } from '@/pages/WorldMap';
-import { BrowserRouter, Navigate, Route, Routes } from 'react-router-dom';
 
 export const App = () => {
   return (

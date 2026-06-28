@@ -34,6 +34,7 @@ def create_celery_app(settings: Settings | None = None) -> Celery:
             "bb_paxdata.infrastructure.tasks.consensus_tasks",  # CORRECTED (E05-M-05)
             "bb_paxdata.infrastructure.tasks.audit_tasks",
             "bb_paxdata.infrastructure.tasks.pattern_tasks",
+            "bb_paxdata.infrastructure.tasks.pipeline_tasks",
         ],
     )
 
@@ -52,6 +53,9 @@ def create_celery_app(settings: Settings | None = None) -> Celery:
         },
         "bb_paxdata.infrastructure.tasks.graph_tasks.export_graph_snapshot": {
             "queue": "graph_io"
+        },
+        "bb_paxdata.infrastructure.tasks.pipeline_tasks.run_full_pipeline_task": {
+            "queue": "ai_cpu"
         },
         "webhooks.process_outbox_queue": {"queue": "graph_io"},
         "webhooks.dispatch": {"queue": "graph_io"},

@@ -1,8 +1,8 @@
+import { Link } from 'lucide-react';
+import type { AuditEntry } from '@/types';
+import { formatDate } from '@/utils/helpers';
 import { DataTable } from './DataTable';
 import { StatusBadge } from './StatusBadge';
-import { formatDate } from '@/utils/helpers';
-import type { AuditEntry } from '@/types';
-import { Link } from 'lucide-react';
 
 interface AuditTrailTableProps {
   data: AuditEntry[];

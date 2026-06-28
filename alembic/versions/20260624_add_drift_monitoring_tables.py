@@ -9,7 +9,7 @@ Create Date: 2024-06-24
 from alembic import op
 
 # revision identifiers, used by Alembic.
-revision = "20260624_add_drift_monitoring_tables"
+revision = "20260624_add_drift_mon_tabs"
 down_revision = None  # Set to the latest migration ID
 branch_labels = None
 depends_on = None

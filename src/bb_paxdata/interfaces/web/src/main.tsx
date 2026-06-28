@@ -1,4 +1,5 @@
 /* eslint-disable react-refresh/only-export-components */
+
 import { useOfflineVerdictQueueSync } from '@/hooks/useOfflineVerdictQueueSync';
 import { useQueueWebSocket } from '@/hooks/useQueueWebSocket';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
@@ -6,6 +7,8 @@ import React from 'react';
 import ReactDOM from 'react-dom/client';
 import { App } from './App';
 import './index.css';
+import './styles/viz-tokens.css';
+import { initTopoJSONPreload } from './utils/topojsonPreloader';
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -34,6 +37,9 @@ const queryClient = new QueryClient({
 const AppBootstrap = () => {
   useOfflineVerdictQueueSync();
   useQueueWebSocket();
+
+  // Preload TopoJSON in background for faster WorldMap rendering
+  initTopoJSONPreload();
 
   return <App />;
 };

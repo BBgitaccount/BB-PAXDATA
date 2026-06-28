@@ -1,6 +1,6 @@
-import { useUIStore } from '@/store/uiStore';
-import { tr } from '@/i18n/tr';
 import { en } from '@/i18n/en';
+import { tr } from '@/i18n/tr';
+import { useUIStore } from '@/store/uiStore';
 
 const dictionaries = { tr, en };
 

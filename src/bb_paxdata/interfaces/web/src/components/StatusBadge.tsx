@@ -1,5 +1,5 @@
+import type { ConfidenceLevel, HumanVerdict, QueueStatus } from '@/types';
 import { cn } from '@/utils/helpers';
-import type { QueueStatus, HumanVerdict, ConfidenceLevel } from '@/types';
 
 interface StatusBadgeProps {
   status: QueueStatus | HumanVerdict | ConfidenceLevel | string;

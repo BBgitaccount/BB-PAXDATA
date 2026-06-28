@@ -1,11 +1,11 @@
 import type {
+  BilateralSentimentData,
   ConsensusDistribution,
   DailyTrend,
   FormulaHealth,
   KpiStats,
   PriorityDistribution,
   TriggerDistribution,
-  BilateralSentimentData,
 } from '@/types';
 
 const DB_NAME = 'bb-paxdata-dashboard-cache';

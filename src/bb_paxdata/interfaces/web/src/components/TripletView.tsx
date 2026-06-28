@@ -1,5 +1,5 @@
+import { Calendar, FileText, MapPin, User } from 'lucide-react';
 import type { TripletContext } from '@/types';
-import { User, FileText, Calendar, MapPin } from 'lucide-react';
 
 interface TripletViewProps {
   context: TripletContext;

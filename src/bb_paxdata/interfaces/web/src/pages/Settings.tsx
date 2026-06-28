@@ -1,22 +1,22 @@
-import { useEffect, useState } from 'react';
-import { apiClient, ApiError } from '@/services/apiClient';
-import { ReviewerTable } from '@/components/ReviewerTable';
-import { BuildTUIMonitor } from '@/components/BuildTUIMonitor';
-import { RangeSlider } from '@/components/RangeSlider';
-import { useToast } from '@/hooks/useToast';
-import { useAuth } from '@/hooks/useAuth';
-import { useTranslation } from '@/hooks/useTranslation';
-import type { Reviewer, SystemSettings } from '@/types';
 import {
-  Users,
-  Settings as SettingsIcon,
   Key,
+  RotateCcw,
+  Save,
+  Settings as SettingsIcon,
+  Terminal,
   ToggleLeft,
   ToggleRight,
-  Save,
-  RotateCcw,
-  Terminal,
+  Users,
 } from 'lucide-react';
+import { useEffect, useState } from 'react';
+import { BuildTUIMonitor } from '@/components/BuildTUIMonitor';
+import { RangeSlider } from '@/components/RangeSlider';
+import { ReviewerTable } from '@/components/ReviewerTable';
+import { useAuth } from '@/hooks/useAuth';
+import { useToast } from '@/hooks/useToast';
+import { useTranslation } from '@/hooks/useTranslation';
+import { ApiError, apiClient } from '@/services/apiClient';
+import type { Reviewer, SystemSettings } from '@/types';
 
 export const Settings = () => {
   const [reviewers, setReviewers] = useState<Reviewer[]>([]);

@@ -1,0 +1,993 @@
+[
+	{
+		"filePath": "C:\\Users\\THINKPAD\\Desktop\\BB-PAXDATA\\src\\bb_paxdata\\interfaces\\web\\src\\pages\\BilateralRelations.tsx",
+		"messages": [
+			{
+				"ruleId": "@typescript-eslint/no-explicit-any",
+				"severity": 1,
+				"message": "Unexpected any. Specify a different type.",
+				"line": 269,
+				"column": 9,
+				"nodeType": "TSAnyKeyword",
+				"messageId": "unexpectedAny",
+				"endLine": 269,
+				"endColumn": 12,
+				"suggestions": [
+					{
+						"messageId": "suggestUnknown",
+						"fix": { "range": [5397, 5400], "text": "unknown" },
+						"desc": "Use `unknown` instead, this will force you to explicitly, and safely assert the type is correct."
+					},
+					{
+						"messageId": "suggestNever",
+						"fix": { "range": [5397, 5400], "text": "never" },
+						"desc": "Use `never` instead, this is useful when instantiating generic type parameters that you don't need to know the type of."
+					}
+				]
+			},
+			{
+				"ruleId": "react-hooks/exhaustive-deps",
+				"severity": 1,
+				"message": "React Hook useEffect was passed a dependency list that is not an array literal. This means we can't statically verify whether you've passed the correct dependencies.",
+				"line": 281,
+				"column": 6,
+				"nodeType": "Identifier",
+				"endLine": 281,
+				"endColumn": 10
+			},
+			{
+				"ruleId": "react-hooks/exhaustive-deps",
+				"severity": 1,
+				"message": "React Hook useEffect has a missing dependency: 'renderFn'. Either include it or remove the dependency array. If 'renderFn' changes too often, find the parent component that defines it and wrap that definition in useCallback.",
+				"line": 281,
+				"column": 6,
+				"nodeType": "Identifier",
+				"endLine": 281,
+				"endColumn": 10,
+				"suggestions": [
+					{
+						"desc": "Update the dependencies array to be: [renderFn]",
+						"fix": { "range": [5824, 5828], "text": "[renderFn]" }
+					}
+				]
+			},
+			{
+				"ruleId": "@typescript-eslint/no-explicit-any",
+				"severity": 1,
+				"message": "Unexpected any. Specify a different type.",
+				"line": 305,
+				"column": 38,
+				"nodeType": "TSAnyKeyword",
+				"messageId": "unexpectedAny",
+				"endLine": 305,
+				"endColumn": 41,
+				"suggestions": [
+					{
+						"messageId": "suggestUnknown",
+						"fix": { "range": [6412, 6415], "text": "unknown" },
+						"desc": "Use `unknown` instead, this will force you to explicitly, and safely assert the type is correct."
+					},
+					{
+						"messageId": "suggestNever",
+						"fix": { "range": [6412, 6415], "text": "never" },
+						"desc": "Use `never` instead, this is useful when instantiating generic type parameters that you don't need to know the type of."
+					}
+				]
+			},
+			{
+				"ruleId": "@typescript-eslint/no-explicit-any",
+				"severity": 1,
+				"message": "Unexpected any. Specify a different type.",
+				"line": 309,
+				"column": 28,
+				"nodeType": "TSAnyKeyword",
+				"messageId": "unexpectedAny",
+				"endLine": 309,
+				"endColumn": 31,
+				"suggestions": [
+					{
+						"messageId": "suggestUnknown",
+						"fix": { "range": [6547, 6550], "text": "unknown" },
+						"desc": "Use `unknown` instead, this will force you to explicitly, and safely assert the type is correct."
+					},
+					{
+						"messageId": "suggestNever",
+						"fix": { "range": [6547, 6550], "text": "never" },
+						"desc": "Use `never` instead, this is useful when instantiating generic type parameters that you don't need to know the type of."
+					}
+				]
+			},
+			{
+				"ruleId": "@typescript-eslint/no-explicit-any",
+				"severity": 1,
+				"message": "Unexpected any. Specify a different type.",
+				"line": 314,
+				"column": 31,
+				"nodeType": "TSAnyKeyword",
+				"messageId": "unexpectedAny",
+				"endLine": 314,
+				"endColumn": 34,
+				"suggestions": [
+					{
+						"messageId": "suggestUnknown",
+						"fix": { "range": [6669, 6672], "text": "unknown" },
+						"desc": "Use `unknown` instead, this will force you to explicitly, and safely assert the type is correct."
+					},
+					{
+						"messageId": "suggestNever",
+						"fix": { "range": [6669, 6672], "text": "never" },
+						"desc": "Use `never` instead, this is useful when instantiating generic type parameters that you don't need to know the type of."
+					}
+				]
+			},
+			{
+				"ruleId": "@typescript-eslint/no-explicit-any",
+				"severity": 1,
+				"message": "Unexpected any. Specify a different type.",
+				"line": 318,
+				"column": 28,
+				"nodeType": "TSAnyKeyword",
+				"messageId": "unexpectedAny",
+				"endLine": 318,
+				"endColumn": 31,
+				"suggestions": [
+					{
+						"messageId": "suggestUnknown",
+						"fix": { "range": [6801, 6804], "text": "unknown" },
+						"desc": "Use `unknown` instead, this will force you to explicitly, and safely assert the type is correct."
+					},
+					{
+						"messageId": "suggestNever",
+						"fix": { "range": [6801, 6804], "text": "never" },
+						"desc": "Use `never` instead, this is useful when instantiating generic type parameters that you don't need to know the type of."
+					}
+				]
+			},
+			{
+				"ruleId": "@typescript-eslint/no-explicit-any",
+				"severity": 1,
+				"message": "Unexpected any. Specify a different type.",
+				"line": 372,
+				"column": 47,
+				"nodeType": "TSAnyKeyword",
+				"messageId": "unexpectedAny",
+				"endLine": 372,
+				"endColumn": 50,
+				"suggestions": [
+					{
+						"messageId": "suggestUnknown",
+						"fix": { "range": [8638, 8641], "text": "unknown" },
+						"desc": "Use `unknown` instead, this will force you to explicitly, and safely assert the type is correct."
+					},
+					{
+						"messageId": "suggestNever",
+						"fix": { "range": [8638, 8641], "text": "never" },
+						"desc": "Use `never` instead, this is useful when instantiating generic type parameters that you don't need to know the type of."
+					}
+				]
+			},
+			{
+				"ruleId": "@typescript-eslint/no-explicit-any",
+				"severity": 1,
+				"message": "Unexpected any. Specify a different type.",
+				"line": 374,
+				"column": 27,
+				"nodeType": "TSAnyKeyword",
+				"messageId": "unexpectedAny",
+				"endLine": 374,
+				"endColumn": 30,
+				"suggestions": [
+					{
+						"messageId": "suggestUnknown",
+						"fix": { "range": [8700, 8703], "text": "unknown" },
+						"desc": "Use `unknown` instead, this will force you to explicitly, and safely assert the type is correct."
+					},
+					{
+						"messageId": "suggestNever",
+						"fix": { "range": [8700, 8703], "text": "never" },
+						"desc": "Use `never` instead, this is useful when instantiating generic type parameters that you don't need to know the type of."
+					}
+				]
+			},
+			{
+				"ruleId": "@typescript-eslint/no-explicit-any",
+				"severity": 1,
+				"message": "Unexpected any. Specify a different type.",
+				"line": 378,
+				"column": 27,
+				"nodeType": "TSAnyKeyword",
+				"messageId": "unexpectedAny",
+				"endLine": 378,
+				"endColumn": 30,
+				"suggestions": [
+					{
+						"messageId": "suggestUnknown",
+						"fix": { "range": [8880, 8883], "text": "unknown" },
+						"desc": "Use `unknown` instead, this will force you to explicitly, and safely assert the type is correct."
+					},
+					{
+						"messageId": "suggestNever",
+						"fix": { "range": [8880, 8883], "text": "never" },
+						"desc": "Use `never` instead, this is useful when instantiating generic type parameters that you don't need to know the type of."
+					}
+				]
+			},
+			{
+				"ruleId": "@typescript-eslint/no-explicit-any",
+				"severity": 1,
+				"message": "Unexpected any. Specify a different type.",
+				"line": 383,
+				"column": 24,
+				"nodeType": "TSAnyKeyword",
+				"messageId": "unexpectedAny",
+				"endLine": 383,
+				"endColumn": 27,
+				"suggestions": [
+					{
+						"messageId": "suggestUnknown",
+						"fix": { "range": [9068, 9071], "text": "unknown" },
+						"desc": "Use `unknown` instead, this will force you to explicitly, and safely assert the type is correct."
+					},
+					{
+						"messageId": "suggestNever",
+						"fix": { "range": [9068, 9071], "text": "never" },
+						"desc": "Use `never` instead, this is useful when instantiating generic type parameters that you don't need to know the type of."
+					}
+				]
+			},
+			{
+				"ruleId": "@typescript-eslint/no-explicit-any",
+				"severity": 1,
+				"message": "Unexpected any. Specify a different type.",
+				"line": 439,
+				"column": 27,
+				"nodeType": "TSAnyKeyword",
+				"messageId": "unexpectedAny",
+				"endLine": 439,
+				"endColumn": 30,
+				"suggestions": [
+					{
+						"messageId": "suggestUnknown",
+						"fix": { "range": [10912, 10915], "text": "unknown" },
+						"desc": "Use `unknown` instead, this will force you to explicitly, and safely assert the type is correct."
+					},
+					{
+						"messageId": "suggestNever",
+						"fix": { "range": [10912, 10915], "text": "never" },
+						"desc": "Use `never` instead, this is useful when instantiating generic type parameters that you don't need to know the type of."
+					}
+				]
+			},
+			{
+				"ruleId": "@typescript-eslint/no-explicit-any",
+				"severity": 1,
+				"message": "Unexpected any. Specify a different type.",
+				"line": 441,
+				"column": 27,
+				"nodeType": "TSAnyKeyword",
+				"messageId": "unexpectedAny",
+				"endLine": 441,
+				"endColumn": 30,
+				"suggestions": [
+					{
+						"messageId": "suggestUnknown",
+						"fix": { "range": [10997, 11000], "text": "unknown" },
+						"desc": "Use `unknown` instead, this will force you to explicitly, and safely assert the type is correct."
+					},
+					{
+						"messageId": "suggestNever",
+						"fix": { "range": [10997, 11000], "text": "never" },
+						"desc": "Use `never` instead, this is useful when instantiating generic type parameters that you don't need to know the type of."
+					}
+				]
+			},
+			{
+				"ruleId": "@typescript-eslint/no-explicit-any",
+				"severity": 1,
+				"message": "Unexpected any. Specify a different type.",
+				"line": 444,
+				"column": 19,
+				"nodeType": "TSAnyKeyword",
+				"messageId": "unexpectedAny",
+				"endLine": 444,
+				"endColumn": 22,
+				"suggestions": [
+					{
+						"messageId": "suggestUnknown",
+						"fix": { "range": [11081, 11084], "text": "unknown" },
+						"desc": "Use `unknown` instead, this will force you to explicitly, and safely assert the type is correct."
+					},
+					{
+						"messageId": "suggestNever",
+						"fix": { "range": [11081, 11084], "text": "never" },
+						"desc": "Use `never` instead, this is useful when instantiating generic type parameters that you don't need to know the type of."
+					}
+				]
+			},
+			{
+				"ruleId": "@typescript-eslint/no-explicit-any",
+				"severity": 1,
+				"message": "Unexpected any. Specify a different type.",
+				"line": 449,
+				"column": 19,
+				"nodeType": "TSAnyKeyword",
+				"messageId": "unexpectedAny",
+				"endLine": 449,
+				"endColumn": 22,
+				"suggestions": [
+					{
+						"messageId": "suggestUnknown",
+						"fix": { "range": [11224, 11227], "text": "unknown" },
+						"desc": "Use `unknown` instead, this will force you to explicitly, and safely assert the type is correct."
+					},
+					{
+						"messageId": "suggestNever",
+						"fix": { "range": [11224, 11227], "text": "never" },
+						"desc": "Use `never` instead, this is useful when instantiating generic type parameters that you don't need to know the type of."
+					}
+				]
+			},
+			{
+				"ruleId": "@typescript-eslint/no-explicit-any",
+				"severity": 1,
+				"message": "Unexpected any. Specify a different type.",
+				"line": 455,
+				"column": 15,
+				"nodeType": "TSAnyKeyword",
+				"messageId": "unexpectedAny",
+				"endLine": 455,
+				"endColumn": 18,
+				"suggestions": [
+					{
+						"messageId": "suggestUnknown",
+						"fix": { "range": [11380, 11383], "text": "unknown" },
+						"desc": "Use `unknown` instead, this will force you to explicitly, and safely assert the type is correct."
+					},
+					{
+						"messageId": "suggestNever",
+						"fix": { "range": [11380, 11383], "text": "never" },
+						"desc": "Use `never` instead, this is useful when instantiating generic type parameters that you don't need to know the type of."
+					}
+				]
+			},
+			{
+				"ruleId": "@typescript-eslint/no-explicit-any",
+				"severity": 1,
+				"message": "Unexpected any. Specify a different type.",
+				"line": 461,
+				"column": 34,
+				"nodeType": "TSAnyKeyword",
+				"messageId": "unexpectedAny",
+				"endLine": 461,
+				"endColumn": 37,
+				"suggestions": [
+					{
+						"messageId": "suggestUnknown",
+						"fix": { "range": [11581, 11584], "text": "unknown" },
+						"desc": "Use `unknown` instead, this will force you to explicitly, and safely assert the type is correct."
+					},
+					{
+						"messageId": "suggestNever",
+						"fix": { "range": [11581, 11584], "text": "never" },
+						"desc": "Use `never` instead, this is useful when instantiating generic type parameters that you don't need to know the type of."
+					}
+				]
+			},
+			{
+				"ruleId": "@typescript-eslint/no-explicit-any",
+				"severity": 1,
+				"message": "Unexpected any. Specify a different type.",
+				"line": 462,
+				"column": 19,
+				"nodeType": "TSAnyKeyword",
+				"messageId": "unexpectedAny",
+				"endLine": 462,
+				"endColumn": 22,
+				"suggestions": [
+					{
+						"messageId": "suggestUnknown",
+						"fix": { "range": [11646, 11649], "text": "unknown" },
+						"desc": "Use `unknown` instead, this will force you to explicitly, and safely assert the type is correct."
+					},
+					{
+						"messageId": "suggestNever",
+						"fix": { "range": [11646, 11649], "text": "never" },
+						"desc": "Use `never` instead, this is useful when instantiating generic type parameters that you don't need to know the type of."
+					}
+				]
+			},
+			{
+				"ruleId": "@typescript-eslint/no-explicit-any",
+				"severity": 1,
+				"message": "Unexpected any. Specify a different type.",
+				"line": 473,
+				"column": 27,
+				"nodeType": "TSAnyKeyword",
+				"messageId": "unexpectedAny",
+				"endLine": 473,
+				"endColumn": 30,
+				"suggestions": [
+					{
+						"messageId": "suggestUnknown",
+						"fix": { "range": [11957, 11960], "text": "unknown" },
+						"desc": "Use `unknown` instead, this will force you to explicitly, and safely assert the type is correct."
+					},
+					{
+						"messageId": "suggestNever",
+						"fix": { "range": [11957, 11960], "text": "never" },
+						"desc": "Use `never` instead, this is useful when instantiating generic type parameters that you don't need to know the type of."
+					}
+				]
+			},
+			{
+				"ruleId": "@typescript-eslint/no-explicit-any",
+				"severity": 1,
+				"message": "Unexpected any. Specify a different type.",
+				"line": 474,
+				"column": 30,
+				"nodeType": "TSAnyKeyword",
+				"messageId": "unexpectedAny",
+				"endLine": 474,
+				"endColumn": 33,
+				"suggestions": [
+					{
+						"messageId": "suggestUnknown",
+						"fix": { "range": [12017, 12020], "text": "unknown" },
+						"desc": "Use `unknown` instead, this will force you to explicitly, and safely assert the type is correct."
+					},
+					{
+						"messageId": "suggestNever",
+						"fix": { "range": [12017, 12020], "text": "never" },
+						"desc": "Use `never` instead, this is useful when instantiating generic type parameters that you don't need to know the type of."
+					}
+				]
+			},
+			{
+				"ruleId": "@typescript-eslint/no-explicit-any",
+				"severity": 1,
+				"message": "Unexpected any. Specify a different type.",
+				"line": 478,
+				"column": 19,
+				"nodeType": "TSAnyKeyword",
+				"messageId": "unexpectedAny",
+				"endLine": 478,
+				"endColumn": 22,
+				"suggestions": [
+					{
+						"messageId": "suggestUnknown",
+						"fix": { "range": [12135, 12138], "text": "unknown" },
+						"desc": "Use `unknown` instead, this will force you to explicitly, and safely assert the type is correct."
+					},
+					{
+						"messageId": "suggestNever",
+						"fix": { "range": [12135, 12138], "text": "never" },
+						"desc": "Use `never` instead, this is useful when instantiating generic type parameters that you don't need to know the type of."
+					}
+				]
+			},
+			{
+				"ruleId": "@typescript-eslint/no-explicit-any",
+				"severity": 1,
+				"message": "Unexpected any. Specify a different type.",
+				"line": 652,
+				"column": 35,
+				"nodeType": "TSAnyKeyword",
+				"messageId": "unexpectedAny",
+				"endLine": 652,
+				"endColumn": 38,
+				"suggestions": [
+					{
+						"messageId": "suggestUnknown",
+						"fix": { "range": [18364, 18367], "text": "unknown" },
+						"desc": "Use `unknown` instead, this will force you to explicitly, and safely assert the type is correct."
+					},
+					{
+						"messageId": "suggestNever",
+						"fix": { "range": [18364, 18367], "text": "never" },
+						"desc": "Use `never` instead, this is useful when instantiating generic type parameters that you don't need to know the type of."
+					}
+				]
+			},
+			{
+				"ruleId": "@typescript-eslint/no-explicit-any",
+				"severity": 1,
+				"message": "Unexpected any. Specify a different type.",
+				"line": 656,
+				"column": 33,
+				"nodeType": "TSAnyKeyword",
+				"messageId": "unexpectedAny",
+				"endLine": 656,
+				"endColumn": 36,
+				"suggestions": [
+					{
+						"messageId": "suggestUnknown",
+						"fix": { "range": [18448, 18451], "text": "unknown" },
+						"desc": "Use `unknown` instead, this will force you to explicitly, and safely assert the type is correct."
+					},
+					{
+						"messageId": "suggestNever",
+						"fix": { "range": [18448, 18451], "text": "never" },
+						"desc": "Use `never` instead, this is useful when instantiating generic type parameters that you don't need to know the type of."
+					}
+				]
+			},
+			{
+				"ruleId": "@typescript-eslint/no-explicit-any",
+				"severity": 1,
+				"message": "Unexpected any. Specify a different type.",
+				"line": 657,
+				"column": 21,
+				"nodeType": "TSAnyKeyword",
+				"messageId": "unexpectedAny",
+				"endLine": 657,
+				"endColumn": 24,
+				"suggestions": [
+					{
+						"messageId": "suggestUnknown",
+						"fix": { "range": [18473, 18476], "text": "unknown" },
+						"desc": "Use `unknown` instead, this will force you to explicitly, and safely assert the type is correct."
+					},
+					{
+						"messageId": "suggestNever",
+						"fix": { "range": [18473, 18476], "text": "never" },
+						"desc": "Use `never` instead, this is useful when instantiating generic type parameters that you don't need to know the type of."
+					}
+				]
+			},
+			{
+				"ruleId": "@typescript-eslint/no-explicit-any",
+				"severity": 1,
+				"message": "Unexpected any. Specify a different type.",
+				"line": 664,
+				"column": 40,
+				"nodeType": "TSAnyKeyword",
+				"messageId": "unexpectedAny",
+				"endLine": 664,
+				"endColumn": 43,
+				"suggestions": [
+					{
+						"messageId": "suggestUnknown",
+						"fix": { "range": [18716, 18719], "text": "unknown" },
+						"desc": "Use `unknown` instead, this will force you to explicitly, and safely assert the type is correct."
+					},
+					{
+						"messageId": "suggestNever",
+						"fix": { "range": [18716, 18719], "text": "never" },
+						"desc": "Use `never` instead, this is useful when instantiating generic type parameters that you don't need to know the type of."
+					}
+				]
+			},
+			{
+				"ruleId": "@typescript-eslint/no-explicit-any",
+				"severity": 1,
+				"message": "Unexpected any. Specify a different type.",
+				"line": 671,
+				"column": 24,
+				"nodeType": "TSAnyKeyword",
+				"messageId": "unexpectedAny",
+				"endLine": 671,
+				"endColumn": 27,
+				"suggestions": [
+					{
+						"messageId": "suggestUnknown",
+						"fix": { "range": [18916, 18919], "text": "unknown" },
+						"desc": "Use `unknown` instead, this will force you to explicitly, and safely assert the type is correct."
+					},
+					{
+						"messageId": "suggestNever",
+						"fix": { "range": [18916, 18919], "text": "never" },
+						"desc": "Use `never` instead, this is useful when instantiating generic type parameters that you don't need to know the type of."
+					}
+				]
+			},
+			{
+				"ruleId": "@typescript-eslint/no-explicit-any",
+				"severity": 1,
+				"message": "Unexpected any. Specify a different type.",
+				"line": 679,
+				"column": 29,
+				"nodeType": "TSAnyKeyword",
+				"messageId": "unexpectedAny",
+				"endLine": 679,
+				"endColumn": 32,
+				"suggestions": [
+					{
+						"messageId": "suggestUnknown",
+						"fix": { "range": [19078, 19081], "text": "unknown" },
+						"desc": "Use `unknown` instead, this will force you to explicitly, and safely assert the type is correct."
+					},
+					{
+						"messageId": "suggestNever",
+						"fix": { "range": [19078, 19081], "text": "never" },
+						"desc": "Use `never` instead, this is useful when instantiating generic type parameters that you don't need to know the type of."
+					}
+				]
+			},
+			{
+				"ruleId": "@typescript-eslint/no-explicit-any",
+				"severity": 1,
+				"message": "Unexpected any. Specify a different type.",
+				"line": 680,
+				"column": 35,
+				"nodeType": "TSAnyKeyword",
+				"messageId": "unexpectedAny",
+				"endLine": 680,
+				"endColumn": 38,
+				"suggestions": [
+					{
+						"messageId": "suggestUnknown",
+						"fix": { "range": [19148, 19151], "text": "unknown" },
+						"desc": "Use `unknown` instead, this will force you to explicitly, and safely assert the type is correct."
+					},
+					{
+						"messageId": "suggestNever",
+						"fix": { "range": [19148, 19151], "text": "never" },
+						"desc": "Use `never` instead, this is useful when instantiating generic type parameters that you don't need to know the type of."
+					}
+				]
+			},
+			{
+				"ruleId": "@typescript-eslint/no-explicit-any",
+				"severity": 1,
+				"message": "Unexpected any. Specify a different type.",
+				"line": 692,
+				"column": 37,
+				"nodeType": "TSAnyKeyword",
+				"messageId": "unexpectedAny",
+				"endLine": 692,
+				"endColumn": 40,
+				"suggestions": [
+					{
+						"messageId": "suggestUnknown",
+						"fix": { "range": [19434, 19437], "text": "unknown" },
+						"desc": "Use `unknown` instead, this will force you to explicitly, and safely assert the type is correct."
+					},
+					{
+						"messageId": "suggestNever",
+						"fix": { "range": [19434, 19437], "text": "never" },
+						"desc": "Use `never` instead, this is useful when instantiating generic type parameters that you don't need to know the type of."
+					}
+				]
+			},
+			{
+				"ruleId": "@typescript-eslint/no-explicit-any",
+				"severity": 1,
+				"message": "Unexpected any. Specify a different type.",
+				"line": 697,
+				"column": 36,
+				"nodeType": "TSAnyKeyword",
+				"messageId": "unexpectedAny",
+				"endLine": 697,
+				"endColumn": 39,
+				"suggestions": [
+					{
+						"messageId": "suggestUnknown",
+						"fix": { "range": [19618, 19621], "text": "unknown" },
+						"desc": "Use `unknown` instead, this will force you to explicitly, and safely assert the type is correct."
+					},
+					{
+						"messageId": "suggestNever",
+						"fix": { "range": [19618, 19621], "text": "never" },
+						"desc": "Use `never` instead, this is useful when instantiating generic type parameters that you don't need to know the type of."
+					}
+				]
+			},
+			{
+				"ruleId": "@typescript-eslint/no-explicit-any",
+				"severity": 1,
+				"message": "Unexpected any. Specify a different type.",
+				"line": 701,
+				"column": 35,
+				"nodeType": "TSAnyKeyword",
+				"messageId": "unexpectedAny",
+				"endLine": 701,
+				"endColumn": 38,
+				"suggestions": [
+					{
+						"messageId": "suggestUnknown",
+						"fix": { "range": [19737, 19740], "text": "unknown" },
+						"desc": "Use `unknown` instead, this will force you to explicitly, and safely assert the type is correct."
+					},
+					{
+						"messageId": "suggestNever",
+						"fix": { "range": [19737, 19740], "text": "never" },
+						"desc": "Use `never` instead, this is useful when instantiating generic type parameters that you don't need to know the type of."
+					}
+				]
+			},
+			{
+				"ruleId": "@typescript-eslint/no-explicit-any",
+				"severity": 1,
+				"message": "Unexpected any. Specify a different type.",
+				"line": 705,
+				"column": 19,
+				"nodeType": "TSAnyKeyword",
+				"messageId": "unexpectedAny",
+				"endLine": 705,
+				"endColumn": 22,
+				"suggestions": [
+					{
+						"messageId": "suggestUnknown",
+						"fix": { "range": [19879, 19882], "text": "unknown" },
+						"desc": "Use `unknown` instead, this will force you to explicitly, and safely assert the type is correct."
+					},
+					{
+						"messageId": "suggestNever",
+						"fix": { "range": [19879, 19882], "text": "never" },
+						"desc": "Use `never` instead, this is useful when instantiating generic type parameters that you don't need to know the type of."
+					}
+				]
+			},
+			{
+				"ruleId": "@typescript-eslint/no-explicit-any",
+				"severity": 1,
+				"message": "Unexpected any. Specify a different type.",
+				"line": 710,
+				"column": 24,
+				"nodeType": "TSAnyKeyword",
+				"messageId": "unexpectedAny",
+				"endLine": 710,
+				"endColumn": 27,
+				"suggestions": [
+					{
+						"messageId": "suggestUnknown",
+						"fix": { "range": [19956, 19959], "text": "unknown" },
+						"desc": "Use `unknown` instead, this will force you to explicitly, and safely assert the type is correct."
+					},
+					{
+						"messageId": "suggestNever",
+						"fix": { "range": [19956, 19959], "text": "never" },
+						"desc": "Use `never` instead, this is useful when instantiating generic type parameters that you don't need to know the type of."
+					}
+				]
+			},
+			{
+				"ruleId": "@typescript-eslint/no-explicit-any",
+				"severity": 1,
+				"message": "Unexpected any. Specify a different type.",
+				"line": 711,
+				"column": 27,
+				"nodeType": "TSAnyKeyword",
+				"messageId": "unexpectedAny",
+				"endLine": 711,
+				"endColumn": 30,
+				"suggestions": [
+					{
+						"messageId": "suggestUnknown",
+						"fix": { "range": [20003, 20006], "text": "unknown" },
+						"desc": "Use `unknown` instead, this will force you to explicitly, and safely assert the type is correct."
+					},
+					{
+						"messageId": "suggestNever",
+						"fix": { "range": [20003, 20006], "text": "never" },
+						"desc": "Use `never` instead, this is useful when instantiating generic type parameters that you don't need to know the type of."
+					}
+				]
+			},
+			{
+				"ruleId": "@typescript-eslint/no-explicit-any",
+				"severity": 1,
+				"message": "Unexpected any. Specify a different type.",
+				"line": 718,
+				"column": 19,
+				"nodeType": "TSAnyKeyword",
+				"messageId": "unexpectedAny",
+				"endLine": 718,
+				"endColumn": 22,
+				"suggestions": [
+					{
+						"messageId": "suggestUnknown",
+						"fix": { "range": [20191, 20194], "text": "unknown" },
+						"desc": "Use `unknown` instead, this will force you to explicitly, and safely assert the type is correct."
+					},
+					{
+						"messageId": "suggestNever",
+						"fix": { "range": [20191, 20194], "text": "never" },
+						"desc": "Use `never` instead, this is useful when instantiating generic type parameters that you don't need to know the type of."
+					}
+				]
+			},
+			{
+				"ruleId": "@typescript-eslint/no-explicit-any",
+				"severity": 1,
+				"message": "Unexpected any. Specify a different type.",
+				"line": 719,
+				"column": 24,
+				"nodeType": "TSAnyKeyword",
+				"messageId": "unexpectedAny",
+				"endLine": 719,
+				"endColumn": 27,
+				"suggestions": [
+					{
+						"messageId": "suggestUnknown",
+						"fix": { "range": [20228, 20231], "text": "unknown" },
+						"desc": "Use `unknown` instead, this will force you to explicitly, and safely assert the type is correct."
+					},
+					{
+						"messageId": "suggestNever",
+						"fix": { "range": [20228, 20231], "text": "never" },
+						"desc": "Use `never` instead, this is useful when instantiating generic type parameters that you don't need to know the type of."
+					}
+				]
+			},
+			{
+				"ruleId": "@typescript-eslint/no-explicit-any",
+				"severity": 1,
+				"message": "Unexpected any. Specify a different type.",
+				"line": 727,
+				"column": 27,
+				"nodeType": "TSAnyKeyword",
+				"messageId": "unexpectedAny",
+				"endLine": 727,
+				"endColumn": 30,
+				"suggestions": [
+					{
+						"messageId": "suggestUnknown",
+						"fix": { "range": [20457, 20460], "text": "unknown" },
+						"desc": "Use `unknown` instead, this will force you to explicitly, and safely assert the type is correct."
+					},
+					{
+						"messageId": "suggestNever",
+						"fix": { "range": [20457, 20460], "text": "never" },
+						"desc": "Use `never` instead, this is useful when instantiating generic type parameters that you don't need to know the type of."
+					}
+				]
+			},
+			{
+				"ruleId": "@typescript-eslint/no-explicit-any",
+				"severity": 1,
+				"message": "Unexpected any. Specify a different type.",
+				"line": 728,
+				"column": 27,
+				"nodeType": "TSAnyKeyword",
+				"messageId": "unexpectedAny",
+				"endLine": 728,
+				"endColumn": 30,
+				"suggestions": [
+					{
+						"messageId": "suggestUnknown",
+						"fix": { "range": [20503, 20506], "text": "unknown" },
+						"desc": "Use `unknown` instead, this will force you to explicitly, and safely assert the type is correct."
+					},
+					{
+						"messageId": "suggestNever",
+						"fix": { "range": [20503, 20506], "text": "never" },
+						"desc": "Use `never` instead, this is useful when instantiating generic type parameters that you don't need to know the type of."
+					}
+				]
+			},
+			{
+				"ruleId": "@typescript-eslint/no-explicit-any",
+				"severity": 1,
+				"message": "Unexpected any. Specify a different type.",
+				"line": 729,
+				"column": 27,
+				"nodeType": "TSAnyKeyword",
+				"messageId": "unexpectedAny",
+				"endLine": 729,
+				"endColumn": 30,
+				"suggestions": [
+					{
+						"messageId": "suggestUnknown",
+						"fix": { "range": [20549, 20552], "text": "unknown" },
+						"desc": "Use `unknown` instead, this will force you to explicitly, and safely assert the type is correct."
+					},
+					{
+						"messageId": "suggestNever",
+						"fix": { "range": [20549, 20552], "text": "never" },
+						"desc": "Use `never` instead, this is useful when instantiating generic type parameters that you don't need to know the type of."
+					}
+				]
+			},
+			{
+				"ruleId": "@typescript-eslint/no-explicit-any",
+				"severity": 1,
+				"message": "Unexpected any. Specify a different type.",
+				"line": 730,
+				"column": 27,
+				"nodeType": "TSAnyKeyword",
+				"messageId": "unexpectedAny",
+				"endLine": 730,
+				"endColumn": 30,
+				"suggestions": [
+					{
+						"messageId": "suggestUnknown",
+						"fix": { "range": [20595, 20598], "text": "unknown" },
+						"desc": "Use `unknown` instead, this will force you to explicitly, and safely assert the type is correct."
+					},
+					{
+						"messageId": "suggestNever",
+						"fix": { "range": [20595, 20598], "text": "never" },
+						"desc": "Use `never` instead, this is useful when instantiating generic type parameters that you don't need to know the type of."
+					}
+				]
+			},
+			{
+				"ruleId": "@typescript-eslint/no-explicit-any",
+				"severity": 1,
+				"message": "Unexpected any. Specify a different type.",
+				"line": 731,
+				"column": 36,
+				"nodeType": "TSAnyKeyword",
+				"messageId": "unexpectedAny",
+				"endLine": 731,
+				"endColumn": 39,
+				"suggestions": [
+					{
+						"messageId": "suggestUnknown",
+						"fix": { "range": [20651, 20654], "text": "unknown" },
+						"desc": "Use `unknown` instead, this will force you to explicitly, and safely assert the type is correct."
+					},
+					{
+						"messageId": "suggestNever",
+						"fix": { "range": [20651, 20654], "text": "never" },
+						"desc": "Use `never` instead, this is useful when instantiating generic type parameters that you don't need to know the type of."
+					}
+				]
+			},
+			{
+				"ruleId": "@typescript-eslint/no-unused-vars",
+				"severity": 1,
+				"message": "'toast' is assigned a value but never used.",
+				"line": 754,
+				"column": 9,
+				"nodeType": null,
+				"messageId": "unusedVar",
+				"endLine": 754,
+				"endColumn": 14
+			},
+			{
+				"ruleId": "react-hooks/exhaustive-deps",
+				"severity": 1,
+				"message": "The 'activeData' logical expression could make the dependencies of useMemo Hook (at line 786) change on every render. To fix this, wrap the initialization of 'activeData' in its own useMemo() Hook.",
+				"line": 772,
+				"column": 9,
+				"nodeType": "VariableDeclarator",
+				"endLine": 772,
+				"endColumn": 47
+			},
+			{
+				"ruleId": "@typescript-eslint/no-explicit-any",
+				"severity": 1,
+				"message": "Unexpected any. Specify a different type.",
+				"line": 777,
+				"column": 54,
+				"nodeType": "TSAnyKeyword",
+				"messageId": "unexpectedAny",
+				"endLine": 777,
+				"endColumn": 57,
+				"suggestions": [
+					{
+						"messageId": "suggestUnknown",
+						"fix": { "range": [22337, 22340], "text": "unknown" },
+						"desc": "Use `unknown` instead, this will force you to explicitly, and safely assert the type is correct."
+					},
+					{
+						"messageId": "suggestNever",
+						"fix": { "range": [22337, 22340], "text": "never" },
+						"desc": "Use `never` instead, this is useful when instantiating generic type parameters that you don't need to know the type of."
+					}
+				]
+			},
+			{
+				"ruleId": "@typescript-eslint/no-unused-vars",
+				"severity": 1,
+				"message": "'i' is defined but never used. Allowed unused args must match /^_/u.",
+				"line": 915,
+				"column": 48,
+				"nodeType": null,
+				"messageId": "unusedVar",
+				"endLine": 915,
+				"endColumn": 49
+			}
+		],
+		"suppressedMessages": [],
+		"errorCount": 0,
+		"fatalErrorCount": 0,
+		"warningCount": 45,
+		"fixableErrorCount": 0,
+		"fixableWarningCount": 0,
+		"source": "import { useToast } from '@/hooks/useToast';\nimport { apiClient } from '@/services/apiClient';\nimport type { BilateralSentimentData, PanelTimelineEntry } from '@/types';\nimport { useQuery } from '@tanstack/react-query';\nimport * as d3 from 'd3';\nimport { AnimatePresence, motion } from 'framer-motion';\nimport {\n  Activity,\n  ArrowRightLeft,\n  BarChart3,\n  BoxSelect,\n  GitCommit,\n  Globe,\n  Info,\n  Layers,\n  MousePointer2,\n  Radar,\n  RefreshCw,\n  ZoomIn,\n} from 'lucide-react';\nimport { useCallback, useEffect, useMemo, useRef, useState } from 'react';\nimport {\n  PolarAngleAxis,\n  PolarGrid,\n  PolarRadiusAxis,\n  RadarChart,\n  Radar as ReRadar,\n  ResponsiveContainer,\n  Tooltip as ReTooltip,\n} from 'recharts';\n\n// ─── MOCK DATA & TYPES ─────────────────────────────────────────────\ninterface CountryMeta {\n  id: string;\n  name: string;\n  lat: number;\n  lon: number;\n  block: string;\n  power: number;\n  influence: number;\n  stability: number;\n  risk: number;\n  gdp: number;\n}\n\nconst COUNTRIES: CountryMeta[] = [\n  {\n    id: 'TUR',\n    name: 'Türkiye',\n    lat: 39.0,\n    lon: 35.0,\n    block: 'ASIA',\n    power: 7.2,\n    influence: 6.8,\n    stability: 5.5,\n    risk: 6.1,\n    gdp: 850,\n  },\n  {\n    id: 'USA',\n    name: 'ABD',\n    lat: 38.0,\n    lon: -97.0,\n    block: 'WEST',\n    power: 9.8,\n    influence: 9.5,\n    stability: 8.2,\n    risk: 3.4,\n    gdp: 23000,\n  },\n  {\n    id: 'RUS',\n    name: 'Rusya',\n    lat: 61.5,\n    lon: 105.3,\n    block: 'EAST',\n    power: 8.5,\n    influence: 7.9,\n    stability: 4.1,\n    risk: 8.2,\n    gdp: 1800,\n  },\n  {\n    id: 'CHN',\n    name: 'Çin',\n    lat: 35.0,\n    lon: 105.0,\n    block: 'EAST',\n    power: 9.1,\n    influence: 8.4,\n    stability: 7.5,\n    risk: 5.8,\n    gdp: 17700,\n  },\n  {\n    id: 'DEU',\n    name: 'Almanya',\n    lat: 51.0,\n    lon: 10.0,\n    block: 'WEST',\n    power: 7.8,\n    influence: 8.1,\n    stability: 8.5,\n    risk: 2.9,\n    gdp: 4200,\n  },\n  {\n    id: 'FRA',\n    name: 'Fransa',\n    lat: 46.0,\n    lon: 2.0,\n    block: 'WEST',\n    power: 7.1,\n    influence: 7.5,\n    stability: 6.8,\n    risk: 4.2,\n    gdp: 2900,\n  },\n  {\n    id: 'GBR',\n    name: 'İngiltere',\n    lat: 54.0,\n    lon: -2.0,\n    block: 'WEST',\n    power: 7.0,\n    influence: 7.3,\n    stability: 7.2,\n    risk: 3.8,\n    gdp: 3100,\n  },\n  {\n    id: 'IRN',\n    name: 'İran',\n    lat: 32.0,\n    lon: 53.0,\n    block: 'ASIA',\n    power: 5.8,\n    influence: 5.2,\n    stability: 3.1,\n    risk: 9.1,\n    gdp: 400,\n  },\n  {\n    id: 'ISR',\n    name: 'İsrail',\n    lat: 31.0,\n    lon: 34.8,\n    block: 'ASIA',\n    power: 6.2,\n    influence: 5.5,\n    stability: 5.0,\n    risk: 8.8,\n    gdp: 480,\n  },\n  {\n    id: 'SAU',\n    name: 'Suudi Arabistan',\n    lat: 24.0,\n    lon: 45.0,\n    block: 'ASIA',\n    power: 6.5,\n    influence: 6.1,\n    stability: 6.0,\n    risk: 6.5,\n    gdp: 1100,\n  },\n  {\n    id: 'IND',\n    name: 'Hindistan',\n    lat: 22.0,\n    lon: 79.0,\n    block: 'ASIA',\n    power: 7.5,\n    influence: 6.5,\n    stability: 6.2,\n    risk: 5.5,\n    gdp: 3500,\n  },\n  {\n    id: 'BRA',\n    name: 'Brezilya',\n    lat: -14.2,\n    lon: -51.9,\n    block: 'GLOBAL_SOUTH',\n    power: 5.5,\n    influence: 4.8,\n    stability: 5.8,\n    risk: 5.2,\n    gdp: 1900,\n  },\n  {\n    id: 'ZAF',\n    name: 'Güney Afrika',\n    lat: -30.0,\n    lon: 22.0,\n    block: 'GLOBAL_SOUTH',\n    power: 4.8,\n    influence: 4.2,\n    stability: 4.5,\n    risk: 6.8,\n    gdp: 420,\n  },\n  {\n    id: 'JPN',\n    name: 'Japonya',\n    lat: 36.0,\n    lon: 138.0,\n    block: 'WEST',\n    power: 7.3,\n    influence: 6.9,\n    stability: 8.8,\n    risk: 3.1,\n    gdp: 4900,\n  },\n  {\n    id: 'KOR',\n    name: 'Güney Kore',\n    lat: 36.5,\n    lon: 127.9,\n    block: 'WEST',\n    power: 6.8,\n    influence: 6.2,\n    stability: 7.8,\n    risk: 4.5,\n    gdp: 1800,\n  },\n];\n\nconst generateMockRelations = (): BilateralSentimentData[] => {\n  const relations: BilateralSentimentData[] = [];\n  for (let i = 0; i < COUNTRIES.length; i++) {\n    for (let j = i + 1; j < COUNTRIES.length; j++) {\n      const a = COUNTRIES[i],\n        b = COUNTRIES[j];\n      const sameBlock = a.block === b.block;\n      const baseAffinity = sameBlock ? 0.3 + Math.random() * 0.5 : -0.4 + Math.random() * 0.6;\n      const interactions = Math.floor(Math.random() * 200) + 10;\n      relations.push({\n        from_country: a.id,\n        to_country: b.id,\n        affinity_score: Math.max(-1, Math.min(1, baseAffinity)),\n        sentiment_avg: baseAffinity * 0.8 + (Math.random() - 0.5) * 0.3,\n        interaction_count: interactions,\n        risk_score: (a.risk + b.risk) / 2 + (sameBlock ? -1 : 2) + Math.random() * 2,\n        last_updated: new Date(Date.now() - Math.random() * 1e10).toISOString(),\n      } as BilateralSentimentData);\n    }\n  }\n  return relations;\n};\n\nconst generateTimeline = (): PanelTimelineEntry[] => {\n  return Array.from({ length: 12 }, (_, i) => ({\n    file_id: `panel_202${4 + Math.floor(i / 12)}_${String((i % 12) + 1).padStart(2, '0')}`,\n    date: `202${4 + Math.floor(i / 12)}-${String((i % 12) + 1).padStart(2, '0')}-15`,\n    title: `BM Genel Kurul ${i + 1}. Olağan Oturum`,\n    speaker_count: Math.floor(Math.random() * 50) + 30,\n    segment_count: Math.floor(Math.random() * 300) + 100,\n  }));\n};\n\n// ─── D3 HOOK ─────────────────────────────────────────────────────\nconst useD3 = (\n  renderFn: (\n    svg: d3.Selection<SVGSVGElement, unknown, null, undefined>,\n    width: number,\n    height: number,\n  ) => void,\n  deps: any[],\n) => {\n  const ref = useRef<SVGSVGElement>(null);\n  const containerRef = useRef<HTMLDivElement>(null);\n\n  useEffect(() => {\n    if (!ref.current || !containerRef.current) return;\n    const { width, height } = containerRef.current.getBoundingClientRect();\n    const svg = d3.select(ref.current);\n    svg.selectAll('*').remove();\n    svg.attr('width', width).attr('height', height);\n    renderFn(svg, width, height);\n  }, deps);\n\n  return { ref, containerRef };\n};\n\n// ─── GLOBE VIEW ──────────────────────────────────────────────────\nconst GlobeView = ({\n  data,\n  onSelect,\n}: {\n  data: BilateralSentimentData[];\n  onSelect: (c: string) => void;\n}) => {\n  const { ref, containerRef } = useD3(\n    (svg, w, h) => {\n      const projection = d3\n        .geoOrthographic()\n        .scale(Math.min(w, h) / 2.8)\n        .translate([w / 2, h / 2]);\n      const path = d3.geoPath().projection(projection);\n      const g = svg.append('g');\n\n      // Sphere\n      g.append('path')\n        .datum({ type: 'Sphere' } as any)\n        .attr('fill', '#0f172a')\n        .attr('stroke', '#1e293b')\n        .attr('stroke-width', 1.5)\n        .attr('d', path as any);\n\n      // Graticule\n      const graticule = d3.geoGraticule();\n      g.append('path')\n        .datum(graticule() as any)\n        .attr('fill', 'none')\n        .attr('stroke', '#1e293b')\n        .attr('stroke-width', 0.5)\n        .attr('d', path as any);\n\n      // Country points\n      const countryMap = new Map(COUNTRIES.map((c) => [c.id, c]));\n      const affinityScale = d3.scaleSequential(d3.interpolateRdYlGn).domain([-1, 1]);\n\n      COUNTRIES.forEach((c) => {\n        const [x, y] = projection([c.lon, c.lat]) || [0, 0];\n        if (x === 0 && y === 0) return;\n\n        const circle = g\n          .append('circle')\n          .attr('cx', x)\n          .attr('cy', y)\n          .attr('r', 4 + c.power * 0.8)\n          .attr('fill', '#3b82f6')\n          .attr('stroke', '#60a5fa')\n          .attr('stroke-width', 1.5)\n          .attr('opacity', 0.9)\n          .style('cursor', 'pointer');\n\n        circle.append('title').text(`${c.name} | Güç: ${c.power} | Blok: ${c.block}`);\n\n        circle.on('click', () => onSelect(c.id));\n      });\n\n      // Relations as arcs\n      data.forEach((r) => {\n        const from = countryMap.get(r.from_country);\n        const to = countryMap.get(r.to_country);\n        if (!from || !to) return;\n\n        const f = projection([from.lon, from.lat]);\n        const t = projection([to.lon, to.lat]);\n        if (!f || !t) return;\n\n        const mid = [(f[0] + t[0]) / 2, (f[1] + t[1]) / 2 - 30];\n        const line = d3.line()([f, mid as [number, number], t]);\n\n        g.append('path')\n          .attr('d', line)\n          .attr('fill', 'none')\n          .attr('stroke', affinityScale(r.affinity_score || 0))\n          .attr('stroke-width', Math.max(0.5, (r.interaction_count || 0) / 50))\n          .attr('opacity', 0.6)\n          .attr('stroke-linecap', 'round');\n      });\n\n      // Rotation interaction\n      const rotation = [0, 0];\n      const drag = d3.drag().on('drag', (event) => {\n        rotation[0] += event.dx * 0.3;\n        rotation[1] -= event.dy * 0.3;\n        projection.rotate(rotation);\n        g.selectAll('path').attr('d', path as any);\n        g.selectAll('circle')\n          .attr('cx', (d: any) => {\n            const c = COUNTRIES.find((x) => x.id === d?.id);\n            return c ? (projection([c.lon, c.lat]) || [0, 0])[0] : 0;\n          })\n          .attr('cy', (d: any) => {\n            const c = COUNTRIES.find((x) => x.id === d?.id);\n            return c ? (projection([c.lon, c.lat]) || [0, 0])[1] : 0;\n          });\n      });\n      svg.call(drag as any);\n    },\n    [data, onSelect],\n  );\n\n  return (\n    <div\n      ref={containerRef}\n      className=\"w-full h-[500px] relative bg-carbon-950 rounded-none border border-carbon-700\"\n    >\n      <svg ref={ref} className=\"w-full h-full\" />\n      <div className=\"absolute top-3 left-3 bg-carbon-900/90 border border-carbon-700 p-2 text-2xs text-carbon-300\">\n        <MousePointer2 className=\"w-3 h-3 inline mr-1\" /> Sürükleyerek döndürün\n      </div>\n    </div>\n  );\n};\n\n// ─── CHORD DIAGRAM ───────────────────────────────────────────────\nconst ChordView = ({ data }: { data: BilateralSentimentData[] }) => {\n  const { ref, containerRef } = useD3(\n    (svg, w, h) => {\n      const size = Math.min(w, h);\n      const outerRadius = size / 2 - 40;\n      const innerRadius = outerRadius - 20;\n\n      const countryIds = COUNTRIES.map((c) => c.id);\n      const matrix = Array.from({ length: countryIds.length }, () =>\n        new Array(countryIds.length).fill(0),\n      );\n\n      data.forEach((r) => {\n        const i = countryIds.indexOf(r.from_country);\n        const j = countryIds.indexOf(r.to_country);\n        if (i >= 0 && j >= 0) {\n          const val = Math.abs(r.affinity_score || 0) * (r.interaction_count || 0);\n          matrix[i][j] = val;\n          matrix[j][i] = val;\n        }\n      });\n\n      const chord = d3.chord().padAngle(0.05).sortSubgroups(d3.descending);\n      const chords = chord(matrix);\n\n      const arc = d3.arc().innerRadius(innerRadius).outerRadius(outerRadius);\n      const ribbon = d3.ribbon().radius(innerRadius);\n\n      const color = d3.scaleOrdinal(d3.schemeTableau10);\n\n      const g = svg.append('g').attr('transform', `translate(${w / 2},${h / 2})`);\n\n      // Groups\n      const group = g.append('g').selectAll('g').data(chords.groups).join('g');\n\n      group\n        .append('path')\n        .attr('fill', (d: any) => color(d.index))\n        .attr('stroke', '#0f172a')\n        .attr('d', arc as any)\n        .style('cursor', 'pointer')\n        .append('title')\n        .text((d: any) => `${COUNTRIES[d.index].name}: ${d.value.toFixed(0)} etkileşim`);\n\n      // Labels\n      group\n        .append('text')\n        .each((d: any) => {\n          d.angle = (d.startAngle + d.endAngle) / 2;\n        })\n        .attr('dy', '0.35em')\n        .attr(\n          'transform',\n          (d: any) => `\n        rotate(${(d.angle * 180) / Math.PI - 90})\n        translate(${outerRadius + 10})\n        ${d.angle > Math.PI ? 'rotate(180)' : ''}\n      `,\n        )\n        .attr('text-anchor', (d: any) => (d.angle > Math.PI ? 'end' : 'start'))\n        .text((d: any) => COUNTRIES[d.index].id)\n        .attr('fill', '#94a3b8')\n        .attr('font-size', '9px')\n        .attr('font-family', 'monospace');\n\n      // Ribbons\n      g.append('g')\n        .attr('fill-opacity', 0.6)\n        .selectAll('path')\n        .data(chords)\n        .join('path')\n        .attr('fill', (d: any) => color(d.source.index))\n        .attr('d', ribbon as any)\n        .attr('stroke', '#0f172a')\n        .attr('stroke-width', 0.5)\n        .append('title')\n        .text((d: any) => `${COUNTRIES[d.source.index].name} ↔ ${COUNTRIES[d.target.index].name}`);\n    },\n    [data],\n  );\n\n  return (\n    <div\n      ref={containerRef}\n      className=\"w-full h-[500px] relative bg-carbon-950 rounded-none border border-carbon-700\"\n    >\n      <svg ref={ref} className=\"w-full h-full\" />\n    </div>\n  );\n};\n\n// ─── HEATMAP VIEW ────────────────────────────────────────────────\nconst HeatmapView = ({ data }: { data: BilateralSentimentData[] }) => {\n  const { ref, containerRef } = useD3(\n    (svg, w, h) => {\n      const margin = { top: 60, right: 20, bottom: 80, left: 80 };\n      const innerW = w - margin.left - margin.right;\n      const innerH = h - margin.top - margin.bottom;\n\n      const pairs = data.map((r) => `${r.from_country}-${r.to_country}`);\n      const uniquePairs = Array.from(new Set(pairs)).slice(0, 20);\n      const timePoints = generateTimeline().map((t) => t.date.slice(0, 7));\n\n      const heatData: { pair: string; time: string; value: number }[] = [];\n      uniquePairs.forEach((pair) => {\n        timePoints.forEach((time) => {\n          heatData.push({\n            pair,\n            time,\n            value: Math.random() * 2 - 1,\n          });\n        });\n      });\n\n      const x = d3.scaleBand().range([0, innerW]).domain(timePoints).padding(0.05);\n      const y = d3.scaleBand().range([0, innerH]).domain(uniquePairs).padding(0.05);\n      const color = d3.scaleSequential(d3.interpolateRdYlGn).domain([-1, 1]);\n\n      const g = svg.append('g').attr('transform', `translate(${margin.left},${margin.top})`);\n\n      g.selectAll('rect')\n        .data(heatData)\n        .join('rect')\n        .attr('x', (d) => x(d.time) || 0)\n        .attr('y', (d) => y(d.pair) || 0)\n        .attr('width', x.bandwidth())\n        .attr('height', y.bandwidth())\n        .attr('fill', (d) => color(d.value))\n        .attr('rx', 2)\n        .append('title')\n        .text((d) => `${d.pair} @ ${d.time}: ${d.value.toFixed(2)}`);\n\n      // Axes\n      g.append('g')\n        .attr('transform', `translate(0,${innerH})`)\n        .call(d3.axisBottom(x).tickSize(0))\n        .select('.domain')\n        .remove();\n      g.selectAll('.tick text')\n        .attr('fill', '#64748b')\n        .attr('font-size', '9px')\n        .attr('transform', 'rotate(-45)')\n        .attr('text-anchor', 'end');\n\n      g.append('g').call(d3.axisLeft(y).tickSize(0)).select('.domain').remove();\n      g.selectAll('.tick text').attr('fill', '#64748b').attr('font-size', '8px');\n    },\n    [data],\n  );\n\n  return (\n    <div\n      ref={containerRef}\n      className=\"w-full h-[600px] relative bg-carbon-950 rounded-none border border-carbon-700 overflow-auto\"\n    >\n      <svg ref={ref} className=\"w-full h-full\" />\n    </div>\n  );\n};\n\n// ─── RADAR PROFILE ───────────────────────────────────────────────\nconst RadarProfile = ({ selectedCountry }: { selectedCountry: string | null }) => {\n  const country = useMemo(() => COUNTRIES.find((c) => c.id === selectedCountry), [selectedCountry]);\n\n  const radarData = useMemo(() => {\n    if (!country) return [];\n    return [\n      { metric: 'Güç', A: country.power, fullMark: 10 },\n      { metric: 'Etki', A: country.influence, fullMark: 10 },\n      { metric: 'İstikrar', A: country.stability, fullMark: 10 },\n      { metric: 'Risk', A: 10 - country.risk, fullMark: 10 },\n      { metric: 'Ekonomi', A: Math.min(10, country.gdp / 3000), fullMark: 10 },\n    ];\n  }, [country]);\n\n  if (!country)\n    return (\n      <div className=\"h-full flex items-center justify-center text-carbon-500 text-sm\">\n        <Radar className=\"w-8 h-8 mr-2 opacity-50\" /> Ülke seçin\n      </div>\n    );\n\n  return (\n    <div className=\"h-full p-4\">\n      <h3 className=\"text-sm font-semibold text-carbon-100 mb-2 flex items-center gap-2\">\n        <Activity className=\"w-4 h-4 text-indigo-400\" /> {country.name} Profili\n      </h3>\n      <ResponsiveContainer width=\"100%\" height={250}>\n        <RadarChart data={radarData}>\n          <PolarGrid stroke=\"#334155\" />\n          <PolarAngleAxis dataKey=\"metric\" tick={{ fill: '#94a3b8', fontSize: 11 }} />\n          <PolarRadiusAxis angle={30} domain={[0, 10]} tick={{ fill: '#64748b', fontSize: 9 }} />\n          <ReRadar\n            name={country.name}\n            dataKey=\"A\"\n            stroke=\"#6366f1\"\n            fill=\"#6366f1\"\n            fillOpacity={0.3}\n          />\n          <ReTooltip\n            contentStyle={{ background: '#0f172a', border: '1px solid #334155', borderRadius: 0 }}\n          />\n        </RadarChart>\n      </ResponsiveContainer>\n      <div className=\"mt-4 space-y-2 text-xs text-carbon-300\">\n        <div className=\"flex justify-between border-b border-carbon-800 pb-1\">\n          <span>Blok</span>\n          <span className=\"text-carbon-100 font-mono\">{country.block}</span>\n        </div>\n        <div className=\"flex justify-between border-b border-carbon-800 pb-1\">\n          <span>GDP (M$)</span>\n          <span className=\"text-carbon-100 font-mono\">{country.gdp}</span>\n        </div>\n        <div className=\"flex justify-between border-b border-carbon-800 pb-1\">\n          <span>Risk Skoru</span>\n          <span\n            className={`font-mono ${country.risk > 7 ? 'text-red-400' : country.risk > 4 ? 'text-yellow-400' : 'text-green-400'}`}\n          >\n            {country.risk.toFixed(1)}\n          </span>\n        </div>\n      </div>\n    </div>\n  );\n};\n\n// ─── NETWORK VIEW (FORCE-DIRECTED) ───────────────────────────────\nconst NetworkView = ({ data }: { data: BilateralSentimentData[] }) => {\n  const { ref, containerRef } = useD3(\n    (svg, w, h) => {\n      const nodes = COUNTRIES.map((c) => ({\n        id: c.id,\n        name: c.name,\n        block: c.block,\n        power: c.power,\n      }));\n      const links = data.map((r) => ({\n        source: r.from_country,\n        target: r.to_country,\n        value: Math.abs(r.affinity_score || 0),\n        sentiment: r.affinity_score || 0,\n        interactions: r.interaction_count || 0,\n      }));\n\n      const colorScale = d3\n        .scaleOrdinal(d3.schemeCategory10)\n        .domain(['WEST', 'EAST', 'ASIA', 'GLOBAL_SOUTH']);\n      const affinityColor = d3.scaleSequential(d3.interpolateRdYlGn).domain([-1, 1]);\n\n      const simulation = d3\n        .forceSimulation(nodes as any)\n        .force(\n          'link',\n          d3\n            .forceLink(links as any)\n            .id((d: any) => d.id)\n            .distance(100),\n        )\n        .force('charge', d3.forceManyBody().strength(-300))\n        .force('center', d3.forceCenter(w / 2, h / 2))\n        .force(\n          'collide',\n          d3.forceCollide().radius((d: any) => 15 + d.power * 2),\n        );\n\n      const g = svg.append('g');\n\n      // Zoom\n      const zoom = d3.zoom().on('zoom', (event) => g.attr('transform', event.transform));\n      svg.call(zoom as any);\n\n      // Links\n      const link = g\n        .append('g')\n        .selectAll('line')\n        .data(links)\n        .join('line')\n        .attr('stroke', (d: any) => affinityColor(d.sentiment))\n        .attr('stroke-width', (d: any) => Math.max(1, d.interactions / 30))\n        .attr('stroke-opacity', 0.6);\n\n      // Nodes\n      const node = g\n        .append('g')\n        .selectAll('g')\n        .data(nodes)\n        .join('g')\n        .call(\n          d3\n            .drag()\n            .on('start', (event, d: any) => {\n              if (!event.active) simulation.alphaTarget(0.3).restart();\n              d.fx = d.x;\n              d.fy = d.y;\n            })\n            .on('drag', (event, d: any) => {\n              d.fx = event.x;\n              d.fy = event.y;\n            })\n            .on('end', (event, d: any) => {\n              if (!event.active) simulation.alphaTarget(0);\n              d.fx = null;\n              d.fy = null;\n            }) as any,\n        );\n\n      node\n        .append('circle')\n        .attr('r', (d: any) => 6 + d.power)\n        .attr('fill', (d: any) => colorScale(d.block))\n        .attr('stroke', '#0f172a')\n        .attr('stroke-width', 2)\n        .style('cursor', 'pointer');\n\n      node\n        .append('text')\n        .text((d: any) => d.id)\n        .attr('x', (d: any) => 8 + d.power)\n        .attr('y', 4)\n        .attr('fill', '#cbd5e1')\n        .attr('font-size', '9px')\n        .attr('font-family', 'monospace');\n\n      simulation.on('tick', () => {\n        link\n          .attr('x1', (d: any) => d.source.x)\n          .attr('y1', (d: any) => d.source.y)\n          .attr('x2', (d: any) => d.target.x)\n          .attr('y2', (d: any) => d.target.y);\n        node.attr('transform', (d: any) => `translate(${d.x},${d.y})`);\n      });\n    },\n    [data],\n  );\n\n  return (\n    <div\n      ref={containerRef}\n      className=\"w-full h-[500px] relative bg-carbon-950 rounded-none border border-carbon-700\"\n    >\n      <svg ref={ref} className=\"w-full h-full\" />\n      <div className=\"absolute bottom-3 right-3 bg-carbon-900/90 border border-carbon-700 p-2 text-2xs text-carbon-300\">\n        <ZoomIn className=\"w-3 h-3 inline mr-1\" /> Zoom için scroll\n      </div>\n    </div>\n  );\n};\n\n// ─── MAIN COMPONENT ────────────────────────────────────────────────\ntype ViewMode = 'globe' | 'network' | 'chord' | 'heatmap' | 'radar';\n\nexport const BilateralRelations = () => {\n  const toast = useToast();\n  const [viewMode, setViewMode] = useState<ViewMode>('globe');\n  const [selectedCountry, setSelectedCountry] = useState<string | null>(null);\n  const [selectedPanel, setSelectedPanel] = useState<PanelTimelineEntry | null>(null);\n\n  const dashboardQuery = useQuery({\n    queryKey: ['bilateral-overview'],\n    queryFn: () => apiClient.get<BilateralSentimentData[]>('/api/v1/dashboard/bilateral'),\n    initialData: generateMockRelations(),\n  });\n\n  const timelineQuery = useQuery({\n    queryKey: ['bilateral-timeline'],\n    queryFn: () => apiClient.get<PanelTimelineEntry[]>('/api/v1/dashboard/bilateral/timeline'),\n    initialData: generateTimeline(),\n    staleTime: 1000 * 60 * 5,\n  });\n\n  const activeData = dashboardQuery.data || [];\n\n  const stats = useMemo(() => {\n    const avgAffinity = d3.mean(activeData, (d) => d.affinity_score || 0) || 0;\n    const totalInteractions = d3.sum(activeData, (d) => d.interaction_count || 0);\n    const avgRisk = d3.mean(activeData, (d) => (d as any).risk_score || 0) || 0;\n    const positiveRelations = activeData.filter((d) => (d.affinity_score || 0) > 0.5).length;\n    return {\n      avgAffinity,\n      totalInteractions,\n      avgRisk,\n      positiveRelations,\n      totalCountries: COUNTRIES.length,\n    };\n  }, [activeData]);\n\n  const handleCountrySelect = useCallback((id: string) => {\n    setSelectedCountry((prev) => (prev === id ? null : id));\n    setViewMode('radar');\n  }, []);\n\n  return (\n    <div className=\"space-y-6 animate-[fade-in-up_300ms_ease-out_both]\">\n      {/* Header */}\n      <div className=\"flex items-center justify-between\">\n        <div>\n          <h1 className=\"text-xl font-semibold tracking-tight text-carbon-50 flex items-center gap-3\">\n            <Globe className=\"w-5 h-5 text-indigo-400\" />\n            Diplomatik İstihbarat Merkezi\n          </h1>\n          <p className=\"text-sm text-carbon-400 mt-1\">\n            İkili ilişkilerin çok boyutlu analizi: 3D küre projeksiyonu, Chord diagram, ısı haritası\n            ve topluluk tespiti\n          </p>\n        </div>\n        <div className=\"flex items-center gap-3\">\n          <button\n            onClick={() => dashboardQuery.refetch()}\n            className=\"flex items-center gap-2 px-3 py-2 text-sm bg-carbon-800 border border-carbon-550 text-carbon-300 hover:text-carbon-100 hover:bg-carbon-700 transition-colors rounded-none\"\n          >\n            <RefreshCw className=\"w-4 h-4\" /> Yenile\n          </button>\n        </div>\n      </div>\n\n      {/* Stats Cards */}\n      <div className=\"grid grid-cols-2 lg:grid-cols-4 gap-4\">\n        {[\n          {\n            label: 'Ort. Affinity',\n            value: stats.avgAffinity.toFixed(2),\n            icon: Activity,\n            color: stats.avgAffinity > 0 ? 'text-green-400' : 'text-red-400',\n          },\n          {\n            label: 'Toplam Etkileşim',\n            value: stats.totalInteractions.toLocaleString(),\n            icon: GitCommit,\n            color: 'text-blue-400',\n          },\n          {\n            label: 'Ort. Risk',\n            value: stats.avgRisk.toFixed(1),\n            icon: BoxSelect,\n            color: stats.avgRisk > 6 ? 'text-red-400' : 'text-yellow-400',\n          },\n          {\n            label: 'Pozitif İlişki',\n            value: `${stats.positiveRelations}`,\n            icon: BarChart3,\n            color: 'text-green-400',\n          },\n        ].map((stat, i) => (\n          <motion.div\n            key={stat.label}\n            initial={{ opacity: 0, y: 20 }}\n            animate={{ opacity: 1, y: 0 }}\n            transition={{ delay: i * 0.1 }}\n            className=\"bg-carbon-900 border border-carbon-550 p-4 rounded-none\"\n          >\n            <div className=\"flex items-center justify-between mb-2\">\n              <span className=\"text-2xs uppercase tracking-wider text-carbon-400 font-semibold\">\n                {stat.label}\n              </span>\n              <stat.icon className={`w-4 h-4 ${stat.color}`} />\n            </div>\n            <div className=\"text-2xl font-mono font-semibold text-carbon-50\">{stat.value}</div>\n          </motion.div>\n        ))}\n      </div>\n\n      {/* View Mode Selector */}\n      <div className=\"flex flex-wrap gap-2 border-b border-carbon-700 pb-3\">\n        {[\n          { id: 'globe' as ViewMode, label: '3D Küre', icon: Globe },\n          { id: 'network' as ViewMode, label: 'Ağ Analizi', icon: GitCommit },\n          { id: 'chord' as ViewMode, label: 'Chord Matrisi', icon: ArrowRightLeft },\n          { id: 'heatmap' as ViewMode, label: 'Zaman İzlemi', icon: Activity },\n          { id: 'radar' as ViewMode, label: 'Ülke Profili', icon: Radar },\n        ].map((mode) => (\n          <button\n            key={mode.id}\n            onClick={() => setViewMode(mode.id)}\n            className={`flex items-center gap-2 px-4 py-2 text-xs font-medium transition-all rounded-none border ${\n              viewMode === mode.id\n                ? 'bg-indigo-500/20 border-indigo-500/50 text-indigo-300'\n                : 'bg-carbon-800 border-carbon-700 text-carbon-400 hover:text-carbon-200'\n            }`}\n          >\n            <mode.icon className=\"w-3.5 h-3.5\" /> {mode.label}\n          </button>\n        ))}\n      </div>\n\n      {/* Main Content Grid */}\n      <div className=\"grid grid-cols-1 lg:grid-cols-3 gap-6\">\n        <div className=\"lg:col-span-2\">\n          <AnimatePresence mode=\"wait\">\n            <motion.div\n              key={viewMode}\n              initial={{ opacity: 0, scale: 0.98 }}\n              animate={{ opacity: 1, scale: 1 }}\n              exit={{ opacity: 0, scale: 0.98 }}\n              transition={{ duration: 0.3 }}\n            >\n              {viewMode === 'globe' && (\n                <GlobeView data={activeData} onSelect={handleCountrySelect} />\n              )}\n              {viewMode === 'network' && <NetworkView data={activeData} />}\n              {viewMode === 'chord' && <ChordView data={activeData} />}\n              {viewMode === 'heatmap' && <HeatmapView data={activeData} />}\n              {viewMode === 'radar' && <RadarProfile selectedCountry={selectedCountry} />}\n            </motion.div>\n          </AnimatePresence>\n        </div>\n\n        {/* Side Panel */}\n        <div className=\"space-y-4\">\n          <div className=\"bg-carbon-900 border border-carbon-550 p-4 rounded-none\">\n            <h3 className=\"text-sm font-semibold text-carbon-50 mb-3 flex items-center gap-2\">\n              <Layers className=\"w-4 h-4 text-indigo-400\" /> Zaman Çizelgesi\n            </h3>\n            <div className=\"space-y-2 max-h-[300px] overflow-y-auto\">\n              {timelineQuery.data?.map((panel, i) => (\n                <button\n                  key={panel.file_id}\n                  onClick={() => setSelectedPanel(panel)}\n                  className={`w-full text-left px-3 py-2 text-xs border transition-colors ${\n                    selectedPanel?.file_id === panel.file_id\n                      ? 'bg-indigo-500/10 border-indigo-500/30 text-indigo-300'\n                      : 'bg-carbon-950 border-carbon-800 text-carbon-400 hover:border-carbon-600'\n                  }`}\n                >\n                  <div className=\"font-medium\">{panel.title}</div>\n                  <div className=\"text-2xs text-carbon-500 mt-1\">\n                    {panel.date} • {panel.speaker_count} konuşmacı\n                  </div>\n                </button>\n              ))}\n            </div>\n          </div>\n\n          <div className=\"bg-carbon-900 border border-carbon-550 p-4 rounded-none\">\n            <h3 className=\"text-sm font-semibold text-carbon-50 mb-3 flex items-center gap-2\">\n              <Info className=\"w-4 h-4 text-indigo-400\" /> Blok Dağılımı\n            </h3>\n            <div className=\"space-y-2\">\n              {['WEST', 'EAST', 'ASIA', 'GLOBAL_SOUTH'].map((block) => {\n                const count = COUNTRIES.filter((c) => c.block === block).length;\n                const pct = (count / COUNTRIES.length) * 100;\n                return (\n                  <div key={block} className=\"space-y-1\">\n                    <div className=\"flex justify-between text-xs text-carbon-300\">\n                      <span>{block}</span>\n                      <span className=\"font-mono\">{count}</span>\n                    </div>\n                    <div className=\"h-1.5 bg-carbon-800 rounded-none overflow-hidden\">\n                      <motion.div\n                        className=\"h-full bg-indigo-500\"\n                        initial={{ width: 0 }}\n                        animate={{ width: `${pct}%` }}\n                        transition={{ duration: 0.8, delay: 0.2 }}\n                      />\n                    </div>\n                  </div>\n                );\n              })}\n            </div>\n          </div>\n\n          {selectedCountry && (\n            <motion.div\n              initial={{ opacity: 0, x: 20 }}\n              animate={{ opacity: 1, x: 0 }}\n              className=\"bg-carbon-900 border border-carbon-550 p-4 rounded-none\"\n            >\n              <h3 className=\"text-sm font-semibold text-carbon-50 mb-2\">Komşu Analizi</h3>\n              <div className=\"space-y-1.5\">\n                {activeData\n                  .filter(\n                    (r) => r.from_country === selectedCountry || r.to_country === selectedCountry,\n                  )\n                  .sort((a, b) => Math.abs(b.affinity_score || 0) - Math.abs(a.affinity_score || 0))\n                  .slice(0, 5)\n                  .map((r, i) => {\n                    const other =\n                      r.from_country === selectedCountry ? r.to_country : r.from_country;\n                    const c = COUNTRIES.find((x) => x.id === other);\n                    return (\n                      <div\n                        key={i}\n                        className=\"flex items-center justify-between text-xs py-1 border-b border-carbon-800 last:border-0\"\n                      >\n                        <span className=\"text-carbon-300\">{c?.name || other}</span>\n                        <span\n                          className={`font-mono ${(r.affinity_score || 0) > 0 ? 'text-green-400' : 'text-red-400'}`}\n                        >\n                          {(r.affinity_score || 0).toFixed(2)}\n                        </span>\n                      </div>\n                    );\n                  })}\n              </div>\n            </motion.div>\n          )}\n        </div>\n      </div>\n    </div>\n  );\n};\n",
+		"usedDeprecatedRules": []
+	}
+]

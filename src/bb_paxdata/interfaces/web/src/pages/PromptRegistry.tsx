@@ -1,8 +1,8 @@
 import { useQuery } from '@tanstack/react-query';
+import { BookOpen, Clock, FileText, Hash } from 'lucide-react';
+import { useTranslation } from '@/hooks/useTranslation';
 import { apiClient } from '@/services/apiClient';
 import type { PromptListResponse } from '@/types';
-import { BookOpen, Hash, Clock, FileText } from 'lucide-react';
-import { useTranslation } from '@/hooks/useTranslation';
 
 export const PromptRegistry = () => {
   const { t } = useTranslation();

@@ -1,5 +1,5 @@
-import { cn } from '@/utils/helpers';
 import type { TriagePriority } from '@/types';
+import { cn } from '@/utils/helpers';
 
 interface PriorityBadgeProps {
   priority: TriagePriority;

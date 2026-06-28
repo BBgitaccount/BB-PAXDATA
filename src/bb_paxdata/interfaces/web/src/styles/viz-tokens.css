@@ -1,0 +1,157 @@
+/* GEOINT Terminal Design System - CSS Tokens */
+/* NASA IRGC × Bloomberg Terminal × Palantir Gotham Aesthetic */
+
+:root {
+  /* === CORE PALETTE === */
+  --geoint-void: #060b12; /* en derin arka plan */
+  --geoint-deep: #0a0f1a; /* harita/graph bg */
+  --geoint-base: #0d1523; /* panel bg */
+  --geoint-surface: #111d30; /* kart bg */
+  --geoint-elevated: #162540; /* hover state, drawer */
+  --geoint-border: #1e3a5f; /* ince border */
+  --geoint-muted: #2d4a6b; /* disabled, placeholder */
+
+  /* === TEXT === */
+  --text-primary: #e2eaf7; /* ana metin */
+  --text-secondary: #8ca3c0; /* ikincil metin */
+  --text-tertiary: #4d6a8a; /* placeholder */
+  --text-data: #c8d8f0; /* data değerleri */
+
+  /* === SENTIMENT SPECTRUM === */
+  --sentiment-ally: #10b981; /* emerald-500 */
+  --sentiment-partner: #3b82f6; /* blue-500 */
+  --sentiment-neutral: #6b7280; /* gray-500 */
+  --sentiment-cautious: #f59e0b; /* amber-500 */
+  --sentiment-adversary: #ef4444; /* red-500 */
+
+  /* === SIGNAL COLORS === */
+  --signal-positive: #34d399; /* +sentiment */
+  --signal-negative: #f87171; /* -sentiment */
+  --signal-warning: #fbbf24; /* risk */
+  --signal-critical: #dc2626; /* adversary/conflict */
+  --signal-info: #60a5fa; /* neutral info */
+
+  /* === TYPOGRAPHY === */
+  --font-display: 'Space Grotesk', sans-serif; /* başlıklar */
+  --font-body: 'Inter', sans-serif; /* paragraflar */
+  --font-mono: 'JetBrains Mono', monospace; /* data, kod */
+  --font-label: 'Space Mono', monospace; /* KPI label'lar */
+
+  /* === SPACING === */
+  --space-xs: 4px;
+  --space-sm: 8px;
+  --space-md: 16px;
+  --space-lg: 24px;
+  --space-xl: 40px;
+
+  /* === EFFECTS === */
+  --glow-ally: 0 0 12px rgba(16, 185, 129, 0.4);
+  --glow-adversary: 0 0 16px rgba(239, 68, 68, 0.5);
+  --glow-partner: 0 0 10px rgba(59, 130, 246, 0.3);
+  --scanline: repeating-linear-gradient(
+    0deg,
+    transparent,
+    transparent 2px,
+    rgba(255, 255, 255, 0.015) 2px,
+    rgba(255, 255, 255, 0.015) 4px
+  );
+
+  /* === BORDERS === */
+  --border-subtle: 1px solid var(--geoint-border);
+  --border-active: 1px solid var(--signal-info);
+  --border-alert: 1px solid var(--signal-warning);
+}
+
+/* === TYPOGRAPHY UTILITIES === */
+
+/* Section header'lar: küçük harf, geniş letter-spacing, sol çizgi */
+.geoint-section-label {
+  font-family: var(--font-label);
+  font-size: 10px;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: var(--text-tertiary);
+  padding-left: 12px;
+  border-left: 2px solid var(--signal-info);
+  margin-bottom: var(--space-sm);
+}
+
+/* Data değerleri: büyük, mono, parlak */
+.geoint-data-value {
+  font-family: var(--font-mono);
+  font-size: 28px;
+  font-weight: 700;
+  color: var(--text-data);
+  line-height: 1;
+}
+
+/* İnce açıklamalar */
+.geoint-data-label {
+  font-family: var(--font-label);
+  font-size: 9px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--text-secondary);
+}
+
+/* === PANEL BASE STYLES === */
+.geoint-panel {
+  background-color: var(--geoint-base);
+  border: var(--border-subtle);
+  position: relative;
+  overflow: hidden;
+}
+
+.geoint-panel::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: var(--scanline);
+  pointer-events: none;
+  opacity: 0.5;
+  z-index: 1;
+}
+
+.geoint-panel-content {
+  position: relative;
+  z-index: 2;
+}
+
+/* === PULSE ANIMATION FOR LIVE BADGE === */
+@keyframes geoint-pulse {
+  0%,
+  100% {
+    opacity: 1;
+    box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.4);
+  }
+  50% {
+    opacity: 0.7;
+    box-shadow: 0 0 0 6px rgba(16, 185, 129, 0);
+  }
+}
+
+.geoint-badge-live {
+  animation: geoint-pulse 2s ease-in-out infinite;
+}
+
+/* === SCROLLBAR STYLES === */
+.geoint-scroll::-webkit-scrollbar {
+  width: 4px;
+  height: 4px;
+}
+
+.geoint-scroll::-webkit-scrollbar-track {
+  background: var(--geoint-deep);
+}
+
+.geoint-scroll::-webkit-scrollbar-thumb {
+  background: var(--geoint-muted);
+  border-radius: 0;
+}
+
+.geoint-scroll::-webkit-scrollbar-thumb:hover {
+  background: var(--text-tertiary);
+}

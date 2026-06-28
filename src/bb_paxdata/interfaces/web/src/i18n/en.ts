@@ -8,6 +8,7 @@ export const en: typeof tr = {
   'nav.dashboard': 'Summary',
   'nav.speakers': 'Speaker Database',
   'nav.bilateral': 'Bilateral Relations',
+  'nav.worldmap': 'World Map',
   'nav.discourse': 'Discourse Network',
   'nav.anomalies': 'Anomaly Timeline',
   'nav.drift': 'Temporal Drift',

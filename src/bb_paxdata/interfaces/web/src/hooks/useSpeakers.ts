@@ -1,6 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { speakerService } from '../services/speakerService';
-import { Speaker } from '../types';
+import type { Speaker } from '../types';
 import { useToast } from './useToast';
 
 export const useSpeakers = (params: {

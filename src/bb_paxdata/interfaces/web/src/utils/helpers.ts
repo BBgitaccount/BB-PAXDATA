@@ -1,9 +1,9 @@
-import {
-  type TriagePriority,
-  type RiskLevel,
-  type QueueStatus,
-  type HumanVerdict,
-  type ConfidenceLevel,
+import type {
+  ConfidenceLevel,
+  HumanVerdict,
+  QueueStatus,
+  RiskLevel,
+  TriagePriority,
 } from '@/types';
 
 export const formatDate = (iso: string): string => {

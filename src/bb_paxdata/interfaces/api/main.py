@@ -25,6 +25,7 @@ from bb_paxdata.interfaces.api.routers.v1 import (
     exports,
     monitoring,
     notifications,
+    pipeline,
     prompts,
     provenance,
     queue,
@@ -36,6 +37,7 @@ from bb_paxdata.interfaces.api.routers.v1 import (
     stream,
     templates,
     verdict,
+    visualization,
     weight_calibration as weight_calibration_router,
     worldmap,
 )
@@ -249,6 +251,8 @@ app.include_router(templates.router, prefix="/api/v1/templates")
 app.include_router(scheduled_reports.router, prefix="/api/v1/scheduled-reports")
 app.include_router(notifications.router, prefix="/api/v1/notifications")
 app.include_router(worldmap.router, prefix="/api/v1")
+app.include_router(visualization.router, prefix="/api/v1")
+app.include_router(pipeline.router, prefix="/api/v1")
 app.include_router(queue_ws.router, prefix="/api")
 app.include_router(get_graphql_router(), prefix="/graphql")
 

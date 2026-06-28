@@ -108,6 +108,15 @@ class SpeakerRegistryUseCase:
                     norm_name = std_name
                     if not norm_bloc or norm_bloc.lower() == "unknown":
                         norm_bloc = std_bloc
+                else:
+                    if (
+                        not norm_code
+                        or len(norm_code) > 3
+                        or norm_code.lower() == "unknown"
+                    ):
+                        norm_code = "UNK"
+                    if not norm_name or norm_name.lower() == "unknown":
+                        norm_name = "Unknown"
 
             speaker = Speaker(
                 canonical_name=canonical_name,
@@ -241,6 +250,15 @@ class SpeakerRegistryUseCase:
                         norm_name = std_name
                         if not norm_bloc or norm_bloc.lower() == "unknown":
                             norm_bloc = std_bloc
+                    else:
+                        if (
+                            not norm_code
+                            or len(norm_code) > 3
+                            or norm_code.lower() == "unknown"
+                        ):
+                            norm_code = "UNK"
+                        if not norm_name or norm_name.lower() == "unknown":
+                            norm_name = "Unknown"
 
                 speaker = Speaker(
                     canonical_name=canonical_name,

@@ -1,22 +1,22 @@
-import { useState, useEffect, useMemo } from 'react';
 import { useQuery } from '@tanstack/react-query';
-import { apiClient } from '@/services/apiClient';
-import { useToast } from '@/hooks/useToast';
-import { useTranslation } from '@/hooks/useTranslation';
-import type { AnomalyTimelineItem, PanelTimelineEntry } from '@/types';
 import {
   AlertTriangle,
-  Filter,
-  Search,
-  Sliders,
   ChevronDown,
   ChevronUp,
-  User,
-  Info,
   Clock,
-  RefreshCw,
   FileText,
+  Filter,
+  Info,
+  RefreshCw,
+  Search,
+  Sliders,
+  User,
 } from 'lucide-react';
+import { useEffect, useMemo, useState } from 'react';
+import { useToast } from '@/hooks/useToast';
+import { useTranslation } from '@/hooks/useTranslation';
+import { apiClient } from '@/services/apiClient';
+import type { AnomalyTimelineItem, PanelTimelineEntry } from '@/types';
 import { cn } from '@/utils/helpers';
 
 export const AnomalyTimeline = () => {

@@ -6,21 +6,22 @@
  *
  * Referans: Trager (2010) Costly Signaling, Fischer DNA network edge semantics.
  */
-import { useMemo, useState, useEffect, useCallback, useRef } from 'react';
+
+import { Globe, Pause, Play, SkipBack, SkipForward } from 'lucide-react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import type { TooltipProps } from 'recharts';
 import {
+  Cell,
   ResponsiveContainer,
-  ScatterChart,
   Scatter,
+  ScatterChart,
+  Tooltip,
   XAxis,
   YAxis,
   ZAxis,
-  Tooltip,
-  Cell,
 } from 'recharts';
-import type { TooltipProps } from 'recharts';
-import { Play, Pause, SkipBack, SkipForward, Globe } from 'lucide-react';
-import type { BilateralSentimentData, PanelTimelineEntry } from '@/types';
 import { useUIStore } from '@/store/uiStore';
+import type { BilateralSentimentData, PanelTimelineEntry } from '@/types';
 import { sampleData } from '@/utils/helpers';
 
 // ─── Tooltip ───────────────────────────────────────────────────────────────

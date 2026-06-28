@@ -67,21 +67,21 @@ async def _broadcast_progress(
     Errors are intentionally swallowed — WS failures must never abort builds.
     """
     try:
-        # Import here to avoid circular imports at module load time
-        from bb_paxdata.interfaces.api.routers.ws.queue_ws import manager as ws_manager
+        # Publish event to Redis Pub/Sub so the web server can broadcast it
+        from bb_paxdata.infrastructure.messaging.publisher import get_publisher
 
-        await ws_manager.broadcast(
-            {
-                "type": "IngestionProgress",
-                "data": {
-                    "file_name": file_name,
-                    "processed_files": processed,
-                    "total_files": total,
-                    "status": status,
-                    "current_stage": stage,
-                    "timestamp": __import__("time").time(),
-                },
-            }
+        publisher = get_publisher()
+        await publisher.publish_event(
+            channel="build_events",
+            event_type="IngestionProgress",
+            data={
+                "file_name": file_name,
+                "processed_files": processed,
+                "total_files": total,
+                "status": status,
+                "current_stage": stage,
+                "timestamp": __import__("time").time(),
+            },
         )
     except Exception:
         pass  # WS errors must never abort the build pipeline
@@ -1002,9 +1002,25 @@ async def _async_build(
         if panel_filter:
             transcript_files = [f for f in transcript_files if panel_filter in f.name]
 
-        console.print(f"Found {len(transcript_files)} transcript files")
+        total_files = len(transcript_files)
+        console.print(f"Found {total_files} transcript files")
 
-        for file_path in transcript_files:
+        await _broadcast_progress(
+            file_name="Starting build pipeline...",
+            processed=0,
+            total=total_files,
+            stage="STARTING",
+            status="PROCESSING",
+        )
+
+        for idx, file_path in enumerate(transcript_files, 1):
+            await _broadcast_progress(
+                file_name=file_path.name,
+                processed=idx,
+                total=total_files,
+                stage="INGESTION",
+                status="PROCESSING",
+            )
             try:
                 status = await _process_single_file(
                     session=session,
@@ -1036,6 +1052,13 @@ async def _async_build(
                 continue
 
         # Post-processing: Update Speaker stats
+        await _broadcast_progress(
+            file_name="Updating statistics and relationships...",
+            processed=total_files,
+            total=total_files,
+            stage="POST_PROCESSING",
+            status="PROCESSING",
+        )
         console.print("Updating speaker statistics...")
         await update_speaker_profiles(session)
         console.print("Updating country statistics and topic matrices...")
@@ -1050,6 +1073,14 @@ async def _async_build(
         console.print("Updating panel dynamics risk deltas...")
         await update_panel_dynamics_risk_delta(session)
         await session.commit()
+
+        await _broadcast_progress(
+            file_name="Pipeline build complete",
+            processed=total_files,
+            total=total_files,
+            stage="COMPLETED",
+            status="COMPLETED",
+        )
 
         # Summary
         from bb_paxdata.infrastructure.observability.reporter import BuildReporter
@@ -1136,8 +1167,24 @@ async def _async_watch(
                 f"[bold blue]⚡ Detected {len(files_to_process)} changes. Processing...[/bold blue]"
             )
 
+            total_files = len(files_to_process)
+            await _broadcast_progress(
+                file_name="Starting watch update...",
+                processed=0,
+                total=total_files,
+                stage="STARTING",
+                status="PROCESSING",
+            )
+
             async with get_session() as session:
-                for file_path in files_to_process:
+                for idx, file_path in enumerate(files_to_process, 1):
+                    await _broadcast_progress(
+                        file_name=file_path.name,
+                        processed=idx,
+                        total=total_files,
+                        stage="INGESTION",
+                        status="PROCESSING",
+                    )
                     try:
                         status = await _process_single_file(
                             session=session,
@@ -1171,6 +1218,13 @@ async def _async_watch(
                         known_files[file_path] = current_files[file_path]
 
                 # Update speaker stats after changes
+                await _broadcast_progress(
+                    file_name="Updating statistics and relationships...",
+                    processed=total_files,
+                    total=total_files,
+                    stage="POST_PROCESSING",
+                    status="PROCESSING",
+                )
                 console.print("Updating speaker statistics...")
                 await update_speaker_profiles(session)
                 console.print("Updating country statistics and topic matrices...")
@@ -1183,6 +1237,14 @@ async def _async_watch(
                 console.print("Updating country pair sentiments...")
                 await update_country_pair_sentiments(session)
                 await session.commit()
+
+                await _broadcast_progress(
+                    file_name="Watch update complete",
+                    processed=total_files,
+                    total=total_files,
+                    stage="COMPLETED",
+                    status="COMPLETED",
+                )
 
             console.print("[bold green]👀 Monitoring...[/bold green]")
 

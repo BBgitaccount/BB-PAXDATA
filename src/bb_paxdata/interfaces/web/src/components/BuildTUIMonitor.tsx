@@ -122,12 +122,14 @@ export const BuildTUIMonitor = ({ wsUrl }: BuildTUIMonitorProps) => {
     };
 
     ws.onclose = () => {
+      if (wsRef.current !== ws) return;
+
       setConnState((prev) => (prev === 'error' ? 'error' : 'disconnected'));
       if (hbInterval) clearInterval(hbInterval);
       addLog('[system] Disconnected from build monitor.');
 
       // Attempt reconnect if not unmounted and attempts < 3
-      if (wsRef.current === ws && reconnectAttempts.current < 3) {
+      if (reconnectAttempts.current < 3) {
         reconnectAttempts.current += 1;
         addLog(`[system] Reconnecting in 5s (Attempt ${reconnectAttempts.current}/3)...`);
         reconnectTimeoutRef.current = window.setTimeout(() => {
@@ -137,6 +139,8 @@ export const BuildTUIMonitor = ({ wsUrl }: BuildTUIMonitorProps) => {
     };
 
     ws.onerror = () => {
+      if (wsRef.current !== ws) return;
+
       setConnState('error');
       addLog('[error] WebSocket connection error.');
     };

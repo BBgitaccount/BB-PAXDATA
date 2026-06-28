@@ -1,11 +1,11 @@
-import { useState, useEffect, useMemo } from 'react';
 import { useQuery } from '@tanstack/react-query';
-import { apiClient } from '@/services/apiClient';
+import { Calendar, Database, RefreshCw, Search, SlidersHorizontal } from 'lucide-react';
+import { useEffect, useMemo, useState } from 'react';
 import { DiscourseNetworkExplorer } from '@/components/DiscourseNetworkExplorer';
 import { useToast } from '@/hooks/useToast';
 import { useTranslation } from '@/hooks/useTranslation';
+import { apiClient } from '@/services/apiClient';
 import type { DiscourseNetworkResponse } from '@/types';
-import { SlidersHorizontal, Search, RefreshCw, Calendar, Database } from 'lucide-react';
 
 export const DiscourseNetwork = () => {
   const toast = useToast();

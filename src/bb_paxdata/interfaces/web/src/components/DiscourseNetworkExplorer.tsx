@@ -1,7 +1,7 @@
+import { BookOpen, HelpCircle, Info, User } from 'lucide-react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import type { DiscourseEdge, DiscourseNode } from '@/types';
 import { cn } from '@/utils/helpers';
-import { BookOpen, HelpCircle, Info, User } from 'lucide-react';
-import { useEffect, useMemo, useRef, useState } from 'react';
 
 interface DiscourseNetworkExplorerProps {
   nodes: DiscourseNode[];
