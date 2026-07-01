@@ -28,6 +28,7 @@ MANIFEST
 
 # Ortam (Environments)
 .env
+.env.local
 .venv/
 .venv
 env/
@@ -83,8 +84,8 @@ graphify_mcp_server.py
 
 # agents
 AGENTS.md
-/.agents
-/.prompts
+.agents/
+.prompts/
 
 # frontend
 frontend/
