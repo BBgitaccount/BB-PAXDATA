@@ -27,30 +27,32 @@ import { sampleData } from '@/utils/helpers';
 // ─── Tooltip ───────────────────────────────────────────────────────────────
 
 const HeatmapTooltip = ({ active, payload }: TooltipProps<number, string>) => {
-  const theme = useUIStore((s) => s.theme);
-  const isDark = theme === 'dark';
   if (active && payload && payload.length) {
     const d = payload[0].payload as BilateralSentimentData & {
       x: number;
       y: number;
     };
     const scoreColor =
-      d.affinity_score > 0.3 ? '#4ade80' : d.affinity_score < -0.3 ? '#f87171' : '#a1a1aa';
+      d.affinity_score > 0.3
+        ? 'var(--sentiment-ally)'
+        : d.affinity_score < -0.3
+          ? 'var(--sentiment-adversary)'
+          : 'var(--sentiment-neutral)';
     return (
       <div
         style={{
-          background: isDark ? 'rgba(15, 15, 20, 0.97)' : 'rgba(255, 255, 255, 0.97)',
-          border: isDark ? '1px solid #2a2a3a' : '1px solid #ced4da',
-          borderRadius: 6,
+          background: 'var(--bg-tertiary)',
+          border: '0.5px solid var(--border-hair)',
+          borderRadius: 0,
           padding: '10px 14px',
-          boxShadow: isDark ? '0 8px 32px rgba(0,0,0,0.6)' : '0 8px 32px rgba(0,0,0,0.1)',
+          boxShadow: '0 8px 32px rgba(0,0,0,0.4)',
           minWidth: 200,
         }}
       >
         <p
           style={{
             fontWeight: 700,
-            color: isDark ? '#f0f0f0' : '#1a1a1a',
+            color: 'var(--text-primary)',
             marginBottom: 8,
             fontSize: 13,
           }}
@@ -65,8 +67,8 @@ const HeatmapTooltip = ({ active, payload }: TooltipProps<number, string>) => {
               fontSize: 12,
             }}
           >
-            <span style={{ color: isDark ? '#8a8a9a' : '#495057' }}>İlişki tipi</span>
-            <span style={{ color: isDark ? '#d4d4e0' : '#212529', fontWeight: 600 }}>
+            <span style={{ color: 'var(--text-secondary)' }}>İlişki tipi</span>
+            <span style={{ color: 'var(--text-primary)', fontWeight: 600 }}>
               {d.relationship_type}
             </span>
           </div>
@@ -77,7 +79,7 @@ const HeatmapTooltip = ({ active, payload }: TooltipProps<number, string>) => {
               fontSize: 12,
             }}
           >
-            <span style={{ color: isDark ? '#8a8a9a' : '#495057' }}>Affinity</span>
+            <span style={{ color: 'var(--text-secondary)' }}>Affinity</span>
             <span
               style={{
                 color: scoreColor,
@@ -95,10 +97,10 @@ const HeatmapTooltip = ({ active, payload }: TooltipProps<number, string>) => {
               fontSize: 12,
             }}
           >
-            <span style={{ color: isDark ? '#8a8a9a' : '#495057' }}>Avg. Sentiment</span>
+            <span style={{ color: 'var(--text-secondary)' }}>Avg. Sentiment</span>
             <span
               style={{
-                color: isDark ? '#d4d4e0' : '#212529',
+                color: 'var(--text-primary)',
                 fontFamily: 'monospace',
               }}
             >
@@ -112,8 +114,8 @@ const HeatmapTooltip = ({ active, payload }: TooltipProps<number, string>) => {
               fontSize: 12,
             }}
           >
-            <span style={{ color: isDark ? '#8a8a9a' : '#495057' }}>Etkileşim</span>
-            <span style={{ color: isDark ? '#d4d4e0' : '#212529' }}>{d.interaction_count}</span>
+            <span style={{ color: 'var(--text-secondary)' }}>Etkileşim</span>
+            <span style={{ color: 'var(--text-primary)' }}>{d.interaction_count}</span>
           </div>
         </div>
       </div>
@@ -124,12 +126,12 @@ const HeatmapTooltip = ({ active, payload }: TooltipProps<number, string>) => {
 
 // ─── Color scale ───────────────────────────────────────────────────────────
 
-function affinityToColor(score: number, isDark: boolean): string {
+function affinityToColor(score: number, _isDark: boolean): string {
   // Diverging: deep red → neutral gray → deep green
   if (score >= 0.7) return '#166534'; // very positive
   if (score >= 0.4) return '#15803d';
   if (score >= 0.15) return '#4ade80';
-  if (score >= -0.15) return isDark ? '#3f3f50' : '#e2e2e9'; // neutral
+  if (score >= -0.15) return 'var(--border-subtle)'; // neutral
   if (score >= -0.4) return '#f87171';
   if (score >= -0.7) return '#dc2626';
   return '#7f1d1d'; // very negative
@@ -144,7 +146,7 @@ const ColorLegend = () => {
     { color: '#7f1d1d', label: '< -0.7' },
     { color: '#dc2626', label: '-0.7' },
     { color: '#f87171', label: '-0.4' },
-    { color: isDark ? '#3f3f50' : '#e2e2e9', label: '0' },
+    { color: 'var(--border-subtle)', label: '0' },
     { color: '#4ade80', label: '+0.4' },
     { color: '#15803d', label: '+0.7' },
     { color: '#166534', label: '> +0.7' },
@@ -246,11 +248,11 @@ const SliderControls = ({
           {current?.date_str && (
             <span
               style={{
-                background: isDark ? '#1e1b4b' : '#e0e7ff',
-                color: isDark ? '#a5b4fc' : '#4f46e5',
+                background: 'var(--bg-quaternary)',
+                color: 'var(--text-secondary)',
                 fontSize: 11,
                 padding: '1px 8px',
-                borderRadius: 99,
+                borderRadius: 0,
                 fontFamily: 'monospace',
               }}
             >
@@ -517,12 +519,12 @@ export const BilateralHeatmap = ({
               domain={[-0.5, uniqueCountries.length - 0.5]}
               tickFormatter={(val) => uniqueCountries[val] || ''}
               tick={{
-                fill: isDark ? '#6b7280' : '#495057',
+                fill: 'var(--text-secondary)',
                 fontSize: 11,
                 fontFamily: 'JetBrains Mono, monospace',
               }}
               tickLine={false}
-              axisLine={{ stroke: isDark ? '#2a2a3a' : '#dee2e6' }}
+              axisLine={{ stroke: 'var(--border-hair)' }}
               interval={0}
               angle={-45}
               textAnchor="end"
@@ -534,18 +536,18 @@ export const BilateralHeatmap = ({
               domain={[-0.5, uniqueCountries.length - 0.5]}
               tickFormatter={(val) => uniqueCountries[val] || ''}
               tick={{
-                fill: isDark ? '#6b7280' : '#495057',
+                fill: 'var(--text-secondary)',
                 fontSize: 11,
                 fontFamily: 'JetBrains Mono, monospace',
               }}
               tickLine={false}
-              axisLine={{ stroke: isDark ? '#2a2a3a' : '#dee2e6' }}
+              axisLine={{ stroke: 'var(--border-hair)' }}
               interval={0}
             />
             <ZAxis type="number" dataKey="z" range={[60, 500]} />
             <Tooltip
               content={<HeatmapTooltip />}
-              cursor={{ strokeDasharray: '3 3', stroke: '#4f46e5' }}
+              cursor={{ strokeDasharray: '3 3', stroke: 'var(--sentiment-partner)' }}
             />
             <Scatter data={processedData} shape="square">
               {processedData.map((entry, index) => (

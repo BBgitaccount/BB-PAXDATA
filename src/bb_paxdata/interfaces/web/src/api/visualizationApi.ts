@@ -1,5 +1,4 @@
-// src/bb_paxdata/interfaces/web/src/api/visualizationApi.ts
-
+import { apiClient } from '../services/apiClient';
 import type {
   BilateralFlow,
   CountryNode,
@@ -10,20 +9,6 @@ import type {
   SentimentMatrix,
   SessionTimeline,
 } from '../types/visualization';
-
-interface ImportMetaEnv {
-  VITE_API_BASE_URL?: string;
-  VITE_API_URL?: string;
-}
-
-interface CustomImportMeta {
-  env: ImportMetaEnv;
-}
-
-const BASE_URL =
-  (import.meta as unknown as CustomImportMeta).env?.VITE_API_BASE_URL ||
-  (import.meta as unknown as CustomImportMeta).env?.VITE_API_URL ||
-  'http://localhost:8000';
 
 /**
  * Recursively converts object keys from snake_case to camelCase
@@ -93,33 +78,11 @@ function buildQueryString(params: object): string {
 }
 
 /**
- * Base request fetch wrapper
+ * Base request fetch wrapper using the shared apiClient
  */
 async function apiRequest<T>(path: string, params: object = {}, signal?: AbortSignal): Promise<T> {
   const queryStr = buildQueryString(params);
-  const url = `${BASE_URL}/api/v1/viz${path}${queryStr}`;
-
-  const response = await fetch(url, {
-    method: 'GET',
-    headers: {
-      'Content-Type': 'application/json',
-    },
-    signal,
-  });
-
-  if (!response.ok) {
-    const errorText = await response.text();
-    let message = 'API Error';
-    try {
-      const parsed = JSON.parse(errorText);
-      message = parsed.detail || parsed.message || message;
-    } catch {
-      message = errorText || message;
-    }
-    throw new Error(message);
-  }
-
-  const rawJson = await response.json();
+  const rawJson = await apiClient.get<unknown>(`/api/v1/viz${path}${queryStr}`, { signal });
   return camelizeKeys(rawJson) as T;
 }
 

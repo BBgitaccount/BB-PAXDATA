@@ -7,8 +7,7 @@ from bb_paxdata.sdk.sandbox import run_plugin_in_sandbox
 
 
 def test_sandbox_success(tmp_path):
-    plugin_content = textwrap.dedent(
-        """
+    plugin_content = textwrap.dedent("""
         from pydantic import BaseModel
 
         class PluginMetadata(BaseModel):
@@ -34,8 +33,7 @@ def test_sandbox_success(tmp_path):
                     explanation=f"Processed text: {text}",
                     metadata={"context_key": context.get("key")}
                 )
-    """
-    )
+    """)
     plugin_file = tmp_path / "test_plugin.py"
     plugin_file.write_text(plugin_content, encoding="utf-8")
 
@@ -52,8 +50,7 @@ def test_sandbox_success(tmp_path):
 
 
 def test_sandbox_crash(tmp_path):
-    plugin_content = textwrap.dedent(
-        """
+    plugin_content = textwrap.dedent("""
         from pydantic import BaseModel
 
         class PluginMetadata(BaseModel):
@@ -66,8 +63,7 @@ def test_sandbox_crash(tmp_path):
 
             def evaluate(self, text: str, context: dict):
                 raise ZeroDivisionError("Simulated division by zero")
-    """
-    )
+    """)
     plugin_file = tmp_path / "crash_plugin.py"
     plugin_file.write_text(plugin_content, encoding="utf-8")
 
@@ -80,8 +76,7 @@ def test_sandbox_crash(tmp_path):
 
 
 def test_sandbox_timeout(tmp_path):
-    plugin_content = textwrap.dedent(
-        """
+    plugin_content = textwrap.dedent("""
         import time
         from pydantic import BaseModel
 
@@ -96,8 +91,7 @@ def test_sandbox_timeout(tmp_path):
             def evaluate(self, text: str, context: dict):
                 time.sleep(2)
                 return {}
-    """
-    )
+    """)
     plugin_file = tmp_path / "timeout_plugin.py"
     plugin_file.write_text(plugin_content, encoding="utf-8")
 

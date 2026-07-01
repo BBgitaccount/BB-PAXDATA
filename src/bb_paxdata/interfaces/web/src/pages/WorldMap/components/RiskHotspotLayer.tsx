@@ -5,8 +5,8 @@ import { geoCentroid } from 'd3-geo';
 import { AlertTriangle, Shield } from 'lucide-react';
 import React, { useMemo, useState } from 'react';
 import { createPortal } from 'react-dom';
-import { isoNumericToAlpha3 } from '../../../data/isoNumericToAlpha3';
 import type { BilateralFlow, CountryNode } from '../../../types/visualization';
+import { getAlpha3FromNumeric } from '../../../utils/visualizationHelpers';
 
 interface RiskHotspotLayerProps {
   nodes: CountryNode[];
@@ -43,8 +43,7 @@ const getCountryCoordinates = (
       const feature = g as { id?: string | number };
       const id = feature.id;
       if (id === undefined) return false;
-      const alpha3 =
-        typeof id === 'number' || !Number.isNaN(Number(id)) ? isoNumericToAlpha3[Number(id)] : id;
+      const alpha3 = getAlpha3FromNumeric(id);
       return alpha3 && alpha3.toUpperCase() === upperCode;
     });
     if (geo) {
@@ -95,6 +94,24 @@ const getCountryCoordinates = (
   return staticCentroids[upperCode] || null;
 };
 
+const RiskProgressBar: React.FC<{ score: number; color: string }> = ({ score, color }) => {
+  const blocks = 10;
+  const filled = Math.round(score * blocks);
+  return (
+    <div className="flex gap-[2px] items-center">
+      {Array.from({ length: blocks }).map((_, idx) => (
+        <div
+          key={idx}
+          className="w-[5px] h-2.5 rounded-[1px] transition-colors duration-200"
+          style={{
+            backgroundColor: idx < filled ? color : '#374151',
+          }}
+        />
+      ))}
+    </div>
+  );
+};
+
 // Risk Radar Panel Component
 const RiskRadarPanel: React.FC<{
   riskData: CountryRiskData[];
@@ -102,12 +119,6 @@ const RiskRadarPanel: React.FC<{
   cautiousCount: number;
 }> = ({ riskData, conflictCount, cautiousCount }) => {
   const topRisks = riskData.sort((a, b) => b.riskScore - a.riskScore).slice(0, 5);
-
-  const getRiskBar = (score: number): string => {
-    const blocks = 10;
-    const filled = Math.round(score * blocks);
-    return '█'.repeat(filled) + '░'.repeat(blocks - filled);
-  };
 
   const getRiskColor = (score: number): string => {
     if (score > 0.5) return '#ef4444';
@@ -132,21 +143,22 @@ const RiskRadarPanel: React.FC<{
 
       <div className="text-[10px] text-carbon-400 mb-2 font-semibold">EN YÜKSEK RİSKLİ ÜLKELER</div>
 
-      <div className="space-y-1.5 mb-3">
+      <div className="space-y-2 mb-3">
         {topRisks.map((item, idx) => (
-          <div key={item.countryCode} className="flex items-center gap-2">
-            <span className="text-carbon-500 w-4">{idx + 1}.</span>
-            <span
-              className="flex-1"
-              style={{
-                color: getRiskColor(item.riskScore),
-                fontFamily: 'monospace',
-              }}
-            >
-              {getRiskBar(item.riskScore)}
+          <div key={item.countryCode} className="flex items-center gap-3">
+            <span className="text-carbon-500 w-4 font-mono">{idx + 1}.</span>
+            <div className="flex-1 min-w-[58px]">
+              <RiskProgressBar score={item.riskScore} color={getRiskColor(item.riskScore)} />
+            </div>
+            <span className="w-12 truncate text-right font-mono text-carbon-300">
+              {item.countryCode}
             </span>
-            <span className="w-16 truncate text-right">{item.countryCode}</span>
-            <span className="w-10 text-right font-semibold">{item.riskScore.toFixed(2)}</span>
+            <span
+              className="w-8 text-right font-semibold font-mono"
+              style={{ color: getRiskColor(item.riskScore) }}
+            >
+              {item.riskScore.toFixed(2)}
+            </span>
           </div>
         ))}
       </div>
@@ -181,13 +193,15 @@ export const RiskHotspotLayer: React.FC<RiskHotspotLayerProps> = ({
     const data: CountryRiskData[] = nodes.map((node) => {
       const adversaryCount = flows.filter(
         (f) =>
-          (f.fromCountry === node.country || f.toCountry === node.country) &&
+          ((f.fromIso3 || f.fromCountry) === node.country ||
+            (f.toIso3 || f.toCountry) === node.country) &&
           f.relationshipType === 'ADVERSARY',
       ).length;
 
       const cautiousCount = flows.filter(
         (f) =>
-          (f.fromCountry === node.country || f.toCountry === node.country) &&
+          ((f.fromIso3 || f.fromCountry) === node.country ||
+            (f.toIso3 || f.toCountry) === node.country) &&
           f.relationshipType === 'CAUTIOUS',
       ).length;
 
@@ -224,7 +238,9 @@ export const RiskHotspotLayer: React.FC<RiskHotspotLayerProps> = ({
 
   // Calculate stats for Risk Radar
   const conflictCount = useMemo(() => {
-    return new Set(adversaryFlows.flatMap((f) => [f.fromCountry, f.toCountry])).size;
+    return new Set(
+      adversaryFlows.flatMap((f) => [f.fromIso3 || f.fromCountry, f.toIso3 || f.toCountry]),
+    ).size;
   }, [adversaryFlows]);
 
   const cautiousCount = useMemo(() => {
@@ -235,8 +251,8 @@ export const RiskHotspotLayer: React.FC<RiskHotspotLayerProps> = ({
   const adversaryCountries = useMemo(() => {
     const countries = new Set<string>();
     adversaryFlows.forEach((f) => {
-      countries.add(f.fromCountry);
-      countries.add(f.toCountry);
+      countries.add(f.fromIso3 || f.fromCountry);
+      countries.add(f.toIso3 || f.toCountry);
     });
     return Array.from(countries);
   }, [adversaryFlows]);
@@ -369,8 +385,10 @@ export const RiskHotspotLayer: React.FC<RiskHotspotLayerProps> = ({
 
       {/* Layer 3: Conflict Edge Markers for ADVERSARY flows */}
       {adversaryFlows.map((flow, idx) => {
-        const fromCoords = getCountryCoordinates(flow.fromCountry, geographies, nodes);
-        const toCoords = getCountryCoordinates(flow.toCountry, geographies, nodes);
+        const from = flow.fromIso3 || flow.fromCountry;
+        const to = flow.toIso3 || flow.toCountry;
+        const fromCoords = getCountryCoordinates(from, geographies, nodes);
+        const toCoords = getCountryCoordinates(to, geographies, nodes);
 
         if (!fromCoords || !toCoords) return null;
 
@@ -385,8 +403,7 @@ export const RiskHotspotLayer: React.FC<RiskHotspotLayerProps> = ({
         const midX = (x0 + x2) / 2;
         const midY = (y0 + y2) / 2;
 
-        const isHighlighted =
-          highlightedCountry === flow.fromCountry || highlightedCountry === flow.toCountry;
+        const isHighlighted = highlightedCountry === from || highlightedCountry === to;
 
         return (
           <g key={`conflict-edge-${idx}`}>
@@ -471,6 +488,8 @@ export const RiskHotspotLayer: React.FC<RiskHotspotLayerProps> = ({
       {/* Tooltip for conflict edges */}
       {hoveredFlow &&
         tooltipCoords &&
+        typeof window !== 'undefined' &&
+        document.body &&
         createPortal(
           <div
             className="fixed z-50 pointer-events-none rounded-none border border-red-600 bg-[#0a0f1a]/95 p-3 shadow-2xl backdrop-blur-md transition-all duration-75 text-[11px]"
@@ -489,9 +508,9 @@ export const RiskHotspotLayer: React.FC<RiskHotspotLayerProps> = ({
             </div>
             <div className="border-t border-carbon-800 my-1.5" />
             <div className="flex items-center gap-1.5">
-              <span>{hoveredFlow.fromCountry}</span>
+              <span>{hoveredFlow.fromIso3 || hoveredFlow.fromCountry}</span>
               <span className="text-carbon-500">↔</span>
-              <span>{hoveredFlow.toCountry}</span>
+              <span>{hoveredFlow.toIso3 || hoveredFlow.toCountry}</span>
             </div>
             <div className="text-carbon-400 mt-0.5">
               Affinity:{' '}

@@ -302,8 +302,7 @@ class SentenceRepository(BaseRepository[Sentence]):
 
             where_clause = " AND ".join(filters)
 
-            sql = text(
-                f"""
+            sql = text(f"""
                 SELECT
                     *,
                     1 - (embedding <=> CAST(:query_vec AS vector(:dim))) AS similarity
@@ -311,8 +310,7 @@ class SentenceRepository(BaseRepository[Sentence]):
                 WHERE {where_clause}
                 ORDER BY embedding <=> CAST(:query_vec AS vector(:dim))
                 LIMIT :limit
-            """
-            )
+            """)
 
             result = await self._session.execute(sql, params)
             rows = result.mappings().all()

@@ -1,4 +1,4 @@
-const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:8000';
+const API_BASE = import.meta.env.VITE_API_URL || '';
 
 // Dispatched globally whenever ANY API call returns 401 Unauthorized.
 // The auth layer listens for this to trigger logout/redirect.

@@ -84,16 +84,14 @@ async def main() -> None:
     print(f"\nVector dimension: {dim}")
 
     # Embedding olmayan cümleleri al
-    rows = await conn.fetch(
-        """
+    rows = await conn.fetch("""
         SELECT sent_id, text
         FROM sentences
         WHERE embedding IS NULL
           AND text IS NOT NULL
           AND LENGTH(text) > 5
         ORDER BY sent_id
-    """
-    )
+    """)
     total = len(rows)
     print(f"Sentences without embeddings: {total}\n")
 

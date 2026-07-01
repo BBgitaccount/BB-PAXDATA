@@ -165,12 +165,10 @@ async def main() -> None:
 
     # Also update politeness_ratio
     print("\nUpdating politeness_ratio...")
-    await conn.execute(
-        """
+    await conn.execute("""
         UPDATE sentences
         SET politeness_ratio = face_save_count::float / (face_save_count + face_threat_count + 1)
-    """
-    )
+    """)
     print("politeness_ratio updated.")
 
     await conn.close()

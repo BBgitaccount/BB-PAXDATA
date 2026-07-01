@@ -5,6 +5,7 @@ from bb_paxdata.application.domain.dtos.visualization_dtos import SentimentMatri
 from bb_paxdata.application.domain.ports.i_visualization_repository import (
     IVisualizationRepository,
 )
+from bb_paxdata.infrastructure.mappings.country_iso_map import is_unknown_country
 
 
 class GetSentimentMatrixUseCase:
@@ -18,8 +19,10 @@ class GetSentimentMatrixUseCase:
         # 2. Extract unique countries and sort alphabetically
         country_set = set()
         for p in pairs:
-            country_set.add(p["from_country"])
-            country_set.add(p["to_country"])
+            if not is_unknown_country(p["from_country"]):
+                country_set.add(p["from_country"])
+            if not is_unknown_country(p["to_country"]):
+                country_set.add(p["to_country"])
 
         countries = sorted(list(country_set))
         n = len(countries)
@@ -34,6 +37,10 @@ class GetSentimentMatrixUseCase:
 
         # 5. Populate matrices
         for p in pairs:
+            if is_unknown_country(p["from_country"]) or is_unknown_country(
+                p["to_country"]
+            ):
+                continue
             i = idx_map[p["from_country"]]
             j = idx_map[p["to_country"]]
 

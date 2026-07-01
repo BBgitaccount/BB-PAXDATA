@@ -301,7 +301,7 @@ export const SystemHealth = () => {
             </p>
 
             {/* Grafana IFrame Embed */}
-            <div className="relative aspect-video w-full bg-[#0A0A0A] border border-hair border-carbon-750 overflow-hidden rounded">
+            <div className="relative aspect-video w-full bg-[var(--bg-primary)] border border-hair overflow-hidden rounded-none">
               <iframe
                 src={`http://localhost:3000/d/${activeDashboard.uid}/${activeDashboard.slug}?orgId=1&kiosk=tv&theme=dark`}
                 width="100%"

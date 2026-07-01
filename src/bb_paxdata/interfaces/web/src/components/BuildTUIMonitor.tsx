@@ -173,7 +173,7 @@ export const BuildTUIMonitor = ({ wsUrl }: BuildTUIMonitorProps) => {
   // ── Render ──────────────────────────────────────────────────────────────────
 
   return (
-    <div className="bg-[#0A0A0A] border border-[#2A2A2A] p-6 font-mono rounded space-y-4">
+    <div className="bg-[var(--bg-primary)] border border-[var(--border-hair)] p-6 font-mono rounded-none space-y-4">
       {/* ── Header bar ─────────────────────────────────────────────────────── */}
       <div className="flex justify-between items-center text-xs text-carbon-350 border-b border-carbon-700 pb-2">
         <span className="tracking-widest text-micro uppercase">⚙ Pipeline Build Monitor</span>
@@ -232,7 +232,7 @@ export const BuildTUIMonitor = ({ wsUrl }: BuildTUIMonitorProps) => {
       )}
 
       {/* ── Log stream ──────────────────────────────────────────────────────── */}
-      <div className="bg-[#0D0D0D] border border-carbon-800 rounded p-3 h-36 overflow-y-auto text-3xs text-carbon-400 space-y-0.5">
+      <div className="bg-[var(--bg-secondary)] border border-[var(--border-hair)] rounded-none p-3 h-36 overflow-y-auto text-3xs text-carbon-400 space-y-0.5">
         {logs.length === 0 ? (
           <div className="text-carbon-600 italic">
             {connState === 'connected'

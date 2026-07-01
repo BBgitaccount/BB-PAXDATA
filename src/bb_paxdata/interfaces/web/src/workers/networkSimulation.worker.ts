@@ -58,8 +58,9 @@ const getDominantRelType = (
 
   const counts: Record<string, number> = {};
   for (const c of countryConns) {
-    const type = c.relationship_type;
-    counts[type] = (counts[type] || 0) + c.interaction_count;
+    const type = String(c.relationship_type || 'NEUTRAL');
+    const count = Number(c.interaction_count || 0);
+    counts[type] = (counts[type] || 0) + count;
   }
 
   let dominant = 'NEUTRAL';

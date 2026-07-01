@@ -3,19 +3,19 @@
 
 :root {
   /* === CORE PALETTE === */
-  --geoint-void: #060b12; /* en derin arka plan */
-  --geoint-deep: #0a0f1a; /* harita/graph bg */
-  --geoint-base: #0d1523; /* panel bg */
-  --geoint-surface: #111d30; /* kart bg */
-  --geoint-elevated: #162540; /* hover state, drawer */
-  --geoint-border: #1e3a5f; /* ince border */
-  --geoint-muted: #2d4a6b; /* disabled, placeholder */
+  --geoint-void: var(--bg-primary); /* en derin arka plan */
+  --geoint-deep: var(--bg-secondary); /* harita/graph bg */
+  --geoint-base: var(--bg-secondary); /* panel bg */
+  --geoint-surface: var(--bg-tertiary); /* kart bg */
+  --geoint-elevated: var(--bg-quaternary); /* hover state, drawer */
+  --geoint-border: var(--border-hair); /* ince border */
+  --geoint-muted: var(--text-tertiary); /* disabled, placeholder */
 
   /* === TEXT === */
-  --text-primary: #e2eaf7; /* ana metin */
-  --text-secondary: #8ca3c0; /* ikincil metin */
-  --text-tertiary: #4d6a8a; /* placeholder */
-  --text-data: #c8d8f0; /* data değerleri */
+  --text-primary: var(--text-primary); /* ana metin */
+  --text-secondary: var(--text-secondary); /* ikincil metin */
+  --text-tertiary: var(--text-tertiary); /* placeholder */
+  --text-data: var(--text-primary); /* data değerleri */
 
   /* === SENTIMENT SPECTRUM === */
   --sentiment-ally: #10b981; /* emerald-500 */
@@ -32,10 +32,10 @@
   --signal-info: #60a5fa; /* neutral info */
 
   /* === TYPOGRAPHY === */
-  --font-display: 'Space Grotesk', sans-serif; /* başlıklar */
+  --font-display: 'Inter', sans-serif; /* başlıklar */
   --font-body: 'Inter', sans-serif; /* paragraflar */
   --font-mono: 'JetBrains Mono', monospace; /* data, kod */
-  --font-label: 'Space Mono', monospace; /* KPI label'lar */
+  --font-label: 'JetBrains Mono', monospace; /* KPI label'lar */
 
   /* === SPACING === */
   --space-xs: 4px;
@@ -57,8 +57,8 @@
   );
 
   /* === BORDERS === */
-  --border-subtle: 1px solid var(--geoint-border);
-  --border-active: 1px solid var(--signal-info);
+  --border-subtle: 0.5px solid var(--border-hair);
+  --border-active: 1.5px solid var(--signal-info);
   --border-alert: 1px solid var(--signal-warning);
 }
 
@@ -79,7 +79,7 @@
 /* Data değerleri: büyük, mono, parlak */
 .geoint-data-value {
   font-family: var(--font-mono);
-  font-size: 28px;
+  font-size: clamp(14px, 1.8vw, 28px);
   font-weight: 700;
   color: var(--text-data);
   line-height: 1;

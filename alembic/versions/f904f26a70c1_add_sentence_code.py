@@ -196,8 +196,7 @@ def upgrade() -> None:
         pass
 
     # Recreate view with sentence_code
-    op.execute(
-        """
+    op.execute("""
         CREATE VIEW v_formula_validation_results AS
         SELECT 
             f.log_id,
@@ -218,8 +217,7 @@ def upgrade() -> None:
         FROM formula_validation_logs f
         LEFT JOIN sentences s ON f.entity_type = 'sentence' AND f.entity_id = s.sent_id
         LEFT JOIN segments seg ON f.entity_type = 'segment' AND f.entity_id = seg.seg_id
-        """
-    )
+        """)
 
     # Re-enable SQLite checks
     if bind.dialect.name == "sqlite":
@@ -284,8 +282,7 @@ def downgrade() -> None:
         pass
 
     # Recreate view without sentence_code
-    op.execute(
-        """
+    op.execute("""
         CREATE VIEW v_formula_validation_results AS
         SELECT 
             f.log_id,
@@ -305,8 +302,7 @@ def downgrade() -> None:
         FROM formula_validation_logs f
         LEFT JOIN sentences s ON f.entity_type = 'sentence' AND f.entity_id = s.sent_id
         LEFT JOIN segments seg ON f.entity_type = 'segment' AND f.entity_id = seg.seg_id
-        """
-    )
+        """)
 
     # Re-enable SQLite checks
     if bind.dialect.name == "sqlite":

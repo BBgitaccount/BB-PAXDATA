@@ -176,6 +176,9 @@ services:
       - PAXDATA_OTEL_ENABLED=true
       - PAXDATA_OTEL_EXPORTER_OTLP_ENDPOINT=http://jaeger:4317
       - PAXDATA_CORS_ALLOWED_ORIGINS=["http://localhost:5173","http://127.0.0.1:5173","http://localhost:5174","http://127.0.0.1:5174","http://localhost:5175","http://127.0.0.1:5175","http://localhost:5176","http://127.0.0.1:5176"]
+      - PAXDATA_MEILISEARCH_URL=http://meilisearch:7700
+      - PAXDATA_MEILISEARCH_MASTER_KEY=paxdata-meilisearch-key
+
 
     ports:
       - "8000:8000"
@@ -280,6 +283,7 @@ services:
       - PAXDATA_DATABASE_URL=postgresql+asyncpg://paxdata_user:paxdata_password@postgres:5432/paxdata_db
       - PAXDATA_REDIS_URL=redis://redis:6379/0
       - PAXDATA_MEILISEARCH_URL=http://meilisearch:7700
+      - PAXDATA_MEILISEARCH_MASTER_KEY=paxdata-meilisearch-key
       - PAXDATA_OTEL_ENABLED=true
       - PAXDATA_OTEL_EXPORTER_OTLP_ENDPOINT=http://jaeger:4317
 

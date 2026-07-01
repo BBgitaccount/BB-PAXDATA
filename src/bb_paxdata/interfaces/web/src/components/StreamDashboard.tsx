@@ -154,14 +154,14 @@ export function StreamDashboard({
     color?: 'blue' | 'green' | 'yellow' | 'red';
   }) => {
     const colorClasses = {
-      blue: 'bg-blue-50 text-blue-700 border-blue-200',
-      green: 'bg-green-50 text-green-700 border-green-200',
-      yellow: 'bg-yellow-50 text-yellow-700 border-yellow-200',
-      red: 'bg-red-50 text-red-700 border-red-200',
+      blue: 'bg-signal-info/10 text-signal-info border-signal-info/20',
+      green: 'bg-signal-pass/10 text-signal-pass border-signal-pass/20',
+      yellow: 'bg-signal-warn/10 text-signal-warn border-signal-warn/20',
+      red: 'bg-signal-fail/10 text-signal-fail border-signal-fail/20',
     };
 
     return (
-      <div className={clsx('p-4 rounded-lg border', colorClasses[color])}>
+      <div className={clsx('p-4 rounded-sharp border border-hair', colorClasses[color])}>
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
             <Icon className="w-5 h-5" />
@@ -187,14 +187,19 @@ export function StreamDashboard({
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h2 className="text-lg font-semibold text-gray-900">Stream Dashboard</h2>
-          <p className="text-sm text-gray-500">Real-time streaming metrics</p>
+          <h2 className="text-lg font-semibold text-[var(--text-primary)]">Stream Dashboard</h2>
+          <p className="text-sm text-[var(--text-secondary)]">Real-time streaming metrics</p>
         </div>
         <div className="flex items-center gap-2">
           <div
-            className={clsx('w-2 h-2 rounded-full', isConnected ? 'bg-green-500' : 'bg-red-500')}
+            className={clsx(
+              'w-2 h-2 rounded-full',
+              isConnected ? 'bg-signal-pass' : 'bg-signal-fail',
+            )}
           />
-          <span className="text-sm text-gray-600">{isConnected ? 'Live' : 'Polling'}</span>
+          <span className="text-sm text-[var(--text-secondary)]">
+            {isConnected ? 'Live' : 'Polling'}
+          </span>
         </div>
       </div>
 
@@ -252,18 +257,36 @@ export function StreamDashboard({
       </div>
 
       {/* Queue Size Chart */}
-      <div className="bg-white rounded-lg border border-gray-200 p-6">
-        <h3 className="text-sm font-medium text-gray-700 mb-4">Queue Size Over Time</h3>
+      <div className="card-carbon rounded-sharp p-6">
+        <h3 className="text-sm font-medium text-[var(--text-secondary)] mb-4">
+          Queue Size Over Time
+        </h3>
         <ResponsiveContainer width="100%" height={200}>
           <LineChart data={history}>
-            <CartesianGrid strokeDasharray="3 3" />
-            <XAxis dataKey="time" />
-            <YAxis />
-            <Tooltip />
+            <CartesianGrid strokeDasharray="3 3" stroke="var(--border-hair)" vertical={false} />
+            <XAxis
+              dataKey="time"
+              tick={{ fill: 'var(--text-secondary)', fontSize: 10 }}
+              stroke="var(--border-hair)"
+            />
+            <YAxis
+              tick={{ fill: 'var(--text-secondary)', fontSize: 10 }}
+              axisLine={false}
+              tickLine={false}
+            />
+            <Tooltip
+              contentStyle={{
+                backgroundColor: 'var(--bg-tertiary)',
+                border: '0.5px solid var(--border-hair)',
+                color: 'var(--text-primary)',
+                fontSize: 11,
+                borderRadius: 0,
+              }}
+            />
             <Line
               type="monotone"
               dataKey="queue_size"
-              stroke="#3b82f6"
+              stroke="var(--sentiment-partner)"
               strokeWidth={2}
               dot={false}
             />
@@ -272,18 +295,37 @@ export function StreamDashboard({
       </div>
 
       {/* Utilization Chart */}
-      <div className="bg-white rounded-lg border border-gray-200 p-6">
-        <h3 className="text-sm font-medium text-gray-700 mb-4">Queue Utilization (%)</h3>
+      <div className="card-carbon rounded-sharp p-6">
+        <h3 className="text-sm font-medium text-[var(--text-secondary)] mb-4">
+          Queue Utilization (%)
+        </h3>
         <ResponsiveContainer width="100%" height={200}>
           <LineChart data={history}>
-            <CartesianGrid strokeDasharray="3 3" />
-            <XAxis dataKey="time" />
-            <YAxis domain={[0, 100]} />
-            <Tooltip />
+            <CartesianGrid strokeDasharray="3 3" stroke="var(--border-hair)" vertical={false} />
+            <XAxis
+              dataKey="time"
+              tick={{ fill: 'var(--text-secondary)', fontSize: 10 }}
+              stroke="var(--border-hair)"
+            />
+            <YAxis
+              domain={[0, 100]}
+              tick={{ fill: 'var(--text-secondary)', fontSize: 10 }}
+              axisLine={false}
+              tickLine={false}
+            />
+            <Tooltip
+              contentStyle={{
+                backgroundColor: 'var(--bg-tertiary)',
+                border: '0.5px solid var(--border-hair)',
+                color: 'var(--text-primary)',
+                fontSize: 11,
+                borderRadius: 0,
+              }}
+            />
             <Line
               type="monotone"
               dataKey="utilization"
-              stroke="#10b981"
+              stroke="var(--sentiment-ally)"
               strokeWidth={2}
               dot={false}
             />
@@ -293,12 +335,12 @@ export function StreamDashboard({
 
       {/* Backpressure Warning */}
       {metrics.backpressure_active && (
-        <div className="bg-red-50 border border-red-200 rounded-lg p-4">
+        <div className="bg-signal-fail/10 border border-signal-fail rounded-sharp p-4 text-[var(--text-primary)]">
           <div className="flex items-center gap-2">
-            <Activity className="w-5 h-5 text-red-600" />
-            <span className="font-medium text-red-800">Backpressure Active</span>
+            <Activity className="w-5 h-5 text-signal-fail" />
+            <span className="font-medium">Backpressure Active</span>
           </div>
-          <p className="text-sm text-red-700 mt-1">
+          <p className="text-sm text-[var(--text-secondary)] mt-1">
             Queue utilization is at {Math.round(metrics.utilization * 100)}%. High-priority items
             only.
           </p>

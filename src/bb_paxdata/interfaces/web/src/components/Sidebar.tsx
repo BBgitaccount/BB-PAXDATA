@@ -1,3 +1,8 @@
+import { useAuth } from '@/hooks/useAuth';
+import { useTranslation } from '@/hooks/useTranslation';
+import type { tr } from '@/i18n/tr';
+import { useUIStore } from '@/store/uiStore';
+import { cn } from '@/utils/helpers';
 import {
   Activity,
   ArrowRightLeft,
@@ -11,20 +16,17 @@ import {
   GitBranch,
   GitCompare,
   Globe,
+  History,
   LayoutDashboard,
   type LucideIcon,
   Network,
   Settings,
+  Target,
   TrendingUp,
   Users,
   Zap,
 } from 'lucide-react';
 import { useLocation, useNavigate } from 'react-router-dom';
-import { useAuth } from '@/hooks/useAuth';
-import { useTranslation } from '@/hooks/useTranslation';
-import type { tr } from '@/i18n/tr';
-import { useUIStore } from '@/store/uiStore';
-import { cn } from '@/utils/helpers';
 
 const navSections: Array<{
   group: keyof typeof tr;
@@ -61,6 +63,24 @@ const navSections: Array<{
         label: 'nav.worldmap',
         path: '/worldmap',
         icon: Globe,
+      },
+      {
+        id: 'chord',
+        label: 'nav.chord',
+        path: '/chord',
+        icon: Target,
+      },
+      {
+        id: 'sankey',
+        label: 'nav.sankey',
+        path: '/sankey',
+        icon: GitBranch,
+      },
+      {
+        id: 'timeline',
+        label: 'nav.timeline',
+        path: '/timeline',
+        icon: History,
       },
       {
         id: 'discourse',

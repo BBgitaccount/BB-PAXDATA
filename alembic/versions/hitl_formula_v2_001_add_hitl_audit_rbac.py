@@ -81,8 +81,7 @@ def upgrade() -> None:
         batch_op.create_index("idx_fval_human_verdict", ["human_verdict"], unique=False)
 
     # ── 1b. Recreate the dropped view ──────────────────────────────────
-    op.execute(
-        """
+    op.execute("""
         CREATE VIEW v_formula_validation_results AS
         SELECT
             fvl.log_id,
@@ -102,8 +101,7 @@ def upgrade() -> None:
             fvl.log_version
         FROM formula_validation_logs fvl
         WHERE fvl.is_current
-    """
-    )
+    """)
 
     # ── 2. Create formula_validation_audit (WORM) ──────────────────────
     op.create_table(

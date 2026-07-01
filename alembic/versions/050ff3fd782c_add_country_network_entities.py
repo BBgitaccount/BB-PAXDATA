@@ -294,8 +294,7 @@ def upgrade() -> None:
         )
 
     # Recreate views after altering tables
-    op.execute(
-        """
+    op.execute("""
     CREATE VIEW v_f_fail_contextual_deep AS
     SELECT
         a.sent_id, a.panel_id, a.speaker_name, a.country, a.check_type,
@@ -310,11 +309,9 @@ def upgrade() -> None:
     FROM ai_fail_analysis a
     LEFT JOIN ai_sentence_analysis asa ON a.sent_id = asa.sent_id
     WHERE a.country NOT IN ('—','Unknown')
-    """
-    )
+    """)
 
-    op.execute(
-        """
+    op.execute("""
     CREATE VIEW v_f_fail_ai_cross_reference AS
     SELECT
         f.sent_id, f.check_type, f.fail_category AS AI_Fail_Kategorisi,
@@ -325,11 +322,9 @@ def upgrade() -> None:
     FROM ai_fail_analysis f
     LEFT JOIN ai_sentence_analysis asa ON f.sent_id = asa.sent_id
     WHERE f.country NOT IN ('—','Unknown')
-    """
-    )
+    """)
 
-    op.execute(
-        """
+    op.execute("""
     CREATE VIEW v_f_fail_network_context AS
     SELECT
         f.sent_id, f.speaker_name, f.country, f.check_type,
@@ -343,8 +338,7 @@ def upgrade() -> None:
     LEFT JOIN country_pair_sentiment cp
         ON dne.from_country = cp.from_country AND dne.to_country = cp.to_country
     WHERE f.country NOT IN ('—','Unknown')
-    """
-    )
+    """)
 
     # ### end Alembic commands ###
 
@@ -520,8 +514,7 @@ def downgrade() -> None:
         batch_op.create_index("idx_coref_from", ["from_country"], unique=False)
         batch_op.create_index("idx_coref_to", ["to_country"], unique=False)
     # Recreate views after altering tables in downgrade
-    op.execute(
-        """
+    op.execute("""
     CREATE VIEW v_f_fail_contextual_deep AS
     SELECT
         a.sent_id, a.panel_id, a.speaker_name, a.country, a.check_type,
@@ -536,11 +529,9 @@ def downgrade() -> None:
     FROM ai_fail_analysis a
     LEFT JOIN ai_sentence_analysis asa ON a.sent_id = asa.sent_id
     WHERE a.country NOT IN ('—','Unknown')
-    """
-    )
+    """)
 
-    op.execute(
-        """
+    op.execute("""
     CREATE VIEW v_f_fail_ai_cross_reference AS
     SELECT
         f.sent_id, f.check_type, f.fail_category AS AI_Fail_Kategorisi,
@@ -551,11 +542,9 @@ def downgrade() -> None:
     FROM ai_fail_analysis f
     LEFT JOIN ai_sentence_analysis asa ON f.sent_id = asa.sent_id
     WHERE f.country NOT IN ('—','Unknown')
-    """
-    )
+    """)
 
-    op.execute(
-        """
+    op.execute("""
     CREATE VIEW v_f_fail_network_context AS
     SELECT
         f.sent_id, f.speaker_name, f.country, f.check_type,
@@ -569,6 +558,5 @@ def downgrade() -> None:
     LEFT JOIN country_pair_sentiment cp
         ON dne.from_country = cp.from_country AND dne.to_country = cp.to_country
     WHERE f.country NOT IN ('—','Unknown')
-    """
-    )
+    """)
     # ### end Alembic commands ###

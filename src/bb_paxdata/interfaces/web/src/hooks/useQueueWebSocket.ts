@@ -3,7 +3,11 @@ import { useEffect, useRef } from 'react';
 import { useToast } from '@/hooks/useToast';
 
 const getWsUrl = () => {
-  const base = import.meta.env.VITE_API_URL || 'http://localhost:8000';
+  const base = import.meta.env.VITE_API_URL;
+  if (!base) {
+    const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+    return `${protocol}//${window.location.host}/api/ws/queue`;
+  }
   const url = new URL(base);
   const protocol = url.protocol === 'https:' ? 'wss:' : 'ws:';
   return `${protocol}//${url.host}/api/ws/queue`;

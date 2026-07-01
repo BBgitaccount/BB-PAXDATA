@@ -77,7 +77,9 @@ def generate_cache_key(endpoint: str, params: dict[str, Any]) -> str:
         else:
             parts.append(f"{k}={v}")
     param_str = "&".join(parts)
-    param_hash = hashlib.md5(param_str.encode("utf-8")).hexdigest()
+    param_hash = hashlib.md5(
+        param_str.encode("utf-8"), usedforsecurity=False
+    ).hexdigest()
     return f"viz:{endpoint}:{param_hash}"
 
 

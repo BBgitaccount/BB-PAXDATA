@@ -462,17 +462,17 @@ export const SpeakersPage = () => {
             {statsByCountry && statsByCountry.length > 0 ? (
               <ResponsiveContainer width="100%" height="100%">
                 <BarChart data={statsByCountry}>
-                  <CartesianGrid strokeDasharray="3 3" stroke="#262626" />
-                  <XAxis dataKey="country_code" stroke="#737373" fontSize={10} />
-                  <YAxis stroke="#737373" fontSize={10} />
+                  <CartesianGrid strokeDasharray="3 3" stroke="var(--border-hair)" />
+                  <XAxis dataKey="country_code" stroke="var(--text-secondary)" fontSize={10} />
+                  <YAxis stroke="var(--text-secondary)" fontSize={10} />
                   <Tooltip
                     contentStyle={{
-                      backgroundColor: '#171717',
-                      border: '1px solid #404040',
+                      backgroundColor: 'var(--bg-tertiary)',
+                      border: '0.5px solid var(--border-hair)',
                     }}
-                    labelStyle={{ color: '#E5E5E5' }}
+                    labelStyle={{ color: 'var(--text-primary)' }}
                   />
-                  <Bar dataKey="count" fill="#a1a1aa" radius={[2, 2, 0, 0]} />
+                  <Bar dataKey="count" fill="var(--text-secondary)" radius={[2, 2, 0, 0]} />
                 </BarChart>
               </ResponsiveContainer>
             ) : (
@@ -1004,24 +1004,24 @@ export const SpeakersPage = () => {
                     <AreaChart data={sentimentHistory}>
                       <defs>
                         <linearGradient id="colorSentiment" x1="0" y1="0" x2="0" y2="1">
-                          <stop offset="5%" stopColor="#a1a1aa" stopOpacity={0.3} />
-                          <stop offset="95%" stopColor="#a1a1aa" stopOpacity={0} />
+                          <stop offset="5%" stopColor="var(--text-secondary)" stopOpacity={0.3} />
+                          <stop offset="95%" stopColor="var(--text-secondary)" stopOpacity={0} />
                         </linearGradient>
                       </defs>
-                      <CartesianGrid strokeDasharray="3 3" stroke="#262626" />
-                      <XAxis dataKey="date_str" stroke="#737373" fontSize={9} />
-                      <YAxis stroke="#737373" domain={[-1, 1]} fontSize={9} />
+                      <CartesianGrid strokeDasharray="3 3" stroke="var(--border-hair)" />
+                      <XAxis dataKey="date_str" stroke="var(--text-secondary)" fontSize={9} />
+                      <YAxis stroke="var(--text-secondary)" domain={[-1, 1]} fontSize={9} />
                       <Tooltip
                         contentStyle={{
-                          backgroundColor: '#171717',
-                          border: '1px solid #404040',
+                          backgroundColor: 'var(--bg-tertiary)',
+                          border: '0.5px solid var(--border-hair)',
                         }}
-                        labelStyle={{ color: '#E5E5E5' }}
+                        labelStyle={{ color: 'var(--text-primary)' }}
                       />
                       <Area
                         type="monotone"
                         dataKey="avg_sentiment"
-                        stroke="#a1a1aa"
+                        stroke="var(--text-secondary)"
                         fillOpacity={1}
                         fill="url(#colorSentiment)"
                       />

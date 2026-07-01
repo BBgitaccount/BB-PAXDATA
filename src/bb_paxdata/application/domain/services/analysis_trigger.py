@@ -2300,9 +2300,7 @@ class AnalysisTriggerService:
         try:
             from sqlalchemy import text
 
-            await session.execute(
-                text(
-                    """
+            await session.execute(text("""
                 WITH panel_risks AS (
                   SELECT f.file_id, AVG(s.risk_score) as avg_risk,
                          ROW_NUMBER() OVER (ORDER BY f.first_processed_at) as rn
@@ -2317,9 +2315,7 @@ class AnalysisTriggerService:
                   LEFT JOIN panel_risks prev ON prev.rn = curr.rn - 1
                   WHERE curr.file_id = panel_dynamics.file_id
                 ), 0.0)
-            """
-                )
-            )
+            """))
         except Exception as exc:
             logger.warning(
                 "build.panel_dynamics_risk_delta_update_failed", error=str(exc)
@@ -2713,14 +2709,12 @@ async def rebuild_network_for_file(session: Any, file_id: str) -> None:
         from bb_paxdata.application.domain.models.dependency import ActorActionMatrix
 
         res_sents = await session.execute(
-            text(
-                """
+            text("""
                 SELECT s.sent_id, s.speaker_id, s.dominant_frame, s.demand_type, a.speech_act_json
                 FROM sentences s
                 LEFT JOIN ai_sentence_analysis a ON s.sent_id = a.sent_id
                 WHERE s.file_id = :file_id
-            """
-            ),
+            """),
             {"file_id": file_id},
         )
 

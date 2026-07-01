@@ -752,9 +752,7 @@ async def backfill_segment_events(session: Any) -> None:
 async def update_panel_dynamics_risk_delta(session: Any) -> None:
     from sqlalchemy import text
 
-    await session.execute(
-        text(
-            """
+    await session.execute(text("""
         WITH panel_risks AS (
           SELECT f.file_id, AVG(s.risk_score) as avg_risk,
                  ROW_NUMBER() OVER (ORDER BY f.first_processed_at) as rn
@@ -769,9 +767,7 @@ async def update_panel_dynamics_risk_delta(session: Any) -> None:
           LEFT JOIN panel_risks prev ON prev.rn = curr.rn - 1
           WHERE curr.file_id = panel_dynamics.file_id
         ), 0.0)
-    """
-        )
-    )
+    """))
     await session.flush()
 
 

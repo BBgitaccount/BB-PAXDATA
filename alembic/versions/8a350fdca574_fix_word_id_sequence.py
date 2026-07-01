@@ -28,13 +28,11 @@ def upgrade() -> None:
             "CREATE TEMP TABLE words_temp AS SELECT * FROM words ORDER BY word_id;"
         )
         op.execute("TRUNCATE words RESTART IDENTITY CASCADE;")
-        op.execute(
-            """
+        op.execute("""
             INSERT INTO words (sent_id, seg_id, file_id, speaker_id, speaker_name, country, bloc, power_level, word_raw, word_norm, word_position, is_stopword, diplo_score, is_named_entity)
             SELECT sent_id, seg_id, file_id, speaker_id, speaker_name, country, bloc, power_level, word_raw, word_norm, word_position, is_stopword, diplo_score, is_named_entity
             FROM words_temp ORDER BY word_id;
-        """
-        )
+        """)
         op.execute("DROP TABLE words_temp;")
     else:
         op.execute(
@@ -52,13 +50,11 @@ def upgrade() -> None:
         )
         if has_sqlite_sequence:
             op.execute("DELETE FROM sqlite_sequence WHERE name = 'words';")
-        op.execute(
-            """
+        op.execute("""
             INSERT INTO words (sent_id, seg_id, file_id, speaker_id, speaker_name, country, bloc, power_level, word_raw, word_norm, word_position, is_stopword, diplo_score, is_named_entity)
             SELECT sent_id, seg_id, file_id, speaker_id, speaker_name, country, bloc, power_level, word_raw, word_norm, word_position, is_stopword, diplo_score, is_named_entity
             FROM words_temp ORDER BY word_id;
-        """
-        )
+        """)
         op.execute("DROP TABLE words_temp;")
 
 

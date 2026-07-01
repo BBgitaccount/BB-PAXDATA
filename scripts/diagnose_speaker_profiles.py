@@ -34,14 +34,12 @@ async def main():
     print(f"\n[1] Toplam speaker_profiles satırı : {row['cnt']}")
 
     # ── 2. Örnek veri ───────────────────────────────────────────────────────
-    rows = await conn.fetch(
-        """
+    rows = await conn.fetch("""
         SELECT speaker_id, risk_event_count, avg_sentiment,
                dominant_emotion, dominant_topic, pattern_diversity
         FROM speaker_profiles
         LIMIT 20
-    """
-    )
+    """)
     print("\n[2] Örnek satırlar (ilk 20):")
     print(
         f"{'speaker_id':<30} {'risk_ev':>7} {'avg_sent':>9} {'dom_emo':<20} {'dom_top':<25} {'pat_div':>8}"
@@ -55,8 +53,7 @@ async def main():
         )
 
     # ── 3. Ortalama değerler ─────────────────────────────────────────────────
-    row = await conn.fetchrow(
-        """
+    row = await conn.fetchrow("""
         SELECT
             AVG(risk_event_count)   AS avg_risk,
             AVG(avg_sentiment)      AS avg_sent,
@@ -67,8 +64,7 @@ async def main():
             COUNT(*) FILTER (WHERE dominant_topic IS NULL)   AS null_top_cnt,
             COUNT(*) FILTER (WHERE pattern_diversity = 0)    AS zero_pdiv_cnt
         FROM speaker_profiles
-    """
-    )
+    """)
     print("\n[3] Ortalama & sıfır/null sayıları:")
     print(f"    AVG(risk_event_count)  = {row['avg_risk']}")
     print(f"    AVG(avg_sentiment)     = {row['avg_sent']}")
@@ -82,8 +78,7 @@ async def main():
     # ── #16: risk_event_count kaynak verisini kontrol et ────────────────────
     print("\n" + "=" * 70)
     print("#16 – risk_event_count kaynağı: sentences.risk_score dağılımı")
-    rows = await conn.fetch(
-        """
+    rows = await conn.fetch("""
         SELECT
             COUNT(*) AS total_sentences,
             COUNT(*) FILTER (WHERE risk_score IS NOT NULL) AS has_risk,
@@ -91,8 +86,7 @@ async def main():
             COUNT(*) FILTER (WHERE risk_score >= 7.0)      AS risk_gte_7,
             AVG(risk_score) FILTER (WHERE risk_score IS NOT NULL) AS avg_risk
         FROM sentences
-    """
-    )
+    """)
     r = rows[0]
     print(f"    Total sentences      : {r['total_sentences']}")
     print(f"    Has risk_score       : {r['has_risk']}")
@@ -102,16 +96,14 @@ async def main():
 
     # analyses tablosunda risk_score var mı?
     try:
-        rows_a = await conn.fetch(
-            """
+        rows_a = await conn.fetch("""
             SELECT
                 COUNT(*) AS total_analyses,
                 COUNT(*) FILTER (WHERE risk_score IS NOT NULL) AS has_risk,
                 COUNT(*) FILTER (WHERE risk_score >= 5.0)      AS risk_gte_5,
                 AVG(risk_score) FILTER (WHERE risk_score IS NOT NULL) AS avg_risk
             FROM analyses
-        """
-        )
+        """)
         ra = rows_a[0]
         print("\n    [analyses tablosu]")
         print(f"    Total analyses       : {ra['total_analyses']}")
@@ -124,8 +116,7 @@ async def main():
     # ── #17: avg_sentiment kaynağı ──────────────────────────────────────────
     print("\n" + "=" * 70)
     print("#17 – avg_sentiment kaynağı: sentences.vader_compound dağılımı")
-    rows = await conn.fetch(
-        """
+    rows = await conn.fetch("""
         SELECT
             COUNT(*) AS total,
             COUNT(*) FILTER (WHERE vader_compound IS NOT NULL)  AS has_vader,
@@ -134,8 +125,7 @@ async def main():
             MIN(vader_compound) AS min_vader,
             MAX(vader_compound) AS max_vader
         FROM sentences
-    """
-    )
+    """)
     r = rows[0]
     print(f"    total sentences        : {r['total']}")
     print(f"    has vader_compound     : {r['has_vader']}")
@@ -146,16 +136,14 @@ async def main():
     # ── #18: dominant_emotion kaynağı ───────────────────────────────────────
     print("\n" + "=" * 70)
     print("#18 – dominant_emotion: sentences.emotion_category dağılımı")
-    rows = await conn.fetch(
-        """
+    rows = await conn.fetch("""
         SELECT emotion_category, COUNT(*) AS cnt
         FROM sentences
         WHERE emotion_category IS NOT NULL
         GROUP BY emotion_category
         ORDER BY cnt DESC
         LIMIT 15
-    """
-    )
+    """)
     print(f"    {'emotion_category':<30} {'count':>8}")
     print("    " + "-" * 42)
     for r in rows:
@@ -163,16 +151,14 @@ async def main():
 
     # analyses.emotion_label kontrolü
     try:
-        rows_ae = await conn.fetch(
-            """
+        rows_ae = await conn.fetch("""
             SELECT emotion_label, COUNT(*) AS cnt
             FROM analyses
             WHERE emotion_label IS NOT NULL
             GROUP BY emotion_label
             ORDER BY cnt DESC
             LIMIT 10
-        """
-        )
+        """)
         print("\n    [analyses.emotion_label dağılımı]")
         for r in rows_ae:
             print(f"    {r['emotion_label']!s:<30} {r['cnt']:>8}")
@@ -182,32 +168,28 @@ async def main():
     # ── #19: dominant_topic mevcut değerleri ────────────────────────────────
     print("\n" + "=" * 70)
     print("#19 – dominant_topic: mevcut değerlerin dağılımı")
-    rows = await conn.fetch(
-        """
+    rows = await conn.fetch("""
         SELECT dominant_topic, COUNT(*) AS cnt
         FROM speaker_profiles
         WHERE dominant_topic IS NOT NULL
         GROUP BY dominant_topic
         ORDER BY cnt DESC
         LIMIT 20
-    """
-    )
+    """)
     print(f"    {'dominant_topic':<40} {'count':>6}")
     print("    " + "-" * 48)
     for r in rows:
         print(f"    {r['dominant_topic']!s:<40} {r['cnt']:>6}")
 
     # sentences.dominant_topic kaynağı
-    rows2 = await conn.fetch(
-        """
+    rows2 = await conn.fetch("""
         SELECT dominant_topic, COUNT(*) AS cnt
         FROM sentences
         WHERE dominant_topic IS NOT NULL
         GROUP BY dominant_topic
         ORDER BY cnt DESC
         LIMIT 15
-    """
-    )
+    """)
     print("\n    [sentences.dominant_topic top-15]")
     for r in rows2:
         print(f"    {r['dominant_topic']!s:<40} {r['cnt']:>6}")
@@ -215,45 +197,39 @@ async def main():
     # ── #20: pattern_diversity dağılımı ────────────────────────────────────
     print("\n" + "=" * 70)
     print("#20 – pattern_diversity: mevcut değer dağılımı")
-    rows = await conn.fetch(
-        """
+    rows = await conn.fetch("""
         SELECT pattern_diversity, COUNT(*) AS cnt
         FROM speaker_profiles
         GROUP BY pattern_diversity
         ORDER BY pattern_diversity
-    """
-    )
+    """)
     print(f"    {'pattern_diversity':>18} {'count':>6}")
     print("    " + "-" * 26)
     for r in rows:
         print(f"    {float(r['pattern_diversity']):>18.4f} {r['cnt']:>6}")
 
     # sentences.rhetoric_type dağılımı
-    rows2 = await conn.fetch(
-        """
+    rows2 = await conn.fetch("""
         SELECT rhetoric_type, COUNT(*) AS cnt
         FROM sentences
         WHERE rhetoric_type IS NOT NULL
         GROUP BY rhetoric_type
         ORDER BY cnt DESC
         LIMIT 15
-    """
-    )
+    """)
     print("\n    [sentences.rhetoric_type top-15]")
     for r in rows2:
         print(f"    {r['rhetoric_type']!s:<35} {r['cnt']:>6}")
 
     # Unique rhetoric_type sayısı per speaker
-    rows3 = await conn.fetch(
-        """
+    rows3 = await conn.fetch("""
         SELECT sent.speaker_id, COUNT(DISTINCT sent.rhetoric_type) AS unique_rt
         FROM sentences sent
         WHERE sent.rhetoric_type IS NOT NULL AND sent.speaker_id IS NOT NULL
         GROUP BY sent.speaker_id
         ORDER BY unique_rt DESC
         LIMIT 10
-    """
-    )
+    """)
     print("\n    [Per speaker unique rhetoric_type (top-10)]")
     for r in rows3:
         print(f"    speaker={r['speaker_id']!s:<30} unique_rt={r['unique_rt']}")

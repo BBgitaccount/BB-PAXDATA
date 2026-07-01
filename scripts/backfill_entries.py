@@ -28,15 +28,11 @@ async def main():
     async with SessionLocal() as session:
         # 1. Create entries table physically in PostgreSQL if not exists
         print("Ensuring 'entries' table exists in database...")
-        await session.execute(
-            text(
-                """
+        await session.execute(text("""
             CREATE TABLE IF NOT EXISTS entries (
                 person VARCHAR(255) PRIMARY KEY
             );
-        """
-            )
-        )
+        """))
         await session.commit()
 
         # 2. Fetch all speakers and speaker profiles

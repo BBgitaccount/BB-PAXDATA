@@ -6,6 +6,7 @@ from bb_paxdata.application.domain.dtos.visualization_dtos import ReferenceFlowD
 from bb_paxdata.application.domain.ports.i_visualization_repository import (
     IVisualizationRepository,
 )
+from bb_paxdata.infrastructure.mappings.country_iso_map import is_unknown_country
 
 
 class GetReferenceFlowsUseCase:
@@ -30,6 +31,8 @@ class GetReferenceFlowsUseCase:
 
         flows: list[ReferenceFlowDTO] = []
         for (spk, ref, ctx), records in grouped.items():
+            if is_unknown_country(spk) or is_unknown_country(ref):
+                continue
             total_count = sum(r["cnt"] for r in records)
             if total_count == 0:
                 continue

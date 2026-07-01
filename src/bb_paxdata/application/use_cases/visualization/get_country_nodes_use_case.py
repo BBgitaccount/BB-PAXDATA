@@ -6,7 +6,10 @@ from bb_paxdata.application.domain.dtos.visualization_dtos import CountryNodeDTO
 from bb_paxdata.application.domain.ports.i_visualization_repository import (
     IVisualizationRepository,
 )
-from bb_paxdata.infrastructure.mappings.country_iso_map import get_iso_alpha3
+from bb_paxdata.infrastructure.mappings.country_iso_map import (
+    get_iso_alpha3,
+    is_unknown_country,
+)
 
 
 class GetCountryNodesUseCase:
@@ -53,9 +56,15 @@ class GetCountryNodesUseCase:
             bilat_relations[bilat["to_country"]].append(bilat)
 
         # 4. Compile the list of all unique countries
-        all_countries = (
-            set(ref_map.keys()) | set(stats_map.keys()) | set(bilat_relations.keys())
-        )
+        all_countries = {
+            c
+            for c in (
+                set(ref_map.keys())
+                | set(stats_map.keys())
+                | set(bilat_relations.keys())
+            )
+            if not is_unknown_country(c)
+        }
 
         nodes: list[CountryNodeDTO] = []
         for country in all_countries:

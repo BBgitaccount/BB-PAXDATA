@@ -37,7 +37,6 @@ import { useTranslation } from '@/hooks/useTranslation';
 import { apiClient } from '@/services/apiClient';
 import { readDashboardSnapshot, saveDashboardSnapshot } from '@/services/offlineDashboardCache';
 import { isOfflineCapableError } from '@/services/offlineVerdictQueue';
-import { useUIStore } from '@/store/uiStore';
 import type {
   BilateralSentimentData,
   ConsensusDistribution,
@@ -52,7 +51,6 @@ import type {
 export const Dashboard = () => {
   const toast = useToast();
   const [selectedPanel, setSelectedPanel] = useState<PanelTimelineEntry | null>(null);
-  const theme = useUIStore((s) => s.theme);
   const { t } = useTranslation();
 
   const dashboardQuery = useQuery({
@@ -171,14 +169,18 @@ export const Dashboard = () => {
   const { kpi, formulaHealth, dailyTrend, priorityDist, triggerDist, consensusDist } =
     dashboardQuery.data;
 
-  const COLORS =
-    theme === 'dark'
-      ? ['#333333', '#505050', '#8A8A8A', '#E0E0E0']
-      : ['#E0E0E0', '#ADB5BD', '#868E96', '#495057'];
-  const CONSENSUS_COLORS =
-    theme === 'dark'
-      ? ['#264D26', '#5C4A26', '#5C2626', '#8A8A8A']
-      : ['#2E7D32', '#EF6C00', '#C62828', '#868E96'];
+  const COLORS = [
+    'var(--text-quaternary)',
+    'var(--text-tertiary)',
+    'var(--text-secondary)',
+    'var(--text-primary)',
+  ];
+  const CONSENSUS_COLORS = [
+    'var(--signal-pass)',
+    'var(--signal-warn)',
+    'var(--signal-fail)',
+    'var(--text-secondary)',
+  ];
 
   const highFpCount = formulaHealth?.filter((item) => item.false_positive_rate > 0.3).length || 0;
 
@@ -279,24 +281,24 @@ export const Dashboard = () => {
                 <LineChart data={dailyTrend}>
                   <CartesianGrid
                     strokeDasharray="3 3"
-                    stroke={theme === 'dark' ? '#2A2A2A' : '#E9ECEF'}
+                    stroke="var(--border-hair)"
                     vertical={false}
                   />
                   <XAxis
                     dataKey="date"
                     tick={{
-                      fill: theme === 'dark' ? '#8A8A8A' : '#495057',
+                      fill: 'var(--text-secondary)',
                       fontSize: 10,
                       fontFamily: 'JetBrains Mono',
                     }}
                     axisLine={{
-                      stroke: theme === 'dark' ? '#2A2A2A' : '#E9ECEF',
+                      stroke: 'var(--border-hair)',
                     }}
                     tickLine={false}
                   />
                   <YAxis
                     tick={{
-                      fill: theme === 'dark' ? '#8A8A8A' : '#495057',
+                      fill: 'var(--text-secondary)',
                       fontSize: 10,
                       fontFamily: 'JetBrains Mono',
                     }}
@@ -305,18 +307,18 @@ export const Dashboard = () => {
                   />
                   <Tooltip
                     contentStyle={{
-                      backgroundColor: theme === 'dark' ? '#161616' : '#FFFFFF',
-                      border: theme === 'dark' ? '0.5px solid #2A2A2A' : '0.5px solid #CED4DA',
+                      backgroundColor: 'var(--bg-tertiary)',
+                      border: '0.5px solid var(--border-hair)',
                       borderRadius: 0,
                       fontSize: 12,
                       fontFamily: 'JetBrains Mono',
-                      color: theme === 'dark' ? '#F5F5F5' : '#1A1A1A',
+                      color: 'var(--text-primary)',
                     }}
                   />
                   <Line
                     type="monotone"
                     dataKey="pass_count"
-                    stroke={theme === 'dark' ? '#264D26' : '#2E7D32'}
+                    stroke="var(--signal-pass)"
                     strokeWidth={1.5}
                     dot={false}
                     name="PASS"
@@ -324,7 +326,7 @@ export const Dashboard = () => {
                   <Line
                     type="monotone"
                     dataKey="fail_count"
-                    stroke={theme === 'dark' ? '#5C2626' : '#C62828'}
+                    stroke="var(--signal-fail)"
                     strokeWidth={1.5}
                     dot={false}
                     name="FAIL"
@@ -363,7 +365,7 @@ export const Dashboard = () => {
                     cx="50%"
                     cy="50%"
                     outerRadius={80}
-                    stroke={theme === 'dark' ? '#0A0A0A' : '#FFFFFF'}
+                    stroke="var(--bg-primary)"
                     strokeWidth={2}
                   >
                     {priorityDist.map((_, i) => (
@@ -372,12 +374,12 @@ export const Dashboard = () => {
                   </Pie>
                   <Tooltip
                     contentStyle={{
-                      backgroundColor: theme === 'dark' ? '#161616' : '#FFFFFF',
-                      border: theme === 'dark' ? '0.5px solid #2A2A2A' : '0.5px solid #CED4DA',
+                      backgroundColor: 'var(--bg-tertiary)',
+                      border: '0.5px solid var(--border-hair)',
                       borderRadius: 0,
                       fontSize: 12,
                       fontFamily: 'JetBrains Mono',
-                      color: theme === 'dark' ? '#F5F5F5' : '#1A1A1A',
+                      color: 'var(--text-primary)',
                     }}
                   />
                 </RePieChart>
@@ -446,13 +448,13 @@ export const Dashboard = () => {
                 <BarChart data={triggerDist} layout="vertical" margin={{ left: 20 }}>
                   <CartesianGrid
                     strokeDasharray="3 3"
-                    stroke={theme === 'dark' ? '#2A2A2A' : '#E9ECEF'}
+                    stroke="var(--border-hair)"
                     horizontal={false}
                   />
                   <XAxis
                     type="number"
                     tick={{
-                      fill: theme === 'dark' ? '#8A8A8A' : '#495057',
+                      fill: 'var(--text-secondary)',
                       fontSize: 10,
                       fontFamily: 'JetBrains Mono',
                     }}
@@ -463,7 +465,7 @@ export const Dashboard = () => {
                     type="category"
                     dataKey="trigger"
                     tick={{
-                      fill: theme === 'dark' ? '#8A8A8A' : '#495057',
+                      fill: 'var(--text-secondary)',
                       fontSize: 10,
                       fontFamily: 'JetBrains Mono',
                     }}
@@ -473,18 +475,18 @@ export const Dashboard = () => {
                   />
                   <Tooltip
                     contentStyle={{
-                      backgroundColor: theme === 'dark' ? '#161616' : '#FFFFFF',
-                      border: theme === 'dark' ? '0.5px solid #2A2A2A' : '0.5px solid #CED4DA',
+                      backgroundColor: 'var(--bg-tertiary)',
+                      border: '0.5px solid var(--border-hair)',
                       borderRadius: 0,
                       fontSize: 12,
                       fontFamily: 'JetBrains Mono',
-                      color: theme === 'dark' ? '#F5F5F5' : '#1A1A1A',
+                      color: 'var(--text-primary)',
                     }}
                   />
                   <Bar
                     dataKey="count"
-                    fill={theme === 'dark' ? '#505050' : '#ADB5BD'}
-                    stroke={theme === 'dark' ? '#2A2A2A' : '#CED4DA'}
+                    fill="var(--text-tertiary)"
+                    stroke="var(--border-hair)"
                     strokeWidth={1}
                     barSize={14}
                   />
@@ -517,26 +519,22 @@ export const Dashboard = () => {
           {consensusDist && consensusDist.some((c) => c.count > 0) ? (
             <ResponsiveContainer width="100%" height="100%">
               <BarChart data={consensusDist}>
-                <CartesianGrid
-                  strokeDasharray="3 3"
-                  stroke={theme === 'dark' ? '#2A2A2A' : '#E9ECEF'}
-                  vertical={false}
-                />
+                <CartesianGrid strokeDasharray="3 3" stroke="var(--border-hair)" vertical={false} />
                 <XAxis
                   dataKey="consensus"
                   tick={{
-                    fill: theme === 'dark' ? '#8A8A8A' : '#495057',
+                    fill: 'var(--text-secondary)',
                     fontSize: 10,
                     fontFamily: 'JetBrains Mono',
                   }}
                   axisLine={{
-                    stroke: theme === 'dark' ? '#2A2A2A' : '#E9ECEF',
+                    stroke: 'var(--border-hair)',
                   }}
                   tickLine={false}
                 />
                 <YAxis
                   tick={{
-                    fill: theme === 'dark' ? '#8A8A8A' : '#495057',
+                    fill: 'var(--text-secondary)',
                     fontSize: 10,
                     fontFamily: 'JetBrains Mono',
                   }}
@@ -545,12 +543,12 @@ export const Dashboard = () => {
                 />
                 <Tooltip
                   contentStyle={{
-                    backgroundColor: theme === 'dark' ? '#161616' : '#FFFFFF',
-                    border: theme === 'dark' ? '0.5px solid #2A2A2A' : '0.5px solid #CED4DA',
+                    backgroundColor: 'var(--bg-tertiary)',
+                    border: '0.5px solid var(--border-hair)',
                     borderRadius: 0,
                     fontSize: 12,
                     fontFamily: 'JetBrains Mono',
-                    color: theme === 'dark' ? '#F5F5F5' : '#1A1A1A',
+                    color: 'var(--text-primary)',
                   }}
                 />
                 <Bar dataKey="count" strokeWidth={1} barSize={40}>

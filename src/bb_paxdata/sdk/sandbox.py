@@ -76,8 +76,7 @@ def run_plugin_in_sandbox(
     Plugin crash olsa bile ana process etkilenmez.
     """
     # Subprocess içinde çalışacak bootstrap kodu
-    bootstrap = textwrap.dedent(
-        f"""
+    bootstrap = textwrap.dedent(f"""
         import sys, json, pathlib
         import importlib.util
 
@@ -105,8 +104,7 @@ def run_plugin_in_sandbox(
         input_data = json.loads(sys.stdin.read())
         result = instance.evaluate(input_data["text"], input_data["context"])
         print(json.dumps(result.model_dump()))
-    """
-    )
+    """)
 
     try:
         # Platform-specific resource limiting

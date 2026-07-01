@@ -204,8 +204,7 @@ def upgrade() -> None:
 
     # 8. Recreate v_f_fail_network_context using discourse_network_edges_legacy
     op.execute("DROP VIEW IF EXISTS v_f_fail_network_context")
-    op.execute(
-        """
+    op.execute("""
     CREATE VIEW v_f_fail_network_context AS
     SELECT
         f.sent_id, f.speaker_name, f.country, f.check_type,
@@ -219,8 +218,7 @@ def upgrade() -> None:
     LEFT JOIN country_pair_sentiment cp
         ON dne.from_country = cp.from_country AND dne.to_country = cp.to_country
     WHERE f.country NOT IN ('—','Unknown')
-    """
-    )
+    """)
 
 
 def downgrade() -> None:

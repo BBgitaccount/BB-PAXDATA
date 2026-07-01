@@ -31,11 +31,10 @@ const AnimatedNumber = ({ value }: { value: number }) => {
   return <motion.span>{display}</motion.span>;
 };
 
-// Card wrapper with hover effect
 const KpiCard = ({ children }: { children: React.ReactNode }) => (
   <motion.div
-    className="bg-[#0d1b2a] border border-[#1e3a5f] p-4 hover:translate-y-[-2px] hover:shadow-lg transition-all duration-200"
-    whileHover={{ y: -2, boxShadow: '0 4px 12px rgba(0,0,0,0.3)' }}
+    className="bg-[var(--bg-tertiary)] border border-[var(--border-subtle)] p-4 hover:translate-y-[-2px] hover:shadow-lg transition-all duration-200"
+    whileHover={{ y: -2 }}
   >
     {children}
   </motion.div>
@@ -182,11 +181,11 @@ const AllyRelationshipsCard = ({
           </Pie>
           <Tooltip
             contentStyle={{
-              backgroundColor: '#0d1b2a',
-              border: '1px solid #1e3a5f',
+              backgroundColor: 'var(--bg-secondary)',
+              border: 'var(--border-subtle)',
               borderRadius: 4,
               fontSize: 11,
-              color: '#e5e7eb',
+              color: 'var(--text-primary)',
             }}
           />
         </PieChart>

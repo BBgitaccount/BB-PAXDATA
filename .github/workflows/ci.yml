@@ -35,11 +35,14 @@ jobs:
       - name: Install dependencies
         run: poetry install --no-interaction
 
-      - name: Run Linting
+      - name: Run Linting & Security Audits
         run: |
           poetry run ruff check src/
           poetry run black --check src/
           poetry run mypy src/
+          poetry run bandit -c pyproject.toml -r src/ -ll
+          poetry run deptry src/
+          poetry run pip-audit
 
       - name: Set up Node.js
         uses: actions/setup-node@v4

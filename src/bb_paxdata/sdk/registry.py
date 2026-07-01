@@ -103,8 +103,7 @@ class PluginRegistry:
         import sys
         import textwrap
 
-        bootstrap = textwrap.dedent(
-            f"""
+        bootstrap = textwrap.dedent(f"""
             import importlib.util, json, pathlib
             path = pathlib.Path({str(path)!r})
             spec = importlib.util.spec_from_file_location("p", path)
@@ -116,8 +115,7 @@ class PluginRegistry:
                     m = obj.metadata if isinstance(obj.metadata, dict) else obj().metadata.model_dump()
                     print(json.dumps(m))
                     break
-        """
-        )
+        """)
         try:
             proc = subprocess.run(
                 [sys.executable, "-c", bootstrap],

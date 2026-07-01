@@ -294,21 +294,21 @@ export const TemporalDrift = () => {
           <div className="h-72">
             <ResponsiveContainer width="100%" height="100%">
               <LineChart data={garchChartData}>
-                <CartesianGrid strokeDasharray="3 3" stroke="#222222" vertical={false} />
+                <CartesianGrid strokeDasharray="3 3" stroke="var(--border-hair)" vertical={false} />
                 <XAxis
                   dataKey="sentence"
                   tick={{
-                    fill: '#6A6A6A',
+                    fill: 'var(--text-tertiary)',
                     fontSize: 9,
                     fontFamily: 'JetBrains Mono',
                   }}
-                  axisLine={{ stroke: '#222222' }}
+                  axisLine={{ stroke: 'var(--border-hair)' }}
                   tickLine={false}
                 />
                 <YAxis
                   yAxisId="left"
                   tick={{
-                    fill: '#8A8A8A',
+                    fill: 'var(--text-secondary)',
                     fontSize: 9,
                     fontFamily: 'JetBrains Mono',
                   }}
@@ -320,7 +320,7 @@ export const TemporalDrift = () => {
                   yAxisId="right"
                   orientation="right"
                   tick={{
-                    fill: '#8A8A8A',
+                    fill: 'var(--text-secondary)',
                     fontSize: 9,
                     fontFamily: 'JetBrains Mono',
                   }}
@@ -330,11 +330,11 @@ export const TemporalDrift = () => {
                 />
                 <Tooltip
                   contentStyle={{
-                    backgroundColor: '#161616',
-                    border: '0.5px solid #2C2C2C',
+                    backgroundColor: 'var(--bg-tertiary)',
+                    border: '0.5px solid var(--border-hair)',
                     fontSize: 11,
                     fontFamily: 'JetBrains Mono',
-                    color: '#E2E2E2',
+                    color: 'var(--text-primary)',
                     borderRadius: 0,
                   }}
                 />
@@ -342,14 +342,14 @@ export const TemporalDrift = () => {
                   wrapperStyle={{
                     fontSize: 10,
                     fontFamily: 'JetBrains Mono',
-                    color: '#888',
+                    color: 'var(--text-secondary)',
                   }}
                 />
                 <Line
                   yAxisId="left"
                   type="monotone"
                   dataKey="sentiment"
-                  stroke="#5C5C5C"
+                  stroke="var(--text-secondary)"
                   strokeWidth={1}
                   dot={false}
                   name="Sentiment"
@@ -358,7 +358,7 @@ export const TemporalDrift = () => {
                   yAxisId="right"
                   type="monotone"
                   dataKey="volatility"
-                  stroke="#FFFFFF"
+                  stroke="var(--text-primary)"
                   strokeWidth={1.8}
                   dot={false}
                   name="GARCH Volatility"
@@ -381,20 +381,20 @@ export const TemporalDrift = () => {
           <div className="h-72">
             <ResponsiveContainer width="100%" height="100%">
               <BarChart data={salienceChartData}>
-                <CartesianGrid strokeDasharray="3 3" stroke="#222222" vertical={false} />
+                <CartesianGrid strokeDasharray="3 3" stroke="var(--border-hair)" vertical={false} />
                 <XAxis
                   dataKey="panel"
                   tick={{
-                    fill: '#6A6A6A',
+                    fill: 'var(--text-tertiary)',
                     fontSize: 9,
                     fontFamily: 'JetBrains Mono',
                   }}
-                  axisLine={{ stroke: '#222222' }}
+                  axisLine={{ stroke: 'var(--border-hair)' }}
                   tickLine={false}
                 />
                 <YAxis
                   tick={{
-                    fill: '#8A8A8A',
+                    fill: 'var(--text-secondary)',
                     fontSize: 9,
                     fontFamily: 'JetBrains Mono',
                   }}
@@ -403,18 +403,18 @@ export const TemporalDrift = () => {
                 />
                 <Tooltip
                   contentStyle={{
-                    backgroundColor: '#161616',
-                    border: '0.5px solid #2C2C2C',
+                    backgroundColor: 'var(--bg-tertiary)',
+                    border: '0.5px solid var(--border-hair)',
                     fontSize: 11,
                     fontFamily: 'JetBrains Mono',
-                    color: '#E2E2E2',
+                    color: 'var(--text-primary)',
                     borderRadius: 0,
                   }}
                 />
                 <Bar
                   dataKey="count"
-                  fill="#404040"
-                  stroke="#333333"
+                  fill="var(--text-tertiary)"
+                  stroke="var(--border-hair)"
                   strokeWidth={1}
                   barSize={24}
                   name="Cümle Sayısı"
@@ -444,20 +444,20 @@ export const TemporalDrift = () => {
           <div className="h-80">
             <ResponsiveContainer width="100%" height="100%">
               <LineChart data={dkiChartData}>
-                <CartesianGrid strokeDasharray="3 3" stroke="#222222" vertical={false} />
+                <CartesianGrid strokeDasharray="3 3" stroke="var(--border-hair)" vertical={false} />
                 <XAxis
                   dataKey="session"
                   tick={{
-                    fill: '#6A6A6A',
+                    fill: 'var(--text-tertiary)',
                     fontSize: 9,
                     fontFamily: 'JetBrains Mono',
                   }}
-                  axisLine={{ stroke: '#222222' }}
+                  axisLine={{ stroke: 'var(--border-hair)' }}
                   tickLine={false}
                 />
                 <YAxis
                   tick={{
-                    fill: '#8A8A8A',
+                    fill: 'var(--text-secondary)',
                     fontSize: 9,
                     fontFamily: 'JetBrains Mono',
                   }}
@@ -467,11 +467,11 @@ export const TemporalDrift = () => {
                 />
                 <Tooltip
                   contentStyle={{
-                    backgroundColor: '#161616',
-                    border: '0.5px solid #2C2C2C',
+                    backgroundColor: 'var(--bg-tertiary)',
+                    border: '0.5px solid var(--border-hair)',
                     fontSize: 11,
                     fontFamily: 'JetBrains Mono',
-                    color: '#E2E2E2',
+                    color: 'var(--text-primary)',
                     borderRadius: 0,
                   }}
                 />
@@ -479,20 +479,20 @@ export const TemporalDrift = () => {
                   wrapperStyle={{
                     fontSize: 10,
                     fontFamily: 'JetBrains Mono',
-                    color: '#888',
+                    color: 'var(--text-secondary)',
                   }}
                 />
                 <Line
                   type="monotone"
                   dataKey="dki"
-                  stroke="#FFFFFF"
+                  stroke="var(--text-primary)"
                   strokeWidth={2}
                   name="DKI Composite Score"
                 />
                 <Line
                   type="monotone"
                   dataKey="velocity"
-                  stroke="#264D26"
+                  stroke="var(--signal-pass)"
                   strokeWidth={1}
                   strokeDasharray="4 4"
                   name="Debate Velocity"
@@ -500,7 +500,7 @@ export const TemporalDrift = () => {
                 <Line
                   type="monotone"
                   dataKey="shift"
-                  stroke="#5C2626"
+                  stroke="var(--signal-fail)"
                   strokeWidth={1}
                   strokeDasharray="4 4"
                   name="Semantic Shift"
@@ -508,7 +508,7 @@ export const TemporalDrift = () => {
                 <Line
                   type="monotone"
                   dataKey="loading"
-                  stroke="#5C4A26"
+                  stroke="var(--signal-warn)"
                   strokeWidth={1}
                   strokeDasharray="4 4"
                   name="Debate Loading"

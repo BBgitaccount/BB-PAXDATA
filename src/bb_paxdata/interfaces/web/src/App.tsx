@@ -1,4 +1,3 @@
-import { BrowserRouter, Navigate, Route, Routes } from 'react-router-dom';
 import { ErrorBoundary } from '@/components/ErrorBoundary';
 import { Layout } from '@/components/Layout';
 import { AIComparison } from '@/pages/AIComparison';
@@ -6,6 +5,7 @@ import { AnomalyTimeline } from '@/pages/AnomalyTimeline';
 import { AuditTrail } from '@/pages/AuditTrail';
 import { BilateralRelations } from '@/pages/BilateralRelations';
 import { Calibration } from '@/pages/Calibration';
+import { Chord } from '@/pages/Chord';
 import { Dashboard } from '@/pages/Dashboard';
 import { DiscourseNetwork } from '@/pages/DiscourseNetwork';
 import { PipelineMonitor } from '@/pages/PipelineMonitor';
@@ -13,11 +13,14 @@ import { PromptRegistry } from '@/pages/PromptRegistry';
 import { ProvenanceGraph } from '@/pages/ProvenanceGraph';
 import { ReviewDetail } from '@/pages/ReviewDetail';
 import { ReviewQueue } from '@/pages/ReviewQueue';
+import { Sankey } from '@/pages/Sankey';
 import { Settings } from '@/pages/Settings';
 import { SpeakersPage } from '@/pages/SpeakersPage';
 import { SystemHealth } from '@/pages/SystemHealth';
 import { TemporalDrift } from '@/pages/TemporalDrift';
+import { Timeline } from '@/pages/Timeline';
 import { WorldMap } from '@/pages/WorldMap';
+import { BrowserRouter, Navigate, Route, Routes } from 'react-router-dom';
 
 export const App = () => {
   return (
@@ -28,6 +31,9 @@ export const App = () => {
           <Route path="/speakers" element={<SpeakersPage />} />
           <Route path="/bilateral" element={<BilateralRelations />} />
           <Route path="/worldmap" element={<WorldMap />} />
+          <Route path="/chord" element={<Chord />} />
+          <Route path="/sankey" element={<Sankey />} />
+          <Route path="/timeline" element={<Timeline />} />
           <Route path="/discourse" element={<DiscourseNetwork />} />
           <Route path="/anomalies" element={<AnomalyTimeline />} />
           <Route path="/drift" element={<TemporalDrift />} />

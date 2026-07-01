@@ -421,8 +421,7 @@ def main():
             )
 
         # Executing batch updates using executemany for high performance
-        stmt = text(
-            """
+        stmt = text("""
             UPDATE actor_topic_projection
             SET demand_count = :demand_count,
                 demand_density_per_1k = :demand_density_per_1k,
@@ -438,8 +437,7 @@ def main():
                 risk_score_weighted = :risk_score_weighted,
                 risk_score_normalized = :risk_score_normalized
             WHERE file_id = :b_file_id AND country = :b_country AND topic = :b_topic AND topic_model_version = :b_version
-        """
-        )
+        """)
 
         # Serialize JSON columns to string for DB driver compatibility
         for row in update_data:

@@ -98,8 +98,7 @@ def downgrade() -> None:
         batch_op.drop_column("maoz_affinity_score")
 
     # Recreate the view as discourse_network_edges is restored to the old schema
-    op.execute(
-        """
+    op.execute("""
     CREATE VIEW v_f_fail_network_context AS
     SELECT
         f.sent_id, f.speaker_name, f.country, f.check_type,
@@ -113,5 +112,4 @@ def downgrade() -> None:
     LEFT JOIN country_pair_sentiment cp
         ON dne.from_country = cp.from_country AND dne.to_country = cp.to_country
     WHERE f.country NOT IN ('—','Unknown')
-    """
-    )
+    """)

@@ -123,13 +123,55 @@ export const useVizStore = create<VizState>((set, get) => ({
         getSessionTimeline(),
       ]);
 
+      const isUnknown = (name?: string | null, code?: string | null) => {
+        const n = name?.toUpperCase() || '';
+        const c = code?.toUpperCase() || '';
+        return !n || n === 'UNKNOWN' || n === 'UNK' || !c || c === 'UNKNOWN' || c === 'UNK';
+      };
+
+      const filteredNodes = nodes.filter((n) => !isUnknown(n.country, n.isoAlpha3));
+      const filteredFlows = flows.filter(
+        (f) => !isUnknown(f.fromCountry, f.fromIso3) && !isUnknown(f.toCountry, f.toIso3),
+      );
+
+      let filteredMatrix = matrix;
+      if (matrix && matrix.countries) {
+        const validIndices: number[] = [];
+        const validCountries = matrix.countries.filter((c, idx) => {
+          const isValid = !isUnknown(c, c);
+          if (isValid) {
+            validIndices.push(idx);
+          }
+          return isValid;
+        });
+
+        const filter2D = <T>(arr: T[][]) => {
+          return validIndices.map((rowIdx) => validIndices.map((colIdx) => arr[rowIdx]?.[colIdx]));
+        };
+
+        filteredMatrix = {
+          countries: validCountries,
+          matrix: filter2D(matrix.matrix),
+          interactionMatrix: filter2D(matrix.interactionMatrix),
+          relationshipMatrix: filter2D(matrix.relationshipMatrix),
+        };
+      }
+
+      const filteredTimeline = timeline.map((t) => ({
+        ...t,
+        countries: t.countries.filter((c) => !isUnknown(c, c)),
+        topRelationships: t.topRelationships.filter(
+          (r) => !isUnknown(r.from, r.from) && !isUnknown(r.to, r.to),
+        ),
+      }));
+
       set((state) => ({
         data: {
           ...state.data,
-          countryNodes: nodes,
-          bilateralFlows: flows,
-          sentimentMatrix: matrix,
-          sessionTimeline: timeline,
+          countryNodes: filteredNodes,
+          bilateralFlows: filteredFlows,
+          sentimentMatrix: filteredMatrix,
+          sessionTimeline: filteredTimeline,
         },
       }));
     } catch (err) {

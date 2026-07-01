@@ -61,12 +61,16 @@ export const ChordDiagram: React.FC<ChordDiagramProps> = ({ height = 550 }) => {
   const sessionsQuery = useQuery({
     queryKey: ['sessions-timeline'],
     queryFn: () => getSessionTimeline(),
+    retry: 1,
+    staleTime: 60000, // 1 minute
   });
 
   // Fetch bilateral flows based on selected sessions
   const flowsQuery = useQuery({
     queryKey: ['chord-flows', selectedSessions],
     queryFn: () => getBilateralFlows({ sessionId: selectedSessions }),
+    retry: 1,
+    staleTime: 30000, // 30 seconds
   });
 
   // Filter flows for minimum interaction value if checked
@@ -414,6 +418,14 @@ export const ChordDiagram: React.FC<ChordDiagramProps> = ({ height = 550 }) => {
           </div>
         )}
 
+        {(flowsQuery.isError || sessionsQuery.isError) && (
+          <div className="absolute inset-0 flex flex-col items-center justify-center gap-2 bg-carbon-950/90 z-20 text-carbon-400 text-xs p-4 text-center">
+            <Info className="w-6 h-6 text-red-500 mb-1" />
+            <span className="font-bold text-red-400 text-sm">Veri Yükleme Hatası</span>
+            <span>Sunucuyla bağlantı kurulamadı veya bir hata oluştu.</span>
+          </div>
+        )}
+
         {!flowsQuery.isPending && topCountries.length === 0 && (
           <div className="absolute inset-0 flex flex-col items-center justify-center gap-2 bg-carbon-950 text-carbon-400 text-xs">
             <Info className="w-6 h-6 text-carbon-600" />
@@ -530,37 +542,49 @@ export const ChordDiagram: React.FC<ChordDiagramProps> = ({ height = 550 }) => {
               </g>
             </svg>
 
-            {/* Center Overlay Retro Information Stats Card */}
+            {/* Center Overlay Professional Information Stats Card */}
             <div
-              className="absolute bg-carbon-950/95 border border-carbon-800 w-[185px] h-[185px] rounded-full flex flex-col items-center justify-center p-4 text-center pointer-events-none select-none z-10"
+              className="absolute bg-carbon-950/95 border border-carbon-800 w-[185px] h-[185px] rounded-full flex flex-col items-center justify-center p-4 text-center pointer-events-none select-none z-10 shadow-inner"
               style={{
                 transform: 'translate(-50%, -50%)',
                 top: '50%',
                 left: '50%',
               }}
             >
-              <div className="font-mono text-[8px] text-carbon-200 leading-tight w-full overflow-hidden">
-                {/* Top Border */}
-                <div className="text-carbon-500">╔═══════════════════╗</div>
+              <div className="flex flex-col items-center justify-center w-full h-full">
                 {/* Header */}
-                <div className="text-carbon-50 font-bold uppercase tracking-wider truncate px-1">
-                  ║ {centerStats.title.padEnd(17, ' ').substring(0, 17)} ║
+                <div className="text-carbon-50 font-bold uppercase tracking-wider text-[11px] truncate w-full border-b border-carbon-800 pb-1.5 mb-1.5 font-sans">
+                  {centerStats.title}
                 </div>
-                <div className="text-carbon-500">╟───────────────────╢</div>
-                {/* Body rows */}
-                {centerStats.lines.map((line, idx) => (
-                  <div key={idx} className="truncate text-left text-carbon-300 font-mono pl-2">
-                    ║ {line.padEnd(17, ' ').substring(0, 17)} ║
-                  </div>
-                ))}
-                {/* Fill empty spaces to maintain 6-line card dimensions */}
-                {Array.from({ length: Math.max(0, 5 - centerStats.lines.length) }).map((_, idx) => (
-                  <div key={`empty-${idx}`} className="text-left font-mono pl-2">
-                    ║ {''.padEnd(17, ' ')} ║
-                  </div>
-                ))}
-                {/* Bottom Border */}
-                <div className="text-carbon-500">╚═══════════════════╝</div>
+
+                {/* Body Rows */}
+                <div className="flex flex-col gap-1 w-full text-center">
+                  {centerStats.title === 'DİPLOMATİK AKIŞ' ? (
+                    <div className="text-carbon-400 text-[10px] leading-relaxed font-sans px-1">
+                      Bir ülke dilimi veya bağlantı şeridinin üzerine gelerek akışları inceleyin.
+                    </div>
+                  ) : (
+                    <div className="flex flex-col gap-0.5 w-full text-left font-mono text-[9px] text-carbon-300 px-1">
+                      {centerStats.lines.map((line, idx) => {
+                        if (line === 'İlişkiler:') {
+                          return (
+                            <div
+                              key={idx}
+                              className="text-carbon-400 font-sans font-bold text-[8px] uppercase tracking-wider mt-1 border-b border-carbon-900 pb-0.5"
+                            >
+                              {line}
+                            </div>
+                          );
+                        }
+                        return (
+                          <div key={idx} className="truncate text-carbon-200">
+                            {line}
+                          </div>
+                        );
+                      })}
+                    </div>
+                  )}
+                </div>
               </div>
             </div>
           </>

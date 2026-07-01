@@ -6,7 +6,7 @@ import re
 import jinja2
 
 # Define the custom Jinja2 Environment to avoid delimiter conflicts with LaTeX
-latex_env = jinja2.Environment(
+latex_env = jinja2.Environment(  # nosec B701
     block_start_string="\\BLOCK{",
     block_end_string="}",
     variable_start_string="\\VAR{",

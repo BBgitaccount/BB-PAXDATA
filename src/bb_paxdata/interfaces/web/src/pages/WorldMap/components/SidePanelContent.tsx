@@ -1,15 +1,22 @@
-import { AlertTriangle, ChevronRight, Globe, TrendingUp } from 'lucide-react';
+import { AlertTriangle, Globe, TrendingUp } from 'lucide-react';
 import React from 'react';
 import { GeoPanel } from '../../../components/GeoPanel';
 import { SentimentBar } from '../../../components/SentimentBar';
 import { useVizStore } from '../../../store/vizStore';
 
 const SESSION_LABELS: Record<string, string> = {
-  'session-1': 'Oturum 1',
-  'session-2': 'Oturum 2',
-  'session-3': 'Oturum 3',
-  'session-4': 'Oturum 4',
-  'session-5': 'Oturum 5',
+  '01_ahmed_al-sharaa': 'Ahmed Al-Sharaa Röportajı',
+  '02_cevdet_yılmaz': 'Cevdet Yılmaz Açılış Konuşması',
+  '03_erdoğan': 'Erdoğan Konuşması',
+  '04_avrupa_başkanları': 'Avrupa Liderleri Paneli',
+  '05_gazze_konuşması': 'Gazze Konuşması',
+  '06_mevlüt_çavuşoğlu_ve_cumhurbaşkanları': 'Çavuşoğlu & Cumhurbaşkanları',
+  '07_sergei_lavrov': 'Lavrov Konuşması',
+  '08_somali': 'Somali Zirvesi',
+  '09_tom_barrack': 'Tom Barrack Açıklaması',
+  '10_ukrayna_dışişleri_bakanı': 'Ukrayna Dışişleri Bakanı',
+  '11_hakan_fidan': 'Hakan Fidan Açıklaması',
+  '12_climate': 'İklim Görüşmeleri',
 };
 
 export const SidePanelContent: React.FC = () => {
@@ -54,7 +61,10 @@ export const SidePanelContent: React.FC = () => {
   return (
     <div className="space-y-4 p-4">
       {/* Session List */}
-      <GeoPanel title="Analiz Edilen Oturumlar">
+      <GeoPanel
+        title="Analiz Edilen Oturumlar"
+        badge={`${selectedSessions.length}/${availableSessions.length}`}
+      >
         <div className="space-y-2">
           {availableSessions.length === 0 ? (
             <p className="text-xs italic" style={{ color: 'var(--text-tertiary)' }}>
@@ -84,8 +94,11 @@ export const SidePanelContent: React.FC = () => {
                   }}
                 >
                   <span
-                    className="text-sm"
-                    style={{ fontFamily: 'var(--font-mono)', color: 'var(--text-secondary)' }}
+                    className="text-xs"
+                    style={{
+                      fontFamily: 'var(--font-mono)',
+                      color: isSelected ? 'var(--text-primary)' : 'var(--text-secondary)',
+                    }}
                   >
                     {SESSION_LABELS[sessionId] || sessionId}
                   </span>
@@ -102,22 +115,19 @@ export const SidePanelContent: React.FC = () => {
         </div>
       </GeoPanel>
 
-      {/* Selected Country Stats */}
+      {/* Selected Country Stats - Quick Preview */}
       {selectedCountry && selectedCountryNode && (
-        <GeoPanel
-          title={`${selectedCountryNode.country} (${selectedCountryNode.isoAlpha3})`}
-          badge="LIVE"
-        >
-          <div className="space-y-4">
-            {/* Quick Stats */}
-            <div className="grid grid-cols-2 gap-3">
+        <GeoPanel title={`${selectedCountryNode.country}`} badge="ÖNİZLEME">
+          <div className="space-y-3">
+            {/* Quick Stats Row */}
+            <div className="grid grid-cols-2 gap-2">
               <div
-                className="p-3 rounded"
+                className="p-2 rounded"
                 style={{ backgroundColor: 'var(--geoint-deep)', border: 'var(--border-subtle)' }}
               >
-                <div className="geoint-data-label">Avg Sentiment</div>
+                <div className="geoint-data-label text-[9px]">Sentiment</div>
                 <div
-                  className="geoint-data-value"
+                  className="geoint-data-value text-xs"
                   style={{
                     color:
                       selectedCountryNode.avgSentiment > 0.3
@@ -131,45 +141,46 @@ export const SidePanelContent: React.FC = () => {
                 </div>
               </div>
               <div
-                className="p-3 rounded"
+                className="p-2 rounded"
                 style={{ backgroundColor: 'var(--geoint-deep)', border: 'var(--border-subtle)' }}
               >
-                <div className="geoint-data-label">Mansiyon</div>
-                <div className="geoint-data-value">{selectedCountryNode.totalInteractions}</div>
+                <div className="geoint-data-label text-[9px]">Mansiyon</div>
+                <div className="geoint-data-value text-xs">
+                  {selectedCountryNode.totalInteractions}
+                </div>
               </div>
             </div>
 
             {/* Sentiment Bar */}
             <div>
-              <div className="geoint-data-label mb-2">Sentiment Trend</div>
               <SentimentBar score={selectedCountryNode.avgSentiment} />
             </div>
 
-            {/* Quick Allies */}
+            {/* Quick Allies/Rivals */}
             {countryAllies.length > 0 && (
               <div>
-                <div className="flex items-center gap-2 mb-2">
-                  <TrendingUp className="w-4 h-4" style={{ color: 'var(--sentiment-ally)' }} />
-                  <div className="geoint-data-label">Müttefikler</div>
+                <div className="flex items-center gap-1 mb-1">
+                  <TrendingUp className="w-3 h-3" style={{ color: 'var(--sentiment-ally)' }} />
+                  <div className="geoint-data-label text-[10px]">Müttefikler</div>
                 </div>
-                <div className="space-y-1">
-                  {countryAllies.slice(0, 3).map((flow, i) => {
+                <div className="space-y-0.5">
+                  {countryAllies.slice(0, 2).map((flow, i) => {
                     const other =
                       flow.fromCountry === selectedCountry ? flow.toCountry : flow.fromCountry;
                     return (
                       <div
                         key={i}
-                        className="flex items-center justify-between px-2 py-1 rounded"
+                        className="flex items-center justify-between px-2 py-0.5 rounded"
                         style={{ backgroundColor: 'var(--geoint-deep)' }}
                       >
                         <span
-                          className="text-xs"
+                          className="text-[10px]"
                           style={{ fontFamily: 'var(--font-mono)', color: 'var(--text-secondary)' }}
                         >
                           {other}
                         </span>
                         <span
-                          className="text-xs font-mono"
+                          className="text-[10px] font-mono"
                           style={{ color: 'var(--sentiment-ally)' }}
                         >
                           +{flow.affinityScore.toFixed(2)}
@@ -181,34 +192,33 @@ export const SidePanelContent: React.FC = () => {
               </div>
             )}
 
-            {/* Quick Rivals */}
             {countryRivals.length > 0 && (
               <div>
-                <div className="flex items-center gap-2 mb-2">
+                <div className="flex items-center gap-1 mb-1">
                   <AlertTriangle
-                    className="w-4 h-4"
+                    className="w-3 h-3"
                     style={{ color: 'var(--sentiment-adversary)' }}
                   />
-                  <div className="geoint-data-label">Risk Noktaları</div>
+                  <div className="geoint-data-label text-[10px]">Riskler</div>
                 </div>
-                <div className="space-y-1">
-                  {countryRivals.slice(0, 3).map((flow, i) => {
+                <div className="space-y-0.5">
+                  {countryRivals.slice(0, 2).map((flow, i) => {
                     const other =
                       flow.fromCountry === selectedCountry ? flow.toCountry : flow.fromCountry;
                     return (
                       <div
                         key={i}
-                        className="flex items-center justify-between px-2 py-1 rounded"
+                        className="flex items-center justify-between px-2 py-0.5 rounded"
                         style={{ backgroundColor: 'var(--geoint-deep)' }}
                       >
                         <span
-                          className="text-xs"
+                          className="text-[10px]"
                           style={{ fontFamily: 'var(--font-mono)', color: 'var(--text-secondary)' }}
                         >
                           {other}
                         </span>
                         <span
-                          className="text-xs font-mono"
+                          className="text-[10px] font-mono"
                           style={{ color: 'var(--sentiment-adversary)' }}
                         >
                           {flow.affinityScore.toFixed(2)}
@@ -219,32 +229,6 @@ export const SidePanelContent: React.FC = () => {
                 </div>
               </div>
             )}
-
-            {/* View Details Button */}
-            <button
-              onClick={() => {
-                // This would open the full drawer - for now it's a placeholder
-                console.log('Open full drawer for', selectedCountry);
-              }}
-              className="w-full flex items-center justify-center gap-2 px-4 py-2 rounded transition-colors"
-              style={{
-                backgroundColor: 'var(--geoint-deep)',
-                border: 'var(--border-subtle)',
-                color: 'var(--text-secondary)',
-                fontFamily: 'var(--font-label)',
-              }}
-              onMouseEnter={(e) => {
-                e.currentTarget.style.backgroundColor = 'var(--geoint-elevated)';
-                e.currentTarget.style.color = 'var(--text-primary)';
-              }}
-              onMouseLeave={(e) => {
-                e.currentTarget.style.backgroundColor = 'var(--geoint-deep)';
-                e.currentTarget.style.color = 'var(--text-secondary)';
-              }}
-            >
-              Detayları Gör
-              <ChevronRight className="w-4 h-4" />
-            </button>
           </div>
         </GeoPanel>
       )}

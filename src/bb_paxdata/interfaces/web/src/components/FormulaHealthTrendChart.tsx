@@ -72,7 +72,7 @@ export const FormulaHealthTrendChart = ({
   const isEmpty = data.length === 0;
 
   return (
-    <div className="h-80 bg-carbon-900 border border-carbon-550 p-6 rounded">
+    <div className="h-80 bg-carbon-900 border border-carbon-550 p-6 rounded-none">
       <h3 className="text-sm font-semibold text-carbon-50 mb-4">{title}</h3>
 
       {isEmpty ? (
@@ -83,16 +83,16 @@ export const FormulaHealthTrendChart = ({
         <div className="h-64">
           <ResponsiveContainer width="100%" height="100%">
             <LineChart data={groupedData} margin={{ top: 4, right: 8, bottom: 4, left: 0 }}>
-              <CartesianGrid strokeDasharray="3 3" stroke="#2A2A2A" vertical={false} />
+              <CartesianGrid strokeDasharray="3 3" stroke="var(--border-hair)" vertical={false} />
               <XAxis
                 dataKey="date"
-                tick={{ fill: '#8A8A8A', fontSize: 10 }}
-                axisLine={{ stroke: '#2A2A2A' }}
+                tick={{ fill: 'var(--text-secondary)', fontSize: 10 }}
+                axisLine={{ stroke: 'var(--border-hair)' }}
                 tickLine={false}
                 tickFormatter={(v: string) => v.slice(5)} // Show MM-DD only
               />
               <YAxis
-                tick={{ fill: '#8A8A8A', fontSize: 10 }}
+                tick={{ fill: 'var(--text-secondary)', fontSize: 10 }}
                 axisLine={false}
                 tickLine={false}
                 unit="%"
@@ -101,19 +101,19 @@ export const FormulaHealthTrendChart = ({
               />
               <Tooltip
                 contentStyle={{
-                  backgroundColor: '#161616',
-                  border: '0.5px solid #2A2A2A',
-                  color: '#F5F5F5',
+                  backgroundColor: 'var(--bg-tertiary)',
+                  border: '0.5px solid var(--border-hair)',
+                  color: 'var(--text-primary)',
                   fontSize: 11,
-                  borderRadius: 4,
+                  borderRadius: 0,
                 }}
                 formatter={(value: number, name: string) => [`${value.toFixed(1)}%`, name]}
-                labelStyle={{ color: '#8A8A8A', marginBottom: 4 }}
+                labelStyle={{ color: 'var(--text-secondary)', marginBottom: 4 }}
               />
               <Legend
                 verticalAlign="top"
                 height={36}
-                wrapperStyle={{ fontSize: 10, color: '#8A8A8A' }}
+                wrapperStyle={{ fontSize: 10, color: 'var(--text-secondary)' }}
               />
               {uniqueFormulas.map((formula, idx) => (
                 <Line

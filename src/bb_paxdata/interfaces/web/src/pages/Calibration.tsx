@@ -247,21 +247,21 @@ export const Calibration = () => {
           <div className="h-64">
             <ResponsiveContainer width="100%" height="100%">
               <LineChart data={trendData}>
-                <CartesianGrid strokeDasharray="3 3" stroke="#2A2A2A" vertical={false} />
+                <CartesianGrid strokeDasharray="3 3" stroke="var(--border-hair)" vertical={false} />
                 <XAxis
                   dataKey="month"
                   tick={{
-                    fill: '#8A8A8A',
+                    fill: 'var(--text-secondary)',
                     fontSize: 10,
                     fontFamily: 'JetBrains Mono',
                   }}
-                  axisLine={{ stroke: '#2A2A2A' }}
+                  axisLine={{ stroke: 'var(--border-hair)' }}
                   tickLine={false}
                 />
                 <YAxis
                   domain={[0, 1]}
                   tick={{
-                    fill: '#8A8A8A',
+                    fill: 'var(--text-secondary)',
                     fontSize: 10,
                     fontFamily: 'JetBrains Mono',
                   }}
@@ -270,17 +270,17 @@ export const Calibration = () => {
                 />
                 <Tooltip
                   contentStyle={{
-                    backgroundColor: '#161616',
-                    border: '0.5px solid #2A2A2A',
+                    backgroundColor: 'var(--bg-tertiary)',
+                    border: '0.5px solid var(--border-hair)',
                     fontSize: 12,
                     fontFamily: 'JetBrains Mono',
-                    color: '#F5F5F5',
+                    color: 'var(--text-primary)',
                   }}
                 />
                 <Line
                   type="monotone"
                   dataKey="kappa"
-                  stroke="#E0E0E0"
+                  stroke="var(--text-primary)"
                   strokeWidth={1.5}
                   dot={false}
                   name="Kappa"
@@ -288,7 +288,7 @@ export const Calibration = () => {
                 <Line
                   type="monotone"
                   dataKey="f1"
-                  stroke="#505050"
+                  stroke="var(--text-tertiary)"
                   strokeWidth={1.5}
                   dot={false}
                   name="F1"
@@ -305,15 +305,15 @@ export const Calibration = () => {
           <div className="h-64">
             <ResponsiveContainer width="100%" height="100%">
               <BarChart data={performance}>
-                <CartesianGrid strokeDasharray="3 3" stroke="#2A2A2A" vertical={false} />
+                <CartesianGrid strokeDasharray="3 3" stroke="var(--border-hair)" vertical={false} />
                 <XAxis
                   dataKey="reviewer_id"
                   tick={{
-                    fill: '#8A8A8A',
+                    fill: 'var(--text-secondary)',
                     fontSize: 9,
                     fontFamily: 'JetBrains Mono',
                   }}
-                  axisLine={{ stroke: '#2A2A2A' }}
+                  axisLine={{ stroke: 'var(--border-hair)' }}
                   tickLine={false}
                   angle={-30}
                   textAnchor="end"
@@ -321,7 +321,7 @@ export const Calibration = () => {
                 />
                 <YAxis
                   tick={{
-                    fill: '#8A8A8A',
+                    fill: 'var(--text-secondary)',
                     fontSize: 10,
                     fontFamily: 'JetBrains Mono',
                   }}
@@ -330,24 +330,24 @@ export const Calibration = () => {
                 />
                 <Tooltip
                   contentStyle={{
-                    backgroundColor: '#161616',
-                    border: '0.5px solid #2A2A2A',
+                    backgroundColor: 'var(--bg-tertiary)',
+                    border: '0.5px solid var(--border-hair)',
                     fontSize: 12,
                     fontFamily: 'JetBrains Mono',
-                    color: '#F5F5F5',
+                    color: 'var(--text-primary)',
                   }}
                 />
                 <Bar
                   dataKey="total_actions"
-                  fill="#505050"
-                  stroke="#2A2A2A"
+                  fill="var(--text-tertiary)"
+                  stroke="var(--border-hair)"
                   strokeWidth={1}
                   barSize={24}
                 />
                 <Bar
                   dataKey="verdict_count"
-                  fill="#8A8A8A"
-                  stroke="#2A2A2A"
+                  fill="var(--text-secondary)"
+                  stroke="var(--border-hair)"
                   strokeWidth={1}
                   barSize={24}
                 />

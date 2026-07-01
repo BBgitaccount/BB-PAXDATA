@@ -1,7 +1,7 @@
-import { BookOpen, HelpCircle, Info, User } from 'lucide-react';
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import type { DiscourseEdge, DiscourseNode } from '@/types';
 import { cn } from '@/utils/helpers';
+import { BookOpen, HelpCircle, Info, User } from 'lucide-react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 
 interface DiscourseNetworkExplorerProps {
   nodes: DiscourseNode[];
@@ -251,13 +251,13 @@ export const DiscourseNetworkExplorer = ({
           <svg className="absolute inset-0 w-full h-full">
             <defs>
               <linearGradient id="edge-gradient-default" x1="0%" y1="0%" x2="100%" y2="0%">
-                <stop offset="0%" stopColor="#3A3A3A" stopOpacity="0.15" />
-                <stop offset="100%" stopColor="#3A3A3A" stopOpacity="0.15" />
+                <stop offset="0%" stopColor="var(--border-subtle)" stopOpacity="0.15" />
+                <stop offset="100%" stopColor="var(--border-subtle)" stopOpacity="0.15" />
               </linearGradient>
               <linearGradient id="edge-gradient-highlight" x1="0%" y1="0%" x2="100%" y2="0%">
-                <stop offset="0%" stopColor="#8A8A8A" stopOpacity="0.8" />
-                <stop offset="50%" stopColor="#E0E0E0" stopOpacity="0.9" />
-                <stop offset="100%" stopColor="#8A8A8A" stopOpacity="0.8" />
+                <stop offset="0%" stopColor="var(--text-secondary)" stopOpacity="0.8" />
+                <stop offset="50%" stopColor="var(--text-primary)" stopOpacity="0.9" />
+                <stop offset="100%" stopColor="var(--text-secondary)" stopOpacity="0.8" />
               </linearGradient>
               <filter id="glow" x="-20%" y="-20%" width="140%" height="140%">
                 <feGaussianBlur stdDeviation="2" result="blur" />
@@ -308,7 +308,7 @@ export const DiscourseNetworkExplorer = ({
                     <path
                       d={`M 0 ${ySource} C 120 ${ySource}, 120 ${yTarget}, 240 ${yTarget}`}
                       fill="none"
-                      stroke="#FFFFFF"
+                      stroke="var(--text-primary)"
                       strokeWidth={0.8}
                       opacity={0.6}
                     />

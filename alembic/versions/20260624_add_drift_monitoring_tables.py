@@ -1,7 +1,7 @@
 """Add drift monitoring tables
 
 Revision ID: 20260624_add_drift_monitoring_tables
-Revises: 
+Revises:
 Create Date: 2024-06-24
 
 """
@@ -17,8 +17,7 @@ depends_on = None
 
 def upgrade():
     # Create drift_measurements table
-    op.execute(
-        """
+    op.execute("""
     CREATE TABLE drift_measurements (
         id          UUID PRIMARY KEY DEFAULT gen_random_uuid(),
         metric      VARCHAR(20)  NOT NULL,
@@ -32,16 +31,14 @@ def upgrade():
         metadata    JSONB        DEFAULT '{}',
         created_at  TIMESTAMPTZ  DEFAULT NOW()
     );
-    """
-    )
+    """)
 
     op.execute(
         "CREATE INDEX idx_drift_field_created ON drift_measurements(field, created_at);"
     )
 
     # Create drift_alerts table
-    op.execute(
-        """
+    op.execute("""
     CREATE TABLE drift_alerts (
         id              UUID PRIMARY KEY DEFAULT gen_random_uuid(),
         alert_type      VARCHAR(20)  NOT NULL,
@@ -53,8 +50,7 @@ def upgrade():
         metadata        JSONB        DEFAULT '{}',
         retraining_triggered BOOLEAN NOT NULL DEFAULT FALSE
     );
-    """
-    )
+    """)
 
     op.execute(
         "CREATE INDEX idx_drift_alerts_field_resolved ON drift_alerts(field, resolved);"
@@ -62,8 +58,7 @@ def upgrade():
     op.execute("CREATE INDEX idx_drift_alerts_created ON drift_alerts(detected_at);")
 
     # Create drift_reports table
-    op.execute(
-        """
+    op.execute("""
     CREATE TABLE drift_reports (
         id              UUID PRIMARY KEY DEFAULT gen_random_uuid(),
         report_period   VARCHAR(20)  NOT NULL UNIQUE,
@@ -71,8 +66,7 @@ def upgrade():
         summary         JSONB        NOT NULL,
         field_details   JSONB        NOT NULL
     );
-    """
-    )
+    """)
 
     op.execute("CREATE INDEX idx_drift_reports_period ON drift_reports(report_period);")
 

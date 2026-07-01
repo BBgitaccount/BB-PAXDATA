@@ -317,3 +317,70 @@ async def test_redis_cache_hits(seed_viz_data, auth_headers, capsys):
     # Verify stdout contained "cache hit"
     captured = capsys.readouterr()
     assert "cache hit" in captured.out or "cache hit" in captured.err
+
+
+@pytest.mark.asyncio
+async def test_unknown_country_filtering(test_db_session: AsyncSession, auth_headers):
+    # 1. Seed UNKNOWN country data
+    session = File(
+        file_id="session-3",
+        file_name="session_3.txt",
+        title="Session 3 Title",
+        idempotency_key="key-3",
+    )
+    test_db_session.add(session)
+    await test_db_session.flush()
+
+    unknown_stat = CountryStat(
+        country="UNKNOWN",
+        file_id="session-3",
+        n_segments=1,
+        n_sentences=1,
+        total_words=10,
+        avg_sentiment=0.0,
+        dominant_emotion="neutral",
+        dominant_topic="unknown",
+    )
+    unknown_ref = CountryReferenceTable(
+        id="ref-4",
+        file_id="session-3",
+        speaker_country="UNKNOWN",
+        speaker_id="speaker-3",
+        referenced_country="Turkiye",
+        sentence_index=1,
+        reference_context="NEUTRAL_MENTION",
+        raw_sentiment_score=0.0,
+        speaker_power_level=0.5,
+    )
+    unknown_bs = BilateralSentimentTable(
+        id="bs-4",
+        file_id="session-3",
+        from_country="Turkiye",
+        to_country="UNKNOWN",
+        total_mentions=1,
+        avg_sentiment=0.0,
+        interaction_count=1,
+        relationship_type="NEUTRAL",
+        affinity_score=0.0,
+        power_weighted_score=0.0,
+        diplomatic_distance=0.0,
+    )
+    test_db_session.add_all([unknown_stat, unknown_ref, unknown_bs])
+    await test_db_session.commit()
+
+    # Verify GET /api/v1/viz/country-nodes does not contain UNKNOWN
+    response = client.get("/api/v1/viz/country-nodes", headers=auth_headers)
+    assert response.status_code == 200
+    nodes = response.json()
+    for node in nodes:
+        assert node["country"].upper() not in ("UNKNOWN", "UNK")
+
+    # Verify GET /api/v1/viz/bilateral-flows does not contain UNKNOWN
+    response = client.get(
+        "/api/v1/viz/bilateral-flows?min_interactions=1", headers=auth_headers
+    )
+    assert response.status_code == 200
+    flows = response.json()
+    for flow in flows:
+        assert flow["from_country"].upper() not in ("UNKNOWN", "UNK")
+        assert flow["to_country"].upper() not in ("UNKNOWN", "UNK")

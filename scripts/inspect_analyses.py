@@ -20,13 +20,11 @@ async def main():
     conn = await asyncpg.connect(url)
 
     # Check ai_sentence_analysis columns
-    cols = await conn.fetch(
-        """
+    cols = await conn.fetch("""
         SELECT column_name, data_type 
         FROM information_schema.columns 
         WHERE table_name = 'ai_sentence_analysis'
-    """
-    )
+    """)
     print("Columns for 'ai_sentence_analysis':")
     for col in cols:
         print(f"  {col['column_name']} ({col['data_type']})")

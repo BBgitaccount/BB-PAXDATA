@@ -194,7 +194,7 @@ function SkeletonBlock({ className = '' }: { className?: string }) {
   return (
     <div
       className={`animate-pulse rounded-sm ${className}`}
-      style={{ background: '#1e3a5f', opacity: 0.5 }}
+      style={{ background: 'var(--geoint-border)', opacity: 0.5 }}
     />
   );
 }
@@ -229,8 +229,8 @@ function KpiCard({
   return (
     <div
       style={{
-        background: '#0a1628',
-        border: '1px solid #1e3a5f',
+        background: 'var(--geoint-deep)',
+        border: '1px solid var(--geoint-border)',
         padding: '10px 12px',
         borderRadius: 2,
       }}
@@ -238,7 +238,7 @@ function KpiCard({
       <div
         style={{
           fontSize: 10,
-          color: '#4a7fb5',
+          color: 'var(--text-secondary)',
           textTransform: 'uppercase',
           letterSpacing: '0.08em',
           fontFamily: 'monospace',
@@ -252,7 +252,7 @@ function KpiCard({
           fontWeight: 700,
           fontFamily: 'monospace',
           marginTop: 4,
-          color: color ?? '#e2e8f0',
+          color: color ?? 'var(--text-primary)',
         }}
       >
         {value}
@@ -267,20 +267,18 @@ function SectionHeader({ title }: { title: string }) {
   return (
     <div
       style={{
-        background: '#1e3a5f',
-        padding: '4px 10px',
-        borderRadius: 2,
+        borderLeft: '2px solid var(--text-primary)',
+        paddingLeft: 8,
         fontSize: 10,
-        fontFamily: 'monospace',
         fontWeight: 700,
-        color: '#7eb3e0',
+        color: 'var(--text-secondary)',
         textTransform: 'uppercase',
         letterSpacing: '0.12em',
-        marginBottom: 8,
-        marginTop: 16,
+        marginBottom: 10,
+        marginTop: 20,
       }}
     >
-      ══ {title} ══
+      {title}
     </div>
   );
 }
@@ -300,17 +298,27 @@ function RiskBar({
 }) {
   return (
     <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-      <div style={{ fontFamily: 'monospace', fontSize: 13, color, letterSpacing: 2 }}>
-        {'█'.repeat(filledBlocks)}
-        {'░'.repeat(totalBlocks - filledBlocks)}
+      <div style={{ display: 'flex', gap: 2, alignItems: 'center' }}>
+        {Array.from({ length: totalBlocks }).map((_, idx) => (
+          <div
+            key={idx}
+            style={{
+              width: 6,
+              height: 12,
+              borderRadius: 1,
+              backgroundColor: idx < filledBlocks ? color : 'var(--border-hair)',
+              transition: 'background-color 0.2s',
+            }}
+          />
+        ))}
       </div>
       <span
         style={{
-          fontSize: 11,
+          fontSize: 10,
           fontWeight: 700,
           color,
           fontFamily: 'monospace',
-          letterSpacing: '0.1em',
+          letterSpacing: '0.05em',
         }}
       >
         {level}
@@ -349,7 +357,13 @@ function RelationshipSpectrumBar({
         {relType}
       </div>
       <div
-        style={{ flex: 1, background: '#0a1628', borderRadius: 1, height: 8, overflow: 'hidden' }}
+        style={{
+          flex: 1,
+          background: 'var(--geoint-deep)',
+          borderRadius: 1,
+          height: 8,
+          overflow: 'hidden',
+        }}
       >
         <motion.div
           initial={{ width: 0 }}
@@ -362,7 +376,7 @@ function RelationshipSpectrumBar({
         style={{
           fontSize: 10,
           fontFamily: 'monospace',
-          color: '#4a7fb5',
+          color: 'var(--text-secondary)',
           width: 20,
           textAlign: 'right',
         }}
@@ -393,7 +407,7 @@ function ContextBar({
           style={{
             flex: 1,
             height: 14,
-            background: '#0a1628',
+            background: 'var(--geoint-deep)',
             borderRadius: 1,
             overflow: 'hidden',
             position: 'relative',
@@ -437,15 +451,15 @@ function CustomTooltip({
   return (
     <div
       style={{
-        background: '#0d1b2a',
-        border: '1px solid #1e3a5f',
+        background: 'var(--geoint-base)',
+        border: '1px solid var(--geoint-border)',
         padding: '6px 10px',
         borderRadius: 2,
         fontFamily: 'monospace',
         fontSize: 11,
       }}
     >
-      <div style={{ color: '#7eb3e0', marginBottom: 2 }}>{label}</div>
+      <div style={{ color: 'var(--text-secondary)', marginBottom: 2 }}>{label}</div>
       <div style={{ color: sentimentToColor(payload[0].value), fontWeight: 700 }}>
         Sentiment: {payload[0].value > 0 ? '+' : ''}
         {payload[0].value.toFixed(3)}
@@ -556,7 +570,12 @@ function TabSummary({
       <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
         {relatedFlows.length === 0 && (
           <div
-            style={{ color: '#4a7fb5', fontSize: 11, fontFamily: 'monospace', padding: '4px 0' }}
+            style={{
+              color: 'var(--text-secondary)',
+              fontSize: 11,
+              fontFamily: 'monospace',
+              padding: '4px 0',
+            }}
           >
             Veri yok.
           </div>
@@ -572,18 +591,25 @@ function TabSummary({
                 display: 'flex',
                 alignItems: 'center',
                 gap: 6,
-                background: '#0a1628',
-                border: '1px solid #1e3a5f',
+                background: 'var(--geoint-deep)',
+                border: '1px solid var(--geoint-border)',
                 padding: '5px 8px',
                 borderRadius: 2,
               }}
             >
-              <span style={{ color: '#4a7fb5', fontSize: 10, fontFamily: 'monospace', width: 14 }}>
+              <span
+                style={{
+                  color: 'var(--text-secondary)',
+                  fontSize: 10,
+                  fontFamily: 'monospace',
+                  width: 14,
+                }}
+              >
                 {i + 1}.
               </span>
               <span
                 style={{
-                  color: '#e2e8f0',
+                  color: 'var(--text-primary)',
                   fontSize: 11,
                   fontFamily: 'monospace',
                   width: 90,
@@ -592,7 +618,14 @@ function TabSummary({
               >
                 {other}
               </span>
-              <span style={{ color: '#7eb3e0', fontSize: 10, fontFamily: 'monospace', width: 24 }}>
+              <span
+                style={{
+                  color: 'var(--text-secondary)',
+                  fontSize: 10,
+                  fontFamily: 'monospace',
+                  width: 24,
+                }}
+              >
                 {flow.interactionCount}
               </span>
               <span
@@ -611,7 +644,7 @@ function TabSummary({
                 style={{
                   flex: 1,
                   height: 6,
-                  background: '#1e3a5f',
+                  background: 'var(--geoint-border)',
                   borderRadius: 1,
                   overflow: 'hidden',
                 }}
@@ -623,7 +656,8 @@ function TabSummary({
                   style={{
                     height: '100%',
                     background:
-                      RELATIONSHIP_COLORS[flow.relationshipType as RelationshipType] ?? '#4a7fb5',
+                      RELATIONSHIP_COLORS[flow.relationshipType as RelationshipType] ??
+                      'var(--text-secondary)',
                     borderRadius: 1,
                   }}
                 />
@@ -638,17 +672,17 @@ function TabSummary({
       <div style={{ height: 220 }}>
         <ResponsiveContainer width="100%" height="100%">
           <RadarChart data={radarData} margin={{ top: 10, right: 20, bottom: 10, left: 20 }}>
-            <PolarGrid stroke="#1e3a5f" />
+            <PolarGrid stroke="var(--geoint-border)" />
             <PolarAngleAxis
               dataKey="subject"
-              tick={{ fill: '#4a7fb5', fontSize: 9, fontFamily: 'monospace' }}
+              tick={{ fill: 'var(--text-secondary)', fontSize: 9, fontFamily: 'monospace' }}
             />
             <PolarRadiusAxis
               angle={90}
               domain={[0, 100]}
-              tick={{ fill: '#1e3a5f', fontSize: 8 }}
+              tick={{ fill: 'var(--geoint-border)', fontSize: 8 }}
               tickCount={4}
-              stroke="#1e3a5f"
+              stroke="var(--geoint-border)"
             />
             <Radar
               name={profile.country}
@@ -699,17 +733,25 @@ function TabSummary({
                   display: 'flex',
                   justifyContent: 'space-between',
                   alignItems: 'center',
-                  background: '#0a1628',
-                  border: '1px solid #1e3a5f',
+                  background: 'var(--geoint-deep)',
+                  border: '1px solid var(--geoint-border)',
                   padding: '5px 8px',
                   borderRadius: 2,
                 }}
               >
-                <span style={{ fontSize: 10, fontFamily: 'monospace', color: '#7eb3e0' }}>
+                <span
+                  style={{ fontSize: 10, fontFamily: 'monospace', color: 'var(--text-secondary)' }}
+                >
                   • {s.sessionLabel || s.sessionId}
                 </span>
                 <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
-                  <span style={{ fontSize: 10, fontFamily: 'monospace', color: '#4a7fb5' }}>
+                  <span
+                    style={{
+                      fontSize: 10,
+                      fontFamily: 'monospace',
+                      color: 'var(--text-secondary)',
+                    }}
+                  >
                     {s.dominantEmotion}
                   </span>
                   <span
@@ -747,13 +789,15 @@ function TabSummary({
                   style={{
                     display: 'flex',
                     justifyContent: 'space-between',
-                    background: '#0a1628',
+                    background: 'var(--geoint-deep)',
                     border: '1px solid #3b1818',
                     padding: '5px 8px',
                     borderRadius: 2,
                   }}
                 >
-                  <span style={{ fontSize: 11, fontFamily: 'monospace', color: '#e2e8f0' }}>
+                  <span
+                    style={{ fontSize: 11, fontFamily: 'monospace', color: 'var(--text-primary)' }}
+                  >
                     {i + 1}. {acc.country}
                   </span>
                   <span style={{ fontSize: 10, fontFamily: 'monospace', color: '#ef4444' }}>
@@ -784,13 +828,15 @@ function TabSummary({
                   style={{
                     display: 'flex',
                     justifyContent: 'space-between',
-                    background: '#0a1628',
+                    background: 'var(--geoint-deep)',
                     border: '1px solid #0d2e1a',
                     padding: '5px 8px',
                     borderRadius: 2,
                   }}
                 >
-                  <span style={{ fontSize: 11, fontFamily: 'monospace', color: '#e2e8f0' }}>
+                  <span
+                    style={{ fontSize: 11, fontFamily: 'monospace', color: 'var(--text-primary)' }}
+                  >
                     {i + 1}. {pg.country}
                   </span>
                   <span style={{ fontSize: 10, fontFamily: 'monospace', color: '#10b981' }}>
@@ -870,13 +916,13 @@ function TabRelations({ country, allFlows }: { country: string; allFlows: Bilate
     padding: '5px 6px',
     fontSize: 9,
     fontFamily: 'monospace',
-    color: '#4a7fb5',
+    color: 'var(--text-secondary)',
     textTransform: 'uppercase' as const,
     letterSpacing: '0.08em',
     cursor: 'pointer',
     userSelect: 'none',
     textAlign: 'left' as const,
-    borderBottom: '1px solid #1e3a5f',
+    borderBottom: '1px solid var(--geoint-border)',
     whiteSpace: 'nowrap' as const,
   };
 
@@ -892,9 +938,9 @@ function TabRelations({ country, allFlows }: { country: string; allFlows: Bilate
           style={{
             flex: 1,
             minWidth: 120,
-            background: '#0a1628',
-            border: '1px solid #1e3a5f',
-            color: '#e2e8f0',
+            background: 'var(--geoint-deep)',
+            border: '1px solid var(--geoint-border)',
+            color: 'var(--text-primary)',
             padding: '5px 8px',
             borderRadius: 2,
             fontSize: 11,
@@ -906,9 +952,9 @@ function TabRelations({ country, allFlows }: { country: string; allFlows: Bilate
           value={filterRel}
           onChange={(e) => setFilterRel(e.target.value as RelationshipType | 'ALL')}
           style={{
-            background: '#0a1628',
-            border: '1px solid #1e3a5f',
-            color: '#7eb3e0',
+            background: 'var(--geoint-deep)',
+            border: '1px solid var(--geoint-border)',
+            color: 'var(--text-secondary)',
             padding: '5px 8px',
             borderRadius: 2,
             fontSize: 11,
@@ -965,7 +1011,7 @@ function TabRelations({ country, allFlows }: { country: string; allFlows: Bilate
                     padding: '12px 6px',
                     textAlign: 'center',
                     fontSize: 11,
-                    color: '#4a7fb5',
+                    color: 'var(--text-secondary)',
                     fontFamily: 'monospace',
                   }}
                 >
@@ -980,14 +1026,14 @@ function TabRelations({ country, allFlows }: { country: string; allFlows: Bilate
               return (
                 <tr
                   key={`${flow.fromCountry}-${flow.toCountry}`}
-                  style={{ borderBottom: '1px solid #0d1b2a' }}
+                  style={{ borderBottom: '1px solid var(--geoint-base)' }}
                 >
                   <td
                     style={{
                       padding: '5px 6px',
                       fontSize: 11,
                       fontFamily: 'monospace',
-                      color: '#e2e8f0',
+                      color: 'var(--text-primary)',
                     }}
                   >
                     {other}
@@ -1007,7 +1053,7 @@ function TabRelations({ country, allFlows }: { country: string; allFlows: Bilate
                       padding: '5px 6px',
                       fontSize: 11,
                       fontFamily: 'monospace',
-                      color: '#7eb3e0',
+                      color: 'var(--text-secondary)',
                       textAlign: 'right',
                     }}
                   >
@@ -1048,7 +1094,7 @@ function TabRelations({ country, allFlows }: { country: string; allFlows: Bilate
           marginTop: 8,
           fontSize: 10,
           fontFamily: 'monospace',
-          color: '#2a4a6b',
+          color: 'var(--text-tertiary)',
           textAlign: 'right',
         }}
       >
@@ -1081,7 +1127,7 @@ function TabSessions({
           textAlign: 'center',
           fontSize: 12,
           fontFamily: 'monospace',
-          color: '#2a4a6b',
+          color: 'var(--text-tertiary)',
         }}
       >
         Bu ülke için aktif oturum bulunamadı.
@@ -1097,8 +1143,8 @@ function TabSessions({
           <div
             key={s.sessionId}
             style={{
-              background: '#0a1628',
-              border: '1px solid #1e3a5f',
+              background: 'var(--geoint-deep)',
+              border: '1px solid var(--geoint-border)',
               borderRadius: 2,
               overflow: 'hidden',
             }}
@@ -1119,8 +1165,12 @@ function TabSessions({
               }}
             >
               <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                <Clock style={{ width: 12, height: 12, color: '#4a7fb5', flexShrink: 0 }} />
-                <span style={{ fontSize: 11, fontFamily: 'monospace', color: '#7eb3e0' }}>
+                <Clock
+                  style={{ width: 12, height: 12, color: 'var(--text-secondary)', flexShrink: 0 }}
+                />
+                <span
+                  style={{ fontSize: 11, fontFamily: 'monospace', color: 'var(--text-secondary)' }}
+                >
                   {s.sessionLabel || s.sessionId}
                 </span>
               </div>
@@ -1137,9 +1187,9 @@ function TabSessions({
                   {s.avgSentiment.toFixed(3)}
                 </span>
                 {isOpen ? (
-                  <ChevronUp style={{ width: 12, height: 12, color: '#4a7fb5' }} />
+                  <ChevronUp style={{ width: 12, height: 12, color: 'var(--text-secondary)' }} />
                 ) : (
-                  <ChevronDown style={{ width: 12, height: 12, color: '#4a7fb5' }} />
+                  <ChevronDown style={{ width: 12, height: 12, color: 'var(--text-secondary)' }} />
                 )}
               </div>
             </button>
@@ -1152,7 +1202,7 @@ function TabSessions({
                   animate={{ height: 'auto', opacity: 1 }}
                   exit={{ height: 0, opacity: 0 }}
                   transition={{ duration: 0.25 }}
-                  style={{ overflow: 'hidden', borderTop: '1px solid #1e3a5f' }}
+                  style={{ overflow: 'hidden', borderTop: '1px solid var(--geoint-border)' }}
                 >
                   <div style={{ padding: '10px 10px 12px' }}>
                     <div
@@ -1167,7 +1217,7 @@ function TabSessions({
                         <div
                           style={{
                             fontSize: 9,
-                            color: '#4a7fb5',
+                            color: 'var(--text-secondary)',
                             fontFamily: 'monospace',
                             textTransform: 'uppercase',
                           }}
@@ -1177,7 +1227,7 @@ function TabSessions({
                         <div
                           style={{
                             fontSize: 12,
-                            color: '#e2e8f0',
+                            color: 'var(--text-primary)',
                             fontFamily: 'monospace',
                             marginTop: 2,
                           }}
@@ -1189,7 +1239,7 @@ function TabSessions({
                         <div
                           style={{
                             fontSize: 9,
-                            color: '#4a7fb5',
+                            color: 'var(--text-secondary)',
                             fontFamily: 'monospace',
                             textTransform: 'uppercase',
                           }}
@@ -1199,7 +1249,7 @@ function TabSessions({
                         <div
                           style={{
                             fontSize: 11,
-                            color: '#7eb3e0',
+                            color: 'var(--text-secondary)',
                             fontFamily: 'monospace',
                             marginTop: 2,
                           }}
@@ -1212,7 +1262,7 @@ function TabSessions({
                         <div
                           style={{
                             fontSize: 9,
-                            color: '#4a7fb5',
+                            color: 'var(--text-secondary)',
                             fontFamily: 'monospace',
                             textTransform: 'uppercase',
                           }}
@@ -1234,7 +1284,7 @@ function TabSessions({
                         <div
                           style={{
                             fontSize: 9,
-                            color: '#4a7fb5',
+                            color: 'var(--text-secondary)',
                             fontFamily: 'monospace',
                             textTransform: 'uppercase',
                           }}
@@ -1258,7 +1308,7 @@ function TabSessions({
                         <div
                           style={{
                             fontSize: 9,
-                            color: '#4a7fb5',
+                            color: 'var(--text-secondary)',
                             fontFamily: 'monospace',
                             textTransform: 'uppercase',
                             marginBottom: 4,
@@ -1272,9 +1322,9 @@ function TabSessions({
                             style={{
                               fontSize: 10,
                               fontFamily: 'monospace',
-                              color: '#7eb3e0',
+                              color: 'var(--text-secondary)',
                               padding: '2px 0',
-                              borderTop: i > 0 ? '1px solid #0d1b2a' : 'none',
+                              borderTop: i > 0 ? '1px solid var(--geoint-base)' : 'none',
                             }}
                           >
                             {r.from} →{' '}
@@ -1325,10 +1375,12 @@ function TabTrend({
           textAlign: 'center',
           fontSize: 12,
           fontFamily: 'monospace',
-          color: '#2a4a6b',
+          color: 'var(--text-tertiary)',
         }}
       >
-        <TrendingUp style={{ width: 32, height: 32, color: '#1e3a5f', margin: '0 auto 12px' }} />
+        <TrendingUp
+          style={{ width: 32, height: 32, color: 'var(--geoint-border)', margin: '0 auto 12px' }}
+        />
         <div>Trend için en az 2 oturum gerekli.</div>
       </div>
     );
@@ -1355,11 +1407,11 @@ function TabTrend({
                 <stop offset="95%" stopColor="#3b82f6" stopOpacity={0.02} />
               </linearGradient>
             </defs>
-            <CartesianGrid strokeDasharray="3 3" stroke="#1e3a5f" opacity={0.5} />
+            <CartesianGrid strokeDasharray="3 3" stroke="var(--geoint-border)" opacity={0.5} />
             <XAxis
               dataKey="name"
-              tick={{ fill: '#4a7fb5', fontSize: 8, fontFamily: 'monospace' }}
-              axisLine={{ stroke: '#1e3a5f' }}
+              tick={{ fill: 'var(--text-secondary)', fontSize: 8, fontFamily: 'monospace' }}
+              axisLine={{ stroke: 'var(--geoint-border)' }}
               tickLine={false}
               angle={-30}
               textAnchor="end"
@@ -1367,7 +1419,7 @@ function TabTrend({
             />
             <YAxis
               domain={[minVal - padding, maxVal + padding]}
-              tick={{ fill: '#4a7fb5', fontSize: 8, fontFamily: 'monospace' }}
+              tick={{ fill: 'var(--text-secondary)', fontSize: 8, fontFamily: 'monospace' }}
               axisLine={false}
               tickLine={false}
               tickFormatter={(v: number) => v.toFixed(2)}
@@ -1470,7 +1522,9 @@ export function CountryDrawer({
   }, [country]);
 
   const countryNode = countryNodes.find(
-    (n) => n.country.toLowerCase() === (country ?? '').toLowerCase(),
+    (n) =>
+      n.country.toLowerCase() === (country ?? '').toLowerCase() ||
+      (n.isoAlpha3 ?? '').toLowerCase() === (country ?? '').toLowerCase(),
   );
 
   const tabs: Array<{
@@ -1519,8 +1573,8 @@ export function CountryDrawer({
               right: 0,
               bottom: 0,
               width: 'min(440px, 100vw)',
-              background: '#0d1b2a',
-              borderLeft: '1px solid #1e3a5f',
+              background: 'var(--geoint-base)',
+              borderLeft: '1px solid var(--geoint-border)',
               zIndex: 50,
               display: 'flex',
               flexDirection: 'column',
@@ -1534,8 +1588,8 @@ export function CountryDrawer({
                 alignItems: 'flex-start',
                 justifyContent: 'space-between',
                 padding: '16px 18px 12px',
-                borderBottom: '1px solid #1e3a5f',
-                background: '#0d1b2a',
+                borderBottom: '1px solid var(--geoint-border)',
+                background: 'var(--geoint-base)',
                 flexShrink: 0,
               }}
             >
@@ -1544,7 +1598,7 @@ export function CountryDrawer({
                   style={{
                     fontSize: 9,
                     fontFamily: 'monospace',
-                    color: '#4a7fb5',
+                    color: 'var(--text-secondary)',
                     textTransform: 'uppercase',
                     letterSpacing: '0.15em',
                     marginBottom: 4,
@@ -1557,7 +1611,7 @@ export function CountryDrawer({
                     fontSize: 20,
                     fontWeight: 700,
                     fontFamily: 'monospace',
-                    color: '#e2e8f0',
+                    color: 'var(--text-primary)',
                     letterSpacing: '0.04em',
                     lineHeight: 1.2,
                   }}
@@ -1569,7 +1623,7 @@ export function CountryDrawer({
                     <div
                       style={{
                         fontSize: 9,
-                        color: '#4a7fb5',
+                        color: 'var(--text-secondary)',
                         fontFamily: 'monospace',
                         marginBottom: 3,
                       }}
@@ -1587,8 +1641,8 @@ export function CountryDrawer({
                 aria-label="Drawer'ı kapat"
                 style={{
                   background: 'transparent',
-                  border: '1px solid #1e3a5f',
-                  color: '#4a7fb5',
+                  border: '1px solid var(--geoint-border)',
+                  color: 'var(--text-secondary)',
                   width: 30,
                   height: 30,
                   display: 'flex',
@@ -1600,12 +1654,13 @@ export function CountryDrawer({
                   transition: 'border-color 0.15s, color 0.15s',
                 }}
                 onMouseEnter={(e) => {
-                  (e.currentTarget as HTMLButtonElement).style.borderColor = '#4a7fb5';
-                  (e.currentTarget as HTMLButtonElement).style.color = '#e2e8f0';
+                  (e.currentTarget as HTMLButtonElement).style.borderColor =
+                    'var(--text-secondary)';
+                  (e.currentTarget as HTMLButtonElement).style.color = 'var(--text-primary)';
                 }}
                 onMouseLeave={(e) => {
-                  (e.currentTarget as HTMLButtonElement).style.borderColor = '#1e3a5f';
-                  (e.currentTarget as HTMLButtonElement).style.color = '#4a7fb5';
+                  (e.currentTarget as HTMLButtonElement).style.borderColor = 'var(--geoint-border)';
+                  (e.currentTarget as HTMLButtonElement).style.color = 'var(--text-secondary)';
                 }}
               >
                 <X style={{ width: 14, height: 14 }} />
@@ -1616,8 +1671,8 @@ export function CountryDrawer({
             <div
               style={{
                 display: 'flex',
-                borderBottom: '1px solid #1e3a5f',
-                background: '#080f1a',
+                borderBottom: '1px solid var(--geoint-border)',
+                background: 'var(--geoint-void)',
                 flexShrink: 0,
               }}
             >
@@ -1638,15 +1693,18 @@ export function CountryDrawer({
                       background: 'transparent',
                       border: 'none',
                       borderBottom: isActive ? '2px solid #3b82f6' : '2px solid transparent',
-                      color: isActive ? '#60a5fa' : '#2a4a6b',
+                      color: isActive ? '#60a5fa' : 'var(--text-tertiary)',
                       cursor: 'pointer',
                       transition: 'color 0.15s, border-color 0.15s',
                     }}
                     onMouseEnter={(e) => {
-                      if (!isActive) (e.currentTarget as HTMLButtonElement).style.color = '#4a7fb5';
+                      if (!isActive)
+                        (e.currentTarget as HTMLButtonElement).style.color =
+                          'var(--text-secondary)';
                     }}
                     onMouseLeave={(e) => {
-                      if (!isActive) (e.currentTarget as HTMLButtonElement).style.color = '#2a4a6b';
+                      if (!isActive)
+                        (e.currentTarget as HTMLButtonElement).style.color = 'var(--text-tertiary)';
                     }}
                   >
                     <tab.Icon style={{ width: 13, height: 13 }} />
@@ -1665,7 +1723,7 @@ export function CountryDrawer({
                 overflowY: 'auto',
                 padding: '12px 16px 24px',
                 scrollbarWidth: 'thin',
-                scrollbarColor: '#1e3a5f #080f1a',
+                scrollbarColor: 'var(--geoint-border) var(--geoint-void)',
               }}
             >
               {/* Loading */}
@@ -1691,7 +1749,7 @@ export function CountryDrawer({
                     style={{
                       fontSize: 10,
                       fontFamily: 'monospace',
-                      color: '#4a7fb5',
+                      color: 'var(--text-secondary)',
                       maxWidth: 260,
                     }}
                   >

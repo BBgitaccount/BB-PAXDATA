@@ -73,8 +73,7 @@ class PgvectorDenseRetriever(DenseRetrieverProtocol):
 
             where_clause = " AND ".join(filters)
 
-            sql = text(
-                f"""
+            sql = text(f"""
                 SELECT
                     sent_id,
                     text,
@@ -86,8 +85,7 @@ class PgvectorDenseRetriever(DenseRetrieverProtocol):
                 WHERE {where_clause}
                 ORDER BY embedding <=> CAST(:query_vec AS vector(:dim))
                 LIMIT :limit
-            """
-            )
+            """)
 
             async with self._session_factory() as session:
                 rows = await session.execute(sql, params)

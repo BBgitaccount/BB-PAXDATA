@@ -1,6 +1,20 @@
 // src/bb_paxdata/interfaces/web/src/utils/visualizationHelpers.ts
 
+import { isoNumericToAlpha3 } from '../data/isoNumericToAlpha3';
 import type { RelationshipType } from '../types/visualization';
+
+/**
+ * Maps a country ID (numeric string/number, or alpha3 code) to its ISO Alpha-3 code.
+ * If numeric, pads with leading zeros (e.g., 32 -> '032' -> 'ARG').
+ */
+export function getAlpha3FromNumeric(id: string | number | undefined): string | undefined {
+  if (id === undefined || id === null) return undefined;
+  const idStr = String(id).trim();
+  if (/^\d+$/.test(idStr)) {
+    return isoNumericToAlpha3[idStr.padStart(3, '0')];
+  }
+  return idStr;
+}
 
 export const RELATIONSHIP_COLORS: Record<RelationshipType, string> = {
   ALLY: '#10b981', // emerald

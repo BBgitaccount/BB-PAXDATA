@@ -20,8 +20,7 @@ def test_watcher_integration(tmp_path):
 
     try:
         # 1. Test creation
-        plugin_content = textwrap.dedent(
-            """
+        plugin_content = textwrap.dedent("""
             from pydantic import BaseModel
 
             class PluginMetadata(BaseModel):
@@ -46,8 +45,7 @@ def test_watcher_integration(tmp_path):
                         anomaly_type=None,
                         explanation="watcher test"
                     )
-        """
-        )
+        """)
 
         plugin_file = tmp_path / "watcher_plugin.py"
         plugin_file.write_text(plugin_content, encoding="utf-8")

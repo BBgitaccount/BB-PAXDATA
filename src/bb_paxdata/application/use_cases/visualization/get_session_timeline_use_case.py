@@ -6,6 +6,7 @@ from bb_paxdata.application.domain.dtos.visualization_dtos import SessionTimelin
 from bb_paxdata.application.domain.ports.i_visualization_repository import (
     IVisualizationRepository,
 )
+from bb_paxdata.infrastructure.mappings.country_iso_map import is_unknown_country
 
 
 class GetSessionTimelineUseCase:
@@ -48,11 +49,15 @@ class GetSessionTimelineUseCase:
             sess_refs = refs_by_session.get(file_id, {})
 
             # Active countries list
-            countries_set = (
-                set(s["country"] for s in sess_stats)
-                | set(b["from_country"] for b in sess_bilat)
-                | set(b["to_country"] for b in sess_bilat)
-            )
+            countries_set = {
+                c
+                for c in (
+                    set(s["country"] for s in sess_stats)
+                    | set(b["from_country"] for b in sess_bilat)
+                    | set(b["to_country"] for b in sess_bilat)
+                )
+                if not is_unknown_country(c)
+            }
             countries = sorted(list(countries_set))
 
             # In-session average sentiment
@@ -70,8 +75,14 @@ class GetSessionTimelineUseCase:
             )
 
             # Top 5 relationships in this session by interaction count
+            filtered_bilats = [
+                b
+                for b in sess_bilat
+                if not is_unknown_country(b["from_country"])
+                and not is_unknown_country(b["to_country"])
+            ]
             sorted_bilats = sorted(
-                sess_bilat, key=lambda x: x["interaction_count"], reverse=True
+                filtered_bilats, key=lambda x: x["interaction_count"], reverse=True
             )
             top_relationships = [
                 {

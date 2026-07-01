@@ -1,7 +1,7 @@
 """add export job table
 
 Revision ID: add_export_job
-Revises: 
+Revises:
 Create Date: 2024-06-24 12:00:00.000000
 
 """

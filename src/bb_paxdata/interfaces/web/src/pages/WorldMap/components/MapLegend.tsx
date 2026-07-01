@@ -53,27 +53,6 @@ export const MapLegend: React.FC = () => {
             </div>
           </div>
         </div>
-
-        {/* Bubble size indicator */}
-        <div>
-          <div className="text-carbon-400 font-semibold mb-2 uppercase tracking-wider">
-            BUBBLE BOYUTU = ETKİLEŞİM
-          </div>
-          <div className="flex items-center justify-between text-[9px] text-carbon-400 mt-1 font-mono pr-4">
-            <div className="flex items-center gap-1.5">
-              <span className="w-1.5 h-1.5 rounded-full border border-carbon-500 bg-carbon-700 inline-block" />
-              <span>az</span>
-            </div>
-            <div className="flex items-center gap-1.5">
-              <span className="w-3 h-3 rounded-full border border-carbon-500 bg-carbon-700 inline-block" />
-              <span>orta</span>
-            </div>
-            <div className="flex items-center gap-1.5">
-              <span className="w-5 h-5 rounded-full border border-carbon-500 bg-carbon-700 inline-block" />
-              <span>çok</span>
-            </div>
-          </div>
-        </div>
       </div>
     </div>
   );

@@ -55,13 +55,11 @@ async def main() -> None:
     print("TASK-DB-006 #24 | Backfilling logic_result (PASS/WARN/FAIL)...\n")
 
     # formula_validation_logs şemasını kontrol et
-    cols = await conn.fetch(
-        """
+    cols = await conn.fetch("""
         SELECT column_name FROM information_schema.columns
         WHERE table_name = 'formula_validation_logs'
         ORDER BY ordinal_position
-    """
-    )
+    """)
     col_names = [r["column_name"] for r in cols]
     print(f"formula_validation_logs columns: {col_names}\n")
 
@@ -73,14 +71,12 @@ async def main() -> None:
 
     # formula_validation_logs'tan FAIL satırlarını topla
     # Schema: entity_id = sent_id, entity_type = 'sentence', formula_name, status
-    fail_logs = await conn.fetch(
-        """
+    fail_logs = await conn.fetch("""
         SELECT entity_id AS sid, formula_name AS cname, status AS result
         FROM formula_validation_logs
         WHERE entity_type = 'sentence'
           AND status = 'FAIL'
-    """
-    )
+    """)
 
     # sent_id → [formula_name listesi]
     from collections import defaultdict

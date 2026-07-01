@@ -17,8 +17,7 @@ depends_on = None
 
 def upgrade():
     # Create retraining_jobs table
-    op.execute(
-        """
+    op.execute("""
     CREATE TABLE retraining_jobs (
         id              UUID PRIMARY KEY DEFAULT gen_random_uuid(),
         trigger_reason  VARCHAR(20)  NOT NULL,
@@ -28,8 +27,7 @@ def upgrade():
         completed_at    TIMESTAMPTZ,
         metadata        JSONB        DEFAULT '{}'
     );
-    """
-    )
+    """)
 
     op.execute("CREATE INDEX idx_retraining_jobs_status ON retraining_jobs(status);")
     op.execute(
@@ -37,8 +35,7 @@ def upgrade():
     )
 
     # Create model_versions table
-    op.execute(
-        """
+    op.execute("""
     CREATE TABLE model_versions (
         id              UUID PRIMARY KEY DEFAULT gen_random_uuid(),
         model_type      VARCHAR(30)  NOT NULL,
@@ -48,8 +45,7 @@ def upgrade():
         deployed_at     TIMESTAMPTZ  DEFAULT NOW(),
         metrics         JSONB        DEFAULT '{}'
     );
-    """
-    )
+    """)
 
     op.execute(
         "CREATE INDEX idx_model_versions_type_status ON model_versions(model_type, status);"
@@ -57,8 +53,7 @@ def upgrade():
     op.execute("CREATE INDEX idx_model_versions_tag ON model_versions(version_tag);")
 
     # Create shadow_results table
-    op.execute(
-        """
+    op.execute("""
     CREATE TABLE shadow_results (
         id                    UUID PRIMARY KEY DEFAULT gen_random_uuid(),
         analysis_id           UUID,
@@ -70,8 +65,7 @@ def upgrade():
         delta                 FLOAT,
         created_at            TIMESTAMPTZ DEFAULT NOW()
     );
-    """
-    )
+    """)
 
     op.execute(
         "CREATE INDEX idx_shadow_results_analysis ON shadow_results(analysis_id);"
@@ -81,8 +75,7 @@ def upgrade():
     )
 
     # Create training_datasets table
-    op.execute(
-        """
+    op.execute("""
     CREATE TABLE training_datasets (
         dataset_id      UUID PRIMARY KEY DEFAULT gen_random_uuid(),
         split           VARCHAR(20)  NOT NULL,
@@ -90,8 +83,7 @@ def upgrade():
         sample_ids      UUID[]       NOT NULL,
         created_at      TIMESTAMPTZ  DEFAULT NOW()
     );
-    """
-    )
+    """)
 
     op.execute(
         "CREATE INDEX idx_training_datasets_split_field ON training_datasets(split, field);"

@@ -106,3 +106,69 @@ def get_iso_alpha3(country_name: str | None) -> str | None:
         pass
 
     return None
+
+
+def get_country_aliases(country: str) -> list[str]:
+    """
+    Given a country name or ISO-3 code (e.g., "TUR" or "Turkey"),
+    returns a list of known aliases/names for that country
+    to match database records.
+    """
+    if not country:
+        return []
+
+    country_clean = country.strip()
+    country_upper = country_clean.upper()
+
+    aliases = {country_clean}
+
+    # 1. If it's a 3-letter ISO code, find all matching keys in COUNTRY_ISO_MAP
+    # Also find standard names in country_bloc_mapping if available
+    iso3 = None
+    if len(country_clean) == 3:
+        iso3 = country_upper
+    else:
+        # Get ISO-3 from map
+        iso3 = COUNTRY_ISO_MAP.get(country_clean)
+        if not iso3:
+            # Try case-insensitive
+            for k, v in COUNTRY_ISO_MAP.items():
+                if k.upper() == country_upper:
+                    iso3 = v
+                    break
+
+    if iso3:
+        aliases.add(iso3)
+        aliases.add(iso3.lower())
+        # Find all keys in COUNTRY_ISO_MAP that map to this ISO-3
+        for k, v in COUNTRY_ISO_MAP.items():
+            if v == iso3:
+                aliases.add(k)
+
+        # Also check standard country bloc mapping
+        try:
+            from bb_paxdata.application.domain.lexicon.country_bloc_mapping import (
+                COUNTRY_BLOC_MAP,
+            )
+
+            if iso3 in COUNTRY_BLOC_MAP:
+                info = COUNTRY_BLOC_MAP[iso3]
+                aliases.add(info["name"])
+        except Exception:
+            pass
+
+    return sorted(list(aliases))
+
+
+def is_unknown_country(country_name: str | None) -> bool:
+    """
+    Returns True if the country name represents an unknown country.
+    """
+    if not country_name:
+        return True
+    name = country_name.strip()
+    if name.upper() in ("UNKNOWN", "UNK"):
+        return True
+    if get_iso_alpha3(name) is None:
+        return True
+    return False

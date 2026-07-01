@@ -181,6 +181,22 @@ async def get_stats_by_bloc(db: AsyncSession = Depends(get_db)):
     return [{"bloc": row[0], "count": row[1]} for row in res.all()]
 
 
+@router.get("/names", response_model=dict[str, str])
+async def get_speaker_names(
+    speaker_ids: list[str] = Query(...),
+    db: AsyncSession = Depends(get_db),
+):
+    """Batch fetch speaker canonical names by IDs for discourse network display."""
+    if not speaker_ids:
+        return {}
+
+    stmt = select(Speaker.speaker_id, Speaker.canonical_name).where(
+        Speaker.speaker_id.in_(speaker_ids)
+    )
+    res = await db.execute(stmt)
+    return {row.speaker_id: row.canonical_name for row in res.all()}
+
+
 @router.get("", response_model=PaginatedSpeakersResponse)
 async def list_speakers(
     db: AsyncSession = Depends(get_db),

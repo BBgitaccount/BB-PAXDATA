@@ -18,8 +18,7 @@ depends_on: str | Sequence[str] | None = None
 
 
 def upgrade() -> None:
-    op.execute(
-        """
+    op.execute("""
         CREATE VIEW v_formula_validation_results AS
         SELECT 
             f.log_id,
@@ -39,8 +38,7 @@ def upgrade() -> None:
         FROM formula_validation_logs f
         LEFT JOIN sentences s ON f.entity_type = 'sentence' AND f.entity_id = s.sent_id
         LEFT JOIN segments seg ON f.entity_type = 'segment' AND f.entity_id = seg.seg_id
-        """
-    )
+        """)
 
 
 def downgrade() -> None:

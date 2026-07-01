@@ -5,6 +5,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from bb_paxdata.infrastructure.db.discourse_network_table import (
     DiscourseNetworkEdgeTable,
 )
+from bb_paxdata.infrastructure.db.models import Speaker
 from bb_paxdata.interfaces.api.dependencies import PermissionChecker, get_db
 from bb_paxdata.interfaces.api.schemas import (
     DiscourseEdge,
@@ -60,14 +61,28 @@ async def get_discourse_network(
     res = await db.execute(stmt)
     edges_rows = res.scalars().all()
 
+    # Collect unique actor_ids
+    actor_ids = set(r.actor_id for r in edges_rows)
+
+    # Fetch speaker names for all actor_ids
+    speaker_names = {}
+    if actor_ids:
+        speaker_stmt = select(Speaker.speaker_id, Speaker.canonical_name).where(
+            Speaker.speaker_id.in_(actor_ids)
+        )
+        speaker_res = await db.execute(speaker_stmt)
+        for row in speaker_res:
+            speaker_names[row.speaker_id] = row.canonical_name
+
     nodes_map = {}
     edges_list = []
 
     for r in edges_rows:
-        # Actor node
+        # Actor node - use speaker canonical_name as label, fallback to actor_id
         if r.actor_id not in nodes_map:
+            actor_label = speaker_names.get(r.actor_id, r.actor_id)
             nodes_map[r.actor_id] = DiscourseNode(
-                id=r.actor_id, label=r.actor_id, type="actor"
+                id=r.actor_id, label=actor_label, type="actor"
             )
         # Concept node
         if r.concept_id not in nodes_map:

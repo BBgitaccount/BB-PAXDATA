@@ -6,7 +6,10 @@ from bb_paxdata.application.domain.dtos.visualization_dtos import BilateralFlowD
 from bb_paxdata.application.domain.ports.i_visualization_repository import (
     IVisualizationRepository,
 )
-from bb_paxdata.infrastructure.mappings.country_iso_map import get_iso_alpha3
+from bb_paxdata.infrastructure.mappings.country_iso_map import (
+    get_iso_alpha3,
+    is_unknown_country,
+)
 
 
 class GetBilateralFlowsUseCase:
@@ -49,6 +52,8 @@ class GetBilateralFlowsUseCase:
 
         flows: list[BilateralFlowDTO] = []
         for (from_c, to_c), records in grouped_flows.items():
+            if is_unknown_country(from_c) or is_unknown_country(to_c):
+                continue
             total_interactions = sum(r["interaction_count"] for r in records)
             if total_interactions < min_interactions:
                 continue

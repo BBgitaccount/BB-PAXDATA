@@ -6,6 +6,7 @@ from bb_paxdata.application.domain.dtos.visualization_dtos import CountryRiskPro
 from bb_paxdata.application.domain.ports.i_visualization_repository import (
     IVisualizationRepository,
 )
+from bb_paxdata.infrastructure.mappings.country_iso_map import is_unknown_country
 
 
 class GetCountryRiskProfileUseCase:
@@ -18,6 +19,17 @@ class GetCountryRiskProfileUseCase:
         stats = await self.repository.get_country_stats_for_country(country)
         speaker_summary = await self.repository.get_speaker_references_summary(country)
         target_summary = await self.repository.get_target_references_summary(country)
+
+        # Filter out unknown countries
+        pair_sentiments = [
+            p
+            for p in pair_sentiments
+            if not is_unknown_country(p["from_country"])
+            and not is_unknown_country(p["to_country"])
+        ]
+        target_summary = [
+            t for t in target_summary if not is_unknown_country(t["speaker_country"])
+        ]
 
         # 2. Process relationship metrics
         total_mentions = sum(p["total_mentions"] for p in pair_sentiments)

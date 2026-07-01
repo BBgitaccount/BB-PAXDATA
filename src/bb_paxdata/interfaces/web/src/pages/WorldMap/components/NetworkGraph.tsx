@@ -891,42 +891,46 @@ export const NetworkGraph: React.FC<NetworkGraphProps> = ({
           </div>
         </div>
 
-        {/* Floating Mini Stats Panel (Graph sol üstü - opposite to controls) */}
         {hoveredNodeStats && (
-          <div className="absolute top-4 left-4 bg-carbon-950 border border-carbon-700/80 p-3 shadow-2xl z-10 w-72 pointer-events-none select-none">
-            <div
-              className="font-mono text-[9px] text-carbon-100 leading-tight"
-              style={{ whiteSpace: 'pre-wrap' }}
-            >
-              {/* Mini Stats ASCII Frame Design */}
-              <div>
-                ╔═{' '}
-                <span className="text-carbon-50 font-bold uppercase">{hoveredNodeStats.name}</span>{' '}
-                ════════════════╗
+          <div className="absolute top-4 left-4 bg-carbon-950/95 border border-carbon-700/80 p-3.5 shadow-2xl z-10 w-72 pointer-events-none select-none rounded backdrop-blur-sm">
+            <div className="flex flex-col gap-2.5 text-[11px] leading-normal text-carbon-100">
+              <div className="flex items-center justify-between border-b border-carbon-800 pb-2">
+                <span className="font-bold text-xs uppercase tracking-wider text-carbon-50 truncate max-w-[180px]">
+                  {hoveredNodeStats.name}
+                </span>
+                <span className="text-[9px] bg-carbon-800 text-carbon-400 px-1.5 py-0.5 rounded font-mono uppercase tracking-wider">
+                  Node Stats
+                </span>
               </div>
-              <div className="my-1">
-                ║{' '}
-                <span className="text-indigo-400 font-bold">
+
+              <div className="flex justify-between items-center">
+                <span className="text-carbon-400">Etkileşim:</span>
+                <span className="font-semibold text-indigo-400 font-mono">
                   {hoveredNodeStats.interactions} segment
-                </span>{' '}
-                | <span className="text-emerald-400 font-semibold">{hoveredNodeStats.emotion}</span>{' '}
-                ║
+                </span>
               </div>
-              <div className="my-0.5">
-                ║ Sentiment:{' '}
+
+              <div className="flex justify-between items-center">
+                <span className="text-carbon-400">Dominant Duygu:</span>
+                <span className="font-semibold text-emerald-400">{hoveredNodeStats.emotion}</span>
+              </div>
+
+              <div className="flex justify-between items-center">
+                <span className="text-carbon-400">Ort. Sentiment:</span>
                 <span
-                  className="font-bold"
+                  className="font-bold font-mono"
                   style={{ color: sentimentToColor(hoveredNodeStats.sentiment) }}
                 >
                   {hoveredNodeStats.sentiment >= 0 ? '+' : ''}
                   {hoveredNodeStats.sentiment.toFixed(2)}
-                </span>{' '}
-                ║
+                </span>
               </div>
-              <div className="my-1">
-                ║ <span className="text-carbon-400">{hoveredNodeStats.breakdown}</span> ║
-              </div>
-              <div>╚══════════════════════════╝</div>
+
+              {hoveredNodeStats.breakdown && (
+                <div className="mt-1 pt-2 border-t border-carbon-800/60 text-carbon-400 text-[10px] leading-relaxed italic">
+                  {hoveredNodeStats.breakdown}
+                </div>
+              )}
             </div>
           </div>
         )}

@@ -1,7 +1,7 @@
 // src/bb_paxdata/interfaces/web/src/utils/topojsonPreloader.ts
 // TopoJSON preloading utility to cache world map geometry data
 
-const TOPOJSON_URL = '/world-110m.json';
+const TOPOJSON_URL = `${import.meta.env.BASE_URL}world-110m.json`;
 const CACHE_DURATION = 86400000; // 24 hours in milliseconds
 
 interface TopoJSONCache {

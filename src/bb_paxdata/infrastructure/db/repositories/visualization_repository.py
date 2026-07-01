@@ -17,6 +17,7 @@ from bb_paxdata.infrastructure.db.models import (
     CountryStat,
     File,
 )
+from bb_paxdata.infrastructure.mappings.country_iso_map import get_country_aliases
 
 
 class VisualizationRepository(IVisualizationRepository):
@@ -260,6 +261,7 @@ class VisualizationRepository(IVisualizationRepository):
     async def get_pair_sentiments_for_country(
         self, country: str
     ) -> list[dict[str, Any]]:
+        aliases = get_country_aliases(country)
         stmt = select(
             CountryPairSentiment.from_country,
             CountryPairSentiment.to_country,
@@ -270,8 +272,8 @@ class VisualizationRepository(IVisualizationRepository):
             CountryPairSentiment.affinity_score,
         ).where(
             or_(
-                CountryPairSentiment.from_country == country,
-                CountryPairSentiment.to_country == country,
+                CountryPairSentiment.from_country.in_(aliases),
+                CountryPairSentiment.to_country.in_(aliases),
             )
         )
         res = await self.session.execute(stmt)
@@ -301,11 +303,12 @@ class VisualizationRepository(IVisualizationRepository):
         ]
 
     async def get_country_stats_for_country(self, country: str) -> list[dict[str, Any]]:
+        aliases = get_country_aliases(country)
         stmt = select(
             CountryStat.file_id,
             CountryStat.avg_sentiment,
             CountryStat.dominant_emotion,
-        ).where(CountryStat.country == country)
+        ).where(CountryStat.country.in_(aliases))
 
         res = await self.session.execute(stmt)
         return [
@@ -322,10 +325,11 @@ class VisualizationRepository(IVisualizationRepository):
         ]
 
     async def get_speaker_references_summary(self, country: str) -> dict[str, Any]:
+        aliases = get_country_aliases(country)
         stmt = select(
             func.avg(CountryReferenceTable.raw_sentiment_score).label("avg_sent"),
             func.count(CountryReferenceTable.id).label("cnt"),
-        ).where(CountryReferenceTable.speaker_country == country)
+        ).where(CountryReferenceTable.speaker_country.in_(aliases))
 
         res = await self.session.execute(stmt)
         row = res.first()
@@ -337,6 +341,7 @@ class VisualizationRepository(IVisualizationRepository):
         return {"avg_sentiment": 0.0, "count": 0}
 
     async def get_target_references_summary(self, country: str) -> list[dict[str, Any]]:
+        aliases = get_country_aliases(country)
         stmt = (
             select(
                 CountryReferenceTable.speaker_country,
@@ -344,7 +349,7 @@ class VisualizationRepository(IVisualizationRepository):
                 func.avg(CountryReferenceTable.raw_sentiment_score).label("avg_sent"),
                 func.count(CountryReferenceTable.id).label("cnt"),
             )
-            .where(CountryReferenceTable.referenced_country == country)
+            .where(CountryReferenceTable.referenced_country.in_(aliases))
             .group_by(
                 CountryReferenceTable.speaker_country,
                 CountryReferenceTable.reference_context,

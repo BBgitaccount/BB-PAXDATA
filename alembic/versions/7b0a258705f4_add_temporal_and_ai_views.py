@@ -19,8 +19,7 @@ depends_on: str | Sequence[str] | None = None
 
 def upgrade() -> None:
     # 1. v_f_fail_negation_analysis
-    op.execute(
-        """
+    op.execute("""
     CREATE VIEW v_f_fail_negation_analysis AS
     SELECT
         a.sent_id, a.panel_id, a.speaker_name, a.country, a.check_type,
@@ -32,12 +31,10 @@ def upgrade() -> None:
     FROM ai_fail_analysis a
     WHERE a.negation_type IS NOT NULL AND a.negation_type != 'yok'
       AND a.country NOT IN ('—','Unknown')
-    """
-    )
+    """)
 
     # 2. v_f_fail_speaker_patterns
-    op.execute(
-        """
+    op.execute("""
     CREATE VIEW v_f_fail_speaker_patterns AS
     SELECT
         a.speaker_name, a.country,
@@ -56,12 +53,10 @@ def upgrade() -> None:
     FROM ai_fail_analysis a
     WHERE a.country NOT IN ('—','Unknown')
     GROUP BY a.speaker_name, a.country
-    """
-    )
+    """)
 
     # 3. v_f_fail_contextual_deep
-    op.execute(
-        """
+    op.execute("""
     CREATE VIEW v_f_fail_contextual_deep AS
     SELECT
         a.sent_id, a.panel_id, a.speaker_name, a.country, a.check_type,
@@ -76,12 +71,10 @@ def upgrade() -> None:
     FROM ai_fail_analysis a
     LEFT JOIN ai_sentence_analysis asa ON a.sent_id = asa.sent_id
     WHERE a.country NOT IN ('—','Unknown')
-    """
-    )
+    """)
 
     # 4. v_f_fail_formula_vs_ai
-    op.execute(
-        """
+    op.execute("""
     CREATE VIEW v_f_fail_formula_vs_ai AS
     SELECT
         a.check_type, a.fail_category AS AI_Fail_Kategorisi,
@@ -96,12 +89,10 @@ def upgrade() -> None:
     FROM ai_fail_analysis a
     WHERE a.country NOT IN ('—','Unknown')
     GROUP BY a.check_type, a.fail_category
-    """
-    )
+    """)
 
     # 5. v_f_fail_correction_suggestions
-    op.execute(
-        """
+    op.execute("""
     CREATE VIEW v_f_fail_correction_suggestions AS
     SELECT
         a.fail_category AS AI_Fail_Kategorisi, a.check_type, a.negation_type AS AI_Negasyon_Tipi,
@@ -115,12 +106,10 @@ def upgrade() -> None:
     FROM ai_fail_analysis a
     WHERE a.country NOT IN ('—','Unknown') AND a.correction_suggestion IS NOT NULL
     GROUP BY a.fail_category, a.check_type, a.negation_type, a.formula_gap, a.correction_suggestion, a.comparative_correction
-    """
-    )
+    """)
 
     # 6. v_f_fail_temporal_analysis
-    op.execute(
-        """
+    op.execute("""
     CREATE VIEW v_f_fail_temporal_analysis AS
     SELECT
         a.sent_id, a.panel_id, a.speaker_name, a.country,
@@ -137,12 +126,10 @@ def upgrade() -> None:
         END AS temporal_pattern
     FROM ai_fail_analysis a
     WHERE a.country NOT IN ('—','Unknown')
-    """
-    )
+    """)
 
     # 7. v_f_fail_ai_cross_reference
-    op.execute(
-        """
+    op.execute("""
     CREATE VIEW v_f_fail_ai_cross_reference AS
     SELECT
         f.sent_id, f.check_type, f.fail_category AS AI_Fail_Kategorisi,
@@ -153,12 +140,10 @@ def upgrade() -> None:
     FROM ai_fail_analysis f
     LEFT JOIN ai_sentence_analysis asa ON f.sent_id = asa.sent_id
     WHERE f.country NOT IN ('—','Unknown')
-    """
-    )
+    """)
 
     # 8. v_f_fail_anomaly_bridge
-    op.execute(
-        """
+    op.execute("""
     CREATE VIEW v_f_fail_anomaly_bridge AS
     SELECT
         f.sent_id, f.speaker_name, f.country, f.check_type,
@@ -167,12 +152,10 @@ def upgrade() -> None:
     FROM ai_fail_analysis f
     LEFT JOIN ai_contextual_flags c ON f.sent_id = c.sent_id
     WHERE c.severity IN ('HIGH', 'CRITICAL')
-    """
-    )
+    """)
 
     # 9. v_f_fail_network_context
-    op.execute(
-        """
+    op.execute("""
     CREATE VIEW v_f_fail_network_context AS
     SELECT
         f.sent_id, f.speaker_name, f.country, f.check_type,
@@ -186,8 +169,7 @@ def upgrade() -> None:
     LEFT JOIN country_pair_sentiment cp
         ON dne.from_country = cp.from_country AND dne.to_country = cp.to_country
     WHERE f.country NOT IN ('—','Unknown')
-    """
-    )
+    """)
 
 
 def downgrade() -> None:

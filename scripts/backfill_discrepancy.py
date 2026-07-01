@@ -31,8 +31,7 @@ async def main() -> None:
     print("TASK-DB-006 #25a | Backfilling discrepancy_score...\n")
 
     # Join sentences ↔ ai_sentence_analysis
-    rows = await conn.fetch(
-        """
+    rows = await conn.fetch("""
         SELECT s.sent_id,
                s.diplo_compound,
                s.vader_compound,
@@ -40,8 +39,7 @@ async def main() -> None:
         FROM sentences s
         LEFT JOIN ai_sentence_analysis a ON a.sent_id = s.sent_id
         ORDER BY s.sent_id
-    """
-    )
+    """)
     total = len(rows)
     print(f"Found {total} sentences.\n")
 
@@ -83,8 +81,7 @@ async def main() -> None:
     )
 
     # Distribution buckets
-    buckets = await conn.fetch(
-        """
+    buckets = await conn.fetch("""
         SELECT
             CASE
                 WHEN discrepancy_score = 0 THEN '0.0'
@@ -96,8 +93,7 @@ async def main() -> None:
             COUNT(*) AS cnt
         FROM sentences
         GROUP BY 1 ORDER BY 1
-    """
-    )
+    """)
     print("\n  discrepancy_score distribution:")
     for b in buckets:
         print(f"    {b['bucket']:<12} : {b['cnt']}")

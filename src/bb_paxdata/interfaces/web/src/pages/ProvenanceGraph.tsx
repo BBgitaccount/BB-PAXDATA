@@ -184,7 +184,7 @@ export const ProvenanceGraph = ({ resultId: propResultId }: ProvenanceGraphProps
               fitView
               className="h-full"
             >
-              <Background color="#2a2a3a" gap={16} />
+              <Background color="var(--border-hair)" gap={16} />
               <Controls
                 style={{
                   background: 'var(--bg-tertiary)',
@@ -199,7 +199,7 @@ export const ProvenanceGraph = ({ resultId: propResultId }: ProvenanceGraphProps
                   border: '0.5px solid var(--border-hair)',
                   borderRadius: 0,
                 }}
-                nodeColor="#3b82f6"
+                nodeColor="var(--sentiment-partner)"
                 maskColor="rgba(0, 0, 0, 0.6)"
               />
             </ReactFlow>

@@ -344,7 +344,7 @@ class ModernAIAnalystAdapter:
         self, text: str, context: str | None, backend: BackendType, model: str | None
     ) -> str:
         key_data = f"{text}|{context or ''}|{backend.value}|{model or ''}"
-        return hashlib.md5(key_data.encode()).hexdigest()
+        return hashlib.md5(key_data.encode(), usedforsecurity=False).hexdigest()
 
     async def health_check(self) -> dict[str, bool]:
         """Check health of all backends.

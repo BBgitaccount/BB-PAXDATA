@@ -17,8 +17,7 @@ def recreate_tables(db_path: str):
 
         # 1. Recreate country_stats
         c.execute("DROP TABLE IF EXISTS country_stats;")
-        c.execute(
-            """
+        c.execute("""
             CREATE TABLE "country_stats" (
                 country TEXT NOT NULL, 
                 n_segments INTEGER NOT NULL, 
@@ -34,13 +33,11 @@ def recreate_tables(db_path: str):
                 CONSTRAINT pk_country_stats PRIMARY KEY (country, file_id), 
                 CONSTRAINT fk_country_stats_file_id_files FOREIGN KEY(file_id) REFERENCES files (file_id)
             );
-        """
-        )
+        """)
 
         # 2. Recreate topic_matrix
         c.execute("DROP TABLE IF EXISTS topic_matrix;")
-        c.execute(
-            """
+        c.execute("""
             CREATE TABLE "topic_matrix" (
                 file_id VARCHAR NOT NULL, 
                 country TEXT NOT NULL, 
@@ -49,8 +46,7 @@ def recreate_tables(db_path: str):
                 CONSTRAINT pk_topic_matrix PRIMARY KEY (file_id, country, topic), 
                 CONSTRAINT fk_topic_matrix_file_id_files FOREIGN KEY(file_id) REFERENCES files (file_id)
             );
-        """
-        )
+        """)
 
         c.execute("PRAGMA foreign_keys = ON;")
         conn.commit()

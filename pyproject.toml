@@ -60,9 +60,9 @@ celery = {version = "^5.4", extras = ["redis"]}
 flower = "^2.0"
 circuitbreaker = "^2.0"
 boto3 = "^1.38"
-cryptography = "^43.0"
-pyarrow = "^19.0"
-aiohttp = "^3.14.0"
+cryptography = "^48.0"
+pyarrow = "^23.0.1"
+aiohttp = "^3.14.1"
 transformers = ">=4.48.0,<5.0.0"
 ragatouille = { version = ">=0.0.8,<0.1.0" }
 # --- ACTIVE CPU-ONLY PYTORCH CONFIGURATION ---
@@ -118,6 +118,10 @@ black           = ">=26.3.1"
 pandas-stubs    = "^2.2"
 jsonschema = "^4.26.0"
 httpx = "^0.28.1"
+bandit = "^1.9.4"
+deptry = "^0.25.1"
+pytest-cov = "^7.1.0"
+pip-audit = "^2.10.1"
 
 
 
@@ -155,3 +159,17 @@ markers = [
     "logic: Tests that do not require AI (logic, NLP rules, unit tests)",
     "e2e: End-to-end pipeline tests"
 ]
+
+[tool.bandit]
+exclude_dirs = ["tests", ".venv", "node_modules", "frontend", "dashboards", "scripts"]
+skips = ["B615", "B608", "B604", "B318"]
+
+[tool.deptry]
+extend_exclude = ["tests", ".venv", "frontend", "dashboards", "scripts", "alembic", "docs"]
+known_first_party = ["bb_paxdata"]
+
+[tool.deptry.per_rule_ignores]
+DEP001 = ["nbformat", "newrelic", "ddtrace", "tests"]
+DEP002 = ["email-validator", "aiosqlite", "alembic", "textual", "plotly", "asyncpg", "psycopg2-binary", "flower", "aiohttp", "torch-scatter", "torch-sparse", "mlflow"]
+DEP003 = ["botocore", "yaml", "tenacity", "aiofiles", "jinja2", "charset_normalizer"]
+DEP004 = ["httpx", "pytest"]

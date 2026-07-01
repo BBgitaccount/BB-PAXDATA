@@ -3,6 +3,7 @@ import { useState } from 'react';
 import { BuildTUIMonitor } from '@/components/BuildTUIMonitor';
 import { useToast } from '@/hooks/useToast';
 import { useTranslation } from '@/hooks/useTranslation';
+import { apiClient } from '@/services/apiClient';
 
 export const PipelineMonitor = () => {
   const toast = useToast();
@@ -12,13 +13,7 @@ export const PipelineMonitor = () => {
   const handleStartPipeline = async () => {
     try {
       setIsStarting(true);
-      const res = await fetch(
-        `${import.meta.env.VITE_API_URL || 'http://localhost:8000'}/api/v1/pipeline/start`,
-        {
-          method: 'POST',
-        },
-      );
-      if (!res.ok) throw new Error('Pipeline başlatılamadı');
+      await apiClient.post('/api/v1/pipeline/start', {});
       toast.success(
         'Pipeline Docker üzerinde başlatıldı. İlerlemeyi terminalden takip edebilirsiniz.',
       );
@@ -136,7 +131,7 @@ export const PipelineMonitor = () => {
             Worker İşlem Dağılım Grafiği
           </h3>
         </div>
-        <div className="relative aspect-[21/9] w-full bg-[#0A0A0A] border border-hair border-carbon-750 overflow-hidden rounded">
+        <div className="relative aspect-[21/9] w-full bg-[var(--bg-primary)] border border-hair overflow-hidden rounded-none">
           <iframe
             src="http://localhost:3000/d/bbpaxdata-celery-workers/celery-workers?orgId=1&kiosk=tv&theme=dark"
             width="100%"

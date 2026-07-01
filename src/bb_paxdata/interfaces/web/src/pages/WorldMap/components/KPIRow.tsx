@@ -77,16 +77,16 @@ export const KPIRow: React.FC = () => {
 
   return (
     <div
-      className="px-4 py-3"
+      className="px-1 py-0.5"
       style={{ backgroundColor: 'var(--geoint-base)', borderBottom: 'var(--border-subtle)' }}
     >
-      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3">
+      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-1">
         {kpis.map((kpi, index) => {
           const Icon = kpi.icon;
           return (
             <div
               key={index}
-              className="p-3 rounded transition-colors"
+              className="p-1 rounded transition-colors"
               style={{
                 backgroundColor: 'var(--geoint-deep)',
                 border: 'var(--border-subtle)',
@@ -98,11 +98,11 @@ export const KPIRow: React.FC = () => {
                 e.currentTarget.style.backgroundColor = 'var(--geoint-deep)';
               }}
             >
-              <div className="flex items-center gap-2 mb-1">
-                <Icon className="w-4 h-4" style={{ color: kpi.color }} />
-                <div className="geoint-data-label">{kpi.label}</div>
+              <div className="flex items-center gap-0.5 mb-0">
+                <Icon className="w-2.5 h-2.5" style={{ color: kpi.color }} />
+                <div className="geoint-data-label text-[9px]">{kpi.label}</div>
               </div>
-              <div className="geoint-data-value" style={{ color: kpi.color }}>
+              <div className="geoint-data-value text-[10px]" style={{ color: kpi.color }}>
                 {kpi.trend}
                 {kpi.value}
               </div>
