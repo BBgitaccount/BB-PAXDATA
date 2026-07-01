@@ -62,6 +62,8 @@ scratch/
 .coverage
 coverage.xml
 logs/
+eslint_output.*
+**/eslint_output.*
 
 # Repomix
 repomix-output.*
