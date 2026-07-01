@@ -75,12 +75,13 @@ torch = { version = "^2.3.0", source = "pytorch-cpu" }
 torch-geometric = { version = "^2.6.0", optional = true }
 torch-scatter = { version = "^2.1.2", optional = true }
 torch-sparse = { version = "^0.6.18", optional = true }
-opentelemetry-api = "^1.24.0"
-opentelemetry-sdk = "^1.24.0"
-opentelemetry-instrumentation = "^0.45b0"
-opentelemetry-instrumentation-fastapi = "^0.45b0"
-opentelemetry-instrumentation-sqlalchemy = "^0.45b0"
-opentelemetry-exporter-otlp = "^1.24.0"
+protobuf = "^5.29.6"
+opentelemetry-api = "^1.43.0"
+opentelemetry-sdk = "^1.43.0"
+opentelemetry-instrumentation = "^0.64b0"
+opentelemetry-instrumentation-fastapi = "^0.64b0"
+opentelemetry-instrumentation-sqlalchemy = "^0.64b0"
+opentelemetry-exporter-otlp = "^1.43.0"
 apscheduler = "^3.11.2"
 mlflow = "^3.14.0"
 reportlab = "^4.2.0"
@@ -170,6 +171,6 @@ known_first_party = ["bb_paxdata"]
 
 [tool.deptry.per_rule_ignores]
 DEP001 = ["nbformat", "newrelic", "ddtrace", "tests"]
-DEP002 = ["email-validator", "aiosqlite", "alembic", "textual", "plotly", "asyncpg", "psycopg2-binary", "flower", "aiohttp", "torch-scatter", "torch-sparse", "mlflow"]
+DEP002 = ["email-validator", "aiosqlite", "alembic", "textual", "plotly", "asyncpg", "psycopg2-binary", "flower", "aiohttp", "torch-scatter", "torch-sparse", "mlflow", "protobuf"]
 DEP003 = ["botocore", "yaml", "tenacity", "aiofiles", "jinja2", "charset_normalizer"]
 DEP004 = ["httpx", "pytest"]
