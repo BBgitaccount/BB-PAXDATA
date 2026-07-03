@@ -5,7 +5,6 @@ import { useUIStore } from '@/store/uiStore';
 import { cn } from '@/utils/helpers';
 import {
   Activity,
-  ArrowRightLeft,
   BarChart3,
   BookOpen,
   ChevronLeft,
@@ -15,7 +14,6 @@ import {
   FileText,
   GitBranch,
   GitCompare,
-  Globe,
   History,
   LayoutDashboard,
   type LucideIcon,
@@ -37,127 +35,115 @@ const navSections: Array<{
     icon: LucideIcon;
   }>;
 }> = [
-  {
-    group: 'nav.group.general',
-    items: [
-      {
-        id: 'dashboard',
-        label: 'nav.dashboard',
-        path: '/',
-        icon: LayoutDashboard,
-      },
-      {
-        id: 'speakers',
-        label: 'nav.speakers',
-        path: '/speakers',
-        icon: Users,
-      },
-      {
-        id: 'bilateral',
-        label: 'nav.bilateral',
-        path: '/bilateral',
-        icon: ArrowRightLeft,
-      },
-      {
-        id: 'worldmap',
-        label: 'nav.worldmap',
-        path: '/worldmap',
-        icon: Globe,
-      },
-      {
-        id: 'chord',
-        label: 'nav.chord',
-        path: '/chord',
-        icon: Target,
-      },
-      {
-        id: 'sankey',
-        label: 'nav.sankey',
-        path: '/sankey',
-        icon: GitBranch,
-      },
-      {
-        id: 'timeline',
-        label: 'nav.timeline',
-        path: '/timeline',
-        icon: History,
-      },
-      {
-        id: 'discourse',
-        label: 'nav.discourse',
-        path: '/discourse',
-        icon: Network,
-      },
-      {
-        id: 'anomalies',
-        label: 'nav.anomalies',
-        path: '/anomalies',
-        icon: Clock,
-      },
-      { id: 'drift', label: 'nav.drift', path: '/drift', icon: TrendingUp },
-      { id: 'health', label: 'nav.health', path: '/health', icon: Activity },
-      { id: 'monitor', label: 'nav.monitor', path: '/monitor', icon: Zap },
-      {
-        id: 'provenance',
-        label: 'nav.provenance',
-        path: '/provenance',
-        icon: GitBranch,
-      },
-    ],
-  },
-  {
-    group: 'nav.group.logic',
-    items: [
-      {
-        id: 'logic-queue',
-        label: 'nav.logic_queue',
-        path: '/hitl-logic/queue',
-        icon: ClipboardList,
-      },
-      {
-        id: 'logic-audit',
-        label: 'nav.logic_audit',
-        path: '/hitl-logic/audit',
-        icon: FileText,
-      },
-      {
-        id: 'logic-calib',
-        label: 'nav.logic_calib',
-        path: '/hitl-logic/calibration',
-        icon: BarChart3,
-      },
-      {
-        id: 'logic-prompts',
-        label: 'nav.logic_prompts',
-        path: '/hitl-logic/prompts',
-        icon: BookOpen,
-      },
-    ],
-  },
-  {
-    group: 'nav.group.ai',
-    items: [
-      {
-        id: 'ai-queue',
-        label: 'nav.ai_queue',
-        path: '/hitl-ai/queue',
-        icon: ClipboardList,
-      },
-      {
-        id: 'comparison',
-        label: 'nav.comparison',
-        path: '/hitl-ai/comparison',
-        icon: GitCompare,
-      },
-      {
-        id: 'settings',
-        label: 'nav.settings',
-        path: '/settings',
-        icon: Settings,
-      },
-    ],
-  },
-];
+    {
+      group: 'nav.group.general',
+      items: [
+        {
+          id: 'dashboard',
+          label: 'nav.dashboard',
+          path: '/',
+          icon: LayoutDashboard,
+        },
+        {
+          id: 'speakers',
+          label: 'nav.speakers',
+          path: '/speakers',
+          icon: Users,
+        },
+        {
+          id: 'chord',
+          label: 'nav.chord',
+          path: '/chord',
+          icon: Target,
+        },
+        {
+          id: 'sankey',
+          label: 'nav.sankey',
+          path: '/sankey',
+          icon: GitBranch,
+        },
+        {
+          id: 'timeline',
+          label: 'nav.timeline',
+          path: '/timeline',
+          icon: History,
+        },
+        {
+          id: 'discourse',
+          label: 'nav.discourse',
+          path: '/discourse',
+          icon: Network,
+        },
+        {
+          id: 'anomalies',
+          label: 'nav.anomalies',
+          path: '/anomalies',
+          icon: Clock,
+        },
+        { id: 'drift', label: 'nav.drift', path: '/drift', icon: TrendingUp },
+        { id: 'health', label: 'nav.health', path: '/health', icon: Activity },
+        { id: 'monitor', label: 'nav.monitor', path: '/monitor', icon: Zap },
+        {
+          id: 'provenance',
+          label: 'nav.provenance',
+          path: '/provenance',
+          icon: GitBranch,
+        },
+      ],
+    },
+    {
+      group: 'nav.group.logic',
+      items: [
+        {
+          id: 'logic-queue',
+          label: 'nav.logic_queue',
+          path: '/hitl-logic/queue',
+          icon: ClipboardList,
+        },
+        {
+          id: 'logic-audit',
+          label: 'nav.logic_audit',
+          path: '/hitl-logic/audit',
+          icon: FileText,
+        },
+        {
+          id: 'logic-calib',
+          label: 'nav.logic_calib',
+          path: '/hitl-logic/calibration',
+          icon: BarChart3,
+        },
+        {
+          id: 'logic-prompts',
+          label: 'nav.logic_prompts',
+          path: '/hitl-logic/prompts',
+          icon: BookOpen,
+        },
+      ],
+    },
+    {
+      group: 'nav.group.ai',
+      items: [
+        {
+          id: 'ai-queue',
+          label: 'nav.ai_queue',
+          path: '/hitl-ai/queue',
+          icon: ClipboardList,
+        },
+        {
+          id: 'comparison',
+          label: 'nav.comparison',
+          path: '/hitl-ai/comparison',
+          icon: GitCompare,
+        },
+        {
+          id: 'settings',
+          label: 'nav.settings',
+          path: '/settings',
+          icon: Settings,
+        },
+      ],
+    },
+  ];
 
 export const Sidebar = () => {
   const navigate = useNavigate();

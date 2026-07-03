@@ -15,8 +15,8 @@ class ProvenanceRepository:
 
     async def save(self, graph: ProvenanceGraph) -> ProvenanceGraph:
         """Save a provenance graph to the database."""
-        nodes_data = [node.model_dump() for node in graph.nodes]
-        edges_data = [edge.model_dump() for edge in graph.edges]
+        nodes_data = [node.model_dump(mode="json") for node in graph.nodes]
+        edges_data = [edge.model_dump(mode="json") for edge in graph.edges]
 
         orm = ProvenanceGraphORM(
             id=str(graph.id),

@@ -1,7 +1,3 @@
-import { useQuery } from '@tanstack/react-query';
-import { Eye, Filter, Search, ShieldOff } from 'lucide-react';
-import { useEffect, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
 import { DataTable } from '@/components/DataTable';
 import { PriorityBadge } from '@/components/PriorityBadge';
 import { StatusBadge } from '@/components/StatusBadge';
@@ -12,6 +8,10 @@ import { ApiError, apiClient } from '@/services/apiClient';
 import { useReviewQueueStore } from '@/store/reviewQueueStore';
 import type { FailQueueItem, FormulaName, TriagePriority } from '@/types';
 import { cn, formatDate, truncate } from '@/utils/helpers';
+import { useQuery } from '@tanstack/react-query';
+import { Eye, Filter, Search, ShieldOff } from 'lucide-react';
+import { useEffect, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 
 const formulas: FormulaName[] = [
   'vader_compound',
@@ -116,7 +116,7 @@ export const ReviewQueue = ({ mode = 'logic' }: { mode?: 'logic' | 'ai' }) => {
       render: (r: FailQueueItem) => (
         <div className="group relative">
           <span className="text-sm text-carbon-200">{truncate(r.sentence_text, 90)}</span>
-          <div className="absolute left-0 bottom-full mb-2 hidden group-hover:block z-50 bg-carbon-900 border border-hair border-carbon-550 p-3 max-w-md shadow-elevated">
+          <div className="absolute left-0 bottom-full mb-2 hidden group-hover:block z-50 bg-carbon-900 border-hair border-carbon-550 p-3 max-w-md shadow-elevated">
             <p className="text-xs text-carbon-200 leading-relaxed">{r.sentence_text}</p>
           </div>
         </div>
@@ -176,26 +176,26 @@ export const ReviewQueue = ({ mode = 'logic' }: { mode?: 'logic' | 'ai' }) => {
     },
     ...(mode === 'ai'
       ? [
-          {
-            key: 'ai_risk',
-            header: 'AI Risk',
-            width: '70px',
-            render: (r: FailQueueItem) => (
-              <span className="font-mono text-2xs text-carbon-200">{r.ai_risk_score}</span>
-            ),
-          },
-          {
-            key: 'ai_confidence',
-            header: 'Güven',
-            width: '130px',
-            render: (r: FailQueueItem) => (
-              <UncertaintyBadge
-                score={(r as { ai_confidence?: number }).ai_confidence}
-                status={(r as { uncertainty_status?: string }).uncertainty_status}
-              />
-            ),
-          },
-        ]
+        {
+          key: 'ai_risk',
+          header: 'AI Risk',
+          width: '70px',
+          render: (r: FailQueueItem) => (
+            <span className="font-mono text-2xs text-carbon-200">{r.ai_risk_score}</span>
+          ),
+        },
+        {
+          key: 'ai_confidence',
+          header: 'Güven',
+          width: '130px',
+          render: (r: FailQueueItem) => (
+            <UncertaintyBadge
+              score={(r as { ai_confidence?: number }).ai_confidence}
+              status={(r as { uncertainty_status?: string }).uncertainty_status}
+            />
+          ),
+        },
+      ]
       : []),
     {
       key: 'status',
@@ -205,15 +205,15 @@ export const ReviewQueue = ({ mode = 'logic' }: { mode?: 'logic' | 'ai' }) => {
     },
     ...(mode === 'ai'
       ? [
-          {
-            key: 'trigger',
-            header: 'Trigger',
-            width: '110px',
-            render: (r: FailQueueItem) => (
-              <span className="font-mono text-micro text-carbon-400">{r.trigger_type}</span>
-            ),
-          },
-        ]
+        {
+          key: 'trigger',
+          header: 'Trigger',
+          width: '110px',
+          render: (r: FailQueueItem) => (
+            <span className="font-mono text-micro text-carbon-400">{r.trigger_type}</span>
+          ),
+        },
+      ]
       : []),
     {
       key: 'date',
@@ -288,14 +288,14 @@ export const ReviewQueue = ({ mode = 'logic' }: { mode?: 'logic' | 'ai' }) => {
         </div>
       </div>
 
-      <div className="bg-carbon-900 border border-hair border-carbon-550 p-4">
+      <div className="bg-carbon-900 border-hair border-carbon-550 p-4">
         <div className="flex flex-wrap items-center gap-4">
           <div className="flex items-center gap-2">
             <Filter className="w-3.5 h-3.5 text-carbon-400" />
             <select
               value={filters.formula}
               onChange={(e) => setFilters({ ...filters, formula: e.target.value })}
-              className="bg-carbon-900 border border-hair border-carbon-550 text-xs text-carbon-200 px-3 py-2 min-w-[180px]"
+              className="bg-carbon-900 border-hair border-carbon-550 text-xs text-carbon-200 px-3 py-2 min-w-[180px]"
             >
               <option value="">Tüm Formüller</option>
               {formulas.map((f) => (
@@ -306,7 +306,7 @@ export const ReviewQueue = ({ mode = 'logic' }: { mode?: 'logic' | 'ai' }) => {
             </select>
           </div>
 
-          <div className="flex items-center gap-1 bg-carbon-800 border border-hair border-carbon-550 p-0.5">
+          <div className="flex items-center gap-1 bg-carbon-800 border-hair border-carbon-550 p-0.5">
             {(['unreviewed', 'reviewed', 'all'] as const).map((s) => (
               <button
                 key={s}
@@ -330,7 +330,7 @@ export const ReviewQueue = ({ mode = 'logic' }: { mode?: 'logic' | 'ai' }) => {
               value={filters.search}
               onChange={(e) => setFilters({ ...filters, search: e.target.value })}
               placeholder="sent_id, konuşmacı..."
-              className="bg-carbon-900 border border-hair border-carbon-550 text-xs text-carbon-200 px-3 py-2 w-48"
+              className="bg-carbon-900 border-hair border-carbon-550 text-xs text-carbon-200 px-3 py-2 w-48"
             />
           </div>
         </div>

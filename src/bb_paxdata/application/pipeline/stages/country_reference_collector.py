@@ -22,6 +22,7 @@ from typing import TYPE_CHECKING, Any
 import structlog
 
 from bb_paxdata.application.domain.enums.country_enums import ReferenceContext
+from bb_paxdata.application.domain.lexicon.country_bloc_mapping import normalize_country
 from bb_paxdata.application.domain.models.country_reference import CountryReference
 from bb_paxdata.application.pipeline.models.collect_result import CountryCollectResult
 
@@ -149,13 +150,24 @@ class CountryReferenceCollector:
         mentions: list[tuple[int, str, float]] = []
         sentences = list(doc.sents)
 
+        # Normalize speaker country for comparison
+        speaker_iso3, _, _ = normalize_country(speaker_country)
+
         for sent_idx, sent in enumerate(sentences):
             for ent in sent.ents:
                 if ent.label_ in {"GPE", "LOC", "NORP"} and ent.text in self._vocab:
-                    if ent.text.lower() == speaker_country.lower():
+                    # Normalize the extracted country name
+                    country_iso3, country_standard_name, _ = normalize_country(ent.text)
+
+                    # Skip if it's the speaker's own country
+                    if country_iso3 != "UNK" and country_iso3 == speaker_iso3:
                         continue  # Konuşmacı kendi ülkesinden bahsediyorsa atla
+
+                    # Use the normalized country name
                     sentiment = self._vader_score(sent.text)
-                    mentions.append((sentence_index + sent_idx, ent.text, sentiment))
+                    mentions.append(
+                        (sentence_index + sent_idx, country_standard_name, sentiment)
+                    )
 
         return mentions
 

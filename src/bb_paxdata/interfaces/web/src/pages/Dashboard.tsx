@@ -6,14 +6,13 @@ import {
   CheckCircle,
   Clock,
   Edit3,
-  Globe,
   PieChart,
   ShieldCheck,
   TrendingUp,
   XCircle,
   Zap,
 } from 'lucide-react';
-import { useCallback, useEffect, useState } from 'react';
+import { useEffect } from 'react';
 import {
   Bar,
   BarChart,
@@ -28,7 +27,6 @@ import {
   XAxis,
   YAxis,
 } from 'recharts';
-import { BilateralHeatmap } from '@/components/BilateralHeatmap';
 import { FormulaHealthChart } from '@/components/FormulaHealthChart';
 import { FormulaHealthTable } from '@/components/FormulaHealthTable';
 import { KpiCard } from '@/components/KpiCard';
@@ -43,14 +41,12 @@ import type {
   DailyTrend,
   FormulaHealth,
   KpiStats,
-  PanelTimelineEntry,
   PriorityDistribution,
   TriggerDistribution,
 } from '@/types';
 
 export const Dashboard = () => {
   const toast = useToast();
-  const [selectedPanel, setSelectedPanel] = useState<PanelTimelineEntry | null>(null);
   const { t } = useTranslation();
 
   const dashboardQuery = useQuery({
@@ -98,36 +94,6 @@ export const Dashboard = () => {
       }
     },
   });
-
-  // Timeline query — panel list for time slider
-  const timelineQuery = useQuery({
-    queryKey: ['bilateral-timeline'],
-    queryFn: () => apiClient.get<PanelTimelineEntry[]>('/api/v1/dashboard/bilateral/timeline'),
-    staleTime: 1000 * 60 * 5, // 5 dk - timeline data changes infrequently
-  });
-
-  // Panel-specific bilateral data (refetched when slider moves)
-  const panelBilateralQuery = useQuery({
-    queryKey: ['bilateral-panel', selectedPanel?.file_id],
-    queryFn: () =>
-      selectedPanel
-        ? apiClient.get<BilateralSentimentData[]>(
-            `/api/v1/dashboard/bilateral?file_id=${selectedPanel.file_id}`,
-          )
-        : Promise.resolve(null),
-    enabled: !!selectedPanel,
-    staleTime: 1000 * 30, // 30 sn - interactive data needs fresher cache
-  });
-
-  const handleTimelineStep = useCallback((entry: PanelTimelineEntry | null) => {
-    setSelectedPanel(entry);
-  }, []);
-
-  // Active bilateral data: panel-specific if slider is active, else aggregate
-  const activeBilateral: BilateralSentimentData[] =
-    selectedPanel && panelBilateralQuery.data
-      ? panelBilateralQuery.data
-      : (dashboardQuery.data?.bilateral ?? []);
 
   useEffect(() => {
     if (dashboardQuery.isError) {
@@ -565,33 +531,6 @@ export const Dashboard = () => {
             </div>
           )}
         </div>
-      </div>
-
-      <div className="bg-carbon-900 border border-hair border-carbon-550 p-6">
-        <div className="flex items-center justify-between mb-6">
-          <div>
-            <h3 className="text-sm font-semibold text-carbon-50 tracking-tight">
-              {t('dashboard.chart.bilateral_heatmap')}
-            </h3>
-            <p className="text-micro text-carbon-400 mt-1">
-              {t('dashboard.chart.bilateral_heatmap_desc')}
-            </p>
-          </div>
-          <Globe className="w-4 h-4 text-carbon-400" />
-        </div>
-        {activeBilateral && activeBilateral.length > 0 ? (
-          <BilateralHeatmap
-            data={activeBilateral}
-            timeline={timelineQuery.data ?? []}
-            onTimelineStep={handleTimelineStep}
-            playIntervalMs={2500}
-          />
-        ) : (
-          <div className="h-96 flex flex-col items-center justify-center text-carbon-450 border border-dashed border-carbon-550/40 font-mono text-xs">
-            <Globe className="w-8 h-8 mb-2 text-carbon-500 opacity-60" />
-            <span>İkili ilişkiler veri seti bulunmamaktadır.</span>
-          </div>
-        )}
       </div>
     </div>
   );

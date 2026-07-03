@@ -5,8 +5,6 @@ export const tr = {
   'nav.group.ai': 'HITL AI',
   'nav.dashboard': 'Özet',
   'nav.speakers': 'Konuşmacı Veri Tabanı',
-  'nav.bilateral': 'İkili İlişkiler',
-  'nav.worldmap': 'Dünya Haritası',
   'nav.chord': 'Chord Diyagramı',
   'nav.sankey': 'Sankey Akış',
   'nav.timeline': 'Zaman Çizelgesi',
@@ -70,9 +68,6 @@ export const tr = {
   'dashboard.chart.triage_reasons': 'Kuyruğa düşme nedenleri',
   'dashboard.chart.consensus_level_dist': 'Consensus Level Dağılımı',
   'dashboard.chart.dualgate_outputs': 'DualGate çıktıları',
-  'dashboard.chart.bilateral_heatmap': 'İkili İlişkiler Heatmap',
-  'dashboard.chart.bilateral_heatmap_desc':
-    'Aktörler arası diplomatik tutum (Affinity) — zaman kaydırıcısı ile panel bazında görüntüle',
 
   // Settings
   'settings.title': 'Sistem Ayarları',

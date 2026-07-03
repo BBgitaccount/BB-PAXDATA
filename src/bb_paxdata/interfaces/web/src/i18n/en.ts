@@ -7,8 +7,9 @@ export const en: typeof tr = {
   'nav.group.ai': 'HITL AI',
   'nav.dashboard': 'Summary',
   'nav.speakers': 'Speaker Database',
-  'nav.bilateral': 'Bilateral Relations',
-  'nav.worldmap': 'World Map',
+  'nav.chord': 'Chord Diagram',
+  'nav.sankey': 'Sankey Flow',
+  'nav.timeline': 'Timeline',
   'nav.discourse': 'Discourse Network',
   'nav.anomalies': 'Anomaly Timeline',
   'nav.drift': 'Temporal Drift',
@@ -69,9 +70,6 @@ export const en: typeof tr = {
   'dashboard.chart.triage_reasons': 'Triage reasons',
   'dashboard.chart.consensus_level_dist': 'Consensus Level Distribution',
   'dashboard.chart.dualgate_outputs': 'DualGate outputs',
-  'dashboard.chart.bilateral_heatmap': 'Bilateral Relationships Heatmap',
-  'dashboard.chart.bilateral_heatmap_desc':
-    'Diplomatic affinity between actors — view panel-by-panel using the time slider',
 
   // Settings
   'settings.title': 'System Settings',

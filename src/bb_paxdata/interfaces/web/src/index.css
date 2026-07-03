@@ -21,6 +21,28 @@
     --signal-warn: #5c4a26;
     --signal-info: #26424d;
 
+    /* Design Constitution Tokens */
+    --paper-0: #F7F4EC;
+    --paper-1: #EFEBDF;
+    --paper-2: #E4DECC;
+    --ink-900: #191712;
+    --ink-700: #4B4638;
+    --ink-500: #7C7563;
+    --ink-300: #AFA890;
+    --ink-100: #CDC6B2;
+    --signal-red: #A32B1F;
+    --signal-red-tint: #F3E2DE;
+    --font-mono: 'JetBrains Mono', 'IBM Plex Mono', 'Space Mono', monospace;
+    --font-serif: 'IBM Plex Serif', 'Source Serif 4', Georgia, serif;
+    --text-display: 3rem;
+    --text-h1: 2.25rem;
+    --text-h2: 1.5rem;
+    --text-h3: 1.125rem;
+    --text-body: 1rem;
+    --text-data: 0.9375rem;
+    --text-caption: 0.8125rem;
+    --text-label: 0.6875rem;
+
     /* RGB components for Tailwind color palette mapping */
     --carbon-950-rgb: 10 10 10;
     --carbon-900-rgb: 12 12 12;
@@ -95,7 +117,7 @@
   }
 
   body {
-    font-family: 'Inter', 'SF Pro Display', 'Helvetica Neue', system-ui, sans-serif;
+    font-family: 'IBM Plex Sans', 'Inter', 'SF Pro Display', 'Helvetica Neue', system-ui, sans-serif;
     background-color: var(--bg-primary);
     color: var(--text-primary);
     -webkit-font-smoothing: antialiased;
@@ -177,13 +199,11 @@
     width: 100%;
     height: 2px;
     cursor: pointer;
-    background: linear-gradient(
-      to right,
-      var(--text-primary) 0%,
-      var(--text-primary) var(--range-progress, 0%),
-      var(--border-hair) var(--range-progress, 0%),
-      var(--border-hair) 100%
-    );
+    background: linear-gradient(to right,
+        var(--text-primary) 0%,
+        var(--text-primary) var(--range-progress, 0%),
+        var(--border-hair) var(--range-progress, 0%),
+        var(--border-hair) 100%);
     border-radius: 0;
     border: none;
   }
@@ -192,13 +212,11 @@
     width: 100%;
     height: 2px;
     cursor: pointer;
-    background: linear-gradient(
-      to right,
-      var(--text-primary) 0%,
-      var(--text-primary) var(--range-progress, 0%),
-      var(--border-hair) var(--range-progress, 0%),
-      var(--border-hair) 100%
-    );
+    background: linear-gradient(to right,
+        var(--text-primary) 0%,
+        var(--text-primary) var(--range-progress, 0%),
+        var(--border-hair) var(--range-progress, 0%),
+        var(--border-hair) 100%);
     border-radius: 0;
     border: none;
   }
@@ -211,7 +229,8 @@
     background: var(--text-primary);
     cursor: pointer;
     -webkit-appearance: none;
-    margin-top: -4px; /* (2px track height - 10px thumb height) / 2 */
+    margin-top: -4px;
+    /* (2px track height - 10px thumb height) / 2 */
     border: none;
     transition: background 150ms ease;
   }
@@ -337,12 +356,10 @@
   }
 
   .shimmer {
-    background: linear-gradient(
-      90deg,
-      var(--bg-tertiary) 0%,
-      var(--bg-quaternary) 50%,
-      var(--bg-tertiary) 100%
-    );
+    background: linear-gradient(90deg,
+        var(--bg-tertiary) 0%,
+        var(--bg-quaternary) 50%,
+        var(--bg-tertiary) 100%);
     background-size: 200% 100%;
     animation: shimmer 1.5s ease-in-out infinite;
   }
@@ -351,6 +368,7 @@
     0% {
       background-position: 200% 0;
     }
+
     100% {
       background-position: -200% 0;
     }
@@ -395,6 +413,7 @@
       transform: translateY(6px);
       will-change: opacity, transform;
     }
+
     to {
       opacity: 1;
       transform: translateY(0);
@@ -402,10 +421,12 @@
   }
 
   @keyframes blink-status {
+
     0%,
     100% {
       opacity: 1;
     }
+
     50% {
       opacity: 0.4;
     }
@@ -417,14 +438,17 @@
       opacity: 0;
       will-change: opacity, transform;
     }
+
     10% {
       transform: translateX(0);
       opacity: 1;
     }
+
     90% {
       transform: translateX(0);
       opacity: 1;
     }
+
     100% {
       transform: translateX(16px);
       opacity: 0;
@@ -436,6 +460,7 @@
       opacity: 0;
       transform: translateY(4px);
     }
+
     to {
       opacity: 1;
       transform: translateY(0);
@@ -454,6 +479,7 @@
 
 /* Prefers Reduced Motion override for accessibility */
 @media (prefers-reduced-motion: reduce) {
+
   *,
   ::before,
   ::after {

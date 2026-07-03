@@ -2,28 +2,7 @@
 Actor Resolver Service for mapping extracted entities to diplomatic actors.
 """
 
-# Mock definitions for NER_GPE and SPEAKER_MAP as mentioned in Faz5.md
-# In a real scenario, these would be loaded from a more robust configuration or
-# database.
-NER_GPE = {
-    "Türkiye",
-    "Turkey",
-    "Turkey Republic",
-    "Türkiye Cumhuriyeti",
-    "Ukraine",
-    "Ukrayna",
-    "Russia",
-    "Rusya",
-    "Russian Federation",
-    "USA",
-    "United States",
-    "ABD",
-    "NATO",
-    "EU",
-    "AB",
-    "UN",
-    "BM",
-}
+from bb_paxdata.application.domain.lexicon.country_bloc_mapping import normalize_country
 
 # SPEAKER_MAP: name -> (country, role, power_level)
 SPEAKER_MAP = {
@@ -55,23 +34,15 @@ class ActorResolver:
         if not text:
             return None
 
-        text_lower = text.lower()
+        # Use the standard normalization function from country_bloc_mapping
+        # This ensures consistent handling of Turkey/turkey/Türkiye variations
+        iso3, standard_name, _ = normalize_country(text)
 
-        # 1. Check direct NER_GPE matches
-        for country in NER_GPE:
-            if country.lower() in text_lower:
-                # Return canonical name (we use the first one in NER_GPE as a simple
-                # heuristic)
-                # In a real app, this would be a dict mapping.
-                if "türkiye" in country.lower() or "turkey" in country.lower():
-                    return "Turkey"
-                if "ukrayna" in country.lower() or "ukraine" in country.lower():
-                    return "Ukraine"
-                if "rusya" in country.lower() or "russia" in country.lower():
-                    return "Russia"
-                return country
+        if iso3 != "UNK":
+            return standard_name
 
         # 2. Check SPEAKER_MAP matches
+        text_lower = text.lower()
         for name, (country, _, _) in SPEAKER_MAP.items():
             if name.lower() in text_lower:
                 return country

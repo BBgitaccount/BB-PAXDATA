@@ -1,5 +1,5 @@
 import { ErrorBoundary } from '@/components/ErrorBoundary';
-import { Globe, RefreshCw } from 'lucide-react';
+import { Globe } from 'lucide-react';
 import { SessionTimelinePanel } from './WorldMap/components/SessionTimelinePanel';
 
 export const Timeline = () => {

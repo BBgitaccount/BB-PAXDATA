@@ -3,7 +3,6 @@ import { Layout } from '@/components/Layout';
 import { AIComparison } from '@/pages/AIComparison';
 import { AnomalyTimeline } from '@/pages/AnomalyTimeline';
 import { AuditTrail } from '@/pages/AuditTrail';
-import { BilateralRelations } from '@/pages/BilateralRelations';
 import { Calibration } from '@/pages/Calibration';
 import { Chord } from '@/pages/Chord';
 import { Dashboard } from '@/pages/Dashboard';
@@ -19,7 +18,6 @@ import { SpeakersPage } from '@/pages/SpeakersPage';
 import { SystemHealth } from '@/pages/SystemHealth';
 import { TemporalDrift } from '@/pages/TemporalDrift';
 import { Timeline } from '@/pages/Timeline';
-import { WorldMap } from '@/pages/WorldMap';
 import { BrowserRouter, Navigate, Route, Routes } from 'react-router-dom';
 
 export const App = () => {
@@ -29,8 +27,6 @@ export const App = () => {
         <Route element={<Layout />}>
           <Route path="/" element={<Dashboard />} />
           <Route path="/speakers" element={<SpeakersPage />} />
-          <Route path="/bilateral" element={<BilateralRelations />} />
-          <Route path="/worldmap" element={<WorldMap />} />
           <Route path="/chord" element={<Chord />} />
           <Route path="/sankey" element={<Sankey />} />
           <Route path="/timeline" element={<Timeline />} />
